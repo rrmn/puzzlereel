@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.5.0';
+  const APP_VERSION = '2.6.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -229,6 +229,7 @@
     tick: (S) => S.tone(900, 900, 0.03, 'sine', 0.06),
     lift: (S) => S.tone(330, 560, 0.09, 'triangle', 0.13),
     set: (S, k) => { S.tone(260 + (k || 0) * 40, 170 + (k || 0) * 30, 0.09, 'sine', 0.3); S.noise(0.04, 1300, 600, 1, 0.07); },
+    skip: (S) => { S.noise(0.26, 500, 2600, 1.1, 0.13); S.tone(520, 780, 0.07, 'triangle', 0.1); S.tone(700, 1040, 0.08, 'triangle', 0.09, 0.08); },
   };
   function buzz(pattern) {
     if (!Sound.on) return;
@@ -635,7 +636,7 @@
         const n = this.summary ? (this.summary.stars || 0) : this.potentialStars();
         this.meterStars.forEach((st, i) => {
           const lost = i >= n;
-          if (lost && !st.classList.contains('lost') && this.c.moves) Sound.play('lose');
+          if (lost && !st.classList.contains('lost') && this.c.moves && !(this.summary && this.summary.outcome === 'skipped')) Sound.play('lose');
           st.classList.toggle('lost', lost);
         });
         this.meterEl.setAttribute('aria-label', n + ' stars possible, ' + this.c.moves + ' moves');
@@ -737,15 +738,12 @@
       this.showHint(hint);
       this.app.touch();
     }
+    // Skip goes on to the next card with no result panel: the board steps back,
+    // a stamp pops in, and the card is tossed aside. Research sessions ask once
+    // on the button itself ("Sure?"); free play does not.
     doSkip() {
       if (this.summary || this.busy) return;
-      // free play: one tap skips straight to the next card; research sessions ask first
-      if (this.app.session.kind === 'free') {
-        this.resolve('skipped');
-        this.app.next();
-        return;
-      }
-      if (!this.skipArmed) {
+      if (this.app.session.kind !== 'free' && !this.skipArmed) {
         this.skipArmed = true;
         this.skipBtn.classList.add('armed');
         this.skipBtn.querySelector('.lab').textContent = 'Sure?';
@@ -755,7 +753,13 @@
         }, 2600);
         return;
       }
-      this.resolve('skipped');
+      this.resolve('skipped', true);
+      if (this.skipArmed) { this.skipBtn.classList.remove('armed'); this.skipBtn.querySelector('.lab').textContent = 'Skip'; }
+      Sound.play('skip');
+      buzz(10);
+      this.el.classList.add('skipping');
+      this.area.append(h('div', { class: 'skip-stamp', role: 'status' }, icon('skip'), h('span', { text: 'Skipped' })));
+      this.later(() => { this.el.dataset.exit = 'toss'; this.app.next(); }, reducedMotion() ? 300 : 560);
     }
     showStuck() {
       if (this.o.undo) {
@@ -765,7 +769,8 @@
         this.later(() => this.resolve('failed'), 1300);
       }
     }
-    resolve(outcome) {
+    // quiet: the card is left at once (skip), so no celebration or result panel
+    resolve(outcome, quiet) {
       if (this.summary) return;
       clearInterval(this.tick);
       if (this.beforeResolve) this.beforeResolve(outcome);
@@ -782,6 +787,7 @@
       sm.level_change = res.change && res.change.changed ? res.change : null;
       this.updateStatus();
       if (this.onResolved) this.onResolved(outcome);
+      if (quiet) return;
       this.later(() => this.showResult(sm, false), this.celebrate(sm));
     }
     makeSummary(outcome, dur) {
@@ -1047,10 +1053,14 @@
           buzz(16);
         }, 250);
       }
-      if (this.o.feedback && !this.practice && rec.kind !== 'blocked') this.flash(i, rec.cls);
+      const early = this.o.feedback && !this.practice && !this.lateDead();
+      if (early && rec.kind !== 'blocked') this.flash(i, rec.cls);
       this.commit(rec);
-      if (this.o.feedback && !this.practice && rec.cls === 'dead_end') { Sound.play('dead'); this.markStuck(); this.call(this.undoBtn, true); }
+      if (early && rec.cls === 'dead_end') { Sound.play('dead'); this.markStuck(); this.call(this.undoBtn, true); }
     }
+    // Levels 1-3 flag each move and a dead end the moment it is made. Levels 4-5
+    // say nothing until no car can move, so a wrong move costs a restart.
+    lateDead() { return this.spec.level >= 4; }
     driveOut(i, rec) {
       const c = this.p.cars[i], g = this.carEls[i];
       const far = Math.max(this.p.w, this.p.h) + c.len + 3;
@@ -1067,7 +1077,9 @@
       this.later(() => g.classList.remove(k), 800);
     }
     markStuck() {
-      const stuck = this.o.feedback && !this.practice && this.G.dist(this.p, this.run.st) === Infinity ? new Set(this.G.stuckCars(this.p, this.run)) : new Set();
+      const show = this.o.feedback && !this.practice && this.G.dist(this.p, this.run.st) === Infinity &&
+        (!this.lateDead() || this.G.movable(this.p, this.run).length === 0);
+      const stuck = show ? new Set(this.G.stuckCars(this.p, this.run)) : new Set();
       this.carEls.forEach((g, i) => g.classList.toggle('stuck', stuck.has(i)));
     }
     afterUndo(r) {
@@ -1079,7 +1091,10 @@
       this.markStuck();
     }
     showStuck() {
-      if (this.o.feedback && !this.practice) this.markStuck();
+      if (this.o.feedback && !this.practice) {
+        if (this.lateDead()) Sound.play('dead');
+        this.markStuck();
+      }
       super.showStuck();
     }
     showHint(hint) {
@@ -2730,7 +2745,7 @@
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them.', '',
-        '## Levels', '', '### Outbound', lv('outbound'), 'L1 and L2 can be cleared by tapping only cars with a clear way out. L3 to L5 contain pinwheels, four cars that each block the next, so one car must first slide part of the way (feature `slides_needed`: 1 at L3 and L4, 2 at L5); L4 adds a planted trap, and L4 and L5 are chosen by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.42 and 0.5 turns per tile. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', '### Outbound', lv('outbound'), 'L1 and L2 can be cleared by tapping only cars with a clear way out. L3 to L5 contain pinwheels, four cars that each block the next, so one car must first slide part of the way (feature `slides_needed`: 1 at L3 and L4, 2 at L5); L4 adds a planted trap, and L4 and L5 are chosen by the chance that random tapping clears the lot (feature `p_random_solve`). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.42 and 0.5 turns per tile. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse scenes', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
@@ -2743,7 +2758,7 @@
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. In free play Skip takes one tap and a skipped card is not a miss; in research blocks a skip asks first and counts as a miss.', '']);
+        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
     return lines.join('\n');
   }
 
@@ -3144,9 +3159,9 @@
     },
     onPuzzleEnd(card, sm) {
       const S = this.session, sp = card.spec;
-      // leaving a puzzle by switching games or ending the session is not a miss
-      // in free play a skip is not a miss either: it is one tap, made for variety
-      const neutral = sm.outcome === 'abandoned' || (S.kind === 'free' && sm.outcome === 'skipped');
+      // leaving a puzzle by switching games or ending the session is not a miss,
+      // and neither is a skip: the level stays where it was
+      const neutral = sm.outcome === 'abandoned' || sm.outcome === 'skipped';
       const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game));
       const level_next = sp.adaptive && change ? change.to : '';
       this.logPuzzle(card, 'puzzle_end', { move_no: card.c.moves, cls: sm.outcome, detail: JSON.stringify({ success: sm.success, stars: sm.stars, moves: sm.moves, par: sm.par, reference: sm.reference }) });
@@ -3267,11 +3282,23 @@
       for (const old of olds) {
         old.dataset.leaving = '1';
         if (quiet) { old.remove(); continue; }
-        const a = old.animate([{ transform: 'translateY(' + (fromDy || 0) + 'px)' }, { transform: 'translateY(' + -H + 'px)' }], { duration: 400, easing: 'cubic-bezier(.3,.6,.2,1)' });
+        let a;
+        if (old.dataset.exit === 'toss') {
+          // a skipped card is tossed aside rather than swiped up
+          const r = old.getBoundingClientRect();
+          old.style.transformOrigin = '50% 100%';
+          old.style.zIndex = '2';
+          a = old.animate([{ transform: 'translate(0, 0) rotate(0)' }, { transform: 'translate(' + -(r.right + 40) + 'px, ' + Math.round(H * 0.08) + 'px) rotate(-14deg)' }], { duration: 440, easing: 'cubic-bezier(.5,0,.75,.35)' });
+        } else {
+          a = old.animate([{ transform: 'translateY(' + (fromDy || 0) + 'px)' }, { transform: 'translateY(' + -H + 'px)' }], { duration: 400, easing: 'cubic-bezier(.3,.6,.2,1)' });
+        }
         a.onfinish = () => old.remove();
         setTimeout(() => old.remove(), 800);
       }
-      if (!quiet) el.animate([{ transform: 'translateY(' + H + 'px)' }, { transform: 'translateY(0)' }], { duration: 400, easing: 'cubic-bezier(.3,.6,.2,1)' });
+      // after a toss the next card is already underneath, like the next card of a deck
+      const tossed = olds.some((o) => o.dataset.exit === 'toss');
+      if (!quiet && tossed) el.animate([{ transform: 'scale(0.94)' }, { transform: 'scale(1)' }], { duration: 440, easing: 'cubic-bezier(.3,.6,.2,1)' });
+      else if (!quiet) el.animate([{ transform: 'translateY(' + H + 'px)' }, { transform: 'translateY(0)' }], { duration: 400, easing: 'cubic-bezier(.3,.6,.2,1)' });
       else if (olds.length && canAnimate) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 });
     },
     renderHud() {

@@ -2,7 +2,7 @@
   "name": "puzzle-reel",
   "version": "1.0.0",
   "private": true,
-  "description": "A swipe feed of four games (three solver-scored puzzles and a speed-of-processing task) with a research session harness.",
+  "description": "A swipe feed of five games (four solver-scored puzzles and a speed-of-processing task) with a research session harness.",
   "scripts": {
     "build": "node build.js",
     "test": "node --test test/engines.test.js"
