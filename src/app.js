@@ -1,11 +1,11 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.6.0';
+  const APP_VERSION = '2.7.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
-  const LABEL = { mixed: 'All games', outbound: 'Outbound', conduit: 'Conduit', tumbler: 'Tumbler', glimpse: 'Glimpse', stacks: 'Stacks' };
+  const LABEL = { mixed: 'All games', outbound: 'Outbound', conduit: 'Conduit', tumbler: 'Tumbler', glimpse: 'Glimpse', stacks: 'Stacks', switchback: 'Switchback', keepsake: 'Keepsake' };
 
   // ---------------------------------------------------------------- helpers
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -108,8 +108,13 @@
     stack: '<rect x="4" y="15" width="16" height="5" rx="2"/><rect x="6" y="9.5" width="12" height="5" rx="2"/><rect x="8" y="4" width="8" height="5" rx="2"/>',
     person: '<circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0"/>',
     grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
+    wheel: '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12.4" r="2.2"/><path d="M3.6 11.2q8.4-1.8 16.8 0M12 14.6v6"/>',
+    gauge: '<path d="M4.2 17a8.2 8.2 0 1 1 15.6 0"/><path d="m12 14.6 3.6-4.4"/><circle cx="12" cy="15" r="1.3"/>',
+    sign: '<path d="M12 3.6 21 19.4H3z"/><path d="M12 9.6v4.2"/><path d="M12 16.6v.1"/>',
+    road: '<path d="M8.4 3.5 4.8 20.5M15.6 3.5l3.6 17"/><path d="M12 4.5v2.6M12 10.6v2.8M12 17v3"/>',
+    basket: '<path d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M7.6 10.4 11 4.6M16.4 10.4 13 4.6"/><path d="M9.4 14v3.4M14.6 14v3.4"/>',
   };
-  const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', stacks: 'stack', mixed: 'grid' };
+  const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', stacks: 'stack', switchback: 'wheel', keepsake: 'basket', mixed: 'grid' };
   function icon(name, cls) {
     const el = document.createElementNS(SVGNS, 'svg');
     el.setAttribute('viewBox', '0 0 24 24');
@@ -229,6 +234,8 @@
     tick: (S) => S.tone(900, 900, 0.03, 'sine', 0.06),
     lift: (S) => S.tone(330, 560, 0.09, 'triangle', 0.13),
     set: (S, k) => { S.tone(260 + (k || 0) * 40, 170 + (k || 0) * 30, 0.09, 'sine', 0.3); S.noise(0.04, 1300, 600, 1, 0.07); },
+    go: (S) => { S.noise(0.5, 220, 900, 1.3, 0.16); S.tone(110, 240, 0.45, 'sawtooth', 0.035); },
+    rumble: (S) => S.noise(0.11, 160, 120, 1.6, 0.18),
     skip: (S) => { S.noise(0.26, 500, 2600, 1.1, 0.13); S.tone(520, 780, 0.07, 'triangle', 0.1); S.tone(700, 1040, 0.08, 'triangle', 0.09, 0.08); },
   };
   function buzz(pattern) {
@@ -514,6 +521,8 @@
     tumbler: ['#FFC83A', '#F04E5E', '#3A7BFF', '#2DBF6C', '#A066FF', '#FFFFFF'],
     glimpse: ['#FFFFFF', '#FFC83A', '#3D8BFD', '#FF8A3D', '#7CE3B0'],
     stacks: ['#5D7FB9', '#D46F4D', '#78A257', '#F2C14E', '#FFFFFF'],
+    switchback: ['#E5564D', '#FFC93C', '#79B3F0', '#56B46A', '#FFFFFF'],
+    keepsake: ['#E8463D', '#F2B632', '#3D8BFD', '#2DBF6C', '#FF6FA7', '#FFFFFF'],
   };
   const DIRV = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
   const ANGLE = { N: 0, E: 90, S: 180, W: 270 };
@@ -526,6 +535,8 @@
     tumbler: ['optimal', 'suboptimal', 'zero_info', 'inconsistent', 'hint'],
     glimpse: [],
     stacks: ['optimal', 'wasted', 'blocked', 'undo', 'restart', 'hint'],
+    switchback: [],
+    keepsake: [],
   };
   function blankCounts() {
     return { moves: 0, optimal: 0, wasted: 0, dead_end: 0, in_dead_end: 0, blocked: 0, undo: 0, restart: 0, hint: 0, suboptimal: 0, zero_info: 0, inconsistent: 0, neutral: 0, solved: 0, infoRatioSum: 0, infoRatioN: 0 };
@@ -1134,17 +1145,22 @@
         const cell = s('g', { class: 'cell', tabindex: '0', role: 'button', 'aria-label': (i === p.src ? 'Water source' : isPlant ? 'Plant' : 'Pipe') + ', row ' + (y + 1) + ', column ' + (x + 1) });
         cell.append(s('rect', { class: 'bed', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }));
         cell.append(s('rect', { class: 'bed-shade', x: x * U + 0.45, y: y * U + 8.3, width: U - 0.9, height: 1.25, rx: 0.6 }));
+        // each pipe arm: a dark outline under a pale pipe, water on top; an arm that
+        // meets nothing shrinks to a capped stub, so a gap shows at a glance
         const tile = s('g', { class: 'tile' });
         tile.style.transformOrigin = cx + 'px ' + cy + 'px';
         const arms = [];
         for (const sd of [1, 2, 4, 8]) {
           if (!(m & sd)) continue;
           const ex = cx + SIDEV[sd][0] * 5, ey = cy + SIDEV[sd][1] * 5;
-          const flowEl = s('line', { class: 'flow', x1: cx, y1: cy, x2: ex, y2: ey });
-          tile.append(s('line', { class: 'case', x1: cx, y1: cy, x2: ex, y2: ey }), s('line', { class: 'core', x1: cx, y1: cy, x2: ex, y2: ey }), flowEl);
-          arms.push({ side: sd, flow: flowEl });
+          const mk = (cls) => s('line', { class: cls, x1: cx, y1: cy, x2: ex, y2: ey });
+          arms.push({ side: sd, cx, cy, edge: mk('edge'), pipe: mk('case'), flow: mk('flow'), open: null });
         }
-        if (deg >= 2) tile.append(s('circle', { class: 'hub', cx, cy, r: 1.95 }));
+        arms.forEach((a) => tile.append(a.edge));
+        if (deg >= 2) tile.append(s('circle', { class: 'hub-edge', cx, cy, r: 2.55 }));
+        arms.forEach((a) => tile.append(a.pipe));
+        if (deg >= 2) tile.append(s('circle', { class: 'hub', cx, cy, r: 1.85 }));
+        arms.forEach((a) => tile.append(a.flow));
         cell.append(tile);
         if (i === p.src) {
           cell.append(s('circle', { class: 'well', cx, cy, r: 3.4 }), s('circle', { class: 'well-rim', cx, cy, r: 2.5 }),
@@ -1192,8 +1208,10 @@
       t.style.transform = 'rotate(' + this.angle[i] + 'deg)';
       if (instant) { void t.getBoundingClientRect(); t.style.transition = ''; }
     }
-    // water: spreads from the source in waves, flows away from it, leaks at open ends
-    update() {
+    // water: spreads from the source in waves, flows away from it, leaks at open ends.
+    // Arms reach out or pull in once a turn has finished (instant on first draw).
+    update(instant) {
+      const stubs = [];
       const p = this.p, n = p.w * p.h;
       const mask = (i) => this.G.maskAt(p, this.run, i);
       const depth = new Int16Array(n).fill(-1), parent = new Int8Array(n);
@@ -1223,8 +1241,14 @@
         const delay = wet && !was ? Math.min(600, (depth[i] - minNew) * 55) : 0;
         this.tiles[i].style.setProperty('--d', delay + 'ms');
         this.tiles[i].classList.toggle('wet', wet);
-        const r = this.run.rot[i];
-        for (const arm of this.arms[i]) arm.flow.classList.toggle('in', wet && i !== p.src && E.internals.rotCW(arm.side, r) === parent[i]);
+        const r = this.run.rot[i], x = i % p.w, y = (i / p.w) | 0;
+        for (const arm of this.arms[i]) {
+          const ws = E.internals.rotCW(arm.side, r);
+          arm.flow.classList.toggle('in', wet && i !== p.src && ws === parent[i]);
+          const nx = x + SIDEV[ws][0], ny = y + SIDEV[ws][1];
+          const open = nx < 0 || ny < 0 || nx >= p.w || ny >= p.h || !(mask(ny * p.w + nx) & OPP[ws]);
+          if (arm.open !== open) { arm.open = open; stubs.push(arm); }
+        }
         const plant = this.plants[i];
         if (plant) {
           plant.style.setProperty('--d', delay + 'ms');
@@ -1245,7 +1269,7 @@
           const nx = x + SIDEV[sd][0], ny = y + SIDEV[sd][1];
           const open = nx < 0 || ny < 0 || nx >= p.w || ny >= p.h || !(mask(ny * p.w + nx) & OPP[sd]);
           if (!open) continue;
-          const ex = x * 10 + 5 + SIDEV[sd][0] * 4.6, ey = y * 10 + 5 + SIDEV[sd][1] * 4.6;
+          const ex = x * 10 + 5 + SIDEV[sd][0] * 4.2, ey = y * 10 + 5 + SIDEV[sd][1] * 4.2;
           const g = s('g', null);
           for (let k = 0; k < 3; k++) {
             const dot = s('circle', { class: 'drip', cx: ex, cy: ey, r: 0.75 });
@@ -1257,6 +1281,18 @@
         }
       }
       this.watered = wateredCount;
+      // a joined pipe reaches a little past the edge, under its neighbour's, so no seam shows
+      const reach = () => {
+        for (const arm of stubs) {
+          for (const el of [arm.edge, arm.pipe, arm.flow]) {
+            const len = arm.open ? 2.6 : el === arm.edge ? 5 : 5.3;
+            el.setAttribute('x2', arm.cx + SIDEV[arm.side][0] * len);
+            el.setAttribute('y2', arm.cy + SIDEV[arm.side][1] * len);
+            el.classList.toggle('open', arm.open);
+          }
+        }
+      };
+      if (instant || !stubs.length) reach(); else this.later(reach, 190);
       return { newlyWet, watered };
     }
     refresh(animated) {
@@ -1267,7 +1303,7 @@
         return base + r * 90;
       });
       this.tiles.forEach((t, i) => this.setAngle(i, !animated));
-      this.update();
+      this.update(!animated);
       this.goal();
       this.svg.classList.toggle('solved', !!(this.summary && this.summary.outcome === 'solved'));
     }
@@ -1716,7 +1752,11 @@
       });
       this.lens.addEventListener('pointerdown', (e) => this.lensDown(e));
       this.dotsEl = h('div', { class: 'gl-dots', 'aria-hidden': 'true' });
-      this.lens.append(this.canvas, this.spotsEl, this.choiceEl, this.goBtn);
+      // where-was-it: the outline of what to find, in the middle, while the places are up
+      this.ghostEl = h('div', { class: 'gl-ghost', 'aria-hidden': 'true', hidden: true });
+      // a point for the practice hand to rest on during the first flash
+      this.anchorEl = h('i', { class: 'gl-anchor', 'aria-hidden': 'true' });
+      this.lens.append(this.canvas, this.ghostEl, this.anchorEl, this.spotsEl, this.choiceEl, this.goBtn);
       this.area.classList.add('gl-area');
       this.area.append(h('div', { class: 'gl-wrap' }, this.lens, this.dotsEl));
       if (this.phase === 'done') this.goBtn.hidden = true;
@@ -1847,9 +1887,11 @@
             this.blit(this.stimC);
             st.onset = ts;
             this.phase = 'stim';
+            if (this.practice && this.run.i === 0 && p.periph) this.showWhere(t);
           }
         } else if (this.phase === 'stim') {
           if (ts - st.onset >= (st.plan.frames - 0.5) * st.T) {
+            if (this.practice) this.hideHand();
             this.blit(this.maskC);
             st.offset = ts;
             this.phase = 'mask';
@@ -1901,9 +1943,22 @@
       this.hideHand();
       if (this.p.periph) this.askWhere(); else this.finishLook();
     }
+    // the practice hand points at the bird while the first flash is up
+    showWhere(t) {
+      const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
+      this.anchorEl.style.left = q[0] + 'px';
+      this.anchorEl.style.top = q[1] + this.R * 0.1 + 'px';
+      if (!this.hand) this.hand = new Hand(this);
+      this.hand.point(this.anchorEl);
+    }
     askWhere() {
       this.phase = 'where';
       this.choiceEl.classList.add('gone');
+      const t = this.p.trials[this.run.i];
+      this.ghostEl.textContent = '';
+      this.ghostEl.append(glSvg(t.tg || 'bird'));
+      this.ghostEl.classList.toggle('flip', !!t.flip);
+      this.ghostEl.hidden = false;
       this.placeSpots();
       this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; });
       this.spotsEl.hidden = false;
@@ -1933,6 +1988,7 @@
     }
     finishLook() {
       this.phase = 'fb';
+      this.ghostEl.hidden = true;
       const p = this.p, t = p.trials[this.run.i], st = this.st, a = this.ans;
       const cOk = a.c === t.c, dOk = p.periph ? a.d === t.dir : true;
       const correct = cOk && dOk;
@@ -1959,7 +2015,7 @@
       this.renderDots();
       this.updateStatus();
       this.app.touch();
-      this.later(() => this.nextLook(), show ? 700 : 300);
+      this.later(() => this.nextLook(), show ? 1100 : 300);
     }
     feedback(correct, cOk, dOk, t, a, show) {
       if (!show) { Sound.play('tick'); return; }
@@ -2056,6 +2112,7 @@
       this.goBtn.hidden = true;
       this.choiceEl.hidden = true;
       this.spotsEl.hidden = true;
+      this.ghostEl.hidden = true;
       this.clearReveal();
     }
     makeSummary(outcome, dur) {
@@ -2612,7 +2669,1152 @@
     onResolved(outcome) { if (outcome === 'solved') this.svg.classList.add('solved'); }
   }
 
+  // ---------------------------------------------------------- Switchback
+  // One canvas, redrawn every frame: a country road late in the day. The
+  // camera rides 1 unit above the road and 2 units behind the car; with the
+  // focal length equal to the canvas height, the horizon sits at 38% and the
+  // car's wheels at 88% of the height. The road is drawn far to near in
+  // segments, each one shifted sideways by the bends before it.
+  const SB_HORIZON = 0.38, SB_CAR_Z = 2, SB_DRAW = 150;
+  const SB_CURV = 0.0022;   // sideways bend per segment squared for a bend of 1 (world units)
+  const SB_STEER = 0.45;    // sideways speed at full lock and 50 km/h (world units a second), in proportion to speed
+  const SB_DRIFT = 0.18;    // outward drift in a bend of 1 at 50 km/h (world units a second), with the square of speed
+  const SB_CAR = 0.17;      // half the car's width (world units)
+  const SB_SIGN_Z = 9;      // a sign stands this far ahead, just off the right edge
+  const SB_GRACE = 150;     // ms after a sign goes in which a tap still counts for it
+  const SB_COL = {
+    sky: ['#79B3F0', '#BCDDF7', '#FFE4C4'], far: '#A9BFDB', hill: ['#8CC57C', '#7BB86E'],
+    grass: ['#95D17F', '#8AC774'], rumble: ['#E5564D', '#F8F3EA'], road: ['#737886', '#6E7381'], lane: '#F8F3E6',
+    trunk: '#7A5537', leaf: ['#45A15E', '#56B46A', '#358F52'],
+    red: '#E23B36', blue: '#2D6BDA', ink: '#1F2230', post: '#8E96A3',
+  };
+  // sign symbols in a 100 x 100 box; animals come from the Glimpse silhouettes
+  const SB_FILL = {
+    arrow: 'M41 90V46H24L50 12L76 46H59V90Z',
+    turn: 'M33 90V54Q33 29 58 29H62V13L90 40L62 67V51H58Q55 51 55 54V90Z',
+    car: 'M10 68V57Q12 48 22 46L33 32Q37 28 45 28H62Q70 28 74 34L84 46Q92 48 92 57V68Z M28 80A9 9 0 1 1 28 62A9 9 0 1 1 28 80Z M74 80A9 9 0 1 1 74 62A9 9 0 1 1 74 80Z',
+    bang: 'M41 12H59L55 63H45Z M50 70A9.5 9.5 0 1 1 50 89A9.5 9.5 0 1 1 50 70Z',
+  };
+  const SB_LINE = {
+    curve: 'M40 92C40 66 62 62 62 42C62 28 52 20 52 8',
+    bumps: 'M7 70H20Q30 40 40 70H60Q70 40 80 70H93',
+  };
+  const SB_P2D = {};
+  function sbPath(d) {
+    if (!(d in SB_P2D)) { try { SB_P2D[d] = new Path2D(d); } catch (e) { SB_P2D[d] = null; } }
+    return SB_P2D[d];
+  }
+  function sbRR(ctx, x, y, w, hgt, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + hgt, r);
+    ctx.arcTo(x + w, y + hgt, x, y + hgt, r);
+    ctx.arcTo(x, y + hgt, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function sbGlyph(ctx, glyph, x, y, size, color) {
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    if (GL_PATHS[glyph]) { glDraw(ctx, glyph, x, y, size); return; }
+    if (glyph === 'P' || glyph === '50') {
+      ctx.font = '700 ' + Math.round(size * (glyph === 'P' ? 1.08 : 0.74)) + 'px Fredoka, Lexend, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(glyph, x, y + size * 0.05);
+      return;
+    }
+    const k = size / 100, path = sbPath(SB_LINE[glyph] || SB_FILL[glyph]);
+    if (!path) return;
+    ctx.save();
+    ctx.translate(x - 50 * k, y - 50 * k);
+    ctx.scale(k, k);
+    if (SB_LINE[glyph]) { ctx.lineWidth = 11; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(path); } else ctx.fill(path);
+    ctx.restore();
+  }
+  // a road sign about P wide, centred on (cx, cy)
+  function sbPlate(ctx, shape, glyph, cx, cy, P) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.shadowColor = 'rgba(20, 24, 40, 0.28)';
+    ctx.shadowBlur = P * 0.08;
+    ctx.shadowOffsetY = P * 0.03;
+    ctx.lineJoin = 'round';
+    if (shape === 'tri') {
+      const cy0 = 0.1233 * P;
+      const tri = (k, fill, lw) => {
+        const v = [[0, -0.45 * P], [-0.5 * P, 0.41 * P], [0.5 * P, 0.41 * P]].map(([x, y]) => [x * k, cy0 + (y - cy0) * k]);
+        ctx.beginPath();
+        ctx.moveTo(v[0][0], v[0][1]); ctx.lineTo(v[1][0], v[1][1]); ctx.lineTo(v[2][0], v[2][1]); ctx.closePath();
+        ctx.fillStyle = fill; ctx.strokeStyle = fill; ctx.lineWidth = lw;
+        ctx.fill(); ctx.stroke();
+      };
+      tri(1, '#FFFFFF', 0.12 * P);
+      ctx.shadowColor = 'transparent';
+      tri(0.93, SB_COL.red, 0.08 * P);
+      tri(0.64, '#FFFFFF', 0.05 * P);
+      sbGlyph(ctx, glyph, 0, cy0 + 0.02 * P, 0.38 * P, SB_COL.ink);
+    } else if (shape === 'square_blue') {
+      ctx.fillStyle = '#FFFFFF';
+      sbRR(ctx, -0.47 * P, -0.47 * P, 0.94 * P, 0.94 * P, 0.15 * P); ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = SB_COL.blue;
+      sbRR(ctx, -0.41 * P, -0.41 * P, 0.82 * P, 0.82 * P, 0.1 * P); ctx.fill();
+      sbGlyph(ctx, glyph, 0, 0, 0.52 * P, '#FFFFFF');
+    } else {
+      const red = shape === 'round_red';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(0, 0, 0.5 * P, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.fillStyle = red ? SB_COL.red : SB_COL.blue;
+      ctx.beginPath(); ctx.arc(0, 0, 0.45 * P, 0, Math.PI * 2); ctx.fill();
+      if (red) { ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(0, 0, 0.33 * P, 0, Math.PI * 2); ctx.fill(); }
+      sbGlyph(ctx, glyph, 0, 0, (red ? 0.42 : 0.5) * P, red ? SB_COL.ink : '#FFFFFF');
+    }
+    ctx.restore();
+  }
+  // rolling hills across the canvas, continuous for any offset
+  function sbHills(ctx, W, base, amp, off, k1, k2, ph, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, base + 2);
+    for (let x = 0; x <= W + 8; x += 8) {
+      const u = (x + off) / W;
+      ctx.lineTo(x, base - amp * (0.55 + 0.3 * Math.sin(u * Math.PI * 2 * k1 + ph) + 0.15 * Math.sin(u * Math.PI * 2 * k2 + ph * 2.3)));
+    }
+    ctx.lineTo(W + 8, base + 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  function sbHash(i) {
+    let x = Math.imul(i | 0, 374761393) ^ 0x5bd1e995;
+    x = Math.imul(x ^ (x >>> 13), 1274126177);
+    return (x ^ (x >>> 16)) >>> 0;
+  }
+  // a tree or a bush standing on (x, y); s is pixels per world unit at its distance
+  function sbTree(ctx, x, y, s, kind) {
+    const L = SB_COL.leaf;
+    const disc = (cx, cy, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); };
+    if (kind === 3) {
+      disc(x - 0.09 * s, y - 0.07 * s, 0.1 * s, L[2]);
+      disc(x + 0.09 * s, y - 0.06 * s, 0.09 * s, L[0]);
+      disc(x, y - 0.11 * s, 0.11 * s, L[1]);
+      return;
+    }
+    ctx.fillStyle = 'rgba(30, 80, 40, 0.16)';
+    ctx.beginPath(); ctx.ellipse(x, y, 0.2 * s, 0.035 * s, 0, 0, Math.PI * 2); ctx.fill();
+    const tall = kind === 4, th = (tall ? 0.3 : 0.24) * s;
+    ctx.fillStyle = SB_COL.trunk;
+    ctx.fillRect(x - 0.025 * s, y - th, 0.05 * s, th);
+    if (tall) {
+      ctx.fillStyle = L[2];
+      ctx.beginPath(); ctx.ellipse(x, y - th - 0.26 * s, 0.13 * s, 0.36 * s, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = L[1];
+      ctx.beginPath(); ctx.ellipse(x - 0.035 * s, y - th - 0.32 * s, 0.07 * s, 0.22 * s, 0, 0, Math.PI * 2); ctx.fill();
+      return;
+    }
+    const r = 0.21 * s;
+    disc(x - 0.12 * s, y - th - 0.06 * s, r * 0.78, L[2]);
+    disc(x + 0.12 * s, y - th - 0.05 * s, r * 0.78, L[0]);
+    disc(x, y - th - 0.19 * s, r, L[1]);
+    disc(x - 0.07 * s, y - th - 0.26 * s, r * 0.42, 'rgba(255, 255, 255, 0.13)');
+  }
+  // the car from behind, w pixels wide, wheels on y = cy
+  function sbCar(ctx, cx, cy, w, tilt, bob, brake) {
+    const u = w / 100;
+    ctx.save();
+    ctx.translate(cx, cy + bob);
+    ctx.rotate(tilt);
+    ctx.fillStyle = 'rgba(20, 24, 40, 0.26)';
+    ctx.beginPath(); ctx.ellipse(0, -1 * u, 58 * u, 7 * u, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#24262E';
+    sbRR(ctx, -47 * u, -19 * u, 19 * u, 19 * u, 5 * u); ctx.fill();
+    sbRR(ctx, 28 * u, -19 * u, 19 * u, 19 * u, 5 * u); ctx.fill();
+    // cabin and rear window
+    ctx.fillStyle = '#C8423A';
+    ctx.beginPath();
+    ctx.moveTo(-41 * u, -46 * u);
+    ctx.lineTo(-31 * u, -71 * u); ctx.quadraticCurveTo(-29 * u, -76 * u, -23 * u, -76 * u);
+    ctx.lineTo(23 * u, -76 * u); ctx.quadraticCurveTo(29 * u, -76 * u, 31 * u, -71 * u);
+    ctx.lineTo(41 * u, -46 * u); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2B3956';
+    ctx.beginPath();
+    ctx.moveTo(-32 * u, -50 * u); ctx.lineTo(-24 * u, -70 * u); ctx.lineTo(24 * u, -70 * u); ctx.lineTo(32 * u, -50 * u); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+    ctx.beginPath();
+    ctx.moveTo(-20 * u, -70 * u); ctx.lineTo(-8 * u, -70 * u); ctx.lineTo(-18 * u, -50 * u); ctx.lineTo(-30 * u, -50 * u); ctx.closePath(); ctx.fill();
+    // body
+    const g = ctx.createLinearGradient(0, -52 * u, 0, -12 * u);
+    g.addColorStop(0, '#F36C61'); g.addColorStop(1, '#D8463D');
+    ctx.fillStyle = g;
+    sbRR(ctx, -51 * u, -52 * u, 102 * u, 40 * u, 12 * u); ctx.fill();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+    sbRR(ctx, -46 * u, -50 * u, 92 * u, 5 * u, 2.5 * u); ctx.fill();
+    // lights, plate, bumper
+    if (brake) { ctx.fillStyle = 'rgba(255, 60, 50, 0.35)'; ctx.beginPath(); ctx.arc(-36 * u, -38 * u, 16 * u, 0, Math.PI * 2); ctx.arc(36 * u, -38 * u, 16 * u, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = brake ? '#FF4A3D' : '#FFD98A';
+    sbRR(ctx, -45 * u, -43 * u, 17 * u, 9 * u, 3.5 * u); ctx.fill();
+    sbRR(ctx, 28 * u, -43 * u, 17 * u, 9 * u, 3.5 * u); ctx.fill();
+    ctx.fillStyle = '#FBF7EC';
+    sbRR(ctx, -13 * u, -33 * u, 26 * u, 9 * u, 2 * u); ctx.fill();
+    ctx.fillStyle = '#3B3F4B';
+    sbRR(ctx, -48 * u, -18 * u, 96 * u, 6 * u, 3 * u); ctx.fill();
+    ctx.restore();
+  }
+  function sbWheelSvg() {
+    return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' },
+      s('circle', { cx: 50, cy: 50, r: 41, fill: 'rgba(255,255,255,.16)', stroke: '#2B2F3A', 'stroke-width': 11 }),
+      s('path', { d: 'M11 47Q50 39 89 47', stroke: '#2B2F3A', 'stroke-width': 10, fill: 'none', 'stroke-linecap': 'round' }),
+      s('path', { d: 'M50 56V89', stroke: '#2B2F3A', 'stroke-width': 10, 'stroke-linecap': 'round' }),
+      s('circle', { cx: 50, cy: 51, r: 13, fill: '#3A3F4C' }),
+      s('circle', { cx: 50, cy: 51, r: 5, fill: '#E5564D' }),
+      s('rect', { x: 45.5, y: 5, width: 9, height: 10, rx: 2.5, fill: '#FFC93C' }));
+  }
+
+  class SwitchbackCard extends Card {
+    freshRun(p) { return this.G.newRun(p, this.app.switchbackStart(this.spec)); }
+    usesClock() { return false; }
+    potentialStars() { return 3; }
+    refresh() {}
+    buildBoard() {
+      const p = this.p, ex = this.extra || {};
+      this.tt = ex.tt || 0;          // seconds of driving
+      this.pos = ex.pos || 0;        // distance along the road (world units)
+      this.phase = this.summary ? 'done' : this.tt > 0 ? 'paused' : 'ready';
+      this.kmh = 0; this.carX = 0; this.tilt = 0; this.steer = 0; this.keySteer = 0; this.ptr = null; this.ptrSteer = 0;
+      this.bgX = 0; this.sign = null; this.spdT = 0; this.spdOn = 0; this.wasOn = true; this.W = 0; this.H = 0;
+      this.salt = Math.imul((p.seed | 0) + 7, 2654435761) | 0;
+      this.wrap = h('div', { class: 'sb-wrap' });
+      this.canvas = h('canvas', { class: 'sb-canvas', 'aria-hidden': 'true' });
+      this.goBtn = h('button', { class: 'sb-go', type: 'button', 'aria-label': this.phase === 'paused' ? 'Drive on' : 'Drive' }, icon('play'));
+      this.goBtn.addEventListener('click', () => this.begin());
+      this.wheelEl = h('div', { class: 'sb-wheel', 'aria-hidden': 'true' }, sbWheelSvg());
+      this.btnCanvas = h('canvas', { 'aria-hidden': 'true' });
+      this.signBtn = h('button', { class: 'sb-btn cue', type: 'button', 'aria-label': 'Tap when this sign shows: ' + p.target + ' crossing' }, this.btnCanvas);
+      this.signBtn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.respond(e); });
+      this.signBtn.addEventListener('click', (e) => { if (e.detail === 0) this.respond(e); });
+      this.wrap.append(this.canvas, this.wheelEl, this.signBtn, this.goBtn);
+      this.wrap.addEventListener('pointerdown', (e) => this.steerDown(e));
+      this.wrap.addEventListener('pointermove', (e) => this.steerMove(e));
+      const up = (e) => { if (e.pointerId === this.ptr) { this.ptr = null; this.ptrSteer = 0; } };
+      this.wrap.addEventListener('pointerup', up);
+      this.wrap.addEventListener('pointercancel', up);
+      this.onKeyUp = (e) => {
+        if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && this.keySteer < 0) this.keySteer = 0;
+        if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && this.keySteer > 0) this.keySteer = 0;
+      };
+      document.addEventListener('keyup', this.onKeyUp);
+      if (this.phase === 'done') { this.goBtn.hidden = true; this.signBtn.classList.remove('cue'); }
+      this.area.classList.add('sb-area');
+      this.area.append(this.wrap);
+      if (typeof ResizeObserver !== 'undefined') {
+        this.ro = new ResizeObserver(() => this.layout());
+        this.ro.observe(this.wrap);
+      } else {
+        this.onWinResize = () => this.layout();
+        window.addEventListener('resize', this.onWinResize);
+      }
+      this.later(() => this.layout(), 0);
+    }
+    destroy() {
+      super.destroy();
+      caf(this.rafId);
+      this.rafId = null;
+      if (this.ro) this.ro.disconnect();
+      if (this.onWinResize) window.removeEventListener('resize', this.onWinResize);
+      document.removeEventListener('keyup', this.onKeyUp);
+    }
+    layout() {
+      const r = this.wrap.getBoundingClientRect();
+      const W = Math.round(r.width), H = Math.round(r.height);
+      if (W < 60 || H < 60 || (W === this.W && H === this.H)) return;
+      this.W = W; this.H = H;
+      this.dpr = Math.min(2, window.devicePixelRatio || 1);
+      this.canvas.width = Math.round(W * this.dpr);
+      this.canvas.height = Math.round(H * this.dpr);
+      this.ctx = this.canvas.getContext('2d');
+      const hy = Math.round(H * SB_HORIZON);
+      const g = this.ctx.createLinearGradient(0, 0, 0, hy);
+      g.addColorStop(0, SB_COL.sky[0]); g.addColorStop(0.6, SB_COL.sky[1]); g.addColorStop(1, SB_COL.sky[2]);
+      this.skyGrad = g;
+      this.steerRange = Math.max(56, Math.min(110, W * 0.2));
+      this.plateP = Math.max(60, Math.min(92, W * 0.2));
+      const b = this.signBtn.clientWidth || 84, k = this.dpr;
+      this.btnCanvas.width = Math.round(b * 0.72 * k);
+      this.btnCanvas.height = Math.round(b * 0.72 * k);
+      const bc = this.btnCanvas.getContext('2d');
+      if (bc) {
+        bc.setTransform(k, 0, 0, k, 0, 0);
+        bc.clearRect(0, 0, b, b);
+        sbPlate(bc, 'tri', this.p.target, b * 0.36, b * 0.37, b * 0.62);
+      }
+      this.draw(now());
+    }
+    // ---- input
+    steerDown(e) {
+      if (e.button > 0 || this.summary || this.ptr != null) return;
+      if (e.target.closest && e.target.closest('button')) return;
+      e.preventDefault();
+      Sound.unlock();
+      this.ptr = e.pointerId;
+      this.ptrX = e.clientX;
+      this.ptrSteer = 0;
+      try { this.wrap.setPointerCapture(e.pointerId); } catch (x) { /* optional */ }
+    }
+    steerMove(e) {
+      if (e.pointerId !== this.ptr) return;
+      this.ptrSteer = Math.max(-1, Math.min(1, (e.clientX - this.ptrX) / this.steerRange));
+      if (!this.steered && Math.abs(this.ptrSteer) > 0.2 && this.phase === 'drive') { this.steered = true; this.guide(); }
+    }
+    respond(e) {
+      if (this.summary || this.phase !== 'drive') return;
+      Sound.unlock();
+      const t = now(), ts = e && e.timeStamp > 0 && e.timeStamp <= t + 1 && e.timeStamp > t - 1000 ? e.timeStamp : t;
+      this.signBtn.classList.remove('press');
+      void this.signBtn.offsetWidth;
+      this.signBtn.classList.add('press');
+      this.later(() => this.signBtn.classList.remove('press'), 140);
+      const S = this.sign;
+      if (S && !S.res && ts >= S.on - 1 && ts - S.on <= S.ms + SB_GRACE) { this.score(S, true, Math.max(0, ts - S.on), t); return; }
+      this.run.stray++;
+      this.log('stray', { move_no: this.run.i, detail: S && S.res ? 'after ' + S.res : '' });
+      if (this.o.feedback || this.practice) { Sound.play('no'); this.btnFlash('bad'); }
+      this.app.touch();
+    }
+    btnFlash(k) {
+      this.signBtn.classList.remove('ok', 'bad');
+      void this.signBtn.offsetWidth;
+      this.signBtn.classList.add(k);
+      clearTimeout(this.btnTimer);
+      this.btnTimer = this.later(() => this.signBtn.classList.remove('ok', 'bad'), 420);
+    }
+    // ---- driving
+    begin() {
+      if (this.summary || (this.phase !== 'ready' && this.phase !== 'paused')) return;
+      Sound.unlock();
+      Sound.play('go');
+      if (this.firstMove == null) this.firstMove = Math.round(this.elapsed());
+      this.log('drive', { detail: this.phase === 'paused' ? 'resume' : 'start' });
+      this.phase = 'drive';
+      this.app.session.hasMoves = true;
+      this.goBtn.classList.add('away');
+      this.goBtn.disabled = true;
+      this.signBtn.classList.remove('cue');
+      this.hideHand();
+      this.lastTs = null;
+      caf(this.rafId);
+      this.rafId = raf((ts) => this.loop(ts));
+      this.later(() => this.guide(), 700);
+    }
+    pause(reason) {
+      if (this.phase !== 'drive') return;
+      caf(this.rafId);
+      this.rafId = null;
+      const S = this.sign;
+      if (S && !S.res) {
+        // the sign on screen does not count
+        this.log('interrupted', { move_no: S.k + 1, detail: 'sign, ' + reason });
+        this.run.i = S.k + 1;
+        this.run.voided = (this.run.voided || 0) + 1;
+      }
+      this.sign = null;
+      this.ptr = null; this.ptrSteer = 0; this.keySteer = 0;
+      this.kmh = 0;
+      this.phase = 'paused';
+      this.goBtn.disabled = false;
+      this.goBtn.classList.remove('away');
+      this.goBtn.setAttribute('aria-label', 'Drive on');
+      this.draw(now());
+      this.app.touch();
+    }
+    onHidden() { this.pause('page hidden'); }
+    abort(reason) { this.pause(reason); }
+    loop(ts) {
+      this.rafId = null;
+      if (this.phase !== 'drive' && this.phase !== 'finish') return;
+      if (this.lastTs == null) this.lastTs = ts;
+      const dt = Math.min(0.05, Math.max(0, (ts - this.lastTs) / 1000));
+      this.lastTs = ts;
+      this.step(dt, ts);
+      if (this.phase === 'done') return;
+      this.draw(ts);
+      if (this.phase === 'drive' || this.phase === 'finish') this.rafId = raf((t) => this.loop(t));
+    }
+    step(dt, ts) {
+      const p = this.p, run = this.run, G = this.G, D = run.drive;
+      const driving = this.phase === 'drive';
+      this.tt += dt;
+      // speed: toward the staircase value, slower on the grass, to a stop at the end
+      const onGrass = Math.abs(this.carX) > p.half;
+      const want = driving ? run.kmh * (onGrass ? 0.8 : 1) : 0;
+      const before = this.kmh;
+      this.kmh += (want - this.kmh) * Math.min(1, dt * (driving ? (this.kmh < want ? 1.3 : 2.2) : 2.6));
+      if (!driving && this.kmh < 1.5) this.kmh = 0;
+      this.braking = this.kmh < before - 0.4 * dt * 60;
+      const v = this.kmh * G.kmhToUnits;
+      this.pos += v * dt;
+      // steering: the wheel sets how fast the car moves sideways; a bend pushes it
+      // outward, more the faster it goes, so holding a bend takes steady steering
+      const tgt = this.ptr != null ? this.ptrSteer : this.keySteer * 0.6;
+      this.steer += (tgt - this.steer) * Math.min(1, dt * 16);
+      const c = p.road[Math.floor((this.pos + SB_CAR_Z) / G.seg)] || 0, vr = v / 6;
+      const side = this.steer * SB_STEER * vr - c * SB_DRIFT * vr * vr;
+      this.carX = Math.max(-p.half - 0.55, Math.min(p.half + 0.55, this.carX + side * dt));
+      const lean = Math.max(-0.09, Math.min(0.09, side * 0.22));
+      this.tilt += (lean - this.tilt) * Math.min(1, dt * 10);
+      this.bgX += c * v * dt * 26;
+      // the road and the speed count once the car is going
+      const on = Math.abs(this.carX) + SB_CAR / 2 <= p.half;
+      if (driving && this.tt > G.warm) {
+        D.t += dt; D.vt += this.kmh * dt;
+        if (on) D.on += dt;
+        if (!on && this.wasOn) { D.off++; this.log('off_road', { move_no: run.i, speed_kmh: Math.round(this.kmh), detail: this.carX < 0 ? 'left' : 'right' }); }
+        this.spdT += dt;
+        if (on) this.spdOn += dt;
+        if (this.spdT >= G.speedEvery) {
+          const r = G.speedStep(p, run, this.spdOn / this.spdT);
+          this.spdT = 0; this.spdOn = 0;
+          if (r && r.to !== r.from) { this.log('speed', { speed_kmh: r.to, on_road: r.on, detail: r.from + '>' + r.to }); this.goal(); }
+        }
+      }
+      this.wasOn = on;
+      this.offEdge = !on;
+      if (!on && this.kmh > 6 && ts - (this.rumbleAt || 0) > 190) { this.rumbleAt = ts; Sound.play('rumble'); }
+      this.signs(ts);
+      if (driving && this.tt >= p.duration && run.i >= p.signs.length && !this.sign) {
+        this.phase = 'finish';
+        this.finishAt = this.pos + 7.5;
+      }
+      if (this.phase === 'finish' && this.kmh === 0) this.resolve('complete');
+    }
+    signs(ts) {
+      const p = this.p, run = this.run, S = this.sign;
+      if (S && !S.res && ts - S.on >= S.ms + SB_GRACE) this.score(S, false, null, ts);
+      if (S && S.res && ts - S.done > 480) this.sign = null;
+      if (this.phase !== 'drive') return;
+      const k = run.i;
+      if (k < p.signs.length && this.tt >= p.signs[k].t && (!this.sign || this.sign.res)) {
+        this.sign = { k, on: ts, ms: this.G.windowMs(p, run, k), res: null, done: null, kmh: Math.round(this.kmh), d0: { t: run.drive.t, on: run.drive.on } };
+        if (this.practice) this.guide();
+      }
+    }
+    score(S, responded, rt, ts) {
+      const p = this.p, run = this.run, sg = p.signs[S.k], D = run.drive;
+      const span = D.t - S.d0.t, onShare = span > 0.05 ? (D.on - S.d0.on) / span : null;
+      const rec = this.G.record(p, run, { responded, rt, planned: S.ms, kmh: S.kmh });
+      S.res = rec.cls;
+      S.done = ts;
+      this.c.moves++;
+      this.log('sign', {
+        move_no: rec.i, target: sg.glyph, shown: sg.shape, cls: rec.cls,
+        rt_ms: rec.rt == null ? '' : rec.rt, window_ms: S.ms, stair_next_ms: rec.next == null ? '' : rec.next,
+        reversal: p.fixedMs ? '' : rec.rev, speed_kmh: S.kmh, on_road: onShare == null ? '' : r4(onShare),
+      });
+      const show = this.o.feedback || this.practice;
+      S.show = show;
+      if (show) {
+        if (rec.cls === 'hit') {
+          Sound.play('yes');
+          buzz(10);
+          this.btnFlash('ok');
+          if (this.signXY) {
+            const L = relPos(this, this.wrap);
+            sparks(this, L.x - L.w / 2 + this.signXY[0], L.y - L.h / 2 + this.signXY[1], ['#FFC83A', '#FFFFFF', '#7CE3B0'], 12);
+          }
+        } else if (rec.cls === 'false_alarm') {
+          Sound.play('no');
+          buzz([20, 40, 20]);
+          this.btnFlash('bad');
+        } else if (rec.cls === 'miss') Sound.play('lose');
+      } else if (responded) Sound.play('tick');
+      if (this.practice) this.later(() => this.guide(), 300);
+      this.updateStatus();
+      this.app.touch();
+    }
+    // ---- drawing
+    draw(ts) {
+      const ctx = this.ctx;
+      if (!ctx || !this.W) return;
+      const W = this.W, H = this.H, p = this.p, G = this.G, k = this.dpr;
+      const hy = Math.round(H * SB_HORIZON), F = H, half = p.half;
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      // sky, sun, far hills
+      ctx.fillStyle = this.skyGrad;
+      ctx.fillRect(0, 0, W, hy + 2);
+      const span = W * 1.6, sx = ((W * 0.24 - this.bgX * 0.12) % span + span) % span - W * 0.3, sy = hy - H * 0.09;
+      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.16);
+      glow.addColorStop(0, 'rgba(255, 236, 200, 0.9)'); glow.addColorStop(1, 'rgba(255, 236, 200, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(sx - H * 0.16, sy - H * 0.16, H * 0.32, H * 0.32);
+      ctx.fillStyle = '#FFF6E2';
+      ctx.beginPath(); ctx.arc(sx, sy, H * 0.035, 0, Math.PI * 2); ctx.fill();
+      sbHills(ctx, W, hy, H * 0.11, this.bgX * 0.25 + 40, 2, 5, 0.7, SB_COL.far);
+      sbHills(ctx, W, hy, H * 0.05, this.bgX * 0.55, 3, 7, 2.1, SB_COL.hill[0]);
+      ctx.fillStyle = SB_COL.grass[1];
+      ctx.fillRect(0, hy, W, H - hy);
+      // the road, far to near
+      const seg = G.seg, road = p.road, sc = this.pos;
+      const i0 = Math.floor(sc / seg), frac = sc / seg - i0, N = SB_DRAW;
+      if (!this.xs) { this.xs = new Float64Array(N + 2); this.zs = new Float64Array(N + 2); }
+      const xs = this.xs, zs = this.zs;
+      let x = 0, dx = -(road[i0] || 0) * SB_CURV * frac;
+      for (let n = 0; n <= N; n++) {
+        zs[n] = (i0 + n) * seg - sc;
+        xs[n] = x;
+        x += dx;
+        dx += (road[i0 + n] || 0) * SB_CURV;
+      }
+      const at = (z) => { const f = (z + sc) / seg - i0, n = Math.max(0, Math.min(N - 1, Math.floor(f))); return xs[n] + (xs[n + 1] - xs[n]) * (f - n); };
+      const camX = at(SB_CAR_Z) + this.carX;
+      const quad = (ax, ay, bx, by, cx, cy, ex, ey) => { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); ctx.closePath(); ctx.fill(); };
+      for (let n = N - 1; n >= 0; n--) {
+        const zB = zs[n + 1];
+        if (zB <= 0.4) break;
+        const zA = Math.max(0.4, zs[n]);
+        const yA = hy + F / zA + 0.8, yB = hy + F / zB;
+        const xA = W / 2 + ((xs[n] - camX) * F) / zA, xB = W / 2 + ((xs[n + 1] - camX) * F) / zB;
+        const wA = (half * F) / zA, wB = (half * F) / zB;
+        const i = i0 + n, stripe = Math.floor(i / 3) & 1;
+        ctx.fillStyle = SB_COL.grass[stripe];
+        ctx.fillRect(0, yB, W, yA - yB + 1);
+        ctx.fillStyle = SB_COL.rumble[stripe];
+        quad(xA - wA * 1.13, yA, xA - wA, yA, xB - wB, yB, xB - wB * 1.13, yB);
+        quad(xA + wA, yA, xA + wA * 1.13, yA, xB + wB * 1.13, yB, xB + wB, yB);
+        ctx.fillStyle = SB_COL.road[stripe];
+        quad(xA - wA, yA, xA + wA, yA, xB + wB, yB, xB - wB, yB);
+        if (!stripe) {
+          ctx.fillStyle = SB_COL.lane;
+          const lA = wA * 0.028, lB = wB * 0.028;
+          quad(xA - lA, yA, xA + lA, yA, xB + lB, yB, xB - lB, yB);
+        }
+        // trees and bushes standing on the far edge of this segment
+        const r = sbHash((i + 1) ^ this.salt);
+        if (r % 3 === 0 && zB > 1.2) {
+          const s = F / zB, side = r & 8 ? 1 : -1;
+          const lat = half + 0.32 + (((r >>> 5) % 97) / 97) * 1.5;
+          const tx = W / 2 + (xs[n + 1] + side * lat - camX) * s;
+          if (s > 3 && tx > -0.5 * s && tx < W + 0.5 * s) sbTree(ctx, tx, yB, s * (0.85 + ((r >>> 16) % 30) / 100), (r >>> 12) % 5);
+        }
+      }
+      // the finish: two posts and a chequered band across the road
+      if (this.finishAt != null) {
+        const z = this.finishAt - sc;
+        if (z > 0.6) {
+          const s = F / z, xc = W / 2 + (at(z) - camX) * s, yG = hy + F / z;
+          const xL = xc - half * 1.2 * s, xR = xc + half * 1.2 * s, top = yG - 0.95 * s, bh = 0.16 * s;
+          ctx.fillStyle = '#F8F3EA';
+          ctx.fillRect(xL - 0.03 * s, top, 0.06 * s, yG - top);
+          ctx.fillRect(xR - 0.03 * s, top, 0.06 * s, yG - top);
+          const cols = 12, cw = (xR - xL) / cols;
+          for (let a = 0; a < cols; a++) for (let b = 0; b < 2; b++) {
+            ctx.fillStyle = (a + b) % 2 ? '#1F2230' : '#FFFFFF';
+            ctx.fillRect(xL + a * cw, top + (b * bh) / 2, cw + 0.6, bh / 2 + 0.6);
+          }
+        }
+      }
+      // the sign, just off the right edge
+      const S = this.sign;
+      this.signXY = null;
+      if (S) {
+        const z = SB_SIGN_Z, s = F / z;
+        const gx = W / 2 + (at(z) + half + 0.16 - camX) * s, gy = hy + F / z;
+        const P = this.plateP, age = ts - S.on, cy = gy - H * 0.13 - P * 0.25;
+        let scale = age < 160 ? 1.1 * (1 - Math.pow(1 - Math.max(0, age) / 160, 3)) : 1;
+        let dxs = 0, ring = null;
+        if (S.res) {
+          const t = Math.max(0, ts - S.done);
+          if (S.show && S.res === 'hit') { scale *= 1 + 0.18 * Math.min(1, t / 140); ring = '#1FB36E'; if (t > 160) scale *= Math.max(0, 1 - (t - 160) / 160); }
+          else if (S.show && S.res === 'false_alarm') { dxs = Math.sin(t / 22) * 7 * Math.max(0, 1 - t / 320); ring = '#EF4F4A'; if (t > 300) scale *= Math.max(0, 1 - (t - 300) / 150); }
+          else if (S.show && S.res === 'miss') { ring = '#EF4F4A'; scale *= Math.max(0, 1 - t / 300); }
+          else scale *= Math.max(0, 1 - t / 140);
+        } else if (age > S.ms) scale *= Math.max(0, 1 - (age - S.ms) / 140);
+        if (scale > 0.02) {
+          ctx.fillStyle = SB_COL.post;
+          ctx.fillRect(gx - 2, cy, 4, gy - cy);
+          if (ring) {
+            ctx.strokeStyle = ring; ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.arc(gx + dxs, cy, P * 0.62 * scale, 0, Math.PI * 2); ctx.stroke();
+          }
+          ctx.save();
+          ctx.translate(gx + dxs, cy);
+          ctx.scale(scale, scale);
+          sbPlate(ctx, p.signs[S.k].shape, p.signs[S.k].glyph, 0, 0, P);
+          ctx.restore();
+          this.signXY = [gx, cy];
+        }
+      }
+      // the car
+      const bob = this.offEdge && this.kmh > 4 ? Math.sin(this.tt * 70) * 1.6 : 0;
+      sbCar(ctx, W / 2, hy + F / SB_CAR_Z, (SB_CAR * 2 * F) / SB_CAR_Z, this.tilt, bob, this.braking || this.phase === 'finish');
+      // how far along the drive
+      const pr = Math.max(0, Math.min(1, this.tt / p.duration)), bx = 18, bw = W - 36, by = 16;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      sbRR(ctx, bx, by - 3, bw, 6, 3); ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      sbRR(ctx, bx, by - 3, Math.max(6, bw * pr), 6, 3); ctx.fill();
+      ctx.fillStyle = '#E5564D';
+      ctx.beginPath(); ctx.arc(bx + bw * pr, by, 5.5, 0, Math.PI * 2); ctx.fill();
+      // the wheel follows the steering
+      this.wheelEl.style.transform = 'rotate(' + Math.round(this.steer * 110) + 'deg)';
+    }
+    // ---- status
+    goal() {
+      const kmh = Math.round(this.run.kmh), txt = kmh + ' km/h';
+      if (this.goalTxt !== txt) {
+        const faster = this.goalKmh != null && kmh > this.goalKmh;
+        this.goalTxt = txt;
+        this.goalKmh = kmh;
+        this.goalEl.textContent = '';
+        this.goalEl.append(icon('gauge'), h('span', { text: txt }));
+        if (faster) { this.goalEl.classList.remove('bump'); void this.goalEl.offsetWidth; this.goalEl.classList.add('bump'); }
+      }
+      this.goalEl.classList.add('speed');
+      this.goalEl.hidden = !(this.o.counter || this.practice);
+      this.goalEl.setAttribute('aria-label', 'Speed ' + txt);
+    }
+    updateStatus() {
+      super.updateStatus();
+      this.meterEl.hidden = true;
+    }
+    guide() {
+      super.guide();
+      if (this.hand) this.hand.el.classList.toggle('drag', !this.summary && this.guideTarget() === this.wheelEl);
+    }
+    guideTarget() {
+      if (this.summary) return null;
+      if (this.phase === 'ready' || this.phase === 'paused') return this.goBtn;
+      if (this.phase !== 'drive') return null;
+      const S = this.sign;
+      if (S && !S.res && this.p.signs[S.k].go) return this.signBtn;
+      if (!this.steered && this.tt < 10) return this.wheelEl;
+      return null;
+    }
+    // ---- end of the drive
+    beforeResolve() {
+      caf(this.rafId);
+      this.rafId = null;
+      this.phase = 'done';
+      this.goBtn.hidden = true;
+      this.signBtn.classList.remove('cue');
+      this.sign = null;
+      this.draw(now());
+    }
+    makeSummary(outcome, dur) {
+      const d = this.G.summary(this.p, this.run);
+      const complete = outcome === 'complete';
+      const acc = d.accuracy || 0, road = d.on_road || 0;
+      const stars = complete && !this.practice ? (acc >= 0.9 && road >= 0.9 ? 3 : acc >= 0.75 && road >= 0.75 ? 2 : 1) : 0;
+      return {
+        outcome,
+        success: complete && !this.practice && this.G.success(this.p, d),
+        duration_ms: dur, first_move_ms: this.firstMove, hidden_ms: Math.round(this.hiddenMs),
+        moves: d.n, reference: null, par: null, efficiency: '',
+        stars, sb: d,
+      };
+    }
+    celebrate(sm) {
+      if (sm.outcome !== 'complete') return 300;
+      Sound.play('win');
+      if (sm.stars >= 3 || this.practice) {
+        buzz([18, 50, 18]);
+        this.later(() => confetti(this, CONFETTI.switchback), 120);
+        return 650;
+      }
+      return 480;
+    }
+    resultTitle(sm) {
+      if (sm.outcome !== 'complete') return super.resultTitle(sm);
+      if (this.practice) return 'Got it!';
+      if (!this.o.counter) return 'Done!';
+      if (sm.sb.correct === sm.sb.n && sm.sb.stray === 0 && sm.sb.on_road >= 0.95) return 'Perfect!';
+      return sm.stars === 3 ? 'Great!' : sm.stars === 2 ? 'Nice!' : 'Done!';
+    }
+    resultStats(sm) {
+      const d = sm.sb;
+      if (!d || !d.n) return null;
+      return h('div', { class: 'res-stats' },
+        h('span', { 'aria-label': 'Signs right' }, icon('sign'), h('b', { text: d.correct + '/' + d.n })),
+        h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' })));
+    }
+    extraSnapshot() { return { tt: this.tt, pos: this.pos }; }
+    onKey(e) {
+      if (this.summary) return false;
+      const k = e.key;
+      if ((this.phase === 'ready' || this.phase === 'paused') && (k === ' ' || k === 'Enter')) { this.begin(); return true; }
+      if (this.phase !== 'drive' && this.phase !== 'finish') return false;
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') { this.keySteer = -1; if (!this.steered) { this.steered = true; this.guide(); } return true; }
+      if (k === 'ArrowRight' || k === 'd' || k === 'D') { this.keySteer = 1; if (!this.steered) { this.steered = true; this.guide(); } return true; }
+      if (k === ' ' || k === 'Enter' || k === 'ArrowUp') { if (!e.repeat) this.respond(e); return true; }
+      return false;
+    }
+  }
+
+  // ------------------------------------------------------------ Keepsake
+  // One park, drawn by hand on a 100 x 120 board with the basket below it
+  // (to y 150). The stones sit beside the path and by the landmarks (house,
+  // pond, big tree, well, flower bed, bench). Things ride on round white
+  // tokens so they read on grass, sand and water alike.
+  const KS_TRAY_Y = 133.5;
+  const KS_ART = {
+    apple: '<path d="M0 -5.2C3.6 -7.8 8 -5.2 8 -0.3C8 5 4.2 8.4 0 7.4C-4.2 8.4 -8 5 -8 -0.3C-8 -5.2 -3.6 -7.8 0 -5.2Z" fill="#E8463D"/><path d="M-4.8 -2.2C-4.4 -4.2 -2.8 -5 -1.6 -4.8" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M0 -5.2Q0.4 -8 1.8 -9.2" stroke="#6B4423" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.6 -7.6Q5.4 -9.8 7.2 -7.2Q4 -5.6 1.6 -7.6Z" fill="#3FA34D"/>',
+    key: '<circle cx="-4.4" cy="0" r="4.4" fill="#F2B632"/><circle cx="-4.4" cy="0" r="1.8" fill="#FFFFFF"/><rect x="-1.2" y="-1.4" width="10.2" height="2.8" rx="1.4" fill="#F2B632"/><rect x="5.8" y="0.4" width="2" height="3.8" rx=".7" fill="#F2B632"/><rect x="2.6" y="0.4" width="2" height="2.8" rx=".7" fill="#F2B632"/><path d="M-7 -1.6Q-6.4 -3.2 -4.6 -3.4" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="1.1" fill="none" stroke-linecap="round"/>',
+    mug: '<path d="M4.2 -2.4h1.6a3.2 3.2 0 0 1 0 6.4H4.2" stroke="#3D8BFD" stroke-width="2.1" fill="none"/><rect x="-6.8" y="-4.8" width="11.2" height="11.6" rx="2.4" fill="#3D8BFD"/><rect x="-6.8" y="-4.8" width="11.2" height="2.8" rx="1.3" fill="#2A6FD6"/><path d="M-3.8 -6.8q1.1 -1.5 0 -3M-0.6 -6.8q1.1 -1.5 0 -3" stroke="#A6AEBB" stroke-width="1.2" fill="none" stroke-linecap="round"/>',
+    ball: '<circle r="8.2" fill="#FFFFFF" stroke="#DDD8CC" stroke-width=".7"/><path d="M0 0L0 -8.2A8.2 8.2 0 0 1 7.8 -2.5Z" fill="#FF5D5D"/><path d="M0 0L6.3 5.2A8.2 8.2 0 0 1 -1.6 8Z" fill="#FFC93C"/><path d="M0 0L-8 1.8A8.2 8.2 0 0 1 -4.9 -6.6Z" fill="#3D8BFD"/><circle r="1.9" fill="#FFFFFF"/>',
+    hat: '<ellipse cx="0" cy="3.8" rx="9.2" ry="2.9" fill="#E2AE3B"/><path d="M-5.4 3.8C-5.8 -5.4 5.8 -5.4 5.4 3.8Z" fill="#F2C94C"/><path d="M-5.5 1H5.5V3.3H-5.5Z" fill="#E8463D"/><path d="M-3.6 -1.6Q-3 -3.4 -1.2 -3.6" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="1.1" fill="none" stroke-linecap="round"/>',
+    book: '<rect x="-7" y="-6.6" width="14" height="13.2" rx="1.7" fill="#2DBF6C"/><rect x="-7" y="-6.6" width="2.8" height="13.2" rx="1.2" fill="#1F9A55"/><rect x="-2.8" y="-3.6" width="7.6" height="2.4" rx="1.1" fill="#FFFFFF" fill-opacity=".9"/><rect x="-6.2" y="4.6" width="12.6" height="2" fill="#F7F3E8"/>',
+    bell: '<circle cx="0" cy="-7.8" r="1.6" fill="#C98A0B"/><path d="M0 -6.8C4.3 -6.8 5.3 -2.7 5.3 1.2C5.3 3.9 7.4 5.1 7.4 5.1H-7.4C-7.4 5.1 -5.3 3.9 -5.3 1.2C-5.3 -2.7 -4.3 -6.8 0 -6.8Z" fill="#FFC93C"/><circle cx="0" cy="6.8" r="1.9" fill="#C98A0B"/><path d="M-2.7 -3.4Q-2.3 -5.1 -0.8 -5.3" stroke="#FFFFFF" stroke-opacity=".65" stroke-width="1.2" fill="none" stroke-linecap="round"/>',
+    umbrella: '<path d="M0 0.6V6.8a1.9 1.9 0 0 1 -3.8 0" stroke="#5B4636" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M-8.6 1.1A8.6 8 0 0 1 8.6 1.1Q6.45 -0.8 4.3 1.1Q2.15 -0.8 0 1.1Q-2.15 -0.8 -4.3 1.1Q-6.45 -0.8 -8.6 1.1Z" fill="#FF6FA7"/><path d="M0 -6.9Q-3.5 -3 -4.3 1.1M0 -6.9Q3.5 -3 4.3 1.1" stroke="#E04F8A" stroke-width=".9" fill="none"/>',
+    carrot: '<path d="M-3.6 -3.6Q0 -5.8 3.6 -3.6L0.8 8.4Q0 9.6 -0.8 8.4Z" fill="#FF8A2B"/><path d="M-1.8 -1.2H0.4M-1.2 1.8H1M-0.6 4.8H0.5" stroke="#E06F18" stroke-width="1" stroke-linecap="round"/><path d="M0 -4.3Q-3.2 -8.8 -1.5 -9.8Q0 -7.8 0 -4.3ZM0 -4.3Q0.6 -9.8 2.7 -9.4Q2.1 -6.5 0 -4.3ZM0 -4.3Q3.7 -7.1 4.8 -5.7Q2.7 -4.1 0 -4.3Z" fill="#3FA34D"/>',
+    fish: '<path d="M3.4 0L9.2 -4.8V4.8Z" fill="#F27D1E"/><ellipse cx="-1.4" cy="0" rx="6.9" ry="4.6" fill="#FF9F1C"/><path d="M-1.4 -4.4Q1 -7.4 3.2 -4.1" fill="#F27D1E"/><circle cx="-4.8" cy="-1" r="1.2" fill="#1F2230"/><path d="M0.6 -2.7Q2.1 0 0.6 2.7" stroke="#F27D1E" stroke-width="1.1" fill="none"/>',
+    sock: '<path d="M-2.4 -8.6H4.4V2Q4.4 7 -0.4 7.8H-6Q-8.8 7.8 -8.8 5.1Q-8.8 2.8 -6.2 2.6H-2.4Z" fill="#9B6BFF"/><path d="M-2.4 -5.4H4.4M-2.4 -2.2H4.4" stroke="#FFFFFF" stroke-width="1.6"/><path d="M-2.4 -8.6H4.4V-7.1H-2.4Z" fill="#7C4FE0"/>',
+    teapot: '<path d="M5.4 -1.4Q9.6 -1.8 8.8 2.4Q8.2 5.2 5 4.6" stroke="#22BFB0" stroke-width="1.7" fill="none"/><path d="M-5.2 0.6L-9.2 -3.4L-8.1 -4.5L-4.4 -1.7Z" fill="#22BFB0"/><ellipse cx="0" cy="1.6" rx="6.6" ry="5.6" fill="#22BFB0"/><ellipse cx="0" cy="-3.8" rx="3.5" ry="1.4" fill="#159E91"/><circle cx="0" cy="-5.6" r="1.3" fill="#159E91"/><path d="M-3.8 0Q-3.2 -2.3 -1 -2.7" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="1.2" fill="none" stroke-linecap="round"/>',
+  };
+  const KS_PATH = 'M50 126C49.3 123 47 113.3 46 108C45 102.7 42.2 99 44 94C45.8 89 56.5 83.7 57 78C57.5 72.3 46.3 66.2 47 60C47.7 53.8 61.5 47.3 61 41C60.5 34.7 45.8 27.8 44 22C42.2 16.2 48 10.7 50 6C52 1.3 55 -4 56 -6';
+  function ksTree(x, y, r, dark) {
+    return '<ellipse cx="' + x + '" cy="' + (y + r * 0.95) + '" rx="' + r * 1.05 + '" ry="' + r * 0.32 + '" fill="#2E6B3A" fill-opacity=".22"/>' +
+      '<circle cx="' + (x - r * 0.45) + '" cy="' + (y + r * 0.1) + '" r="' + r * 0.72 + '" fill="' + (dark ? '#2F7F45' : '#3E9A55') + '"/>' +
+      '<circle cx="' + (x + r * 0.45) + '" cy="' + (y + r * 0.15) + '" r="' + r * 0.7 + '" fill="' + (dark ? '#2A7340' : '#358C4D') + '"/>' +
+      '<circle cx="' + x + '" cy="' + (y - r * 0.25) + '" r="' + r * 0.85 + '" fill="' + (dark ? '#3A8E50' : '#4BAE63') + '"/>' +
+      '<circle cx="' + (x - r * 0.28) + '" cy="' + (y - r * 0.52) + '" r="' + r * 0.32 + '" fill="#FFFFFF" fill-opacity=".14"/>';
+  }
+  function ksMap(uid) {
+    const g = s('g', { class: 'ks-map', 'aria-hidden': 'true' });
+    const tufts = [[8, 14], [30, 37], [72, 18], [93, 40], [36, 79], [70, 92], [93, 110], [26, 115], [6, 60], [74, 70], [28, 56], [66, 8]]
+      .map(([x, y]) => '<path d="M' + x + ' ' + y + 'l1 -2.2l1 2.2l1 -1.6l0.8 1.6" stroke="#6DAF5A" stroke-width=".6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>').join('');
+    const blooms = [[80, 99, '#FF6FA7'], [86, 104, '#FFD23F'], [92, 99, '#FFFFFF'], [83, 107, '#FF8A3D'], [90, 106, '#FF6FA7'], [95, 103, '#FFD23F'], [78, 105, '#FFFFFF']]
+      .map(([x, y, c]) => '<circle cx="' + x + '" cy="' + y + '" r="1.25" fill="' + c + '"/><circle cx="' + x + '" cy="' + y + '" r=".45" fill="#B8641F"/>').join('');
+    g.innerHTML =
+      '<defs><linearGradient id="' + uid + 'g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B6E39A"/><stop offset="1" stop-color="#93CD78"/></linearGradient>' +
+      '<clipPath id="' + uid + 'c"><rect x="0" y="0" width="100" height="120" rx="7"/></clipPath></defs>' +
+      '<g clip-path="url(#' + uid + 'c)">' +
+      '<rect width="100" height="120" fill="url(#' + uid + 'g)"/>' + tufts +
+      // the pond, with a lily pad and reeds
+      '<ellipse cx="17" cy="88.5" rx="13.5" ry="8" fill="#5DB4E0"/><ellipse cx="17" cy="88" rx="12" ry="6.6" fill="#86CFF2"/>' +
+      '<path d="M9 86q3 -1.2 6 0M17 91q3 -1.2 6 0" stroke="#FFFFFF" stroke-opacity=".7" stroke-width=".7" fill="none" stroke-linecap="round"/>' +
+      '<path d="M24.6 85.6a2.6 2 0 1 1 -1 -1.4l-1.6 1.4z" fill="#3E9A55"/>' +
+      '<path d="M4.6 84.5q-0.6 -4 0.4 -6.4M6.4 84q0.2 -3.4 1.6 -5.4M3.2 85.4q-1.4 -3 -1 -5.2" stroke="#3E7F43" stroke-width=".8" fill="none" stroke-linecap="round"/>' +
+      // the path
+      '<path d="' + KS_PATH + '" stroke="#DCC28C" stroke-width="11.6" fill="none" stroke-linecap="round"/>' +
+      '<path d="' + KS_PATH + '" stroke="#F2E2B6" stroke-width="10" fill="none" stroke-linecap="round"/>' +
+      '<path d="' + KS_PATH + '" stroke="#E6D19F" stroke-width=".7" stroke-dasharray="1.2 5" fill="none"/>' +
+      // the house
+      '<ellipse cx="16" cy="36.5" rx="12" ry="2" fill="#2E6B3A" fill-opacity=".2"/>' +
+      '<rect x="7" y="22" width="18" height="14" rx="1" fill="#FFF3DC"/><path d="M4.6 23.4L16 12.4L27.4 23.4Z" fill="#E06A4E" stroke="#C24F35" stroke-width=".8" stroke-linejoin="round"/>' +
+      '<rect x="13.4" y="28" width="5.2" height="8" rx="2.4" fill="#8A5C3B"/><circle cx="17.2" cy="32.4" r=".5" fill="#FFD23F"/>' +
+      '<rect x="8.8" y="25.2" width="3.4" height="3.4" rx=".5" fill="#86CFF2" stroke="#FFFFFF" stroke-width=".6"/><rect x="19.8" y="25.2" width="3.4" height="3.4" rx=".5" fill="#86CFF2" stroke="#FFFFFF" stroke-width=".6"/>' +
+      '<rect x="20.4" y="13.4" width="2.4" height="5" fill="#B4553D"/>' +
+      // the well
+      '<ellipse cx="86" cy="22.5" rx="7" ry="1.6" fill="#2E6B3A" fill-opacity=".2"/>' +
+      '<rect x="80" y="15" width="12" height="7" rx="1.4" fill="#B9B2A3"/><path d="M80 17.4h12M84 15v2.4M88 15v2.4M82 17.4v2.4M86 17.4v2.4M90 17.4v2.4M80 19.8h12" stroke="#968E7E" stroke-width=".5"/>' +
+      '<path d="M81 15V7.6M91 15V7.6" stroke="#8A5C3B" stroke-width="1.2"/><path d="M78.6 8.6L86 4.4L93.4 8.6Z" fill="#E06A4E" stroke="#C24F35" stroke-width=".7" stroke-linejoin="round"/>' +
+      '<ellipse cx="86" cy="15.2" rx="5.4" ry="1.4" fill="#2A5C7A"/>' +
+      // the big tree, the other trees
+      ksTree(88, 47, 9.5, false) + ksTree(33, 7, 6, true) + ksTree(7, 112, 6.5, true) + ksTree(70, 60, 4.4, false) + ksTree(95, 82, 4, true) +
+      // the flower bed
+      '<ellipse cx="87" cy="103" rx="11" ry="5.6" fill="#8A5C3B"/><ellipse cx="87" cy="102.4" rx="10" ry="4.8" fill="#A06E46"/>' + blooms +
+      // the bench
+      '<ellipse cx="79" cy="116.6" rx="7" ry="1.2" fill="#2E6B3A" fill-opacity=".22"/><rect x="72" y="110.4" width="14" height="2.4" rx=".8" fill="#B07444"/><rect x="72" y="113.4" width="14" height="1.8" rx=".7" fill="#9A6236"/>' +
+      '<path d="M73.6 115.2v1.8M84.4 115.2v1.8" stroke="#5B4636" stroke-width="1"/>' +
+      '</g>' +
+      '<rect x=".3" y=".3" width="99.4" height="119.4" rx="6.8" fill="none" stroke="rgba(0,0,0,.14)" stroke-width=".6"/>';
+    return g;
+  }
+  function ksStone(x, y) {
+    const g = s('g', { class: 'ks-stone', transform: 'translate(' + x + ' ' + y + ')' });
+    g.innerHTML = '<ellipse class="ks-glow" cx="0" cy="0.4" rx="7.6" ry="5.4"/>' +
+      '<ellipse cx="0" cy="1" rx="6" ry="3.9" fill="#A79F8E"/><ellipse cx="0" cy="0" rx="6" ry="3.7" fill="#EEE9DE"/>' +
+      '<ellipse cx="-1.6" cy="-1" rx="2.6" ry="1.1" fill="#FFFFFF" fill-opacity=".55"/>';
+    return g;
+  }
+  function ksToken(name) {
+    const g = s('g', { class: 'ks-token' });
+    const body = s('g', { class: 'ks-body' });
+    body.innerHTML = '<ellipse cx="0" cy="5.6" rx="4.8" ry="1.3" fill="#1F2230" fill-opacity=".22"/>' +
+      '<circle class="ks-ring" r="6.7"/><circle r="5.9" fill="#FFFFFF"/><circle r="5.9" fill="none" stroke="#1F2230" stroke-opacity=".1" stroke-width=".5"/>' +
+      '<g transform="scale(0.5)">' + (KS_ART[name] || '') + '</g>';
+    g.append(body);
+    return g;
+  }
+  function ksBasket() {
+    const g = s('g', { class: 'ks-basket' });
+    g.innerHTML = '<ellipse cx="50" cy="148.6" rx="44" ry="1.6" fill="#1F2230" fill-opacity=".18"/>' +
+      '<path d="M6 128.4H94L90 146.4Q89.5 148.4 87.4 148.4H12.6Q10.5 148.4 10 146.4Z" fill="#D39A5C"/>' +
+      '<path d="M7.6 133.4H92.4M8.8 138.4H91.2M10 143.4H90" stroke="#B87D43" stroke-width=".8"/>' +
+      '<path d="M18 128.4V148M30 128.4V148M42 128.4V148M54 128.4V148M66 128.4V148M78 128.4V148" stroke="#C48A4E" stroke-width=".7"/>' +
+      '<rect x="4.6" y="126.2" width="90.8" height="3.6" rx="1.8" fill="#B5763E"/>';
+    return g;
+  }
+  function ksSlot(i, n) { return [50 + (i - (n - 1) / 2) * 12.6, KS_TRAY_Y]; }
+
+  class KeepsakeCard extends Card {
+    usesClock() { return false; }
+    potentialStars() { return 3; }
+    refresh() {}
+    buildBoard() {
+      const p = this.p, ST = this.G.stones;
+      this.uid = 'ks' + Math.random().toString(36).slice(2, 7);
+      const placed = this.run.order.length;
+      this.phase = this.summary ? 'done' : this.run.studied != null ? 'recall' : 'ready';
+      const svgEl = s('svg', { class: 'board keepsake', viewBox: '0 0 100 150', role: 'group', 'aria-label': 'A park with ' + p.out.length + ' stones and a basket' });
+      svgEl.append(ksMap(this.uid));
+      this.stoneEls = {};
+      for (const k of p.out) {
+        const el = ksStone(ST[k][0], ST[k][1]);
+        this.stoneEls[k] = el;
+        svgEl.append(el);
+      }
+      svgEl.append(ksBasket());
+      // the look's timer sits on the basket; tapping the basket ends the look early
+      this.timerEl = s('g', { class: 'ks-timer', transform: 'translate(50 140)' });
+      this.timerEl.innerHTML = '<circle r="5.6" fill="#FFFDF7"/><circle class="ks-pie" r="2.6" transform="rotate(-90)"/>';
+      svgEl.append(this.timerEl);
+      this.layer = s('g', { class: 'ks-tokens' });
+      svgEl.append(this.layer);
+      this.tokens = p.things.map((t, k) => {
+        const el = ksToken(t.name);
+        el.setAttribute('aria-label', t.name);
+        this.layer.append(el);
+        return el;
+      });
+      svgEl.addEventListener('pointerdown', (e) => this.down(e));
+      svgEl.addEventListener('pointermove', (e) => this.drag(e));
+      svgEl.addEventListener('pointerup', (e) => this.up(e));
+      svgEl.addEventListener('pointercancel', () => { if (this.gest && this.gest.moved) this.back(this.gest.k); this.gest = null; });
+      this.svg = svgEl;
+      this.goBtn = h('button', { class: 'gl-go ks-go', type: 'button', 'aria-label': 'Look' }, icon('eye'));
+      this.goBtn.addEventListener('click', () => this.begin());
+      this.wrap = h('div', { class: 'ks-wrap' }, svgEl, this.goBtn);
+      this.area.append(this.wrap);
+      this.picked = null;
+      this.lay(true);
+      if (this.phase !== 'ready') this.goBtn.hidden = true;
+      if (placed === p.things.length && !this.summary) this.later(() => this.resolve('complete'), 0);
+    }
+    // where every token belongs in the current phase
+    lay(instant, skip) {
+      const p = this.p, ST = this.G.stones, run = this.run;
+      const left = p.tray.filter((k) => run.placed[k] == null);
+      p.things.forEach((t, k) => {
+        if (k === skip) return;
+        const el = this.tokens[k];
+        el.classList.toggle('gone', this.phase === 'ready');
+        let x, y;
+        const at = run.at[k];
+        if (this.phase === 'ready' || this.phase === 'study') { x = ST[t.stone][0]; y = ST[t.stone][1] - 1.6; }
+        else if (at != null) { x = ST[at][0]; y = ST[at][1] - 1.6; }
+        else { const q = ksSlot(left.indexOf(k), left.length); x = q[0]; y = q[1]; }
+        this.setPos(k, x, y, instant);
+      });
+      this.timerEl.classList.toggle('on', this.phase === 'study');
+    }
+    setPos(k, x, y, instant) {
+      const el = this.tokens[k];
+      el.style.transition = instant ? 'none' : '';
+      el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      if (instant) { void el.getBoundingClientRect(); el.style.transition = ''; }
+      el.pos = [x, y];
+    }
+    // ---- the look
+    begin() {
+      if (this.summary || this.phase !== 'ready') return;
+      Sound.unlock();
+      Sound.play('look');
+      this.hideHand();
+      this.goBtn.classList.add('away');
+      this.goBtn.disabled = true;
+      this.phase = 'study';
+      this.lay(true);
+      this.tokens.forEach((el, k) => {
+        el.classList.remove('gone');
+        el.firstChild.classList.remove('pop');
+        void el.getBoundingClientRect();
+        el.firstChild.style.animationDelay = k * 90 + 'ms';
+        el.firstChild.classList.add('pop');
+      });
+      this.studyAt = now();
+      const ms = this.p.studyMs;
+      const pie = this.timerEl.querySelector('.ks-pie');
+      pie.style.animation = 'none';
+      void pie.getBoundingClientRect();
+      pie.style.animation = 'kspie ' + ms + 'ms linear forwards';
+      this.studyTimer = this.later(() => this.endLook('timer'), ms + this.p.things.length * 90);
+      this.log('look', { detail: 'start' });
+      this.app.session.hasMoves = true;
+      if (this.firstMove == null) this.firstMove = Math.round(this.elapsed());
+    }
+    endLook(how) {
+      if (this.phase !== 'study') return;
+      clearTimeout(this.studyTimer);
+      this.timers.delete(this.studyTimer);
+      const ms = Math.round(now() - this.studyAt);
+      this.run.studied = ms;
+      this.log('look', { detail: how, rt_ms: ms });
+      this.phase = 'hide';
+      this.timerEl.classList.remove('on');
+      // into the basket, one after another, with a little hop
+      const order = this.p.tray, n = order.length, ST = this.G.stones;
+      order.forEach((k, i) => {
+        const t = this.p.things[k], from = [ST[t.stone][0], ST[t.stone][1] - 1.6], to = ksSlot(i, n);
+        const el = this.tokens[k];
+        const mid = [(from[0] + to[0]) / 2, Math.min(from[1], to[1]) - 14];
+        this.later(() => {
+          Sound.play('lift');
+          if (typeof el.animate === 'function' && !reducedMotion()) {
+            el.style.transition = 'none';
+            el.animate([
+              { transform: 'translate(' + from[0] + 'px,' + from[1] + 'px)' },
+              { transform: 'translate(' + mid[0] + 'px,' + mid[1] + 'px) scale(1.12)', offset: 0.45 },
+              { transform: 'translate(' + to[0] + 'px,' + to[1] + 'px)' },
+            ], { duration: 520, easing: 'cubic-bezier(.3,.6,.4,1)' });
+          }
+          this.setPos(k, to[0], to[1], true);
+        }, i * 120);
+      });
+      this.later(() => {
+        if (this.summary) return;
+        this.phase = 'recall';
+        this.recallAt = now();
+        this.lastPut = this.recallAt;
+        this.lay(true);
+        this.guide();
+        this.app.touch();
+      }, n * 120 + 560);
+    }
+    onHidden() {
+      // a look cut short by leaving the page starts again from the button
+      if (this.phase !== 'study') return;
+      clearTimeout(this.studyTimer);
+      this.timers.delete(this.studyTimer);
+      this.log('interrupted', { detail: 'look, page hidden' });
+      this.phase = 'ready';
+      this.goBtn.hidden = false;
+      this.goBtn.disabled = false;
+      this.goBtn.classList.remove('away');
+      this.lay(true);
+    }
+    abort(reason) { if (this.phase === 'study') { this.onHidden(); } }
+    // ---- putting things back
+    toSvg(e) {
+      const m = this.svg.getScreenCTM();
+      if (!m) return null;
+      const pt = this.svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      return pt.matrixTransform(m.inverse());
+    }
+    tokenAt(q) {
+      let best = null, bd = 7.6;
+      this.p.things.forEach((t, k) => {
+        if (this.run.placed[k] != null) return;
+        const pos = this.tokens[k].pos, d = Math.hypot(pos[0] - q.x, pos[1] - q.y);
+        if (d < bd) { bd = d; best = k; }
+      });
+      return best;
+    }
+    stoneAt(q, reach) {
+      let best = null, bd = reach || 8.5;
+      for (const k of this.p.out) {
+        const st = this.G.stones[k], d = Math.hypot(st[0] - q.x, st[1] - 1 - q.y);
+        if (d < bd) { bd = d; best = k; }
+      }
+      return best;
+    }
+    taken(s2) {
+      for (const k in this.run.at) if (this.run.at[k] === s2) return true;
+      return false;
+    }
+    down(e) {
+      if (e.button > 0 || this.summary) return;
+      const q = this.toSvg(e);
+      if (!q) return;
+      if (this.phase === 'study') {
+        if (q.y > 124) { e.preventDefault(); this.endLook('early'); }
+        return;
+      }
+      if (this.phase !== 'recall') return;
+      const k = this.tokenAt(q);
+      if (k != null) {
+        e.preventDefault();
+        Sound.unlock();
+        try { this.svg.setPointerCapture(e.pointerId); } catch (x) { /* optional */ }
+        this.gest = { k, id: e.pointerId, x: q.x, y: q.y, moved: false, was: this.picked };
+        this.lift(k);
+        return;
+      }
+      if (this.picked != null) {
+        const s2 = this.stoneAt(q);
+        if (s2 != null) { e.preventDefault(); this.put(this.picked, s2); }
+      }
+    }
+    drag(e) {
+      const g = this.gest;
+      if (!g || e.pointerId !== g.id) return;
+      const q = this.toSvg(e);
+      if (!q) return;
+      if (!g.moved && Math.hypot(q.x - g.x, q.y - g.y) < 2) return;
+      g.moved = true;
+      // carried just above the finger, so it stays in sight
+      this.setPos(g.k, q.x, q.y - 6, true);
+      const s2 = this.stoneAt({ x: q.x, y: q.y - 6 }, 9);
+      for (const k of this.p.out) this.stoneEls[k].classList.toggle('over', k === s2 && !this.taken(k));
+    }
+    up(e) {
+      const g = this.gest;
+      if (!g || e.pointerId !== g.id) return;
+      this.gest = null;
+      for (const k of this.p.out) this.stoneEls[k].classList.remove('over');
+      if (g.moved) {
+        const pos = this.tokens[g.k].pos;
+        const s2 = this.stoneAt({ x: pos[0], y: pos[1] }, 9);
+        if (s2 != null && this.put(g.k, s2)) return;
+        this.back(g.k);
+        return;
+      }
+      // a tap: pick it up, or put it down again if it was already picked
+      if (g.was === g.k) { this.back(g.k); return; }
+      this.picked = g.k;
+      this.guide();
+    }
+    lift(k) {
+      if (this.picked != null && this.picked !== k) this.back(this.picked);
+      this.layer.append(this.tokens[k]);
+      this.tokens[k].classList.add('held');
+      for (const s2 of this.p.out) this.stoneEls[s2].classList.toggle('free', !this.taken(s2));
+      this.hideHand();
+      Sound.play('lift');
+    }
+    back(k) {
+      this.tokens[k].classList.remove('held');
+      if (this.picked === k) this.picked = null;
+      for (const s2 of this.p.out) this.stoneEls[s2].classList.remove('free', 'over');
+      this.lay(false);
+      this.later(() => this.guide(), 300);
+    }
+    put(k, s2) {
+      if (this.taken(s2)) { this.nudge(s2); return false; }
+      const show = this.o.feedback || this.practice;
+      const rec = this.G.place(this.p, this.run, k, s2, show);
+      if (!rec || rec.kind !== 'move') { this.nudge(s2); return false; }
+      const t = now();
+      this.picked = null;
+      this.tokens[k].classList.remove('held');
+      for (const x of this.p.out) this.stoneEls[x].classList.remove('free', 'over');
+      const ST = this.G.stones;
+      this.setPos(k, ST[s2][0], ST[s2][1] - 1.6, false);
+      this.c.moves++;
+      if (this.firstPut == null) this.firstPut = Math.round(t - this.recallAt);
+      this.log('place', {
+        move_no: rec.n, target: rec.name, from: 's' + (rec.truth + 1), to: 's' + (rec.stone + 1), cls: rec.cls,
+        error_dist: rec.dist, rt_ms: Math.round(t - this.lastPut),
+      });
+      this.lastPut = t;
+      const el = this.tokens[k];
+      if (show) {
+        if (rec.cls === 'correct') {
+          Sound.play('pop', rec.n);
+          buzz(8);
+          el.classList.add('ok');
+          const r = this.svg.getBoundingClientRect(), L = relPos(this, this.svg), sc = r.width / 100;
+          sparks(this, L.x - r.width / 2 + ST[s2][0] * sc, L.y - r.height / 2 + (ST[s2][1] - 1.6) * sc, ['#FFC83A', '#FFFFFF', '#7CE3B0'], 10);
+        } else {
+          Sound.play('no');
+          buzz([20, 40, 20]);
+          el.classList.add('bad');
+          // then it moves to where it was
+          this.later(() => { this.setPos(k, ST[rec.truth][0], ST[rec.truth][1] - 1.6, false); this.stoneEls[rec.truth].classList.add('truth'); }, 520);
+        }
+      } else {
+        Sound.play('set', 1);
+        el.classList.add('done');
+      }
+      this.lay(false, k);
+      this.updateStatus();
+      this.app.touch();
+      if (rec.done) this.later(() => this.resolve('complete'), show ? (rec.cls === 'wrong' ? 1300 : 700) : 350);
+      else this.later(() => this.guide(), 420);
+      return true;
+    }
+    nudge(s2) {
+      const el = this.stoneEls[s2];
+      if (!el) return;
+      el.classList.remove('nope');
+      void el.getBoundingClientRect();
+      el.classList.add('nope');
+      Sound.play('honk');
+    }
+    // ---- status
+    goal() {
+      const n = this.p.things.length, done = this.run.order.length;
+      this.goalEl.textContent = '';
+      this.goalEl.append(icon('basket'), h('span', { text: this.phase === 'recall' || this.phase === 'done' ? done + '/' + n : String(n) }));
+      this.goalEl.setAttribute('aria-label', this.phase === 'recall' ? done + ' of ' + n + ' put back' : n + ' things');
+    }
+    updateStatus() {
+      super.updateStatus();
+      this.meterEl.hidden = true;
+      this.goal();
+    }
+    guideTarget() {
+      if (this.summary) return null;
+      if (this.phase === 'ready') return this.goBtn;
+      if (this.phase !== 'recall' || !this.practice) return null;
+      if (this.picked != null) return this.stoneEls[this.p.things[this.picked].stone];
+      const k = this.p.tray.find((x) => this.run.placed[x] == null);
+      return k == null ? null : this.tokens[k];
+    }
+    beforeResolve() {
+      clearTimeout(this.studyTimer);
+      this.phase = 'done';
+      this.goBtn.hidden = true;
+      this.timerEl.classList.remove('on');
+    }
+    makeSummary(outcome, dur) {
+      const d = this.G.summary(this.p, this.run);
+      const complete = outcome === 'complete';
+      const miss = d.n - d.correct;
+      const stars = complete && !this.practice ? (miss === 0 ? 3 : miss === 1 ? 2 : 1) : 0;
+      return {
+        outcome,
+        success: complete && !this.practice && this.G.success(this.p, d),
+        duration_ms: dur, first_move_ms: this.firstPut == null ? null : this.firstPut, hidden_ms: Math.round(this.hiddenMs),
+        moves: d.placed, reference: d.n, par: null, efficiency: '',
+        stars, ks: d,
+      };
+    }
+    celebrate(sm) {
+      if (sm.outcome !== 'complete') return 300;
+      Sound.play('win');
+      if (sm.stars >= 3 || this.practice) {
+        buzz([18, 50, 18]);
+        this.later(() => confetti(this, CONFETTI.keepsake), 120);
+        return 650;
+      }
+      return 480;
+    }
+    resultTitle(sm) {
+      if (sm.outcome !== 'complete') return super.resultTitle(sm);
+      if (this.practice) return 'Got it!';
+      if (!this.o.counter) return 'Done!';
+      return sm.stars === 3 ? 'Perfect!' : sm.stars === 2 ? 'Great!' : 'Done!';
+    }
+    resultStats(sm) {
+      const d = sm.ks;
+      if (!d || !d.n) return null;
+      return h('div', { class: 'res-stats' },
+        h('span', { 'aria-label': 'Put back in the right place' }, icon('check'), h('b', { text: d.correct + '/' + d.n })),
+        h('span', null, icon('clock'), h('b', { text: clock(sm.duration_ms) })));
+    }
+    extraSnapshot() { return null; }
+    onKey(e) {
+      if (this.summary) return false;
+      if (this.phase === 'ready' && (e.key === ' ' || e.key === 'Enter')) { this.begin(); return true; }
+      if (this.phase === 'study' && (e.key === ' ' || e.key === 'Enter')) { this.endLook('early'); return true; }
+      return false;
+    }
+  }
+
   function makeCard(app, spec, puzzle, snap) {
+    if (spec.game === 'keepsake') return new KeepsakeCard(app, spec, puzzle, snap);
+    if (spec.game === 'switchback') return new SwitchbackCard(app, spec, puzzle, snap);
     if (spec.game === 'outbound') return new OutboundCard(app, spec, puzzle, snap);
     if (spec.game === 'conduit') return new ConduitCard(app, spec, puzzle, snap);
     if (spec.game === 'glimpse') return new GlimpseCard(app, spec, puzzle, snap);
@@ -2622,9 +3824,10 @@
 
   // ============================================================ export
   const EVENT_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'event_index', 'event', 'wall_time', 't_session_ms', 'seq', 'block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 't_ms', 'move_no', 'target', 'from', 'to', 'd_before', 'd_after', 'cls', 'exact', 'partial', 'marks', 'cands_before', 'cands_after', 'consistent', 'info_expected', 'info_best', 'info_actual', 'best_try',
-    'refresh_ms', 'frames', 'flash_ms', 'flash_measured_ms', 'frame_drop', 'fix_ms', 'mask_ms', 'shown', 'chosen', 'ring', 'dir', 'dir_chosen', 'n_distract', 'rt_center_ms', 'rt_where_ms', 'stair_next_ms', 'reversal', 'field_px', 'detail'];
+    'refresh_ms', 'frames', 'flash_ms', 'flash_measured_ms', 'frame_drop', 'fix_ms', 'mask_ms', 'shown', 'chosen', 'ring', 'dir', 'dir_chosen', 'n_distract', 'rt_center_ms', 'rt_where_ms', 'stair_next_ms', 'reversal', 'field_px', 'window_ms', 'rt_ms', 'speed_kmh', 'on_road', 'error_dist', 'detail'];
   const PUZZLE_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'seq', 'block', 'in_block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 'params', 'outcome', 'success', 'stars', 'started_at', 'ended_at', 'duration_ms', 'first_move_ms', 'hidden_ms', 'moves', 'reference', 'par', 'efficiency', 'n_optimal', 'n_wasted', 'n_dead_end', 'n_in_dead_end', 'n_blocked', 'n_undo', 'n_restart', 'n_hint', 'n_suboptimal', 'n_zero_info', 'n_inconsistent', 'mean_info_ratio',
-    'n_correct', 'accuracy', 'threshold_ms', 'best_ms', 'start_ms', 'end_ms', 'n_reversals', 'refresh_ms', 'n_frame_drops', 'field_px', 'level_next', 'features'];
+    'n_correct', 'accuracy', 'threshold_ms', 'best_ms', 'start_ms', 'end_ms', 'n_reversals', 'refresh_ms', 'n_frame_drops', 'field_px',
+    'n_hit', 'n_miss', 'n_false_alarm', 'n_stray', 'rt_mean_ms', 'on_road', 'n_off_road', 'speed_mean_kmh', 'speed_start_kmh', 'speed_end_kmh', 'study_ms', 'mean_error', 'level_next', 'features'];
 
   function sessionFields(S) {
     return { session_id: S.id, participant: S.participant, condition: S.condition, session_kind: S.kind, session_seed: S.seed, app_version: S.app_version };
@@ -2670,15 +3873,15 @@
       ['session_kind', 'study, or free for free play'],
       ['session_seed', 'with the plan, this fixes every puzzle'],
       ['event_index', 'order of the event within the session'],
-      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look stopped before the answers, not scored), hidden, visible, puzzle_end, level_change, resume, session_end'],
+      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look or Switchback sign stopped before it was scored), drive (Switchback: the car starts or drives on after a pause), sign (one Switchback sign, scored when it is tapped or when its time runs out), stray (a tap on the Switchback sign button with no sign up), speed (Switchback speed change), off_road (the Switchback car left the road), look (Keepsake: the look starts, then ends by timer or early with a tap on the basket), place (Keepsake: one thing put on a stone), hidden, visible, puzzle_end, level_change, resume, session_end'],
       ['wall_time / t_session_ms', 'clock time, and ms since the session started'],
       ['seq / block', 'puzzle number in the plan and its block; practice boards have block 0 and seq 0'],
       ['puzzle_id', 'B{block}-{game}-L{level}-{occurrence}, or P-{game} for a practice board'],
       ['practice', '1 for a practice board (fixed, the same for everyone)'],
       ['t_ms', 'ms since this puzzle appeared (Tumbler: when the try was submitted)'],
-      ['move_no', 'state-changing moves so far in this puzzle, including moves later undone; Glimpse: the look number in the round'],
-      ['target', 'Outbound: car id (c1...). Conduit: tile r{row}c{col}. Tumbler: the try as letters, or pin{n}={letter} for a revealed pin. Glimpse: the thing out around the middle (bird, butterfly, star...). Stacks: p{from}>p{to}'],
-      ['from / to', 'Outbound: cells driven forward from the start position, or exit. Conduit: quarter turns clockwise away from the solved orientation. Stacks: posts 1 to 3 (holding 3, 2 and 1 pieces)'],
+      ['move_no', 'state-changing moves so far in this puzzle, including moves later undone; Glimpse: the look number in the round; Switchback: the sign number; Keepsake: things put back so far'],
+      ['target', 'Outbound: car id (c1...). Conduit: tile r{row}c{col}. Tumbler: the try as letters, or pin{n}={letter} for a revealed pin. Glimpse: the thing out around the middle (bird, butterfly, star...). Stacks: p{from}>p{to}. Switchback: what was on the sign (rabbit, fox, cat, hedgehog, bird, snail, turtle, arrow, turn, P, 50, car, bang, curve, bumps). Keepsake: the thing put back'],
+      ['from / to', 'Outbound: cells driven forward from the start position, or exit. Conduit: quarter turns clockwise away from the solved orientation. Stacks: posts 1 to 3 (holding 3, 2 and 1 pieces). Keepsake: the stone the thing sat on (from) and the stone it was put on (to), s1 to s12'],
       ['d_before / d_after', 'fewest moves (Outbound, Stacks) or turns (Conduit) still needed before and after; inf = can no longer be solved'],
       ['cls', 'move label, see below'],
       ['exact / partial', 'Tumbler: pins with the right color in the right spot, and right colors in the wrong spot'],
@@ -2692,31 +3895,41 @@
       ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
       ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
       ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 1200 to 1499: 400 to 699 seeded, plus an 800 ms lead-in) and mask time (planned 300)'],
-      ['shown / chosen', 'Glimpse: the item in the middle, and the one picked'],
+      ['shown / chosen', 'Glimpse: the item in the middle, and the one picked. Switchback (shown): the sign\'s shape: tri (red-bordered warning triangle, the target\'s shape), round_red, round_blue, square_blue'],
       ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
       ['n_distract', 'Glimpse: distractors around the target (leaves, shells or clouds, by scene)'],
       ['rt_center_ms / rt_where_ms', 'Glimpse: time to pick the animal from when the choices appeared, and to tap a place from when the spots appeared; answers are not speeded'],
-      ['stair_next_ms / reversal', 'Glimpse: display time planned for the next look, and 1 if this look reversed the staircase direction'],
+      ['stair_next_ms / reversal', 'Glimpse: display time planned for the next look, and 1 if this look reversed the staircase direction. Switchback: sign time for the next sign, and reversals over targets and false alarms'],
       ['field_px', 'Glimpse: field radius in CSS pixels; degrees of visual angle depend on the screen and viewing distance'],
+      ['window_ms', 'Switchback: how long the sign stayed up; a tap up to 150 ms after it went still counted'],
+      ['rt_ms', 'Switchback: time from the animation frame that first drew the sign to the tap (the sign is on screen about one frame later). Keepsake: on a place event, time since the basket opened or since the last thing was put back; on the look event that ends a look, how long the look lasted'],
+      ['speed_kmh', 'Switchback: speed when the sign came up (speed events: the new speed)'],
+      ['on_road', 'Switchback: share of driving time with the car on the road while the sign was up (speed events: over the last 1.5 s)'],
+      ['error_dist', 'Keepsake: distance from the stone used to the right stone, in map units (the map is 100 wide; stones are at least 20 apart)'],
       ['detail', 'extra context: puzzle features at puzzle_start, the blocking car or the full post for blocked moves, hidden time at visible, the phase of an interrupted look'],
     ],
     puzzles: [
       ['params', 'board description'],
-      ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered'],
-      ['success', '1 if solved with moves <= par (drives adaptive levels); Glimpse: a complete round with threshold_ms at or under the level\'s target'],
-      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round, 2 = two misses, 1 = more; every finished round earns at least 1'],
+      ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered, Switchback drives when the car stops at the finish'],
+      ['success', '1 if solved with moves <= par (drives adaptive levels); Glimpse: a complete round with threshold_ms at or under the level\'s target. Switchback: a complete drive with threshold_ms at or under the level\'s sign time and speed_mean_kmh at or over its speed. Keepsake: at most one thing on the wrong stone'],
+      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round, 2 = two misses, 1 = more; every finished round earns at least 1. Switchback: 3 = at least 90% of signs right and 90% of the time on the road, 2 = 75% and 75%, 1 = finished. Keepsake: 3 = every thing on its stone, 2 = one wrong, 1 = more'],
       ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move (Stacks: planning time before the first piece is set down), time the page was hidden'],
       ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries. Stacks: pieces moved to another post (lifting a piece and putting it back is not a move)'],
       ['reference', 'Outbound and Stacks: fewest moves. Conduit: fewest turns. Tumbler: tries used by the most-informative-try solver for this code'],
       ['par / efficiency', 'ceil(reference x multiplier); reference / moves (Tumbler can exceed 1 by luck)'],
       ['n_*', 'counts of each move label and of undo, restart, hint; blank when it does not apply to the game'],
       ['mean_info_ratio', 'Tumbler: mean of info_expected / info_best over tries'],
-      ['n_correct / accuracy', 'Glimpse: looks with the animal and the place both right, and their share'],
-      ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out a fresh staircase\'s descent before its first miss; the staircase settles at about 86% correct, never below 50 ms'],
+      ['n_correct / accuracy', 'Glimpse: looks with the animal and the place both right, and their share. Switchback: hits plus correct rejections, and their share of signs. Keepsake: things put on their own stone, and their share'],
+      ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out a fresh staircase\'s descent before its first miss; the staircase settles at about 86% correct, never below 50 ms. Switchback: the same over target signs, for how long a sign stays up'],
       ['best_ms', 'Glimpse: shortest display time answered correctly'],
-      ['start_ms / end_ms', 'Glimpse: staircase value at the start of the round, and the value carried to the next round'],
+      ['start_ms / end_ms', 'Glimpse and Switchback: staircase value at the start of the round, and the value carried to the next round'],
       ['n_reversals', 'Glimpse: staircase reversals in the round'],
       ['refresh_ms / n_frame_drops / field_px', 'Glimpse: median frame period over the round, looks flagged frame_drop, field radius in CSS pixels'],
+      ['n_hit / n_miss / n_false_alarm / n_stray', 'Switchback: targets tapped in time, targets let pass, other signs tapped, taps with no sign up'],
+      ['rt_mean_ms', 'Switchback: mean rt_ms over hits'],
+      ['on_road / n_off_road', 'Switchback: share of driving time with the car on the road (at most a quarter of its width over the edge; the first 2 s of each drive are left out), and times it left the road'],
+      ['speed_mean_kmh / speed_start_kmh / speed_end_kmh', 'Switchback: mean speed over driving time, and the speed staircase at the start and end of the drive'],
+      ['study_ms / mean_error', 'Keepsake: how long the look lasted, and the mean error_dist over the things put back'],
       ['level_next', 'adaptive blocks: this game\'s level for its next puzzle'],
       ['features', 'solver-derived puzzle features (JSON), such as p_random_solve, dead_end_states, search_nodes, solver_path'],
     ],
@@ -2726,6 +3939,8 @@
       tumbler: 'optimal (as informative as the best possible try), suboptimal (less informative), zero_info (could not narrow the codes), solved (the winning try); consistency is its own column',
       glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong',
       stacks: 'optimal (one move closer to the goal), wasted (no closer), blocked (the post was full; its own event, not a move)',
+      switchback: 'sign events: hit (the target, tapped in time), miss (the target, not tapped), false_alarm (another sign, tapped), correct_rejection (another sign, let pass)',
+      keepsake: 'place events: correct (its own stone), wrong (another stone)',
     },
     colors: 'Tumbler letters: A red (circle), B blue (square), C yellow (triangle), D green (diamond), E purple (plus), F orange (star), G teal (bar). Keys 1 to 7 enter them in order.',
   };
@@ -2735,6 +3950,8 @@
       if (g === 'tumbler') return '- L' + k + ': per-pin clues ' + L.pin.P + ' pins x ' + L.pin.C + ' colors, ' + L.pin.max + ' tries; count clues ' + L.count.P + ' pins x ' + L.count.C + ' colors, ' + L.count.max + ' tries';
       if (g === 'glimpse') return '- L' + k + ': ' + E.games.glimpse.describe(L) + '; ' + L.looks + ' looks a round; success at threshold_ms <= ' + L.advanceMs;
       if (g === 'stacks') return '- L' + k + ': ' + L.moves + ' moves at best';
+      if (g === 'keepsake') return '- L' + k + ': ' + E.games.keepsake.describe(L);
+      if (g === 'switchback') return '- L' + k + ': ' + E.games.switchback.describe(L) + ', road half-width ' + L.road.half + ', bends ' + L.road.curve.join(' to ') + (L.road.s ? ', ' + Math.round(L.road.s * 100) + '% as S-bends' : '') + '; success at threshold_ms <= ' + L.advanceMs + ' and speed_mean_kmh >= ' + L.advanceKmh;
       const desc = E.games[g].describe(Object.assign({}, L, { cars: { length: L.cars } }));
       return '- L' + k + ': ' + desc + (g === 'outbound' ? ', ' + (L.traps || 0) + ' planted trap' + (L.traps === 1 ? '' : 's') : '');
     }).join('\n');
@@ -2752,13 +3969,19 @@
         'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play draw the scene from the puzzle seed and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
-        'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 1000, 600 and 350 ms.',
+        'Display times come from a ladder that starts at 800 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 48, 43, 39, 35, 31, 28, 26, 23, 21, 19, 17, 15, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.6 the ladder started at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 500 ms (until app 2.6: 300 ms), so a strong player needs about 15 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first one a hand points at the bird. While the places are up, a dashed outline of what to find sits in the middle. After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
-        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
+        '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the sign button only when the sign shown on it comes up; let every other sign pass. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys. The sign button: tap it, or Space.',
+        'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
+        'Levels:', lv('switchback'),
+        '## Keepsake', '', 'Object-location memory (the Memory Path format of the concept paper). One park map, always the same, so its landmarks can be learned: a house, a pond, a big tree, a well, a flower bed and a bench along a winding path, with twelve stones placed by hand beside them (at least 20 map units apart on a 100 x 120 map). Each card brings some stones out and puts things on a few of them (the things: ' + E.games.keepsake.items.join(', ') + '). A tap on the eye starts the look; the things pop up on their stones and a timer runs on the basket below; a tap on the basket ends the look early (logged). Then the things hop into the basket, in tray order, which takes about a second, and the player puts each back: drag it onto a stone, or tap it and then a stone. Each thing gets one try and a stone holds one thing. With feedback on, a thing put on the right stone turns green; one put on a wrong stone turns red and then moves to its own stone, which frees the stone it was put on. With feedback off, every thing stays where it was put and nothing is shown. The card ends when every thing is back.',
+        'Levels:', lv('keepsake'), '',
+        'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alike animals (the other two of rabbit, fox, cat, and the hedgehog). The target animal (rabbit, fox or cat) is drawn from the seed and shown on the button.', '',
+        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start and one per target sign, steering not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
+        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse and Switchback never move down a level: their display time, sign time and speed already adapt as you play. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
     return lines.join('\n');
   }
 
@@ -2812,16 +4035,18 @@
   // Game stats stay game stats: nothing here scores an area.
   const AREAS = [
     { name: 'Reaction', games: ['glimpse'] },
-    { name: 'Memory', games: [] },
+    { name: 'Memory', games: ['keepsake'] },
     { name: 'Patterns', games: ['tumbler'] },
     { name: 'Problem solving', games: ['stacks', 'outbound', 'conduit'] },
-    { name: 'Focus', games: [] },
+    { name: 'Focus', games: ['switchback'] },
   ];
   const LEVEL_NAMES = ['Beginner', 'Advanced', 'Pro', 'Expert', 'Master'];
   // the paper's evidence level for each game's format, and where it comes from
   const EVIDENCE = {
     glimpse: ['Causal', 'ACTIVE trial, effects after 10 years (Rebok et al. 2014)'],
+    switchback: ['Causal', 'Adaptive multitasking training, effects after 6 months (Anguera et al. 2013)'],
     stacks: ['Near', 'Tower-of-London paradigm'],
+    keepsake: ['Near', 'Object-location memory paradigm'],
     outbound: ['Plausible', 'No study of this format'],
     conduit: ['Plausible', 'No study of this format'],
     tumbler: ['Plausible', 'No study of this format'],
@@ -2895,6 +4120,32 @@
         s('path', { d: 'M27 ' + y + 'C26.8 ' + (y - 3.8) + ' 32 ' + (y - 6) + ' 40 ' + (y - 6) + 'C48 ' + (y - 6) + ' 53.2 ' + (y - 3.6) + ' 53 ' + y + 'C52.8 ' + (y + 3.6) + ' 47.6 ' + (y + 5.4) + ' 40 ' + (y + 5.4) + 'C32.4 ' + (y + 5.4) + ' 27.2 ' + (y + 3.6) + ' 27 ' + y + 'Z', fill: c }),
         s('ellipse', { cx: 35.5, cy: y - 3, rx: 3.6, ry: 1, fill: '#FFFFFF', opacity: 0.3 })));
       svg.append(s('rect', { x: 38.5, y: 10, width: 3, height: 9, rx: 1.2, fill: '#8A5C3B' }));
+    } else if (g === 'keepsake') {
+      svg.append(s('clipPath', { id: 'pfks' }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
+        s('g', { 'clip-path': 'url(#pfks)' },
+          s('rect', { x: 0, y: 0, width: 80, height: 60, fill: '#A9DC8E' }),
+          s('path', { d: 'M44 62C40 50 30 46 36 36S52 24 46 -2', stroke: '#F2E2B6', 'stroke-width': 9, fill: 'none' }),
+          s('ellipse', { cx: 18, cy: 44, rx: 10, ry: 6, fill: '#86CFF2' }),
+          s('rect', { x: 12, y: 13, width: 13, height: 10, rx: 1, fill: '#FFF3DC' }), s('path', { d: 'M10 14L18.5 6L27 14Z', fill: '#E06A4E' })),
+        s('ellipse', { cx: 58, cy: 40.8, rx: 6.4, ry: 4, fill: '#A79F8E' }), s('ellipse', { cx: 58, cy: 40, rx: 6.4, ry: 3.8, fill: '#EEE9DE' }),
+        s('circle', { cx: 58, cy: 36.6, r: 6.2, fill: '#FFFFFF' }),
+        s('path', { d: 'M58 33.6C59.8 32.3 62 33.6 62 36.1C62 38.8 60.1 40.5 58 40C55.9 40.5 54 38.8 54 36.1C54 33.6 56.2 32.3 58 33.6Z', fill: '#E8463D' }),
+        s('ellipse', { cx: 36, cy: 30.6, rx: 5.6, ry: 3.4, fill: '#A79F8E' }), s('ellipse', { cx: 36, cy: 30, rx: 5.6, ry: 3.2, fill: '#EEE9DE' }));
+    } else if (g === 'switchback') {
+      svg.append(s('clipPath', { id: 'pfsb' }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
+        s('g', { 'clip-path': 'url(#pfsb)' },
+          s('rect', { x: 0, y: 0, width: 80, height: 60, fill: '#BCDDF7' }),
+          s('path', { d: 'M0 25C12 19 24 23 38 20S64 17 80 22V60H0Z', fill: '#A9BFDB' }),
+          s('path', { d: 'M0 27C18 24 30 27 46 25S68 24 80 26V60H0Z', fill: '#95D17F' }),
+          s('path', { d: 'M37.5 26H42.5L70 60H10Z', fill: '#737886' }),
+          s('path', { d: 'M40 29V32M40 36.5V41M40 46.5V53', stroke: '#F8F3E6', 'stroke-width': 1.4 })),
+        s('rect', { x: 55.3, y: 19, width: 1.4, height: 8, fill: '#8E96A3' }),
+        s('path', { d: 'M56 8.5L62.6 19.8H49.4Z', fill: '#FFFFFF', stroke: '#E23B36', 'stroke-width': 2.2, 'stroke-linejoin': 'round' }),
+        s('ellipse', { cx: 40, cy: 54.5, rx: 11, ry: 1.6, fill: 'rgba(20,24,40,.25)' }),
+        s('path', { d: 'M33 46L35.2 40.6Q35.6 39.6 36.8 39.6H43.2Q44.4 39.6 44.8 40.6L47 46Z', fill: '#C8423A' }),
+        s('rect', { x: 30, y: 45, width: 20, height: 8.2, rx: 2.6, fill: '#E5564D' }),
+        s('rect', { x: 31.4, y: 47, width: 3.6, height: 1.9, rx: 0.9, fill: '#FFD98A' }),
+        s('rect', { x: 45, y: 47, width: 3.6, height: 1.9, rx: 0.9, fill: '#FFD98A' }));
     }
     return svg;
   }
@@ -2980,6 +4231,30 @@
       const { book, free } = this.glimpseBook(spec);
       book[spec.level] = Math.round(ms * 100) / 100;
       if (free) store.set('pr1.glimpse', book);
+    },
+    // Switchback carries its sign time and speed over the same way, per level.
+    // A level without values takes the sign time from the level below and
+    // starts at its own speed.
+    switchbackBook(spec) {
+      const S = this.session;
+      if (S.kind === 'free') return { book: store.get('pr1.switchback', {}), free: true };
+      if (!S.switchback) S.switchback = {};
+      const key = 'b' + spec.block;
+      if (!S.switchback[key]) S.switchback[key] = {};
+      return { book: S.switchback[key], free: false };
+    },
+    switchbackStart(spec) {
+      if (spec.practice) return null;
+      const { book } = this.switchbackBook(spec);
+      if (book[spec.level]) return book[spec.level];
+      for (let k = spec.level - 1; k >= 1; k--) if (book[k]) return { ms: book[k].ms, kmh: 0 };
+      return null;
+    },
+    switchbackKeep(spec, ms, kmh) {
+      if (spec.practice || !(ms > 0)) return;
+      const { book, free } = this.switchbackBook(spec);
+      book[spec.level] = { ms: Math.round(ms), kmh: Math.round(kmh) };
+      if (free) store.set('pr1.switchback', book);
     },
 
     boot(data) {
@@ -3168,7 +4443,8 @@
       if (change && change.changed) this.logPuzzle(card, 'level_change', { from: change.from, to: change.to });
       const c = card.c, applies = APPLIES[sp.game];
       const n = (k) => (applies.indexOf(k) >= 0 ? c[k] : '');
-      const g = sm.gl || null;
+      const g = sm.gl || null, d = sm.sb || null, m = sm.ks || null;
+      if (d && !sp.practice && d.n && sm.outcome === 'complete') this.switchbackKeep(sp, card.run.ms, card.run.kmh);
       if (g && !sp.practice && g.n) {
         this.glimpseKeep(sp, card.run.ms);
         if (S.kind === 'free' && g.best_ms != null && sm.outcome === 'complete') {
@@ -3187,11 +4463,15 @@
         n_blocked: n('blocked'), n_undo: n('undo'), n_restart: n('restart'), n_hint: n('hint'),
         n_suboptimal: n('suboptimal'), n_zero_info: n('zero_info'), n_inconsistent: n('inconsistent'),
         mean_info_ratio: sp.game === 'tumbler' && c.infoRatioN ? r4(c.infoRatioSum / c.infoRatioN) : '',
-        n_correct: g ? g.correct : '', accuracy: g && g.n ? r4(g.accuracy) : '',
-        threshold_ms: g && g.threshold_ms != null ? g.threshold_ms : '', best_ms: g && g.best_ms != null ? g.best_ms : '',
-        start_ms: g && g.start_ms != null ? g.start_ms : '', end_ms: g && g.end_ms != null ? g.end_ms : '',
-        n_reversals: g ? g.reversals : '', refresh_ms: g && g.refresh_ms != null ? r4(g.refresh_ms) : '',
+        n_correct: g ? g.correct : d ? d.correct : m ? m.correct : '', accuracy: g && g.n ? r4(g.accuracy) : d && d.n ? r4(d.accuracy) : m && m.n ? r4(m.accuracy) : '',
+        threshold_ms: g && g.threshold_ms != null ? g.threshold_ms : d && d.threshold_ms != null ? d.threshold_ms : '', best_ms: g && g.best_ms != null ? g.best_ms : '',
+        start_ms: g && g.start_ms != null ? g.start_ms : d && d.start_ms != null ? d.start_ms : '', end_ms: g && g.end_ms != null ? g.end_ms : d && d.end_ms != null ? d.end_ms : '',
+        n_reversals: g ? g.reversals : d ? d.reversals : '', refresh_ms: g && g.refresh_ms != null ? r4(g.refresh_ms) : '',
         n_frame_drops: g ? g.drops : '', field_px: g && card.R ? Math.round(card.R) : '',
+        n_hit: d ? d.hits : '', n_miss: d ? d.misses : '', n_false_alarm: d ? d.false_alarms : '', n_stray: d ? d.stray : '',
+        rt_mean_ms: d && d.rt_mean_ms != null ? d.rt_mean_ms : '', on_road: d && d.on_road != null ? d.on_road : '', n_off_road: d ? d.off_road_episodes : '',
+        speed_mean_kmh: d && d.speed_mean_kmh != null ? d.speed_mean_kmh : '', speed_start_kmh: d ? d.speed_start_kmh : '', speed_end_kmh: d ? d.speed_end_kmh : '',
+        study_ms: m && m.study_ms != null ? m.study_ms : '', mean_error: m && m.mean_error != null ? m.mean_error : '',
         level_next,
         features: JSON.stringify(card.p.features),
       });
@@ -3327,7 +4607,7 @@
           M.append(h('button', { class: 'only-chip', type: 'button', 'aria-label': 'Only ' + LABEL[only] + '. Back to all games', onclick: () => this.startFree(false, 'mixed') },
             icon(GAME_ICON[only]), h('span', { text: LABEL[only] + ' only' }), h('span', { class: 'chip-x' }, icon('x'))));
         } else {
-          M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
+          M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
         }
         if (!S || S.kind === 'free') {
           const stars = h('span', { class: 'pill', 'aria-label': store.get('pr1.stars', 0) + ' stars' }, icon('star', 'star'), String(store.get('pr1.stars', 0)));
@@ -3402,7 +4682,7 @@
     openProfile() {
       if (this.card && this.card.abort) this.card.abort('menu opened');
       const { all } = Stats.load(this);
-      const levels = store.get('pr1.levels', {}), glbest = store.get('pr1.glbest', {});
+      const levels = store.get('pr1.levels', {}), glbest = store.get('pr1.glbest', {}), sbBook = store.get('pr1.switchback', {});
       const wrap = h('div', { class: 'pf-areas' });
       const detail = h('div', { class: 'pf-detail', hidden: true });
       let open = null;
@@ -3424,8 +4704,10 @@
           if (g === 'tumbler' && t.solved) fig = num('key', Math.round((t.tries / t.solved) * 10) / 10, 'tries a code');
           if (g === 'stacks' && t.planN) fig = num('hint', (Math.round(t.plan / t.planN / 100) / 10) + ' s', 'to plan');
           if (g === 'glimpse' && glbest[lv] != null) fig = num('eye', Math.round(glbest[lv]) + ' ms', 'best flash');
+          if (g === 'switchback' && sbBook[lv] && sbBook[lv].kmh) fig = num('gauge', sbBook[lv].kmh, 'km/h');
+          if (g === 'keepsake' && t.cards) fig = num('star', t.perfect + '/' + t.cards, 'all right');
           detail.append(h('div', { class: 'pf-level' }, h('b', { text: LABEL[g] + ' · ' + LEVEL_NAMES[lv - 1] }), top > lv ? h('span', { text: 'best ' + LEVEL_NAMES[top - 1] }) : null),
-            h('div', { class: 'pf-nums' }, num('tapped', t.cards, g === 'glimpse' ? 'rounds' : 'cards'), num('check', t.solved, g === 'glimpse' ? 'finished' : 'solved'), num('clock', min < 1 ? '<1' : min, 'min'), fig));
+            h('div', { class: 'pf-nums' }, num('tapped', t.cards, g === 'glimpse' ? 'rounds' : g === 'switchback' ? 'drives' : 'cards'), num('check', t.solved, g === 'glimpse' || g === 'switchback' ? 'finished' : 'solved'), num('clock', min < 1 ? '<1' : min, 'min'), fig));
         } else {
           detail.append(h('div', { class: 'pf-level' }, h('b', { text: LABEL[g] }), h('span', { text: 'not played yet' })));
         }
@@ -3553,7 +4835,7 @@
             h('div', { class: 'inline' }, seed, h('button', { class: 'btn', type: 'button', onclick: () => { seed.value = String(randomSeed()); } }, 'New seed')),
             h('span', { class: 'help', text: 'Same seed and plan, same puzzles for everyone.' })),
           h('div', { class: 'field' }, h('span', { class: 'lbl', text: 'Plan' }), plan, sumLine,
-            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler, Glimpse and Stacks. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks (6 in fixed blocks); its display time adapts on every look and its level never goes down. Fixed blocks show Glimpse and Stacks in one setting.' }))),
+            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler, Glimpse, Stacks, Switchback and Keepsake. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks (6 in fixed blocks); its display time adapts on every look and its level never goes down. Fixed blocks show Glimpse and Stacks in one setting.' }))),
         h('fieldset', null, h('legend', { text: 'What participants see' }),
           h('div', { class: 'checks' },
             opt('practice', 'o-practice', 'Practice board before each new game'),

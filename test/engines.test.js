@@ -344,7 +344,7 @@ test('serialize/restore round-trips runs for every game', () => {
 });
 
 test('generation is fast enough to run ahead of play', () => {
-  const budget = { outbound: 2500, conduit: 400, tumbler: 600, glimpse: 50, stacks: 50 };
+  const budget = { outbound: 2500, conduit: 400, tumbler: 600, glimpse: 50, stacks: 50, switchback: 50, keepsake: 20 };
   for (const g of E.order) {
     for (const lv of [1, 2, 3, 4, 5]) {
       let worst = 0;
@@ -404,18 +404,18 @@ test('glimpse: direction spots sit on the ring at the right angle, and items can
   assert.ok(Math.max(...xy.map(([x, y]) => Math.hypot(x, y))) + 0.1 < 1, 'inside the field');
 });
 
-test('glimpse: the frame ladder runs from about 500 ms to one frame at any refresh rate', () => {
+test('glimpse: the frame ladder runs from about 800 ms to one frame at any refresh rate', () => {
   for (const hz of [30, 50, 60, 90, 120, 144]) {
     const T = 1000 / hz;
     const lad = glLadder(T);
     assert.equal(lad[lad.length - 1], 1);
-    assert.ok(Math.abs(lad[0] * T - 500) <= T / 2 + 1e-9, hz + ' Hz starts at 500 ms');
+    assert.ok(Math.abs(lad[0] * T - 800) <= T / 2 + 1e-9, hz + ' Hz starts at 800 ms');
     for (let i = 1; i < lad.length; i++) assert.ok(lad[i] < lad[i - 1], 'strictly shorter');
   }
-  assert.deepEqual(glLadder(1000 / 60), [30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+  assert.deepEqual(glLadder(1000 / 60), [48, 43, 39, 35, 31, 28, 26, 23, 21, 19, 17, 15, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 });
 
-test('glimpse: a fresh staircase starts at 300 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
+test('glimpse: a fresh staircase starts at 500 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
   const p = G.generate(2, 77);
   const run = G.newRun(p, null);
   const T = 1000 / 60;
@@ -425,11 +425,11 @@ test('glimpse: a fresh staircase starts at 300 ms, one step shorter after a hit,
     steps.push(plan.idx);
     G.record(p, run, { correct: !!ok, plan });
   }
-  assert.deepEqual(steps, [5, 6, 7, 1, 2, 3]);
+  assert.deepEqual(steps, [4, 5, 6, 0, 1, 2]);
   const sm = G.summary(p, run);
   assert.equal(sm.correct, 4);
   assert.equal(sm.reversals, 3);
-  assert.equal(Math.round(run.ms), 500, 'six steps up after the last miss, capped at the top');
+  assert.equal(Math.round(run.ms), 800, 'six steps up after the last miss, capped at the top');
   // carried staircases start two steps slower than where they left off
   const run2 = G.newRun(p, { ms: run.ms });
   assert.equal(G.plan(p, run2, T).idx, 0, 'capped at the top of the ladder');
@@ -482,7 +482,7 @@ test('glimpse: practice is fixed, uses long display times and does not adapt', (
     shown.push(plan.frames);
     G.record(a, run, { correct: false, plan });
   }
-  assert.deepEqual(shown, [60, 36, 21]);
+  assert.deepEqual(shown, [120, 72, 42]);
   assert.equal(G.summary(a, run).threshold_ms, null);
 });
 
@@ -581,6 +581,10 @@ test('friction: at every level the four games take about the same number of taps
     glimpse: (lv, s) => { const p = G.generate(lv, s, 'mix'); return 1 + p.n * (p.periph ? 2 : 1); },
     // one tap lifts a piece, one sets it down
     stacks: (lv, s) => 2 * E.games.stacks.generate(lv, s).reference,
+    // one tap to start, one per target sign; steering is not a tap
+    switchback: (lv, s) => 1 + E.games.switchback.generate(lv, s).signs.filter((x) => x.go).length,
+    // one tap to look, then pick up and put down each thing
+    keepsake: (lv, s) => 1 + 2 * E.games.keepsake.generate(lv, s).things.length,
   };
   const table = {};
   for (const [name, taps] of Object.entries(games)) {
@@ -648,4 +652,159 @@ test('stacks: a full post refuses a piece, practice takes two moves, runs surviv
   const h1 = K.hint(q, rq);
   K.move(q, rq, h1.a, h1.b);
   assert.deepEqual(K.restore(q, JSON.parse(JSON.stringify(K.serialize(rq)))), rq);
+});
+
+test('switchback: signs, road and timing follow the level', () => {
+  const B = E.games.switchback;
+  for (const lv of [1, 2, 3, 4, 5]) {
+    const L = B.levels[lv];
+    for (let s = 0; s < 30; s++) {
+      const p = B.generate(lv, 900 + s);
+      assert.deepEqual(p, B.generate(lv, 900 + s), 'same seed, same drive');
+      assert.equal(p.signs.filter((x) => x.go).length, L.targets);
+      assert.equal(p.signs.length, L.targets + L.foils);
+      assert.equal(p.signs[0].go, 1, 'the first sign is a target');
+      assert.ok(B.targets.includes(p.target));
+      let run = 1;
+      for (let i = 1; i < p.signs.length; i++) {
+        run = p.signs[i].go === p.signs[i - 1].go ? run + 1 : 1;
+        assert.ok(run <= 3, 'never more than three of a kind in a row');
+        const gap = p.signs[i].t - p.signs[i - 1].t;
+        assert.ok(gap >= L.gap - 0.36 && gap <= L.gap + 0.36, 'gap ' + gap);
+      }
+      for (const sg of p.signs) {
+        if (sg.go) assert.deepEqual([sg.shape, sg.glyph], ['tri', p.target]);
+        else assert.ok(!(sg.shape === 'tri' && sg.glyph === p.target), 'another sign is never the target');
+      }
+      if (L.foil === 'similar') for (const sg of p.signs.filter((x) => !x.go)) assert.ok(['rabbit', 'fox', 'cat', 'hedgehog'].includes(sg.glyph));
+      assert.ok(p.road.length * B.seg >= p.duration * p.maxKmh * B.kmhToUnits, 'road long enough at top speed');
+      assert.ok(p.road.slice(0, 50).every((c) => c === 0), 'a straight start');
+      assert.ok(p.road.every((c) => Math.abs(c) <= L.road.curve[1] + 1e-9));
+      assert.ok(p.duration > p.signs[p.signs.length - 1].t);
+    }
+  }
+});
+
+test('switchback: the sign time and speed staircases', () => {
+  const B = E.games.switchback;
+  const p = B.generate(3, 77);
+  const run = B.newRun(p);
+  assert.equal(run.ms, B.startMs);
+  assert.equal(run.kmh, p.kmh);
+  const go = (k) => p.signs[k].go;
+  // a target caught shortens, a target missed lengthens by four steps
+  let k = 0;
+  while (!go(k)) k++;
+  run.i = k;
+  let r = B.record(p, run, { responded: true, rt: 600, planned: 1500 });
+  assert.equal(r.cls, 'hit');
+  assert.ok(Math.abs(run.ms - 1350) < 1e-6);
+  while (!go(run.i)) B.record(p, run, { responded: false, rt: null, planned: 1000 });
+  r = B.record(p, run, { responded: false, rt: null, planned: run.ms });
+  assert.equal(r.cls, 'miss');
+  assert.ok(Math.abs(run.ms - Math.min(B.maxMs, 1350 / Math.pow(0.9, 4))) < 1e-6);
+  // another sign: tapping lengthens by two steps, letting it pass changes nothing
+  while (go(run.i)) B.record(p, run, { responded: true, rt: 500, planned: 900 });
+  const before = run.ms;
+  r = B.record(p, run, { responded: false, rt: null, planned: 900 });
+  assert.equal(r.cls, 'correct_rejection');
+  assert.equal(run.ms, before);
+  while (go(run.i)) B.record(p, run, { responded: true, rt: 500, planned: 900 });
+  const b2 = run.ms;
+  r = B.record(p, run, { responded: true, rt: 400, planned: 900 });
+  assert.equal(r.cls, 'false_alarm');
+  assert.ok(Math.abs(run.ms - Math.min(B.maxMs, b2 / Math.pow(0.9, 2))) < 1e-6);
+  // a sign never stays up into the next one
+  for (let i = 0; i < p.signs.length - 1; i++) assert.ok(B.windowMs(p, { ms: 99999 }, i) <= (p.signs[i + 1].t - p.signs[i].t - 0.45) * 1000 + 1);
+  // speed: up while on the road, down when off it, within the level's range
+  const r2 = B.newRun(p);
+  B.speedStep(p, r2, 1);
+  assert.equal(r2.kmh, p.kmh + B.speedUp);
+  B.speedStep(p, r2, 0.9);
+  assert.equal(r2.kmh, p.kmh + B.speedUp);
+  B.speedStep(p, r2, 0.5);
+  assert.equal(r2.kmh, p.kmh + B.speedUp - B.speedDown);
+  for (let i = 0; i < 40; i++) B.speedStep(p, r2, 1);
+  assert.equal(r2.kmh, p.maxKmh);
+  for (let i = 0; i < 40; i++) B.speedStep(p, r2, 0);
+  assert.equal(r2.kmh, p.minKmh);
+  // carried over: two sign steps and 6 km/h easier
+  const r3 = B.newRun(p, { ms: 800, kmh: 70 });
+  assert.ok(Math.abs(r3.ms - 800 / 0.81) < 1e-6);
+  assert.equal(r3.kmh, 64);
+  assert.deepEqual(B.restore(p, JSON.parse(JSON.stringify(B.serialize(run)))), run);
+  // practice: fixed sign times and speed
+  const pr = B.practice();
+  const rp = B.newRun(pr);
+  assert.equal(B.windowMs(pr, rp, 0), 2600);
+  B.record(pr, rp, { responded: true, rt: 700, planned: 2600 });
+  assert.equal(rp.ms, null);
+  assert.equal(B.speedStep(pr, rp, 1), null);
+});
+
+test('switchback: success needs both the sign time and the speed of the level', () => {
+  const B = E.games.switchback;
+  const p = B.generate(2, 5);
+  const ok = { threshold_ms: p.advanceMs, speed_mean_kmh: p.advanceKmh };
+  assert.ok(B.success(p, ok));
+  assert.ok(!B.success(p, Object.assign({}, ok, { threshold_ms: p.advanceMs + 1 })));
+  assert.ok(!B.success(p, Object.assign({}, ok, { speed_mean_kmh: p.advanceKmh - 0.5 })));
+  assert.ok(!B.success(B.practice(), ok));
+});
+
+test('keepsake: things, stones and look time follow the level; same seed, same park', () => {
+  const K = E.games.keepsake;
+  for (const lv of [1, 2, 3, 4, 5]) {
+    const L = K.levels[lv];
+    for (let s = 0; s < 40; s++) {
+      const p = K.generate(lv, 300 + s);
+      assert.deepEqual(p, K.generate(lv, 300 + s));
+      assert.equal(p.out.length, L.stones);
+      assert.equal(p.things.length, L.items);
+      assert.equal(new Set(p.out).size, p.out.length, 'stones are distinct');
+      assert.equal(new Set(p.things.map((t) => t.stone)).size, p.things.length, 'one thing per stone');
+      assert.equal(new Set(p.things.map((t) => t.name)).size, p.things.length, 'things are distinct');
+      for (const t of p.things) { assert.ok(p.out.includes(t.stone)); assert.ok(K.items.includes(t.name)); }
+      assert.deepEqual(p.tray.slice().sort((a, b) => a - b), p.things.map((_, k) => k));
+      assert.equal(p.studyMs, L.studyMs);
+    }
+  }
+  let near = Infinity;
+  for (let i = 0; i < K.stones.length; i++) for (let j = i + 1; j < K.stones.length; j++) near = Math.min(near, E.internals.ksDist(i, j));
+  assert.ok(near >= 20, 'stones stay apart: ' + near.toFixed(1));
+});
+
+test('keepsake: one try per thing, a taken stone refuses, feedback moves a wrong thing home', () => {
+  const K = E.games.keepsake;
+  const p = K.generate(3, 11);
+  const empty = p.out.filter((st) => !p.things.some((t) => t.stone === st));
+  // without feedback: a wrong thing stays where it was put
+  let run = K.newRun();
+  let r = K.place(p, run, 0, p.things[0].stone);
+  assert.equal(r.cls, 'correct');
+  assert.equal(r.dist, 0);
+  assert.equal(K.place(p, run, 0, empty[0]), null, 'one try each');
+  assert.equal(K.place(p, run, 1, p.things[0].stone).kind, 'blocked');
+  r = K.place(p, run, 1, empty[0]);
+  assert.equal(r.cls, 'wrong');
+  assert.ok(r.dist > 0);
+  assert.equal(run.at[1], empty[0]);
+  assert.equal(K.place(p, run, 2, empty[0]).kind, 'blocked', 'the wrong stone is taken');
+  // with feedback: the wrong thing moves to its own stone, which frees the one it was put on
+  run = K.newRun();
+  r = K.place(p, run, 1, empty[0], true);
+  assert.equal(r.cls, 'wrong');
+  assert.equal(run.at[1], p.things[1].stone);
+  assert.equal(K.place(p, run, 2, empty[0], true).cls, 'wrong', 'the stone is free again');
+  for (let k = 3; k < p.things.length; k++) K.place(p, run, k, p.things[k].stone, true);
+  const last = K.place(p, run, 0, p.things[0].stone, true);
+  assert.ok(last.done);
+  const sm = K.summary(p, run);
+  assert.equal(sm.correct, p.things.length - 2);
+  assert.equal(sm.placed, p.things.length);
+  assert.ok(!K.success(p, sm), 'two wrong is not a success');
+  assert.deepEqual(K.restore(p, JSON.parse(JSON.stringify(K.serialize(run)))), run);
+  const pr = K.practice();
+  assert.equal(pr.things.length, 2);
+  assert.equal(pr.out.length, 4);
 });

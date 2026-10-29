@@ -1268,13 +1268,13 @@
     for (let i = 0; i < ring - 1; i++) base += GL_RING_N[i];
     return base + (dir * GL_RING_N[ring - 1]) / 8;
   }
-  // Display times from 500 ms down in steps of x0.9, as whole frames of the
+  // Display times from 800 ms down in steps of x0.9, as whole frames of the
   // measured frame period T; repeats are dropped, the last step is one frame.
-  const GL_STEP = 0.9;
+  const GL_STEP = 0.9, GL_TOP = 800;
   // floorMs: the shortest display time allowed (the ladder stops at the last step at or above it)
   function glLadder(T, floorMs) {
     const out = [];
-    for (let ms = 500; ; ms *= GL_STEP) {
+    for (let ms = GL_TOP; ; ms *= GL_STEP) {
       const f = Math.max(1, Math.round(ms / T));
       if (floorMs && f * T < floorMs - 1e-6 && out.length) return out;
       if (!out.length || f < out[out.length - 1]) out.push(f);
@@ -1311,8 +1311,8 @@
     kind: 'trials',
     levelDown: false,      // the display time already adapts; levels only add load
     trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
-    startMs: 300,          // a fresh staircase starts here and comes down one step per correct look
-    maxMs: 500,            // top of the ladder
+    startMs: 500,          // a fresh staircase starts here and comes down one step per correct look
+    maxMs: GL_TOP,         // top of the ladder
     warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
     minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
     maskMs: 300,
@@ -1391,12 +1391,12 @@
       }
       return this.build(level, seed, L, trials, null, themeName, targetSet);
     },
-    // three looks with long, fixed display times: the bird sits on the middle ring
+    // three slow looks at fixed display times: the bird sits on the middle ring
     practice() {
       const L = { periph: true, rings: [2], distract: 0, pair: 'easy' };
       const spec = [[0, 1], [1, 5], [0, 6]];
       const trials = spec.map((x, i) => ({ c: x[0], fix: 550, mask: 1000 + i, ring: 2, dir: x[1], tg: 'bird', flip: x[1] >= 4 ? 1 : 0, d: [] }));
-      return this.build(0, 0, L, trials, [1000, 600, 350], 'meadow', ['bird']);
+      return this.build(0, 0, L, trials, [2000, 1200, 700], 'meadow', ['bird']);
     },
     // start: { ms } carries a staircase on; without it the staircase starts fresh at startMs
     newRun(p, start) {
@@ -1577,15 +1577,316 @@
     restore(p, data) { return { st: skCopy(data.st), hist: data.hist.map((m) => m.slice()) }; },
   };
 
+  // =====================================================================
+  // SWITCHBACK: the dual-task format of the Focus core (adaptive
+  // multitasking training, Anguera et al. 2013). Steer a car along a winding
+  // road and tap only when one road sign shows; let every other sign pass.
+  // Both tasks adapt as you play: how long a sign stays up changes after
+  // every target and every tap on another sign (weighted up/down, about 80%
+  // of targets caught), and the speed changes every 1.5 s of driving (up
+  // while the car stays on the road, down when it leaves). The generator
+  // fixes the road and the signs; sign times and speed depend on play.
+  // =====================================================================
+  const SB_SEG = 0.4;      // road segment length; the camera rides 1 unit above the road
+  const SB_KMH = 0.12;     // world units per second for each km/h shown
+  const SB_TARGETS = ['rabbit', 'fox', 'cat'];
+  // signs that are not the target, from nothing in common (L1) to a look-alike animal (L5)
+  const SB_FOILS = {
+    shape: [['round_blue', 'arrow'], ['square_blue', 'P'], ['round_blue', 'turn']],
+    color: [['round_red', '50'], ['round_red', 'car'], ['square_blue', 'P']],
+    symbol: [['tri', 'bang'], ['tri', 'curve'], ['tri', 'bumps']],
+    animal: [['tri', 'bird'], ['tri', 'snail'], ['tri', 'turtle']],
+  };
+  function sbFoils(kind, target) {
+    if (kind !== 'similar') return SB_FOILS[kind];
+    return SB_TARGETS.filter((a) => a !== target).concat(['hedgehog']).map((a) => ['tri', a]);
+  }
+  // curvature per segment: a straight start, then bends with eased entry and exit;
+  // an S joins two opposite bends
+  function sbRoad(R, rng, n) {
+    const out = [];
+    const flat = (len, c) => { for (let i = 0; i < len; i++) out.push(c); };
+    const ease = (a, b, len) => { for (let i = 0; i < len; i++) { const t = (i + 0.5) / len; out.push(a + (b - a) * t * t * (3 - 2 * t)); } };
+    const pick = (r) => r[0] + rng() * (r[1] - r[0]);
+    const len = (r) => r[0] + rng.int(r[1] - r[0] + 1);
+    flat(50, 0);
+    let side = rng() < 0.5 ? -1 : 1;
+    while (out.length < n) {
+      flat(len(R.straight), 0);
+      const c = side * pick(R.curve);
+      ease(0, c, R.ease);
+      flat(len(R.hold), c);
+      if (rng() < R.s) {
+        const c2 = -side * pick(R.curve);
+        ease(c, c2, R.ease * 2);
+        flat(len(R.hold), c2);
+        ease(c2, 0, R.ease);
+        side = -side;
+      } else ease(c, 0, R.ease);
+      if (rng() < 0.7) side = -side;
+    }
+    return out.slice(0, n).map((x) => Math.round(x * 1000) / 1000);
+  }
+
+  const Switchback = {
+    id: 'switchback',
+    name: 'Switchback',
+    noun: 'sign',
+    kind: 'trials',
+    levelDown: false,       // both tasks already adapt as you drive; levels only add load
+    seg: SB_SEG,
+    kmhToUnits: SB_KMH,
+    startMs: 1500,          // a fresh sign staircase starts here
+    minMs: 450, maxMs: 2200,
+    step: 0.9,              // one step is x0.9 of the time a sign stays up
+    up: 4, down: 1,         // a miss: 4 steps longer, a caught target: 1 step shorter (settles near 80% caught)
+    upFoil: 2,              // a tap on another sign: 2 steps longer
+    warmUp: 2,              // a carried-over round starts this many steps slower, and 6 km/h slower
+    speedEvery: 1.5,        // seconds of driving between speed changes
+    speedUp: 3, speedDown: 6, speedRange: [-10, 40],
+    warm: 2,                // seconds of driving before the road and speed count (the car gets going)
+    targets: SB_TARGETS,
+    // half: road half-width; s: share of bends that run into an S
+    levels: {
+      1: { targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
+      2: { targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
+      3: { targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
+      4: { targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
+      5: { targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
+    },
+    // p is a puzzle or a level entry
+    describe(p) {
+      const n = p.signs ? p.signs.filter((x) => x.go).length : p.targets;
+      const f = p.signs ? p.signs.length - n : p.foils;
+      return (p.target ? p.target + ' sign, ' : '') + n + ' targets and ' + f + ' other signs (' + p.foil + '), from ' + p.kmh + ' km/h';
+    },
+    build(level, seed, L, target, signs, road, duration, fixed) {
+      return {
+        game: 'switchback', level, seed, target, foil: L.foil,
+        signs, road, half: L.road.half, duration,
+        kmh: L.kmh, minKmh: L.kmh + this.speedRange[0], maxKmh: L.kmh + this.speedRange[1],
+        advanceKmh: L.advanceKmh || null, advanceMs: L.advanceMs || null,
+        fixedMs: fixed ? fixed.ms : null, fixedKmh: fixed ? fixed.kmh : null,
+        reference: null,
+        features: {
+          target, targets: signs.filter((x) => x.go).length, foils: signs.filter((x) => !x.go).length, foil: L.foil,
+          gap_s: L.gap, road_half: L.road.half, bends: L.road.curve ? L.road.curve.join('-') : 'practice', s_bends: L.road.s || 0,
+          kmh: L.kmh, advance_kmh: L.advanceKmh || null, advance_ms: L.advanceMs || null,
+          target_hits: this.up / (this.up + this.down),
+        },
+      };
+    },
+    generate(level, seed) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const target = SB_TARGETS[rng.int(SB_TARGETS.length)];
+      const foils = sbFoils(L.foil, target);
+      // the first sign is a target; after it, never more than three of a kind in a row
+      let order;
+      for (let tries = 0; tries < 200; tries++) {
+        order = [1].concat(rng.shuffle(Array.from({ length: L.targets - 1 + L.foils }, (_, i) => (i < L.targets - 1 ? 1 : 0))));
+        let run = 1, ok = true;
+        for (let i = 1; i < order.length && ok; i++) { run = order[i] === order[i - 1] ? run + 1 : 1; if (run > 3) ok = false; }
+        if (ok) break;
+      }
+      const fseq = rng.shuffle(Array.from({ length: L.foils }, (_, i) => foils[i % foils.length]));
+      let t = 2.6, fi = 0;
+      const signs = order.map((go) => {
+        const f = go ? ['tri', target] : fseq[fi++];
+        const sg = { t: round(t, 2), go, shape: f[0], glyph: f[1] };
+        t += L.gap + (rng() - 0.5) * 0.7;
+        return sg;
+      });
+      const duration = round(signs[signs.length - 1].t + L.gap + 1.5, 2);
+      const vmax = (L.kmh + this.speedRange[1]) * SB_KMH;
+      const road = sbRoad(L.road, rng, Math.ceil((duration * vmax) / SB_SEG) + 260);
+      return this.build(level, seed, L, target, signs, road, duration, null);
+    },
+    // three signs at a slow, fixed pace: the target, another sign, the target again
+    practice() {
+      const L = { targets: 2, foils: 1, foil: 'shape', gap: 3.6, kmh: 36, advanceKmh: null, advanceMs: null, road: { half: 0.44 } };
+      const road = [];
+      for (let i = 0; i < 80; i++) road.push(0);
+      for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * t * t * (3 - 2 * t)); }
+      for (let i = 0; i < 40; i++) road.push(-0.55);
+      for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * (1 - t * t * (3 - 2 * t))); }
+      while (road.length < 700) road.push(0);
+      const signs = [{ t: 3.4, go: 1, shape: 'tri', glyph: 'rabbit' }, { t: 7.6, go: 0, shape: 'round_blue', glyph: 'arrow' }, { t: 11.6, go: 1, shape: 'tri', glyph: 'rabbit' }];
+      return this.build(0, 0, L, 'rabbit', signs, road.map((x) => Math.round(x * 1000) / 1000), 15.2, { ms: [2600, 2200, 2000], kmh: 36 });
+    },
+    // start: { ms, kmh } carries both staircases on from an earlier round
+    newRun(p, start) {
+      const fixed = !!p.fixedMs;
+      const carried = !fixed && start && start.ms > 0;
+      const ms = fixed ? null : carried ? Math.min(this.maxMs, start.ms / Math.pow(this.step, this.warmUp)) : this.startMs;
+      let kmh = fixed ? p.fixedKmh : carried && start.kmh > 0 ? start.kmh - 6 : p.kmh;
+      if (!fixed) kmh = Math.max(p.minKmh, Math.min(p.maxKmh, kmh));
+      return {
+        i: 0, ms, kmh, start: { ms, kmh }, fresh: !fixed && !carried, last: 0, rev: [], res: [], speed: [], stray: 0,
+        drive: { t: 0, on: 0, vt: 0, off: 0 },
+      };
+    },
+    // how long sign k stays up: the staircase, but always clear of the next sign
+    windowMs(p, run, k) {
+      if (p.fixedMs) return p.fixedMs[Math.min(k, p.fixedMs.length - 1)];
+      const next = p.signs[k + 1] ? p.signs[k + 1].t : p.duration;
+      return Math.round(Math.min(run.ms, (next - p.signs[k].t - 0.45) * 1000));
+    },
+    // r: { responded, rt, planned }; one record per sign, in order
+    record(p, run, r) {
+      const sg = p.signs[run.i];
+      const cls = sg.go ? (r.responded ? 'hit' : 'miss') : (r.responded ? 'false_alarm' : 'correct_rejection');
+      const out = { i: run.i + 1, go: sg.go, cls, rt: r.responded ? Math.round(r.rt) : null, ms: r.planned, kmh: Math.round(r.kmh || run.kmh), next: null, rev: 0 };
+      if (!p.fixedMs && cls !== 'correct_rejection') {
+        const dir = cls === 'hit' ? 1 : -1;
+        const k = cls === 'hit' ? -this.down : cls === 'miss' ? this.up : this.upFoil;
+        run.ms = Math.max(this.minMs, Math.min(this.maxMs, run.ms * Math.pow(this.step, -k)));
+        if (run.last && dir !== run.last) { out.rev = 1; run.rev.push(r.planned); }
+        run.last = dir;
+        out.next = Math.round(run.ms);
+      }
+      run.res.push(out);
+      run.i++;
+      return out;
+    },
+    // f: share of the last speedEvery seconds with the car on the road
+    speedStep(p, run, f) {
+      if (p.fixedMs) return null;
+      const from = run.kmh;
+      if (f >= 0.97) run.kmh = Math.min(p.maxKmh, run.kmh + this.speedUp);
+      else if (f < 0.85) run.kmh = Math.max(p.minKmh, run.kmh - this.speedDown);
+      const out = { from, to: run.kmh, on: round(f, 3) };
+      if (run.kmh !== from) run.speed.push(out);
+      return out;
+    },
+    summary(p, run) {
+      const res = run.res, n = res.length;
+      const count = (c) => res.filter((x) => x.cls === c).length;
+      const hits = count('hit'), misses = count('miss'), fas = count('false_alarm'), crs = count('correct_rejection');
+      // operating point: geometric mean time up over the targets, leaving out a fresh staircase's descent before its first miss
+      const go = res.filter((x) => x.go);
+      let from = 0;
+      if (run.fresh) { const e = go.findIndex((x) => x.cls === 'miss'); from = e < 0 ? 0 : e; }
+      const tail = go.slice(from);
+      const gm = tail.length ? Math.exp(tail.reduce((a, x) => a + Math.log(x.ms), 0) / tail.length) : null;
+      const rts = res.filter((x) => x.cls === 'hit').map((x) => x.rt);
+      const D = run.drive;
+      return {
+        n, hits, misses, false_alarms: fas, correct_rejections: crs, stray: run.stray,
+        correct: hits + crs, accuracy: n ? (hits + crs) / n : null,
+        threshold_ms: p.fixedMs || gm == null ? null : Math.round(gm),
+        rt_mean_ms: rts.length ? Math.round(rts.reduce((a, x) => a + x, 0) / rts.length) : null,
+        start_ms: run.start.ms == null ? null : Math.round(run.start.ms), end_ms: p.fixedMs ? null : Math.round(run.ms),
+        reversals: run.rev.length,
+        on_road: D.t > 0 ? round(D.on / D.t, 4) : null, off_road_episodes: D.off,
+        speed_mean_kmh: D.t > 0 ? round(D.vt / D.t, 1) : null, speed_start_kmh: run.start.kmh, speed_end_kmh: run.kmh,
+      };
+    },
+    success(p, s) {
+      return p.advanceMs != null && s.threshold_ms != null && s.threshold_ms <= p.advanceMs && s.speed_mean_kmh != null && s.speed_mean_kmh >= p.advanceKmh;
+    },
+    progress(p, run) { return { done: run.i, total: p.signs.length }; },
+    serialize(run) { return JSON.parse(JSON.stringify(run)); },
+    restore(p, data) { return JSON.parse(JSON.stringify(data)); },
+  };
+
+  // =====================================================================
+  // KEEPSAKE: object-location memory (the Memory Path format). A few things
+  // sit on stepping stones across one park map; after a short look they hop
+  // into a basket, and the player puts each back on its stone. Levels add
+  // things, stones and study time. The map never changes, so its landmarks
+  // can be learned; which stones are out and what sits where come from the seed.
+  // =====================================================================
+  // twelve stones on a 100 x 120 map, placed by hand beside the path and the landmarks
+  const KS_STONES = [
+    [62, 111], [15, 101], [44, 94], [83, 89], [57, 78], [12, 74],
+    [86, 63], [47, 60], [20, 46], [61, 41], [44, 22], [84, 30],
+  ];
+  const KS_ITEMS = ['apple', 'key', 'mug', 'ball', 'hat', 'book', 'bell', 'umbrella', 'carrot', 'fish', 'sock', 'teapot'];
+  function ksDist(a, b) { return Math.hypot(KS_STONES[a][0] - KS_STONES[b][0], KS_STONES[a][1] - KS_STONES[b][1]); }
+
+  const Keepsake = {
+    id: 'keepsake',
+    name: 'Keepsake',
+    noun: 'thing',
+    stones: KS_STONES,
+    items: KS_ITEMS,
+    levels: {
+      1: { items: 3, stones: 6, studyMs: 6000 },
+      2: { items: 4, stones: 7, studyMs: 7000 },
+      3: { items: 5, stones: 8, studyMs: 8000 },
+      4: { items: 6, stones: 10, studyMs: 9000 },
+      5: { items: 7, stones: 12, studyMs: 10000 },
+    },
+    describe(p) {
+      const n = p.things ? p.things.length : p.items, k = p.out ? p.out.length : p.stones;
+      return n + ' things on ' + k + ' stones, ' + (p.studyMs / 1000) + ' s to look';
+    },
+    build(level, seed, out, things, tray, studyMs) {
+      let near = Infinity;
+      for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) near = Math.min(near, ksDist(out[i], out[j]));
+      return {
+        game: 'keepsake', level, seed,
+        out: out.slice(), things: things.map((t) => ({ name: t.name, stone: t.stone })), tray: tray.slice(), studyMs,
+        reference: things.length,
+        features: { things: things.length, stones: out.length, empty_stones: out.length - things.length, study_ms: studyMs, nearest_stones: round(near, 1), names: things.map((t) => t.name).join(' ') },
+      };
+    },
+    generate(level, seed) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const out = rng.shuffle(KS_STONES.map((_, i) => i)).slice(0, L.stones).sort((a, b) => a - b);
+      const held = rng.shuffle(out.slice()).slice(0, L.items);
+      const names = rng.shuffle(KS_ITEMS.slice()).slice(0, L.items);
+      const things = held.map((stone, k) => ({ name: names[k], stone }));
+      const tray = rng.shuffle(things.map((_, k) => k));
+      return this.build(level, seed, out, things, tray, L.studyMs);
+    },
+    // two things on four stones, a long look
+    practice() {
+      return this.build(0, 0, [2, 4, 8, 10], [{ name: 'apple', stone: 4 }, { name: 'key', stone: 10 }], [1, 0], 5000);
+    },
+    // placed: the stone each thing was put on (the answer); at: the stone it sits on now
+    newRun() { return { placed: {}, at: {}, order: [], studied: null }; },
+    // put thing k on stone s; one try each. With reveal (feedback on), a thing
+    // put on the wrong stone moves to its own, so only right things stay out.
+    place(p, run, k, s, reveal) {
+      if (run.placed[k] != null || p.out.indexOf(s) < 0) return null;
+      for (const key in run.at) if (run.at[key] === s) return { kind: 'blocked', k, s };
+      const th = p.things[k];
+      const ok = s === th.stone;
+      run.placed[k] = s;
+      run.at[k] = reveal && !ok ? th.stone : s;
+      run.order.push(k);
+      return { kind: 'move', k, name: th.name, stone: s, truth: th.stone, cls: ok ? 'correct' : 'wrong', dist: round(ksDist(s, th.stone), 1), n: run.order.length, done: run.order.length === p.things.length };
+    },
+    summary(p, run) {
+      const n = p.things.length;
+      let correct = 0, dsum = 0;
+      for (let k = 0; k < n; k++) {
+        if (run.placed[k] == null) continue;
+        if (run.placed[k] === p.things[k].stone) correct++;
+        dsum += ksDist(run.placed[k], p.things[k].stone);
+      }
+      const placed = run.order.length;
+      return { n, placed, correct, accuracy: n ? correct / n : null, mean_error: placed ? round(dsum / placed, 2) : null, study_ms: run.studied };
+    },
+    // at most one thing on the wrong stone
+    success(p, s) { return s.placed === s.n && s.correct >= s.n - 1; },
+    progress(p, run) { return { done: run.order.length, total: p.things.length }; },
+    serialize(run) { return JSON.parse(JSON.stringify(run)); },
+    restore(p, data) { return JSON.parse(JSON.stringify(data)); },
+  };
+
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.9.0',
+    version: '1.10.0',
     fnv1a, makeRng, puzzleSeed,
-    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks },
-    order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks'],
+    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
+    order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
     EXIT,
-    internals: { obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
+    internals: { ksDist, sbRoad, sbFoils, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;
