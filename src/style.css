@@ -126,6 +126,15 @@ button { cursor: pointer; }
 .logo i:nth-child(3) { height: 14px; background: #7C5CFF; }
 .logo i:nth-child(4) { height: 10px; background: #3A86EE; }
 .hud-right { display: flex; gap: 6px; align-items: center; }
+.only-chip {
+  display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 5px 0 12px; border-radius: 999px; border: 0;
+  background: var(--chip); color: var(--ink); font-family: var(--display); font-weight: 600; font-size: 16px; white-space: nowrap;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: transform 0.12s, background 0.35s;
+}
+.only-chip:active { transform: scale(0.95); }
+.only-chip > svg { width: 19px; height: 19px; }
+.only-chip .chip-x { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--bg2); }
+.only-chip .chip-x svg { width: 15px; height: 15px; }
 .pill {
   display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px 0 9px; border-radius: 999px;
   background: var(--chip); color: var(--ink); font-family: var(--display); font-weight: 600; font-size: 17px;
@@ -328,60 +337,60 @@ button { cursor: pointer; }
   .scene[data-game="glimpse"] { width: min(760px, calc(100% - 40px)); margin-left: calc(-0.5 * min(760px, calc(100% - 40px))); }
 }
 .gl-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; height: 100%; }
-.lens {
+.gl-lens {
   position: relative; flex: none; width: 300px; height: 300px; border-radius: 50%;
   background: #F6FAFF;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.92), 0 0 0 13px rgba(255, 255, 255, 0.12), 0 28px 64px rgba(4, 12, 48, 0.55);
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
-.lens-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
-.go {
+.gl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
+.gl-go {
   position: absolute; left: 50%; top: 50%; width: 88px; height: 88px; margin: -44px 0 0 -44px; border-radius: 50%; border: 0; padding: 0;
   display: grid; place-items: center; background: #1D3C8A; color: #FFFFFF;
   box-shadow: 0 5px 0 #0E2156, 0 12px 26px rgba(10, 25, 80, 0.35);
   transition: transform 0.2s cubic-bezier(.3,1.5,.5,1), opacity 0.16s;
 }
-.go svg { width: 44px; height: 44px; }
-.go::before { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 3px solid #1D3C8A; opacity: 0; animation: lookpulse 1.7s ease-out infinite; pointer-events: none; }
-.go:active { transform: scale(0.93); }
-.go:focus { outline: none; }
-.go:focus-visible { box-shadow: 0 0 0 4px #FFFFFF, 0 0 0 7px #1D3C8A; }
-.go.away { transform: scale(0.06); opacity: 0; pointer-events: none; transition: transform 0.16s ease-in, opacity 0.16s ease-in; }
-.go.away::before { animation: none; }
-.choices { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: calc(var(--R, 150px) * 0.1); transition: opacity 0.15s, transform 0.15s; z-index: 1; }
-.choices.gone { opacity: 0; transform: translate(-50%, -50%) scale(0.9); pointer-events: none; }
-.choice {
+.gl-go svg { width: 44px; height: 44px; }
+.gl-go::before { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 3px solid #1D3C8A; opacity: 0; animation: lookpulse 1.7s ease-out infinite; pointer-events: none; }
+.gl-go:active { transform: scale(0.93); }
+.gl-go:focus { outline: none; }
+.gl-go:focus-visible { box-shadow: 0 0 0 4px #FFFFFF, 0 0 0 7px #1D3C8A; }
+.gl-go.away { transform: scale(0.06); opacity: 0; pointer-events: none; transition: transform 0.16s ease-in, opacity 0.16s ease-in; }
+.gl-go.away::before { animation: none; }
+.gl-choices { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: calc(var(--R, 150px) * 0.1); transition: opacity 0.15s, transform 0.15s; z-index: 1; }
+.gl-choices.gone { opacity: 0; transform: translate(-50%, -50%) scale(0.9); pointer-events: none; }
+.gl-choice {
   width: clamp(64px, calc(var(--R, 150px) * 0.5), 128px); height: clamp(64px, calc(var(--R, 150px) * 0.5), 128px);
   border-radius: 28%; border: 0; padding: 0; display: grid; place-items: center; background: #FFFFFF; color: #16224A;
   box-shadow: 0 4px 0 rgba(22, 34, 74, 0.16), 0 10px 22px rgba(22, 34, 74, 0.2), inset 0 0 0 2px rgba(22, 34, 74, 0.08);
   transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s, color 0.2s;
   animation: pop 0.26s cubic-bezier(.3,1.7,.5,1);
 }
-.choice svg { width: 72%; height: 72%; fill: currentColor; }
-.choice:active { transform: scale(0.92); }
-.choice:focus { outline: none; }
-.choice:focus-visible { box-shadow: 0 0 0 4px #1D3C8A; }
-.choice.picked { transform: scale(0.94); box-shadow: 0 0 0 4px #1D3C8A, 0 6px 16px rgba(22, 34, 74, 0.2); }
-.choice.ok { box-shadow: 0 0 0 5px var(--good), 0 0 24px rgba(31, 179, 110, 0.45); color: #0B6A40; }
-.choice.bad { box-shadow: 0 0 0 5px var(--bad); color: #A3231F; animation: rattle 0.45s; }
-.choice.dim { opacity: 0.3; }
-.choice[disabled] { cursor: default; }
-.spots { position: absolute; inset: 0; }
-.spot {
+.gl-choice svg { width: 72%; height: 72%; fill: currentColor; }
+.gl-choice:active { transform: scale(0.92); }
+.gl-choice:focus { outline: none; }
+.gl-choice:focus-visible { box-shadow: 0 0 0 4px #1D3C8A; }
+.gl-choice.picked { transform: scale(0.94); box-shadow: 0 0 0 4px #1D3C8A, 0 6px 16px rgba(22, 34, 74, 0.2); }
+.gl-choice.ok { box-shadow: 0 0 0 5px var(--good), 0 0 24px rgba(31, 179, 110, 0.45); color: #0B6A40; }
+.gl-choice.bad { box-shadow: 0 0 0 5px var(--bad); color: #A3231F; animation: rattle 0.45s; }
+.gl-choice.dim { opacity: 0.3; }
+.gl-choice[disabled] { cursor: default; }
+.gl-spots { position: absolute; inset: 0; }
+.gl-spot {
   position: absolute; border-radius: 50%; border: 0; padding: 0;
   background: rgba(29, 60, 138, 0.07); box-shadow: inset 0 0 0 2.5px rgba(29, 60, 138, 0.42);
   animation: pop 0.24s cubic-bezier(.3,1.7,.5,1) both;
   transition: background 0.15s, box-shadow 0.15s;
 }
-.spot:nth-child(2) { animation-delay: 0.02s; } .spot:nth-child(3) { animation-delay: 0.04s; } .spot:nth-child(4) { animation-delay: 0.06s; }
-.spot:nth-child(5) { animation-delay: 0.08s; } .spot:nth-child(6) { animation-delay: 0.1s; } .spot:nth-child(7) { animation-delay: 0.12s; } .spot:nth-child(8) { animation-delay: 0.14s; }
-.spot:focus { outline: none; }
-.spot:focus-visible { box-shadow: inset 0 0 0 3px #1D3C8A, 0 0 0 3px rgba(29, 60, 138, 0.3); }
-.spot.picked { background: #1D3C8A; box-shadow: none; }
-.spot.ok { background: var(--good); box-shadow: 0 0 0 5px rgba(31, 179, 110, 0.3); }
-.spot.bad { background: var(--bad); box-shadow: none; animation: rattle 0.45s; }
-.spot.fade { opacity: 0; transition: opacity 0.2s; }
-.spot[disabled] { cursor: default; }
+.gl-spot:nth-child(2) { animation-delay: 0.02s; } .gl-spot:nth-child(3) { animation-delay: 0.04s; } .gl-spot:nth-child(4) { animation-delay: 0.06s; }
+.gl-spot:nth-child(5) { animation-delay: 0.08s; } .gl-spot:nth-child(6) { animation-delay: 0.1s; } .gl-spot:nth-child(7) { animation-delay: 0.12s; } .gl-spot:nth-child(8) { animation-delay: 0.14s; }
+.gl-spot:focus { outline: none; }
+.gl-spot:focus-visible { box-shadow: inset 0 0 0 3px #1D3C8A, 0 0 0 3px rgba(29, 60, 138, 0.3); }
+.gl-spot.picked { background: #1D3C8A; box-shadow: none; }
+.gl-spot.ok { background: var(--good); box-shadow: 0 0 0 5px rgba(31, 179, 110, 0.3); }
+.gl-spot.bad { background: var(--bad); box-shadow: none; animation: rattle 0.45s; }
+.gl-spot.fade { opacity: 0; transition: opacity 0.2s; }
+.gl-spot[disabled] { cursor: default; }
 .gl-answer {
   position: absolute; left: 50%; top: 50%; z-index: 1; display: grid; place-items: center;
   width: calc(var(--R, 150px) * 0.32); height: calc(var(--R, 150px) * 0.32); margin: calc(var(--R, 150px) * -0.16) 0 0 calc(var(--R, 150px) * -0.16);

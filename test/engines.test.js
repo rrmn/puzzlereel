@@ -362,7 +362,7 @@ test('glimpse: rounds are balanced and the bird never shares a spot with a leaf'
         assert.equal(new Set(t.d.map(([k]) => k)).size, t.d.length, 'one leaf per spot');
       }
       if (L.periph) {
-        assert.equal(new Set(p.trials.map((t) => t.dir)).size, 8, 'every direction at least once');
+        assert.equal(new Set(p.trials.map((t) => t.dir)).size, Math.min(8, G.trials), 'directions spread evenly');
         const per = L.rings.map((r) => p.trials.filter((t) => t.ring === r).length);
         assert.ok(Math.max(...per) - Math.min(...per) <= 1, 'rings in equal shares');
       }
@@ -395,10 +395,10 @@ test('glimpse: the frame ladder runs from about 500 ms to one frame at any refre
     assert.ok(Math.abs(lad[0] * T - 500) <= T / 2 + 1e-9, hz + ' Hz starts at 500 ms');
     for (let i = 1; i < lad.length; i++) assert.ok(lad[i] < lad[i - 1], 'strictly shorter');
   }
-  assert.deepEqual(glLadder(1000 / 60), [30, 25, 22, 18, 16, 13, 11, 10, 8, 7, 6, 5, 4, 3, 2, 1]);
+  assert.deepEqual(glLadder(1000 / 60), [30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 });
 
-test('glimpse: a fresh staircase drops fast until the first miss, then 1 down / 3 up', () => {
+test('glimpse: a fresh staircase starts at 300 ms, one step shorter after a hit, four longer after a miss', () => {
   const p = G.generate(2, 77);
   const run = G.newRun(p, null);
   const T = 1000 / 60;
@@ -408,23 +408,27 @@ test('glimpse: a fresh staircase drops fast until the first miss, then 1 down / 
     steps.push(plan.idx);
     G.record(p, run, { correct: !!ok, plan });
   }
-  assert.deepEqual(steps, [0, 3, 6, 3, 4, 5]);
+  assert.deepEqual(steps, [5, 6, 7, 3, 4, 5]);
   const sm = G.summary(p, run);
   assert.equal(sm.correct, 4);
   assert.equal(sm.reversals, 3);
-  // carried staircases start where they left off and step by one
+  assert.equal(Math.round(run.ms), 450, 'four steps up after the last miss');
+  // carried staircases start one step slower than where they left off
   const run2 = G.newRun(p, { ms: run.ms });
-  assert.equal(G.plan(p, run2, T).idx, 2);
+  assert.equal(G.plan(p, run2, T).idx, 0, 'capped at the top of the ladder');
   G.record(p, run2, { correct: true, plan: G.plan(p, run2, T) });
-  assert.equal(G.plan(p, run2, T).idx, 3);
+  assert.equal(G.plan(p, run2, T).idx, 1);
+  const run3 = G.newRun(p, { ms: 100 });
+  assert.equal(Math.round(G.plan(p, run3, T).ms), 117, '100 ms carried starts at 117 ms');
 });
 
-test('glimpse: the staircase settles near the 75% point of a simulated observer', () => {
+test('glimpse: the staircase settles near the 80% point of a simulated observer', () => {
   // Weibull observer, 2 alternatives in the middle and 8 directions around: chance 1/16
   for (const [alpha, hz] of [[60, 60], [140, 60], [45, 120]]) {
     const beta = 2.2, g = 1 / 16;
     const pc = (ms) => g + (1 - g) * (1 - Math.exp(-Math.pow(ms / alpha, beta)));
-    const d75 = alpha * Math.pow(-Math.log(1 - (0.75 - g) / (1 - g)), 1 / beta);
+    const pT = G.up / (G.up + G.down);
+    const dT = alpha * Math.pow(-Math.log(1 - (pT - g) / (1 - g)), 1 / beta);
     const rng = E.makeRng(alpha * 31 + hz);
     const p = G.generate(3, 1);
     const run = G.newRun(p, null);
@@ -436,16 +440,16 @@ test('glimpse: the staircase settles near the 75% point of a simulated observer'
     }
     const tail = shown.slice(200);
     const gm = Math.exp(tail.reduce((a, x) => a + Math.log(x), 0) / tail.length);
-    assert.ok(gm > d75 / 1.3 && gm < d75 * 1.3, 'alpha ' + alpha + ': settled at ' + gm.toFixed(1) + ' ms, 75% point ' + d75.toFixed(1));
+    assert.ok(gm > dT / 1.3 && gm < dT * 1.3, 'alpha ' + alpha + ': settled at ' + gm.toFixed(1) + ' ms, target point ' + dT.toFixed(1));
     const acc = run.res.slice(200).filter((x) => x.ok).length / 400;
-    assert.ok(acc > 0.68 && acc < 0.82, 'accuracy ' + acc.toFixed(3));
+    assert.ok(acc > pT - 0.07 && acc < pT + 0.07, 'accuracy ' + acc.toFixed(3));
   }
 });
 
 test('glimpse: practice is fixed, uses long display times and does not adapt', () => {
   const a = G.practice(), b = G.practice();
   assert.deepEqual(a, b);
-  assert.equal(a.n, 4);
+  assert.equal(a.n, 3);
   const run = G.newRun(a, { ms: 40 });
   const T = 1000 / 60;
   const shown = [];
@@ -454,7 +458,7 @@ test('glimpse: practice is fixed, uses long display times and does not adapt', (
     shown.push(plan.frames);
     G.record(a, run, { correct: false, plan });
   }
-  assert.deepEqual(shown, [60, 42, 27, 18]);
+  assert.deepEqual(shown, [60, 36, 21]);
   assert.equal(G.summary(a, run).threshold_ms, null);
 });
 

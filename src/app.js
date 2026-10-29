@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.1.0';
+  const APP_VERSION = '2.2.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -428,9 +428,9 @@
       { game: 'mixed', count: 4, level: 2, adaptive: false },
     ] },
     { id: 'speed', name: 'Glimpse training', blocks: [
-      { game: 'glimpse', count: 2, level: 2, adaptive: false },
-      { game: 'glimpse', count: 12, level: 2, adaptive: true },
-      { game: 'glimpse', count: 2, level: 2, adaptive: false },
+      { game: 'glimpse', count: 4, level: 2, adaptive: false },
+      { game: 'glimpse', count: 16, level: 2, adaptive: true },
+      { game: 'glimpse', count: 4, level: 2, adaptive: false },
     ] },
     { id: 'practice', name: 'Mixed practice', blocks: [{ game: 'mixed', count: 12, level: 2, adaptive: true }] },
     { id: 'fixed', name: 'Fixed set', blocks: [{ game: 'mixed', count: 8, level: 3, adaptive: false }] },
@@ -1592,16 +1592,21 @@
     }
     ctx.restore();
   }
-  function glFix(ctx, R) {
+  // fixation: a dot inside a ring that closes in over the first GL_RING_MS
+  const GL_RING_MS = 260;
+  function glFix(ctx, R, k) {
+    const e = k == null ? 1 : 1 - Math.pow(1 - Math.min(1, k), 3);
     ctx.fillStyle = GL_INK;
     ctx.strokeStyle = GL_INK;
     ctx.beginPath();
     ctx.arc(R, R, Math.max(3, 0.022 * R), 0, Math.PI * 2);
     ctx.fill();
+    ctx.globalAlpha = 0.35 + 0.65 * e;
     ctx.lineWidth = Math.max(1.5, 0.009 * R);
     ctx.beginPath();
-    ctx.arc(R, R, 0.075 * R, 0, Math.PI * 2);
+    ctx.arc(R, R, (0.075 + 0.2 * (1 - e)) * R, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
   const raf = (fn) => (window.requestAnimationFrame ? window.requestAnimationFrame(fn) : setTimeout(() => fn(now()), 16));
   const caf = (id) => { if (id == null) return; if (window.cancelAnimationFrame) window.cancelAnimationFrame(id); else clearTimeout(id); };
@@ -1625,23 +1630,23 @@
       const p = this.p;
       this.phase = this.summary ? 'done' : 'ready';
       this.D = 0; this.R = 0; this.dpr = 1;
-      this.lens = h('div', { class: 'lens' });
-      this.canvas = h('canvas', { class: 'lens-canvas', 'aria-hidden': 'true' });
+      this.lens = h('div', { class: 'gl-lens' });
+      this.canvas = h('canvas', { class: 'gl-canvas', 'aria-hidden': 'true' });
       this.stimC = document.createElement('canvas');
       this.maskC = document.createElement('canvas');
-      this.goBtn = h('button', { class: 'go', type: 'button', 'aria-label': 'Look' }, icon('eye'));
+      this.goBtn = h('button', { class: 'gl-go', type: 'button', 'aria-label': 'Look' }, icon('eye'));
       this.goBtn.addEventListener('click', () => this.begin());
-      this.choiceEl = h('div', { class: 'choices', role: 'group', 'aria-label': 'Which animal', hidden: true });
+      this.choiceEl = h('div', { class: 'gl-choices', role: 'group', 'aria-label': 'Which animal', hidden: true });
       this.choiceBtns = p.pair.map((name, k) => {
-        const b = h('button', { class: 'choice', type: 'button', 'aria-label': name }, glSvg(name));
+        const b = h('button', { class: 'gl-choice', type: 'button', 'aria-label': name }, glSvg(name));
         b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.pick(k); });
         b.addEventListener('click', () => this.pick(k));
         this.choiceEl.append(b);
         return b;
       });
-      this.spotsEl = h('div', { class: 'spots', role: 'group', 'aria-label': 'Where the bird was', hidden: true });
+      this.spotsEl = h('div', { class: 'gl-spots', role: 'group', 'aria-label': 'Where the bird was', hidden: true });
       this.spotBtns = GL_DIRS.map((name, d) => {
-        const b = h('button', { class: 'spot', type: 'button', 'aria-label': name });
+        const b = h('button', { class: 'gl-spot', type: 'button', 'aria-label': name });
         b.addEventListener('click', () => this.where(d));
         this.spotsEl.append(b);
         return b;
@@ -1652,6 +1657,7 @@
       this.area.classList.add('gl-area');
       this.area.append(h('div', { class: 'gl-wrap' }, this.lens, this.dotsEl));
       if (this.phase === 'done') this.goBtn.hidden = true;
+      else if (this.run.i >= p.n) this.later(() => this.resolve('complete'), 0);
       this.renderDots();
       if (typeof ResizeObserver !== 'undefined') {
         this.ro = new ResizeObserver(() => this.onResize());
@@ -1716,11 +1722,11 @@
       c.clearRect(0, 0, this.canvas.width, this.canvas.height);
       if (src) c.drawImage(src, 0, 0);
     }
-    drawFix() {
+    drawFix(k) {
       this.blit(null);
       if (!this.ctx) return;
       this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-      glFix(this.ctx, this.R);
+      glFix(this.ctx, this.R, k);
     }
     prepare() {
       const t = this.p.trials[this.run.i], W = this.canvas.width, k = this.dpr;
@@ -1738,12 +1744,14 @@
     // ---- one look: fixation, flash, mask, then the two answers
     begin() {
       if (this.summary || this.phase !== 'ready' || this.run.i >= this.p.n) return;
-      if (!this.R) this.layout();
-      if (!this.ctx) return;
       Sound.unlock();
       Sound.play('look');
       this.hideHand();
-      clearTimeout(this.idleTimer);
+      this.startLook();
+    }
+    startLook() {
+      if (!this.R) this.layout();
+      if (!this.ctx) { this.phase = 'ready'; return; }
       this.prepare();
       this.goBtn.classList.add('away');
       this.goBtn.disabled = true;
@@ -1764,8 +1772,10 @@
         }
         st.last = ts;
         if (this.phase === 'fix') {
-          if (st.start == null) { st.start = ts; this.drawFix(); }
-          else if (ts - st.start >= t.fix) {
+          if (st.start == null) { st.start = ts; this.drawFix(0); }
+          else if (ts - st.start < GL_RING_MS) this.drawFix((ts - st.start) / GL_RING_MS);
+          else if (!st.ringDone) { st.ringDone = true; this.drawFix(1); }
+          if (st.start !== ts && ts - st.start >= t.fix) {
             st.T = frameEstimate(st.deltas, this.app.frameMs);
             this.app.frameMs = st.T;
             st.plan = this.G.plan(p, this.run, st.T);
@@ -1809,7 +1819,7 @@
     askWhat() {
       this.phase = 'what';
       this.ans = {};
-      this.choiceBtns.forEach((b) => { b.className = 'choice'; b.disabled = false; });
+      this.choiceBtns.forEach((b) => { b.className = 'gl-choice'; b.disabled = false; });
       this.choiceEl.classList.remove('gone');
       this.choiceEl.hidden = false;
       this.whatAt = now();
@@ -1830,7 +1840,7 @@
       this.phase = 'where';
       this.choiceEl.classList.add('gone');
       this.placeSpots();
-      this.spotBtns.forEach((b) => { b.className = 'spot'; b.disabled = false; });
+      this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; });
       this.spotsEl.hidden = false;
       this.whereAt = now();
       this.later(() => this.guide(), 260);
@@ -1884,7 +1894,7 @@
       this.renderDots();
       this.updateStatus();
       this.app.touch();
-      this.later(() => this.nextLook(), show ? 1050 : 380);
+      this.later(() => this.nextLook(), show ? 700 : 300);
     }
     feedback(correct, cOk, dOk, t, a, show) {
       if (!show) { Sound.play('tick'); return; }
@@ -1925,11 +1935,8 @@
       this.choiceEl.hidden = true;
       this.spotsEl.hidden = true;
       if (this.run.i >= this.p.n) { this.resolve('complete'); return; }
-      this.phase = 'ready';
       this.placeSpots();
-      this.goBtn.disabled = false;
-      this.goBtn.classList.remove('away');
-      this.later(() => this.guide(), 300);
+      this.startLook();
     }
     // ---- status
     nextMs() {
@@ -1965,14 +1972,8 @@
     }
     guideTarget() {
       if (this.summary) return null;
-      const first = this.run.i === 0;
-      if (this.phase === 'ready') {
-        if (first) return this.goBtn;
-        clearTimeout(this.idleTimer);
-        this.idleTimer = this.later(() => { if (this.phase === 'ready' && !this.summary) this.pointAt(this.goBtn, 2600); }, 3200);
-        return null;
-      }
-      if (!first) return null;
+      if (this.phase === 'ready') return this.goBtn;
+      if (this.run.i !== 0) return null;
       const t = this.p.trials[this.run.i];
       if (this.phase === 'what') return this.choiceBtns[t.c];
       if (this.phase === 'where') return this.spotBtns[t.dir];
@@ -1994,8 +1995,9 @@
     makeSummary(outcome, dur) {
       const g = this.G.summary(this.p, this.run);
       const complete = outcome === 'complete';
-      const miss = g.n - g.correct, n = this.p.n;
-      const stars = complete && !this.practice ? (miss <= 0.1 * n ? 3 : miss <= 0.3 * n ? 2 : miss <= 0.5 * n ? 1 : 0) : 0;
+      // a finished round always earns a star; misses take the other two away
+      const miss = g.n - g.correct;
+      const stars = complete && !this.practice ? (miss <= 1 ? 3 : miss === 2 ? 2 : 1) : 0;
       return {
         outcome,
         success: complete && !this.practice && g.threshold_ms != null && this.p.advanceMs != null && g.threshold_ms <= this.p.advanceMs,
@@ -2020,7 +2022,7 @@
       if (this.practice) return 'Got it!';
       if (!this.o.counter) return 'Done!';
       if (sm.gl.correct === sm.gl.n) return 'Perfect!';
-      return sm.stars === 3 ? 'Great!' : sm.stars === 2 ? 'Nice!' : sm.stars === 1 ? 'Done!' : 'Tough round';
+      return sm.stars === 3 ? 'Great!' : sm.stars === 2 ? 'Nice!' : 'Done!';
     }
     resultStats(sm) {
       const g = sm.gl;
@@ -2125,7 +2127,7 @@
       ['frames / flash_ms', 'Glimpse: planned display time in whole frames, and frames x refresh_ms'],
       ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
       ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
-      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 500 to 899, seeded) and mask time (planned 500)'],
+      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 400 to 699, seeded) and mask time (planned 300)'],
       ['shown / chosen', 'Glimpse: the animal in the middle, and the one picked'],
       ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
       ['n_distract', 'Glimpse: leaves around the bird'],
@@ -2138,7 +2140,7 @@
       ['params', 'board description'],
       ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered'],
       ['success', '1 if solved with moves <= par (drives adaptive levels); Glimpse: a complete round with threshold_ms at or under the level\'s target'],
-      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in 10 looks, 2 = at most 3, 1 = at most 5'],
+      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round\'s 6 looks, 2 = two misses, 1 = more; every finished round earns at least 1'],
       ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move, time the page was hidden'],
       ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries'],
       ['reference', 'Outbound: fewest moves. Conduit: fewest turns. Tumbler: tries used by the most-informative-try solver for this code'],
@@ -2146,7 +2148,7 @@
       ['n_*', 'counts of each move label and of undo, restart, hint; blank when it does not apply to the game'],
       ['mean_info_ratio', 'Tumbler: mean of info_expected / info_best over tries'],
       ['n_correct / accuracy', 'Glimpse: looks with the animal and the place both right, and their share'],
-      ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out the quick first descent of a fresh staircase; the staircase settles at 75% correct'],
+      ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out a fresh staircase\'s descent before its first miss; the staircase settles at 80% correct'],
       ['best_ms', 'Glimpse: shortest display time answered correctly'],
       ['start_ms / end_ms', 'Glimpse: staircase value at the start of the round, and the value carried to the next round'],
       ['n_reversals', 'Glimpse: staircase reversals in the round'],
@@ -2180,9 +2182,9 @@
         '## Levels', '', '### Outbound', lv('outbound'), 'L3 to L5 contain planted traps; difficulty is set by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse timing', '',
-        'Each look: tap the eye, a fixation mark for 500 to 899 ms (seeded), the flash, a 500 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
-        'Display times come from a ladder that starts at 500 ms and shrinks by x0.85 per step, rounded to whole frames (at 60 Hz: 30, 25, 22, 18, 16, 13, 11, 10, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss three steps longer (weighted up/down, settles at 75% correct). A fresh staircase starts at 500 ms and drops three steps per correct look until the first miss. At level 2 and up a look is correct only when the animal and the place are both right.',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. Practice uses fixed times of 1000, 700, 450 and 300 ms.',
+        'A round is 6 looks. The first starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 400 to 699 ms (seeded) with a ring closing in over the first 260 ms, the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
+        'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss four steps longer (weighted up/down, settles at 80% correct). A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts one step slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 1000, 600 and 350 ms.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look.', '']);
     return lines.join('\n');
@@ -2322,7 +2324,23 @@
         if (window.claude && typeof window.claude.use === 'function') downloadsReady = window.claude.use('downloads').catch(() => null);
       } catch (e) { downloadsReady = Promise.resolve(null); }
       this.bindGlobal();
-      if (data && data.v === 2 && data.session) { this.restore(data.session, data.card, 'page update'); return; }
+      store.del('pr1.focus');
+      if (data && data.v === 2 && data.session) {
+        const S = data.session;
+        if (data.engine === E.version) { this.restore(S, data.card, 'page update'); return; }
+        // the games changed: a study picks up at the same puzzle, built fresh; free play starts over as the full mix
+        if (S.kind === 'study' && S.status === 'active') {
+          if (data.card && data.card.spec && !data.card.spec.practice && !data.card.summary) S.pending = data.card.spec;
+          this.restore(S, null, 'page update, games changed');
+          return;
+        }
+        if (S.kind === 'free' && S.status === 'active' && S.hasMoves) {
+          S.status = 'closed';
+          S.endedAt = new Date().toISOString();
+          S.live = null;
+          Sessions.save(S);
+        }
+      }
       const activeId = store.get('pr1.active', null);
       const S = activeId ? Sessions.load(activeId) : null;
       if (S && S.kind === 'study' && S.status === 'active' && S.app_version === APP_VERSION) { this.showResume(S); return; }
@@ -2336,8 +2354,7 @@
     // ---------- sessions
     startFree(first, focus) {
       this.closeCurrent();
-      if (focus) store.set('pr1.focus', focus);
-      let game = store.get('pr1.focus', 'mixed');
+      let game = focus || 'mixed';
       if (game !== 'mixed' && ORDER.indexOf(game) < 0) game = 'mixed';
       const levels = store.get('pr1.levels', {});
       const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: FREE_OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 2, adaptive: true }] });
@@ -2554,7 +2571,7 @@
       }
     },
     snapshot() {
-      return { v: 2, session: this.session, card: this.card && this.session && this.session.status === 'active' ? this.card.snapshot() : null };
+      return { v: 2, engine: E.version, session: this.session, card: this.card && this.session && this.session.status === 'active' ? this.card.snapshot() : null };
     },
     async restore(S, cardSnap, reason) {
       this.session = S;
@@ -2612,7 +2629,13 @@
         R.append(holdEnd(() => this.finish('ended_early')));
       } else {
         L.append(h('button', { class: 'hud-btn', type: 'button', 'aria-label': 'Menu', onclick: () => this.openMenu() }, icon('menu')));
-        M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
+        const only = S && S.kind === 'free' && S.blocks[0] && S.blocks[0].game !== 'mixed' ? S.blocks[0].game : null;
+        if (only) {
+          M.append(h('button', { class: 'only-chip', type: 'button', 'aria-label': 'Only ' + LABEL[only] + '. Back to all games', onclick: () => this.startFree(false, 'mixed') },
+            icon(GAME_ICON[only]), h('span', { text: LABEL[only] + ' only' }), h('span', { class: 'chip-x' }, icon('x'))));
+        } else {
+          M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
+        }
         if (!S || S.kind === 'free') {
           const stars = h('span', { class: 'pill', 'aria-label': store.get('pr1.stars', 0) + ' stars' }, icon('star', 'star'), String(store.get('pr1.stars', 0)));
           R.append(stars);
@@ -2690,7 +2713,7 @@
       const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const soundRow = h('div', { class: 'menu-item' }, h('span', { class: 'ico' }, icon('sound')), h('label', { for: 'm-sound' }, h('b', { text: 'Sound and vibration' }), ios ? h('small', { text: 'Silent mode on iPhone mutes it' }) : null), h('span', { class: 'end' }, soundToggle));
       const S = this.session;
-      const focus = S && S.kind === 'free' && S.blocks[0] ? S.blocks[0].game : store.get('pr1.focus', 'mixed');
+      const focus = S && S.kind === 'free' && S.blocks[0] ? S.blocks[0].game : 'mixed';
       const picker = h('div', { class: 'game-pick', role: 'group', 'aria-label': 'Play' },
         ['mixed'].concat(ORDER).map((g) => h('button', {
           class: 'gp' + (g === focus ? ' on' : ''), type: 'button', 'data-game': g, 'aria-pressed': g === focus ? 'true' : 'false',
@@ -2785,7 +2808,7 @@
             h('div', { class: 'inline' }, seed, h('button', { class: 'btn', type: 'button', onclick: () => { seed.value = String(randomSeed()); } }, 'New seed')),
             h('span', { class: 'help', text: 'Same seed and plan, same puzzles for everyone.' })),
           h('div', { class: 'field' }, h('span', { class: 'lbl', text: 'Plan' }), plan, sumLine,
-            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler and Glimpse. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 10 looks; its display time adapts on every look and its level never goes down.' }))),
+            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler and Glimpse. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 6 looks; its display time adapts on every look and its level never goes down.' }))),
         h('fieldset', null, h('legend', { text: 'What participants see' }),
           h('div', { class: 'checks' },
             opt('practice', 'o-practice', 'Practice board before each new game'),
