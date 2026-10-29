@@ -739,6 +739,12 @@
     }
     doSkip() {
       if (this.summary || this.busy) return;
+      // free play: one tap skips straight to the next card; research sessions ask first
+      if (this.app.session.kind === 'free') {
+        this.resolve('skipped');
+        this.app.next();
+        return;
+      }
       if (!this.skipArmed) {
         this.skipArmed = true;
         this.skipBtn.classList.add('armed');
@@ -1626,7 +1632,7 @@
     ctx.restore();
   }
   // fixation: a dot inside a ring that closes in over the first GL_RING_MS;
-  // the first look after the eye is tapped gets GL_LEAD_MS more, with a slower ring
+  // every look gets GL_LEAD_MS more fixation, with the ring closing slowly over it
   const GL_RING_MS = 260, GL_LEAD_MS = 800;
   function glFix(ctx, R, k, ink) {
     const e = k == null ? 1 : 1 - Math.pow(1 - Math.min(1, k), 3);
@@ -1789,7 +1795,6 @@
       Sound.unlock();
       Sound.play('look');
       this.hideHand();
-      this.leadIn = true;
       this.startLook();
     }
     startLook() {
@@ -1804,8 +1809,7 @@
     }
     runLook() {
       const p = this.p, t = p.trials[this.run.i];
-      const lead = this.leadIn ? GL_LEAD_MS : 0;
-      this.leadIn = false;
+      const lead = GL_LEAD_MS;
       const fix = t.fix + lead, ring = GL_RING_MS + lead;
       const st = { deltas: [], start: null, last: null, onset: null, offset: null, end: null, gap: 0, plan: null, T: null, lead };
       this.st = st;
@@ -2672,7 +2676,7 @@
       ['frames / flash_ms', 'Glimpse: planned display time in whole frames, and frames x refresh_ms'],
       ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
       ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
-      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 400 to 699, seeded; 800 more on the first look after the eye is tapped) and mask time (planned 300)'],
+      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 1200 to 1499: 400 to 699 seeded, plus an 800 ms lead-in) and mask time (planned 300)'],
       ['shown / chosen', 'Glimpse: the item in the middle, and the one picked'],
       ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
       ['n_distract', 'Glimpse: distractors around the target (leaves, shells or clouds, by scene)'],
@@ -2732,14 +2736,14 @@
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
         'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play draw the scene from the puzzle seed and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
-        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 400 to 699 ms (seeded) with a ring closing in over the first 260 ms (on the first look after the eye is tapped, 800 ms more and a slower ring, so the first flash never comes out of nowhere), the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
+        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 1000, 600 and 350 ms.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row.', '']);
+        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. In free play Skip takes one tap and a skipped card is not a miss; in research blocks a skip asks first and counts as a miss.', '']);
     return lines.join('\n');
   }
 
@@ -3141,7 +3145,9 @@
     onPuzzleEnd(card, sm) {
       const S = this.session, sp = card.spec;
       // leaving a puzzle by switching games or ending the session is not a miss
-      const change = sp.practice || sm.outcome === 'abandoned' ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game));
+      // in free play a skip is not a miss either: it is one tap, made for variety
+      const neutral = sm.outcome === 'abandoned' || (S.kind === 'free' && sm.outcome === 'skipped');
+      const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game));
       const level_next = sp.adaptive && change ? change.to : '';
       this.logPuzzle(card, 'puzzle_end', { move_no: card.c.moves, cls: sm.outcome, detail: JSON.stringify({ success: sm.success, stars: sm.stars, moves: sm.moves, par: sm.par, reference: sm.reference }) });
       if (change && change.changed) this.logPuzzle(card, 'level_change', { from: change.from, to: change.to });
@@ -3181,7 +3187,7 @@
           if (S.kind === 'free') store.set('pr1.practiced', S.practiced);
         }
       } else if (S.kind === 'free') {
-        if (!sm.success && sm.outcome !== 'abandoned') {
+        if (!sm.success && !neutral) {
           const settled = store.get('pr1.settled', {});
           if (!settled[sp.game]) { settled[sp.game] = true; store.set('pr1.settled', settled); }
         }
