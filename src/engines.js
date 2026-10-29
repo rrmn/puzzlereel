@@ -1,0 +1,981 @@
+/* Puzzle Reel engines: pure, deterministic, DOM-free.
+ * Every generator takes (level, seed) and returns the same puzzle for the same pair.
+ * Every game exposes the same run interface so one harness can log and score moves. */
+(function (root) {
+  'use strict';
+
+  // ---------- seeded randomness ----------
+  function fnv1a(str) {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  }
+  function mulberry32(a) {
+    a = a >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function makeRng(seed) {
+    const r = mulberry32(seed);
+    r.int = (n) => Math.floor(r() * n);
+    r.shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(r() * (i + 1));
+        const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      }
+      return arr;
+    };
+    return r;
+  }
+  function puzzleSeed(sessionSeed, block, game, level, j) {
+    return fnv1a(sessionSeed + '|' + block + '|' + game + '|' + level + '|' + j);
+  }
+
+  // =====================================================================
+  // OUTBOUND: cars only drive forward. A tapped car leaves the lot if its
+  // lane is clear, otherwise it slides until it bumps into something.
+  // Forward-only movement makes the state graph acyclic, so we can label
+  // every reachable state with its distance to the goal.
+  // =====================================================================
+  const DIR = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
+  const DIRS = ['N', 'E', 'S', 'W'];
+  const EXIT = -1;
+
+  function obOccupancy(p, st) {
+    const occ = new Int16Array(p.w * p.h).fill(-1);
+    for (let i = 0; i < p.cars.length; i++) {
+      const a = st[i];
+      if (a === EXIT) continue;
+      const c = p.cars[i];
+      const d = DIR[c.dir];
+      for (let k = 0; k < c.len; k++) {
+        occ[(c.y + (k + a) * d[1]) * p.w + (c.x + (k + a) * d[0])] = i;
+      }
+    }
+    return occ;
+  }
+  // New advance for car i: EXIT if it leaves, unchanged if it cannot move.
+  function obSlide(p, st, occ, i) {
+    const c = p.cars[i];
+    const a = st[i];
+    const d = DIR[c.dir];
+    let fx = c.x + (c.len - 1 + a) * d[0];
+    let fy = c.y + (c.len - 1 + a) * d[1];
+    let steps = 0;
+    for (;;) {
+      const nx = fx + d[0], ny = fy + d[1];
+      if (nx < 0 || ny < 0 || nx >= p.w || ny >= p.h) return EXIT;
+      if (occ[ny * p.w + nx] !== -1) return a + steps;
+      fx = nx; fy = ny; steps++;
+    }
+  }
+  function obKey(st, B) {
+    let k = 0;
+    for (let i = st.length - 1; i >= 0; i--) k = k * B + (st[i] === EXIT ? B - 1 : st[i]);
+    return k;
+  }
+  function obMovable(p, st) {
+    const occ = obOccupancy(p, st);
+    const out = [];
+    for (let i = 0; i < p.cars.length; i++) {
+      if (st[i] === EXIT) continue;
+      if (obSlide(p, st, occ, i) !== st[i]) out.push(i);
+    }
+    return out;
+  }
+
+  // Full analysis of the reachable state graph.
+  // d: fewest taps to clear the lot (Infinity = dead end)
+  // p: chance a player tapping movable cars at random clears the lot
+  function obAnalyze(p) {
+    const n = p.cars.length;
+    const B = Math.max(p.w, p.h) + 2;
+    const memo = new Map();
+    let deadStates = 0;
+    function solve(st) {
+      const key = obKey(st, B);
+      const hit = memo.get(key);
+      if (hit) return hit;
+      let left = 0;
+      for (let i = 0; i < n; i++) if (st[i] !== EXIT) left++;
+      let res;
+      if (left === 0) {
+        res = { d: 0, p: 1, m: 0 };
+      } else {
+        const occ = obOccupancy(p, st);
+        let best = Infinity, ps = 0, m = 0;
+        for (let i = 0; i < n; i++) {
+          if (st[i] === EXIT) continue;
+          const na = obSlide(p, st, occ, i);
+          if (na === st[i]) continue;
+          m++;
+          const ns = st.slice();
+          ns[i] = na;
+          const r = solve(ns);
+          if (r.d + 1 < best) best = r.d + 1;
+          ps += r.p;
+        }
+        res = { d: best, p: m ? ps / m : 0, m };
+        if (best === Infinity) deadStates++;
+      }
+      memo.set(key, res);
+      return res;
+    }
+    const start = new Array(n).fill(0);
+    const r0 = solve(start);
+    // first-move profile
+    const occ = obOccupancy(p, start);
+    let firstMoves = 0, safeFirst = 0, optimalFirst = 0;
+    for (let i = 0; i < n; i++) {
+      const na = obSlide(p, start, occ, i);
+      if (na === 0) continue;
+      firstMoves++;
+      const ns = start.slice(); ns[i] = na;
+      const r = memo.get(obKey(ns, B));
+      if (r.d !== Infinity) safeFirst++;
+      if (r.d === r0.d - 1) optimalFirst++;
+    }
+    return {
+      memo, B,
+      optimal: r0.d,
+      pRandom: r0.p,
+      states: memo.size,
+      deadStates,
+      firstMoves, safeFirst, optimalFirst,
+    };
+  }
+
+  function dirOf(v) { return v[0] === 1 ? 'E' : v[0] === -1 ? 'W' : v[1] === 1 ? 'S' : 'N'; }
+
+  // Plants a four-car trap. A sits in a lane that crosses V's lane. If A is
+  // driven too early it slides onto that crossing, stops against B, and the
+  // cycle A <- B <- Z <- V <- A can no longer be broken. Cars are added in an
+  // order that keeps the lot solvable (V, then Z, then B, then A).
+  function obPlantTrap(L, rng, occ, cars) {
+    const w = L.w, h = L.h;
+    const inb = (c) => c[0] >= 0 && c[1] >= 0 && c[0] < w && c[1] < h;
+    const isFree = (c) => inb(c) && occ[c[1] * w + c[0]] === -1;
+    const add = (a, v, k) => [a[0] + v[0] * k, a[1] + v[1] * k];
+    const laneOf = (front, d) => {
+      const out = [];
+      let c = add(front, d, 1);
+      while (inb(c)) { out.push(c); c = add(c, d, 1); }
+      return out;
+    };
+    const clearLane = (front, d, extra) => laneOf(front, d).every((c) => isFree(c) && !(extra && extra.some((e) => e[0] === c[0] && e[1] === c[1])));
+    const carCells = (rear, d, len) => { const out = []; for (let k = 0; k < len; k++) out.push(add(rear, d, k)); return out; };
+    const len = () => (rng() < L.truck ? 3 : 2);
+    for (let attempt = 0; attempt < 80; attempt++) {
+      // A
+      const d = DIR[DIRS[rng.int(4)]];
+      const la = len();
+      const aRear = [rng.int(w), rng.int(h)];
+      const aCells = carCells(aRear, d, la);
+      if (!aCells.every(isFree)) continue;
+      const aFront = aCells[la - 1];
+      if (!clearLane(aFront, d)) continue;
+      const lane = laneOf(aFront, d);
+      if (lane.length < 3) continue;
+      // B: perpendicular, covering lane[k]; facing n
+      const k = 1 + rng.int(lane.length - 1);
+      const n = rng() < 0.5 ? [-d[1], d[0]] : [d[1], -d[0]];
+      const lb = 2;
+      const off = rng.int(lb);
+      const bRear = add(lane[k], n, -off);
+      const bCells = carCells(bRear, n, lb);
+      if (!bCells.every(isFree) || bCells.some((c) => aCells.some((e) => e[0] === c[0] && e[1] === c[1]))) continue;
+      const bFront = bCells[lb - 1];
+      const bLane = laneOf(bFront, n);
+      if (bLane.length < 2) continue;
+      if (!clearLane(bFront, n, aCells)) continue;
+      // X: a cell A covers only after sliding up to B
+      const lo = Math.max(0, k - la);
+      const xi = lo + rng.int(k - lo);
+      const X = lane[xi];
+      // Z: in B's lane, parallel to A, facing back toward X's line
+      const t = rng.int(Math.min(2, bLane.length - 1));
+      const Q = bLane[t];
+      const lz = 2;
+      const zDir = [-d[0], -d[1]];
+      const zCells = carCells(add(Q, zDir, -(lz - 1)), zDir, lz); // rear first, front = Q
+      const taken = aCells.concat(bCells);
+      if (!zCells.every((c) => isFree(c) && !taken.some((e) => e[0] === c[0] && e[1] === c[1]))) continue;
+      if (!clearLane(Q, zDir, taken)) continue;
+      // P: where Z's lane meets X's line
+      const P = add(Q, zDir, k - xi);
+      // V: on X's line beyond A's lane, covering P, facing A's lane
+      const vDir = [-n[0], -n[1]];
+      const lv = 2;
+      const q = rng.int(lv);
+      const vFront = add(P, vDir, q);
+      const vCells = carCells(add(vFront, vDir, -(lv - 1)), vDir, lv);
+      // front must stay strictly on Z's side of A's lane
+      const sideDist = (c) => (c[0] - X[0]) * n[0] + (c[1] - X[1]) * n[1];
+      if (sideDist(vFront) < 1) continue;
+      const taken2 = taken.concat(zCells);
+      if (!vCells.every((c) => isFree(c) && !taken2.some((e) => e[0] === c[0] && e[1] === c[1]))) continue;
+      if (!clearLane(vFront, vDir, taken2)) continue;
+      // commit in solvable order: A, B, Z, V (V leaves first)
+      const commit = (rear, dv, l) => {
+        const id = cars.length;
+        cars.push({ x: rear[0], y: rear[1], dir: dirOf(dv), len: l });
+        for (const c of carCells(rear, dv, l)) occ[c[1] * w + c[0]] = id;
+      };
+      commit(aRear, d, la);
+      commit(bRear, n, lb);
+      commit(zCells[0], zDir, lz);
+      commit(vCells[0], vDir, lv);
+      return true;
+    }
+    return false;
+  }
+
+  // Constructive placement: each new car must have a clear lane to the edge
+  // past the cars already placed, so clearing them in reverse order always works.
+  function obPlace(L, rng) {
+    const w = L.w, h = L.h;
+    const occ = new Int16Array(w * h).fill(-1);
+    const cars = [];
+    let planted = 0;
+    for (let g = 0; g < (L.traps || 0); g++) {
+      if (cars.length + 4 > L.cars) break;
+      if (obPlantTrap(L, rng, occ, cars)) planted++;
+    }
+    if (L.traps && planted < 1) return null;
+    let tries = 0;
+    while (cars.length < L.cars && tries < 600) {
+      tries++;
+      const len = rng() < L.truck ? 3 : 2;
+      const dir = DIRS[rng.int(4)];
+      const d = DIR[dir];
+      const x = rng.int(w), y = rng.int(h);
+      const fx = x + (len - 1) * d[0], fy = y + (len - 1) * d[1];
+      if (fx < 0 || fy < 0 || fx >= w || fy >= h) continue;
+      let ok = true;
+      for (let k = 0; k < len && ok; k++) if (occ[(y + k * d[1]) * w + (x + k * d[0])] !== -1) ok = false;
+      if (!ok) continue;
+      let lx = fx + d[0], ly = fy + d[1];
+      while (ok && lx >= 0 && ly >= 0 && lx < w && ly < h) {
+        if (occ[ly * w + lx] !== -1) ok = false;
+        lx += d[0]; ly += d[1];
+      }
+      if (!ok) continue;
+      const id = cars.length;
+      cars.push({ x, y, dir, len });
+      for (let k = 0; k < len; k++) occ[(y + k * d[1]) * w + (x + k * d[0])] = id;
+    }
+    return cars.length === L.cars ? cars : null;
+  }
+
+  const Outbound = {
+    id: 'outbound',
+    name: 'Outbound',
+    noun: 'car',
+    rule: 'Tap a car to drive it forward. It leaves the lot if the way is clear, or stops when it bumps into something.',
+    goal: 'Clear the lot.',
+    // band: target range for the chance that random tapping clears the lot
+    levels: {
+      1: { w: 5, h: 5, cars: 5, truck: 0, traps: 0, band: [0.99, 1], attempts: 40 },
+      2: { w: 6, h: 6, cars: 7, truck: 0.1, traps: 0, band: [0.99, 1], attempts: 40 },
+      3: { w: 6, h: 6, cars: 8, truck: 0.15, traps: 1, band: [0.2, 0.75], attempts: 120 },
+      4: { w: 6, h: 6, cars: 10, truck: 0.2, traps: 2, band: [0.1, 0.4], attempts: 160 },
+      5: { w: 7, h: 7, cars: 12, truck: 0.25, traps: 3, band: [0, 0.18], attempts: 200 },
+    },
+    describe(p) { return p.w + '×' + p.h + ' lot, ' + p.cars.length + ' cars'; },
+    generate(level, seed) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      let best = null, bestGap = Infinity;
+      for (let attempt = 0; attempt < L.attempts; attempt++) {
+        const placed = obPlace(L, rng);
+        if (!placed) continue;
+        rng.shuffle(placed); // car ids must not reveal the solution order
+        const p = { w: L.w, h: L.h, cars: placed };
+        const an = obAnalyze(p);
+        if (an.optimal === Infinity) continue;
+        const lo = L.band[0], hi = L.band[1];
+        const gap = an.pRandom < lo ? lo - an.pRandom : an.pRandom > hi ? an.pRandom - hi : 0;
+        if (gap < bestGap) { best = { p, an }; bestGap = gap; }
+        if (gap === 0) break;
+      }
+      if (!best) {
+        // extremely rare: fall back to a lot without planted traps
+        const fallback = Object.assign({}, L, { traps: 0 });
+        for (let attempt = 0; !best && attempt < 200; attempt++) {
+          const placed = obPlace(fallback, rng);
+          if (!placed) continue;
+          rng.shuffle(placed);
+          const p = { w: L.w, h: L.h, cars: placed };
+          const an = obAnalyze(p);
+          if (an.optimal !== Infinity) best = { p, an };
+        }
+        bestGap = Infinity;
+      }
+      const cars = best.p.cars.map((c, i) => ({
+        id: i, label: 'c' + (i + 1), x: c.x, y: c.y, dir: c.dir, len: c.len,
+        color: (i * 7 + rng.int(3)) % 10,
+      }));
+      const an = best.an;
+      return {
+        game: 'outbound', level, seed,
+        w: L.w, h: L.h, cars,
+        an,
+        reference: an.optimal,
+        features: {
+          cars: cars.length,
+          trucks: cars.filter((c) => c.len === 3).length,
+          optimal_moves: an.optimal,
+          p_random_solve: round(an.pRandom, 4),
+          reachable_states: an.states,
+          dead_end_states: an.deadStates,
+          first_moves: an.firstMoves,
+          safe_first_moves: an.safeFirst,
+          in_band: bestGap === 0,
+        },
+      };
+    },
+    newRun(p) { return { st: new Array(p.cars.length).fill(0), hist: [] }; },
+    dist(p, st) {
+      const r = p.an.memo.get(obKey(st, p.an.B));
+      return r ? r.d : Infinity;
+    },
+    remaining(p, run) { return run.st.filter((a) => a !== EXIT).length; },
+    movable(p, run) { return obMovable(p, run.st); },
+    // Tap car i. Returns a scored action record.
+    tap(p, run, i) {
+      if (run.st[i] === EXIT) return null;
+      const occ = obOccupancy(p, run.st);
+      const from = run.st[i];
+      const to = obSlide(p, run.st, occ, i);
+      const dB = this.dist(p, run.st);
+      if (to === from) {
+        return { kind: 'blocked', target: p.cars[i].label, index: i, from, to, dBefore: dB, dAfter: dB, cls: 'blocked' };
+      }
+      run.hist.push([i, from]);
+      run.st[i] = to;
+      const dA = this.dist(p, run.st);
+      let cls;
+      if (dB === Infinity) cls = 'in_dead_end';
+      else if (dA === Infinity) cls = 'dead_end';
+      else if (dA === dB - 1) cls = 'optimal';
+      else cls = 'wasted';
+      const solved = run.st.every((a) => a === EXIT);
+      const stuck = !solved && obMovable(p, run.st).length === 0;
+      return { kind: 'move', target: p.cars[i].label, index: i, from, to, exited: to === EXIT, dBefore: dB, dAfter: dA, cls, solved, stuck };
+    },
+    undo(p, run) {
+      const h = run.hist.pop();
+      if (!h) return null;
+      const i = h[0], back = h[1];
+      const was = run.st[i];
+      const dB = this.dist(p, run.st);
+      run.st[i] = back;
+      return { target: p.cars[i].label, index: i, from: was, to: back, dBefore: dB, dAfter: this.dist(p, run.st) };
+    },
+    restart(p, run) { run.st.fill(0); run.hist = []; },
+    hint(p, run) {
+      const dB = this.dist(p, run.st);
+      if (dB === Infinity) return { kind: 'dead_end' };
+      const occ = obOccupancy(p, run.st);
+      for (let i = 0; i < p.cars.length; i++) {
+        if (run.st[i] === EXIT) continue;
+        const na = obSlide(p, run.st, occ, i);
+        if (na === run.st[i]) continue;
+        const ns = run.st.slice(); ns[i] = na;
+        if (this.dist(p, ns) === dB - 1) return { kind: 'target', index: i, target: p.cars[i].label };
+      }
+      return { kind: 'none' };
+    },
+    progress(p, run) { return { done: p.cars.length - this.remaining(p, run), total: p.cars.length }; },
+    serialize(run) { return { st: run.st.slice(), hist: run.hist.map((h) => h.slice()) }; },
+    restore(p, data) { return { st: data.st.slice(), hist: data.hist.map((h) => h.slice()) }; },
+  };
+
+  // =====================================================================
+  // CONDUIT: every tile is part of one spanning tree. Tiles start rotated.
+  // A tap turns a tile a quarter turn clockwise. Puzzles have exactly one
+  // solution, so each tile has a known number of taps left.
+  // =====================================================================
+  const N = 1, E = 2, S = 4, W = 8;
+  const SIDES = [N, E, S, W];
+  const OPP = { 1: 4, 2: 8, 4: 1, 8: 2 };
+  const DXY = { 1: [0, -1], 2: [1, 0], 4: [0, 1], 8: [-1, 0] };
+  function rotCW(m, r) {
+    r = ((r % 4) + 4) % 4;
+    for (let k = 0; k < r; k++) m = ((m << 1) | (m >> 3)) & 15;
+    return m;
+  }
+  function bits(m) { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; }
+  function periodOf(m) { return rotCW(m, 1) === m ? 1 : rotCW(m, 2) === m ? 2 : 4; }
+
+  // Random spanning tree grown from the source; no four-way crossings.
+  function cdTree(w, h, src, rng) {
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const masks = new Array(w * h).fill(0);
+      const inTree = new Uint8Array(w * h);
+      const frontier = [];
+      const addFrontier = (c) => {
+        const x = c % w, y = (c / w) | 0;
+        for (const s of SIDES) {
+          const nx = x + DXY[s][0], ny = y + DXY[s][1];
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const nc = ny * w + nx;
+          if (!inTree[nc]) frontier.push([c, s, nc]);
+        }
+      };
+      inTree[src] = 1;
+      addFrontier(src);
+      let count = 1;
+      while (frontier.length && count < w * h) {
+        const idx = rng.int(frontier.length);
+        const e = frontier[idx];
+        frontier[idx] = frontier[frontier.length - 1];
+        frontier.pop();
+        const c = e[0], s = e[1], nc = e[2];
+        if (inTree[nc]) continue;
+        if (bits(masks[c]) >= 3) continue;
+        masks[c] |= s;
+        masks[nc] |= OPP[s];
+        inTree[nc] = 1;
+        count++;
+        addFrontier(nc);
+      }
+      if (count === w * h) return masks;
+    }
+    return null;
+  }
+
+  // Constraint solver: counts solutions (up to `limit`) for a set of tiles
+  // whose rotations are unknown. Edges must agree, borders stay closed,
+  // and the network must be one tree.
+  function cdSolve(w, h, tiles, limit) {
+    const n = w * h;
+    const cand = [];
+    for (let i = 0; i < n; i++) {
+      const seen = [];
+      for (let r = 0; r < 4; r++) {
+        const m = rotCW(tiles[i], r);
+        if (seen.indexOf(m) < 0) seen.push(m);
+      }
+      cand.push(seen);
+    }
+    const dom0 = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = i % w, y = (i / w) | 0;
+      let d = 0;
+      for (let k = 0; k < cand[i].length; k++) {
+        const m = cand[i][k];
+        if ((m & N) && y === 0) continue;
+        if ((m & S) && y === h - 1) continue;
+        if ((m & W) && x === 0) continue;
+        if ((m & E) && x === w - 1) continue;
+        d |= 1 << k;
+      }
+      dom0[i] = d;
+    }
+    const sideState = (dom, i, s) => {
+      let open = 0, closed = 0;
+      const c = cand[i];
+      for (let k = 0; k < c.length; k++) {
+        if (!(dom[i] & (1 << k))) continue;
+        if (c[k] & s) open++; else closed++;
+      }
+      if (!open && !closed) return -1;
+      return open && closed ? 2 : open ? 1 : 0;
+    };
+    const propagate = (dom, queue) => {
+      while (queue.length) {
+        const i = queue.pop();
+        const x = i % w, y = (i / w) | 0;
+        if (!dom[i]) return false;
+        for (const s of SIDES) {
+          const st = sideState(dom, i, s);
+          if (st === -1) return false;
+          if (st === 2) continue;
+          const nx = x + DXY[s][0], ny = y + DXY[s][1];
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const j = ny * w + nx;
+          const os = OPP[s];
+          let nd = 0;
+          const cj = cand[j];
+          for (let k = 0; k < cj.length; k++) {
+            if (!(dom[j] & (1 << k))) continue;
+            if (((cj[k] & os) ? 1 : 0) === st) nd |= 1 << k;
+          }
+          if (nd !== dom[j]) {
+            if (!nd) return false;
+            dom[j] = nd;
+            queue.push(j);
+          }
+        }
+      }
+      return true;
+    };
+    const globalOk = (dom) => {
+      const parent = new Int32Array(n);
+      for (let i = 0; i < n; i++) parent[i] = i;
+      const find = (a) => { while (parent[a] !== a) { parent[a] = parent[parent[a]]; a = parent[a]; } return a; };
+      for (let i = 0; i < n; i++) {
+        const x = i % w, y = (i / w) | 0;
+        if (x < w - 1 && sideState(dom, i, E) === 1) {
+          const a = find(i), b = find(i + 1);
+          if (a === b) return false;
+          parent[a] = b;
+        }
+        if (y < h - 1 && sideState(dom, i, S) === 1) {
+          const a = find(i), b = find(i + w);
+          if (a === b) return false;
+          parent[a] = b;
+        }
+      }
+      const loose = new Uint8Array(n), size = new Int32Array(n);
+      for (let i = 0; i < n; i++) {
+        const r = find(i);
+        size[r]++;
+        if (!loose[r]) for (const s of SIDES) if (sideState(dom, i, s) === 2) { loose[r] = 1; break; }
+      }
+      for (let i = 0; i < n; i++) if (find(i) === i && !loose[i] && size[i] < n) return false;
+      return true;
+    };
+    let solutions = 0, nodes = 0;
+    let first = null;
+    const dfs = (dom) => {
+      nodes++;
+      if (nodes > 200000) return;
+      if (!globalOk(dom)) return;
+      let bi = -1, bc = 9;
+      for (let i = 0; i < n; i++) {
+        const c = bits(dom[i]);
+        if (c > 1 && c < bc) { bc = c; bi = i; }
+      }
+      if (bi === -1) {
+        solutions++;
+        if (!first) first = Array.from(dom, (d, i) => cand[i][Math.log2(d) | 0]);
+        return;
+      }
+      for (let k = 0; k < cand[bi].length && solutions < limit; k++) {
+        if (!(dom[bi] & (1 << k))) continue;
+        const d2 = dom.slice();
+        d2[bi] = 1 << k;
+        if (propagate(d2, [bi])) dfs(d2);
+      }
+    };
+    const dom = dom0.slice();
+    const all = [];
+    for (let i = 0; i < n; i++) all.push(i);
+    if (!propagate(dom, all)) return { solutions: 0, nodes: 0, forced: 0 };
+    let forced = 0;
+    for (let i = 0; i < n; i++) if (bits(dom[i]) === 1) forced++;
+    dfs(dom);
+    return { solutions, nodes, forced, first, exhausted: nodes > 200000 };
+  }
+
+  const Conduit = {
+    id: 'conduit',
+    name: 'Conduit',
+    noun: 'tile',
+    rule: 'Tap a tile to turn it a quarter turn. Water flows from the square source along connected pipes.',
+    goal: 'Connect every pipe to the source with no open ends.',
+    // pick: how many unique boards to compare; the one that needs the most
+    // search beyond local edge rules is kept, so higher levels need more reasoning
+    levels: {
+      1: { w: 4, h: 4, pick: 1, attempts: 80 },
+      2: { w: 5, h: 5, pick: 1, attempts: 80 },
+      3: { w: 6, h: 6, pick: 1, attempts: 100 },
+      4: { w: 6, h: 6, pick: 8, attempts: 160 },
+      5: { w: 7, h: 7, pick: 8, attempts: 200 },
+    },
+    describe(p) { return p.w + '×' + p.h + ' grid'; },
+    generate(level, seed) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const w = L.w, h = L.h;
+      const src = ((h / 2) | 0) * w + ((w / 2) | 0);
+      let chosen = null, found = 0;
+      for (let attempt = 0; attempt < L.attempts && found < L.pick; attempt++) {
+        const sol = cdTree(w, h, src, rng);
+        if (!sol) continue;
+        const res = cdSolve(w, h, sol, 2);
+        if (res.solutions !== 1 || res.exhausted) continue;
+        found++;
+        if (!chosen || res.nodes > chosen.res.nodes || (res.nodes === chosen.res.nodes && res.forced < chosen.res.forced)) {
+          chosen = { sol, res };
+        }
+      }
+      if (!chosen) throw new Error('Conduit: no unique puzzle for level ' + level + ' seed ' + seed);
+      const sol = chosen.sol;
+      const per = sol.map(periodOf);
+      const start = sol.map((m, i) => rng.int(4));
+      // make sure the board does not start nearly solved
+      let need = 0;
+      for (let i = 0; i < sol.length; i++) need += (per[i] - (start[i] % per[i])) % per[i];
+      const minNeed = Math.ceil(sol.length * 0.9);
+      let guard = 0;
+      while (need < minNeed && guard < 500) {
+        const i = rng.int(sol.length);
+        if (per[i] > 1 && start[i] % per[i] === 0) {
+          start[i] = 1 + rng.int(per[i] - 1);
+          need = 0;
+          for (let k = 0; k < sol.length; k++) need += (per[k] - (start[k] % per[k])) % per[k];
+        }
+        guard++;
+      }
+      const tally = { end: 0, straight: 0, elbow: 0, tee: 0 };
+      for (const m of sol) {
+        const b = bits(m);
+        if (b === 1) tally.end++;
+        else if (b === 3) tally.tee++;
+        else if (m === (N | S) || m === (E | W)) tally.straight++;
+        else tally.elbow++;
+      }
+      return {
+        game: 'conduit', level, seed,
+        w, h, src, sol, per, start,
+        reference: need,
+        features: {
+          tiles: w * h,
+          optimal_turns: need,
+          forced_by_local_rules: chosen.res.forced,
+          search_nodes: chosen.res.nodes,
+          ends: tally.end, straights: tally.straight, elbows: tally.elbow, tees: tally.tee,
+        },
+      };
+    },
+    newRun(p) { return { rot: p.start.slice(), hist: [] }; },
+    needAt(p, rot, i) { const per = p.per[i]; return (per - (rot[i] % per)) % per; },
+    dist(p, rot) { let d = 0; for (let i = 0; i < rot.length; i++) d += this.needAt(p, rot, i); return d; },
+    maskAt(p, run, i) { return rotCW(p.sol[i], run.rot[i]); },
+    connected(p, run) {
+      const n = p.w * p.h;
+      const on = new Uint8Array(n);
+      const stack = [p.src];
+      on[p.src] = 1;
+      while (stack.length) {
+        const i = stack.pop();
+        const m = this.maskAt(p, run, i);
+        const x = i % p.w, y = (i / p.w) | 0;
+        for (const s of SIDES) {
+          if (!(m & s)) continue;
+          const nx = x + DXY[s][0], ny = y + DXY[s][1];
+          if (nx < 0 || ny < 0 || nx >= p.w || ny >= p.h) continue;
+          const j = ny * p.w + nx;
+          if (on[j]) continue;
+          if (this.maskAt(p, run, j) & OPP[s]) { on[j] = 1; stack.push(j); }
+        }
+      }
+      return on;
+    },
+    tap(p, run, i) {
+      const dB = this.dist(p, run.rot);
+      const nB = this.needAt(p, run.rot, i);
+      const from = run.rot[i];
+      run.rot[i] = (from + 1) % 4;
+      run.hist.push(i);
+      const dA = this.dist(p, run.rot);
+      const cls = p.per[i] === 1 ? 'neutral' : nB > 0 ? 'optimal' : 'wasted';
+      const x = i % p.w, y = (i / p.w) | 0;
+      return { kind: 'move', target: 'r' + (y + 1) + 'c' + (x + 1), index: i, from, to: run.rot[i], dBefore: dB, dAfter: dA, cls, solved: dA === 0, stuck: false };
+    },
+    undo(p, run) {
+      const i = run.hist.pop();
+      if (i === undefined) return null;
+      const dB = this.dist(p, run.rot);
+      const from = run.rot[i];
+      run.rot[i] = (from + 3) % 4;
+      const x = i % p.w, y = (i / p.w) | 0;
+      return { target: 'r' + (y + 1) + 'c' + (x + 1), index: i, from, to: run.rot[i], dBefore: dB, dAfter: this.dist(p, run.rot) };
+    },
+    restart(p, run) { run.rot = p.start.slice(); run.hist = []; },
+    hint(p, run) {
+      const on = this.connected(p, run);
+      let fallback = -1;
+      for (let i = 0; i < run.rot.length; i++) {
+        if (this.needAt(p, run.rot, i) === 0) continue;
+        if (fallback < 0) fallback = i;
+        const x = i % p.w, y = (i / p.w) | 0;
+        for (const s of SIDES) {
+          const nx = x + DXY[s][0], ny = y + DXY[s][1];
+          if (nx < 0 || ny < 0 || nx >= p.w || ny >= p.h) continue;
+          if (on[ny * p.w + nx]) return { kind: 'target', index: i };
+        }
+      }
+      return fallback >= 0 ? { kind: 'target', index: fallback } : { kind: 'none' };
+    },
+    progress(p, run) {
+      const on = this.connected(p, run);
+      let c = 0;
+      for (let i = 0; i < on.length; i++) c += on[i];
+      return { done: c, total: on.length };
+    },
+    serialize(run) { return { rot: run.rot.slice(), hist: run.hist.slice() }; },
+    restore(p, data) { return { rot: data.rot.slice(), hist: data.hist.slice() }; },
+  };
+
+  // =====================================================================
+  // TUMBLER: a hidden code of P pins in C colors (repeats allowed).
+  // Each try reports exact matches and right-color-wrong-spot matches.
+  // We track the set of codes still consistent with every clue and score
+  // each try by the information it was expected to give.
+  // =====================================================================
+  const spaceCache = new Map();
+  function tbSpace(P, C) {
+    const key = P + ':' + C;
+    if (spaceCache.has(key)) return spaceCache.get(key);
+    const total = Math.pow(C, P);
+    const dig = new Uint8Array(total * P);
+    const cnt = new Uint8Array(total * C);
+    for (let code = 0; code < total; code++) {
+      let v = code;
+      for (let k = P - 1; k >= 0; k--) {
+        const d = v % C;
+        v = (v / C) | 0;
+        dig[code * P + k] = d;
+        cnt[code * C + d]++;
+      }
+    }
+    const all = new Int32Array(total);
+    for (let i = 0; i < total; i++) all[i] = i;
+    const sp = { P, C, total, dig, cnt, all, firstBest: null };
+    spaceCache.set(key, sp);
+    return sp;
+  }
+  function tbFeedback(sp, a, b) {
+    const P = sp.P, C = sp.C, dig = sp.dig, cnt = sp.cnt;
+    let ex = 0, com = 0;
+    const ao = a * P, bo = b * P;
+    for (let k = 0; k < P; k++) if (dig[ao + k] === dig[bo + k]) ex++;
+    const ac = a * C, bc = b * C;
+    for (let c = 0; c < C; c++) {
+      const x = cnt[ac + c], y = cnt[bc + c];
+      com += x < y ? x : y;
+    }
+    return ex * (P + 1) + (com - ex);
+  }
+  function tbEntropy(sp, g, S, buf) {
+    buf.fill(0);
+    for (let i = 0; i < S.length; i++) buf[tbFeedback(sp, g, S[i])]++;
+    let H = 0;
+    const n = S.length;
+    for (let k = 0; k < buf.length; k++) {
+      if (!buf[k]) continue;
+      const q = buf[k] / n;
+      H -= q * Math.log2(q);
+    }
+    return H;
+  }
+  // One representative code per pattern of repeats (AAAA, AAAB, AABB, AABC, ABCD...).
+  // With no clues yet, every code with the same pattern is equally informative.
+  function tbPatternReps(sp) {
+    const out = [];
+    const parts = [];
+    const rec = (left, max, acc) => {
+      if (left === 0) { if (acc.length <= sp.C) parts.push(acc.slice()); return; }
+      for (let k = Math.min(left, max); k >= 1; k--) { acc.push(k); rec(left - k, k, acc); acc.pop(); }
+    };
+    rec(sp.P, sp.P, []);
+    for (const part of parts) {
+      const digits = [];
+      part.forEach((m, color) => { for (let k = 0; k < m; k++) digits.push(color); });
+      out.push(tbEncode(sp, digits));
+    }
+    return out;
+  }
+  function tbEncode(sp, digits) {
+    let v = 0;
+    for (let k = 0; k < sp.P; k++) v = v * sp.C + digits[k];
+    return v;
+  }
+  function tbDecode(sp, code) {
+    const out = [];
+    for (let k = 0; k < sp.P; k++) out.push(sp.dig[code * sp.P + k]);
+    return out;
+  }
+  // Colors no try has used yet are interchangeable, so only one ordering of
+  // them needs checking: a code is kept when its unseen colors first appear
+  // in increasing order (e.g. with C..G unseen, CCDE is kept, DDCE is not).
+  function tbCanonical(sp, seen) {
+    if (!sp.canon) sp.canon = new Map();
+    if (sp.canon.has(seen)) return sp.canon.get(seen);
+    const unseen = [];
+    for (let c = 0; c < sp.C; c++) if (!(seen & (1 << c))) unseen.push(c);
+    const out = [];
+    for (let code = 0; code < sp.total; code++) {
+      let next = 0, used = 0, ok = true;
+      for (let k = 0; k < sp.P && ok; k++) {
+        const d = sp.dig[code * sp.P + k];
+        if (seen & (1 << d)) continue;
+        if (used & (1 << d)) continue;
+        if (d !== unseen[next]) ok = false;
+        else { used |= 1 << d; next++; }
+      }
+      if (ok) out.push(code);
+    }
+    const arr = Int32Array.from(out);
+    sp.canon.set(seen, arr);
+    return arr;
+  }
+  function tbSeen(sp, codes) {
+    let seen = 0;
+    for (const g of codes) for (let k = 0; k < sp.P; k++) seen |= 1 << sp.dig[g * sp.P + k];
+    return seen;
+  }
+  // Most informative try for the current candidate set.
+  // Ties go to a code that could still be the answer, then to the lowest code.
+  function tbBest(sp, S, seen) {
+    const full = S.length === sp.total;
+    if (full && sp.firstBest) return sp.firstBest;
+    const buf = new Int32Array((sp.P + 1) * (sp.P + 1));
+    const inS = new Uint8Array(sp.total);
+    for (let i = 0; i < S.length; i++) inS[S[i]] = 1;
+    const candidates = full ? tbPatternReps(sp) : tbCanonical(sp, seen || 0);
+    let best = -1, bestCode = -1, bestIn = false;
+    for (let i = 0; i < candidates.length; i++) {
+      const g = candidates[i];
+      const H = tbEntropy(sp, g, S, buf);
+      if (H > best + 1e-12 || (Math.abs(H - best) <= 1e-12 && inS[g] && !bestIn)) {
+        best = H; bestCode = g; bestIn = !!inS[g];
+      }
+    }
+    const res = { H: best, code: bestCode };
+    if (full) sp.firstBest = res;
+    return res;
+  }
+  function tbFilter(sp, S, g, fb) {
+    const out = [];
+    for (let i = 0; i < S.length; i++) if (tbFeedback(sp, g, S[i]) === fb) out.push(S[i]);
+    return Int32Array.from(out);
+  }
+  // Number of tries a greedy most-informative-try strategy needs for this code.
+  function tbSolverPath(sp, secret) {
+    let S = sp.all;
+    const path = [];
+    const win = sp.P * (sp.P + 1);
+    for (let step = 0; step < 30; step++) {
+      const g = tbBest(sp, S, tbSeen(sp, path)).code;
+      path.push(g);
+      const fb = tbFeedback(sp, g, secret);
+      if (fb === win) break;
+      S = tbFilter(sp, S, g, fb);
+    }
+    return path;
+  }
+
+  const Tumbler = {
+    id: 'tumbler',
+    name: 'Tumbler',
+    noun: 'try',
+    rule: 'Crack the hidden code. After each try, a solid dot means a right color in the right spot; a ring means a right color in the wrong spot.',
+    goal: 'Repeats are allowed.',
+    levels: {
+      1: { P: 3, C: 4, max: 8 },
+      2: { P: 3, C: 5, max: 9 },
+      3: { P: 4, C: 5, max: 10 },
+      4: { P: 4, C: 6, max: 10 },
+      5: { P: 4, C: 7, max: 12 },
+    },
+    letters: 'ABCDEFG',
+    describe(p) { return p.P + ' pins, ' + p.C + ' colors'; },
+    generate(level, seed) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const sp = tbSpace(L.P, L.C);
+      const secret = rng.int(sp.total);
+      const path = tbSolverPath(sp, secret);
+      return {
+        game: 'tumbler', level, seed,
+        P: L.P, C: L.C, max: L.max,
+        secret,
+        secretDigits: tbDecode(sp, secret),
+        reference: path.length,
+        features: {
+          pins: L.P, colors: L.C, max_tries: L.max,
+          possible_codes: sp.total,
+          bits: round(Math.log2(sp.total), 3),
+          solver_tries: path.length,
+          solver_path: path.map((c) => this.toLetters(sp, c)).join(' '),
+        },
+      };
+    },
+    toLetters(sp, code) { return tbDecode(sp, code).map((d) => this.letters[d]).join(''); },
+    newRun(p) { return { tries: [], S: tbSpace(p.P, p.C).all }; },
+    candidates(p, run) { return run.S.length; },
+    // Scores a try against the hidden code. Feedback is immediate; the
+    // comparison with the most informative possible try is filled in by
+    // annotate(), which is slower and can run after the board updates.
+    guess(p, run, digits) {
+      const sp = tbSpace(p.P, p.C);
+      const g = tbEncode(sp, digits);
+      const S = run.S;
+      const before = S.length;
+      let consistent = false;
+      for (let i = 0; i < S.length; i++) if (S[i] === g) { consistent = true; break; }
+      const buf = new Int32Array((p.P + 1) * (p.P + 1));
+      const Hg = tbEntropy(sp, g, S, buf);
+      const fb = tbFeedback(sp, g, p.secret);
+      const exact = Math.floor(fb / (p.P + 1)), partial = fb % (p.P + 1);
+      const S2 = tbFilter(sp, S, g, fb);
+      const seenBefore = tbSeen(sp, run.tries.map((t) => tbEncode(sp, t.digits)));
+      run.S = S2;
+      run.tries.push({ digits: digits.slice(), exact, partial });
+      const solved = exact === p.P;
+      const failed = !solved && run.tries.length >= p.max;
+      return {
+        kind: 'move',
+        target: this.toLetters(sp, g),
+        exact, partial,
+        candsBefore: before, candsAfter: S2.length,
+        consistent,
+        infoExpected: Hg, infoBest: null, infoActual: Math.log2(before / S2.length),
+        bestTry: null,
+        dBefore: before, dAfter: S2.length,
+        cls: solved ? 'solved' : null, solved, failed, stuck: false,
+        _S: S, _seen: seenBefore,
+      };
+    },
+    annotate(p, rec) {
+      if (!rec._S) return rec;
+      const sp = tbSpace(p.P, p.C);
+      const best = tbBest(sp, rec._S, rec._seen);
+      rec.infoBest = best.H;
+      rec.bestTry = this.toLetters(sp, best.code);
+      if (!rec.solved) {
+        if (rec.infoExpected <= 1e-9) rec.cls = 'zero_info';
+        else if (rec.infoExpected >= best.H - 1e-9) rec.cls = 'optimal';
+        else rec.cls = 'suboptimal';
+      }
+      delete rec._S;
+      delete rec._seen;
+      return rec;
+    },
+    hint(p, run) { return { kind: 'count', count: run.S.length }; },
+    progress(p, run) { return { done: run.tries.length, total: p.max }; },
+    serialize(run) { return { tries: run.tries.map((t) => ({ digits: t.digits.slice(), exact: t.exact, partial: t.partial })) }; },
+    restore(p, data) {
+      const sp = tbSpace(p.P, p.C);
+      let S = sp.all;
+      for (const t of data.tries) S = tbFilter(sp, S, tbEncode(sp, t.digits), t.exact * (p.P + 1) + t.partial);
+      return { tries: data.tries.map((t) => ({ digits: t.digits.slice(), exact: t.exact, partial: t.partial })), S };
+    },
+  };
+
+  function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
+
+  const Engines = {
+    version: '1.0.0',
+    fnv1a, makeRng, puzzleSeed,
+    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler },
+    order: ['outbound', 'conduit', 'tumbler'],
+    EXIT,
+    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbFeedback, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf },
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
+  else root.Engines = Engines;
+})(typeof window !== 'undefined' ? window : globalThis);
