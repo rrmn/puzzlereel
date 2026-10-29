@@ -470,3 +470,25 @@ test('glimpse: runs survive serialize/restore', () => {
   assert.deepEqual(back, run);
   assert.deepEqual(G.plan(p, back, 1000 / 60), G.plan(p, run, 1000 / 60));
 });
+
+test('glimpse: fixed blocks use the classic set; others get a seeded scene and take turns with its targets', () => {
+  for (const lv of [2, 3, 4, 5]) {
+    const L = G.levels[lv];
+    for (let s = 0; s < 12; s++) {
+      const c = G.generate(lv, 300 + s, 'classic');
+      assert.equal(c.theme, 'meadow');
+      assert.ok(c.trials.every((t) => t.tg === 'bird'));
+      assert.deepEqual(c.pair, G.themes.meadow.pairs[L.pair]);
+      const m = G.generate(lv, 300 + s, 'mix');
+      assert.ok(G.themeOrder.includes(m.theme));
+      const th = G.themes[m.theme];
+      assert.deepEqual(m.pair, th.pairs[L.pair]);
+      assert.equal(m.distractor, th.distractor);
+      for (const tg of th.targets) assert.equal(m.trials.filter((t) => t.tg === tg).length, G.trials / th.targets.length, tg + ' in equal shares');
+      assert.ok(!th.targets.includes(th.distractor), 'a target is never the distractor');
+    }
+  }
+  const seen = new Set();
+  for (let s = 0; s < 30; s++) seen.add(G.generate(3, 50 + s, 'mix').theme);
+  assert.equal(seen.size, G.themeOrder.length, 'every scene comes up');
+});

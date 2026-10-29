@@ -391,7 +391,7 @@
     const spec = {
       seq: S.n + 1, block: S.b + 1, inBlock: S.k + 1, game, level, adaptive: !!B.adaptive, j,
       seed: E.puzzleSeed(S.seed, S.b, game, level, j),
-      variant: game === 'tumbler' ? (S.clue || 'pin') : '',
+      variant: game === 'tumbler' ? (S.clue || 'pin') : game === 'glimpse' ? (B.adaptive ? 'mix' : 'classic') : '',
     };
     spec.id = 'B' + spec.block + '-' + game + '-L' + level + '-' + (j + 1);
     S.k++;
@@ -1507,16 +1507,31 @@
     fox: 'M50 30L58 30L80 7Q85 23 83 40Q91 50 89 58Q79 71 64 77Q56 88 50 93Q44 88 36 77Q21 71 11 58Q9 50 17 40Q15 23 20 7L42 30Z',
     bird: 'M44 36A30 22 0 1 1 44 80A30 22 0 1 1 44 36Z M70 25A15 15 0 1 1 70 55A15 15 0 1 1 70 25Z M84 35L97 41L84 47Z M22 50L8 59L2 33Z',
     leaf: 'M50 5C81 22 83 68 50 94C17 68 19 22 50 5Z M48 88L52 88L52 99L48 99Z',
+    butterfly: 'M45.5 54A4.5 22 0 1 1 54.5 54A4.5 22 0 1 1 45.5 54Z M13.2 46.8A20 15 -20 1 1 50.8 33.2A20 15 -20 1 1 13.2 46.8Z M49.2 33.2A20 15 20 1 1 86.8 46.8A20 15 20 1 1 49.2 33.2Z M23.3 57.1A14 12 25 1 1 48.7 68.9A14 12 25 1 1 23.3 57.1Z M51.3 68.9A14 12 -25 1 1 76.7 57.1A14 12 -25 1 1 51.3 68.9Z M49 34L39 17L42 15L52 33Z M51 34L48 33L58 15L61 17Z M40 11.5A3.5 3.5 0 1 1 40 18.5A3.5 3.5 0 1 1 40 11.5Z M60 11.5A3.5 3.5 0 1 1 60 18.5A3.5 3.5 0 1 1 60 11.5Z',
+    snail: 'M44 20A25 25 0 1 1 44 70A25 25 0 1 1 44 20Z M47 38A8 8 0 1 0 47 54A8 8 0 1 0 47 38Z M8 77Q10 68 22 67L68 66Q76 64 80 55Q84 47 90 49Q96 52 94 62Q91 75 78 77Z M82 52L77 33L81 32L86 51Z M87 51L91 32L95 33L91 52Z M79 27A4.5 4.5 0 1 1 79 36A4.5 4.5 0 1 1 79 27Z M93 28A4.5 4.5 0 1 1 93 37A4.5 4.5 0 1 1 93 28Z',
+    fish: 'M24 50A32 18 0 1 1 88 50A32 18 0 1 1 24 50Z M32 50L14 70L22 50L14 30Z M46 34L60 20L68 34Z M76 42A3.5 3.5 0 1 0 76 49A3.5 3.5 0 1 0 76 42Z',
+    turtle: 'M50 22A26 30 0 1 1 50 82A26 30 0 1 1 50 22Z M50 5A10 10 0 1 1 50 25A10 10 0 1 1 50 5Z M12.5 24A14 7 35 1 1 35.5 40A14 7 35 1 1 12.5 24Z M64.5 40A14 7 -35 1 1 87.5 24A14 7 -35 1 1 64.5 40Z M20 80A10 5.5 -37 1 1 36 68A10 5.5 -37 1 1 20 80Z M64 68A10 5.5 37 1 1 80 80A10 5.5 37 1 1 64 68Z M46 80L54 80L50 93Z',
+    whale: 'M24 56A32 20 0 1 1 88 56A32 20 0 1 1 24 56Z M32 60L14 40L20 36L36 50Z M3.8 38.4A13 5 -20 1 1 28.2 29.6A13 5 -20 1 1 3.8 38.4Z M50.2 69.5A9 4 30 1 1 65.8 78.5A9 4 30 1 1 50.2 69.5Z M76 50A3.5 3.5 0 1 0 76 57A3.5 3.5 0 1 0 76 50Z',
+    star: 'M50 6L62.34 35.01L93.75 37.79L69.97 58.49L77.04 89.21L50 73L22.96 89.21L30.03 58.49L6.25 37.79L37.66 35.01Z',
+    sailboat: 'M12 70L88 70L76 86L24 86Z M51 8L51 64L14 64Z M58 18L85 64L58 64Z M51 8L56 8L56 70L51 70Z',
+    jellyfish: 'M18 52A32 36 0 0 1 82 52Q74 59 66 52Q58 59 50 52Q42 59 34 52Q26 59 18 52Z M27 54L35 54Q31 68 37 80Q41 90 35 97L27 97Q33 90 29 80Q23 68 27 54Z M46 54L54 54Q58 66 52 78Q48 88 54 97L46 97Q40 88 44 78Q50 66 46 54Z M65 54L73 54Q69 68 75 80Q79 90 73 97L65 97Q71 90 67 80Q61 68 65 54Z',
+    shell: 'M50 90L14 46Q10 34 18 28Q20 16 32 14Q38 6 50 8Q62 6 68 14Q80 16 82 28Q90 34 86 46Z M37 84L63 84L65 95L35 95Z',
+    plane: 'M46 12Q50 3 54 12L55 84Q50 93 45 84Z M54 34L94 54L94 61L54 52L46 52L6 61L6 54L46 34Z M53 72L72 84L72 89L53 84L47 84L28 89L28 84L47 72Z',
+    balloon: 'M50 5C74 5 87 23 87 41C87 59 67 70 59 76L41 76C33 70 13 59 13 41C13 23 26 5 50 5Z M40 75L43.5 75L45.5 86L42 86Z M56.5 75L60 75L58 86L54.5 86Z M39 85L61 85L59 97L41 97Z',
+    gull: 'M50 40Q60 29 74 29Q87 29 97 41Q84 38 74 43Q62 47 56 60L44 60Q38 47 26 43Q16 38 3 41Q13 29 26 29Q40 29 50 40Z M50 32A7.5 7.5 0 1 1 50 47A7.5 7.5 0 1 1 50 32Z M43 53A7 12 0 1 1 57 53A7 12 0 1 1 43 53Z',
+    kite: 'M50 5L79 38L50 76L21 38Z M47 74L53 74Q58 82 53 88Q49 93 53 98L47 98Q43 93 47 88Q52 82 47 74Z M40 81L50 86L40 91Z M60 81L60 91L50 86Z',
+    rocket: 'M50 5Q65 18 65 46L65 72L35 72L35 46Q35 18 50 5Z M50 33A7 7 0 1 0 50 47A7 7 0 1 0 50 33Z M35 52L35 72L20 85L20 74Z M65 52L80 74L80 85L65 72Z M41 72L59 72L50 95Z',
+    cloud: 'M20 72A15 15 0 0 1 21 43A17 17 0 0 1 46 28A19 19 0 0 1 78 38A16 16 0 0 1 82 72Z',
   };
-  const GL_INK = '#16224A';
-  const GL_BIRD_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-    '<path d="M22 50L8 59L2 33Z" fill="#2563D9"/>' +
-    '<path d="M44 36A30 22 0 1 1 44 80A30 22 0 1 1 44 36Z" fill="#3D8BFD"/>' +
-    '<path d="M24 64Q44 84 70 62Q46 72 24 64Z" fill="#A9D0FF"/>' +
-    '<path d="M70 25A15 15 0 1 1 70 55A15 15 0 1 1 70 25Z" fill="#3D8BFD"/>' +
-    '<path d="M28 52Q44 38 60 54Q44 62 28 52Z" fill="#2563D9"/>' +
-    '<path d="M84 35L97 41L84 47Z" fill="#FFB020"/>' +
-    '<circle cx="74" cy="37" r="3.8" fill="#16224A"/><circle cx="75.3" cy="35.7" r="1.3" fill="#FFFFFF"/></svg>';
+
+  // per scene: field, ink (the silhouettes), and the scene background
+  const GL_STYLE = {
+    meadow: { field: '#F7FBF2', ink: '#18291F', bg1: '#3A86EE', bg2: '#152C78' },
+    sea: { field: '#EEF8FB', ink: '#0B2C3F', bg1: '#1FB2C6', bg2: '#0A3961' },
+    sky: { field: '#FFF6EE', ink: '#2A1846', bg1: '#FF9A6A', bg2: '#5A2A88' },
+  };
+  // the thing that was there, shown afterwards as a bright sticker
+  const GL_STICKER = { bird: '#3D8BFD', butterfly: '#FF6FA7', snail: '#FF9F1C', star: '#FFB81F', sailboat: '#FF5D5D', jellyfish: '#A774FF', kite: '#FF5D5D', rocket: '#3D8BFD' };
   const GL_DIRS = ['up', 'up right', 'right', 'down right', 'down', 'down left', 'left', 'up left'];
   const GL_NUMPAD = { 8: 0, 9: 1, 6: 2, 3: 3, 2: 4, 1: 5, 4: 6, 7: 7 };
   const GL_P2D = {};
@@ -1543,48 +1558,51 @@
     const sl = G.slots[slot], a = (sl.a * Math.PI) / 180;
     return [R + Math.sin(a) * sl.r * R, R - Math.cos(a) * sl.r * R];
   }
-  // the animal at 0.34 R, the bird and leaves at 0.2 R, all in one ink on the pale field
+  // the middle item at 0.34 R, the target and distractors at 0.2 R, all in one ink on the pale field
   const GL_CENTER = 0.34, GL_ITEM = 0.2;
-  function glStim(ctx, R, p, t, G) {
-    ctx.fillStyle = GL_INK;
+  function glStim(ctx, R, p, t, G, ink) {
+    ctx.fillStyle = ink;
     glDraw(ctx, p.pair[t.c], R, R, GL_CENTER * R, 0, false);
     if (!p.periph) return;
     const size = GL_ITEM * R;
     const b = glXY(G, R, G.slotOf(t.ring, t.dir));
-    glDraw(ctx, 'bird', b[0], b[1], size, 0, !!t.flip);
-    for (const d of t.d) { const q = glXY(G, R, d[0]); glDraw(ctx, 'leaf', q[0], q[1], size, d[1], false); }
+    glDraw(ctx, t.tg || 'bird', b[0], b[1], size, 0, !!t.flip);
+    for (const d of t.d) { const q = glXY(G, R, d[0]); glDraw(ctx, p.distractor || 'leaf', q[0], q[1], size, d[1], false); }
   }
-  // pattern mask: outlines of the same shapes plus short strokes, denser in the middle
-  function glMask(ctx, R, seed) {
+  // pattern mask: outlines of the scene's own shapes on every position an item can take
+  // (the 48 ring spots and the middle), then a scatter of outlines and short strokes
+  function glMask(ctx, R, seed, names, ink, G) {
     const rng = E.makeRng(seed);
-    const names = Object.keys(GL_PATHS);
     const pt = (maxR) => { const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * maxR; return [R + Math.cos(a) * r, R + Math.sin(a) * r]; };
+    const outline = (x, y, size) => {
+      const path = glPath(names[rng.int(names.length)]);
+      if (!path) return;
+      const k = size / 100;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rng() * Math.PI * 2);
+      ctx.scale(k, k);
+      ctx.translate(-50, -50);
+      ctx.lineWidth = (0.014 * R) / k;
+      ctx.stroke(path);
+      ctx.restore();
+    };
     ctx.save();
     ctx.beginPath();
     ctx.arc(R, R, R, 0, Math.PI * 2);
     ctx.clip();
-    ctx.strokeStyle = GL_INK;
-    ctx.fillStyle = GL_INK;
+    ctx.strokeStyle = ink;
+    ctx.fillStyle = ink;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    for (let i = 0; i < 96; i++) {
-      const q = pt(i < 12 ? 0.24 * R : 1.05 * R);
-      const path = glPath(names[rng.int(names.length)]);
-      if (!path) continue;
-      const k = ((0.14 + rng() * 0.22) * R) / 100;
-      ctx.save();
-      ctx.translate(q[0], q[1]);
-      ctx.rotate(rng() * Math.PI * 2);
-      ctx.scale(k, k);
-      ctx.translate(-50, -50);
-      ctx.lineWidth = (0.016 * R) / k;
-      ctx.stroke(path);
-      ctx.restore();
-    }
-    for (let i = 0; i < 190; i++) {
+    const jit = () => (rng() - 0.5) * 0.08 * R;
+    for (let k = 0; k < G.slots.length; k++) { const q = glXY(G, R, k); outline(q[0] + jit(), q[1] + jit(), (0.18 + rng() * 0.1) * R); }
+    for (let k = 0; k < 3; k++) outline(R + jit(), R + jit(), (0.26 + rng() * 0.14) * R);
+    for (let i = 0; i < 18; i++) { const q = pt(1.02 * R); outline(q[0], q[1], (0.14 + rng() * 0.18) * R); }
+    for (let i = 0; i < 110; i++) {
       const q = pt(1.05 * R);
       const len = (0.035 + rng() * 0.1) * R, a = rng() * Math.PI * 2;
-      ctx.lineWidth = (0.008 + rng() * 0.016) * R;
+      ctx.lineWidth = (0.008 + rng() * 0.014) * R;
       ctx.beginPath();
       if (rng() < 0.55) { ctx.moveTo(q[0], q[1]); ctx.lineTo(q[0] + Math.cos(a) * len, q[1] + Math.sin(a) * len); }
       else ctx.arc(q[0], q[1], len * 0.6, a, a + 1 + rng() * 3);
@@ -1594,10 +1612,10 @@
   }
   // fixation: a dot inside a ring that closes in over the first GL_RING_MS
   const GL_RING_MS = 260;
-  function glFix(ctx, R, k) {
+  function glFix(ctx, R, k, ink) {
     const e = k == null ? 1 : 1 - Math.pow(1 - Math.min(1, k), 3);
-    ctx.fillStyle = GL_INK;
-    ctx.strokeStyle = GL_INK;
+    ctx.fillStyle = ink;
+    ctx.strokeStyle = ink;
     ctx.beginPath();
     ctx.arc(R, R, Math.max(3, 0.022 * R), 0, Math.PI * 2);
     ctx.fill();
@@ -1630,7 +1648,15 @@
       const p = this.p;
       this.phase = this.summary ? 'done' : 'ready';
       this.D = 0; this.R = 0; this.dpr = 1;
+      const look = GL_STYLE[p.theme] || GL_STYLE.meadow;
+      this.ink = look.ink;
+      this.maskShapes = p.pair.concat(p.targetSet || ['bird'], [p.distractor || 'leaf']);
+      this.el.dataset.theme = p.theme || 'meadow';
+      this.el.style.setProperty('--bg1', look.bg1);
+      this.el.style.setProperty('--bg2', look.bg2);
       this.lens = h('div', { class: 'gl-lens' });
+      this.lens.style.setProperty('--gl-ink', look.ink);
+      this.lens.style.setProperty('--gl-field', look.field);
       this.canvas = h('canvas', { class: 'gl-canvas', 'aria-hidden': 'true' });
       this.stimC = document.createElement('canvas');
       this.maskC = document.createElement('canvas');
@@ -1726,7 +1752,7 @@
       this.blit(null);
       if (!this.ctx) return;
       this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-      glFix(this.ctx, this.R, k);
+      glFix(this.ctx, this.R, k, this.ink);
     }
     prepare() {
       const t = this.p.trials[this.run.i], W = this.canvas.width, k = this.dpr;
@@ -1734,12 +1760,12 @@
       sc.setTransform(1, 0, 0, 1, 0, 0);
       sc.clearRect(0, 0, W, W);
       sc.setTransform(k, 0, 0, k, 0, 0);
-      glStim(sc, this.R, this.p, t, this.G);
+      glStim(sc, this.R, this.p, t, this.G, this.ink);
       const mc = this.maskC.getContext('2d');
       mc.setTransform(1, 0, 0, 1, 0, 0);
       mc.clearRect(0, 0, W, W);
       mc.setTransform(k, 0, 0, k, 0, 0);
-      glMask(mc, this.R, t.mask);
+      glMask(mc, this.R, t.mask, this.maskShapes, this.ink, this.G);
     }
     // ---- one look: fixation, flash, mask, then the two answers
     begin() {
@@ -1883,7 +1909,7 @@
         cls: correct ? 'correct' : !cOk && !dOk ? 'both_wrong' : !cOk ? 'center_wrong' : 'where_wrong',
         refresh_ms: r4(st.T), frames: st.plan.frames, flash_ms: r4(planned), flash_measured_ms: r4(measured), frame_drop: drop ? 1 : 0,
         fix_ms: Math.round(st.onset - st.start), mask_ms: Math.round(st.end - st.offset),
-        shown: p.pair[t.c], chosen: p.pair[a.c],
+        target: p.periph ? t.tg || 'bird' : '', shown: p.pair[t.c], chosen: p.pair[a.c],
         ring: p.periph ? t.ring : '', dir: p.periph ? t.dir : '', dir_chosen: p.periph ? a.d : '', n_distract: p.periph ? t.d.length : '',
         rt_center_ms: a.rtC, rt_where_ms: p.periph ? a.rtW : '',
         stair_next_ms: rec.next == null ? '' : rec.next, reversal: p.fixedMs ? '' : rec.rev,
@@ -1909,9 +1935,10 @@
         this.spotBtns[t.dir].classList.add('ok');
         if (!dOk) this.spotBtns[a.d].classList.add('bad');
         const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
-        const size = Math.round(0.28 * this.R);
-        const bird = h('div', { class: 'gl-bird' + (t.flip ? ' flip' : ''), 'aria-hidden': 'true' });
-        bird.innerHTML = GL_BIRD_SVG;
+        const size = Math.round(0.24 * this.R);
+        const tg = t.tg || 'bird';
+        const bird = h('div', { class: 'gl-bird' + (t.flip ? ' flip' : ''), 'aria-hidden': 'true' },
+          s('svg', { viewBox: '-6 -6 112 112' }, s('path', { d: GL_PATHS[tg], fill: GL_STICKER[tg] || '#3D8BFD', stroke: '#FFFFFF', 'stroke-width': 9, 'stroke-linejoin': 'round', 'paint-order': 'stroke' })));
         bird.style.cssText = 'left:' + q[0] + 'px;top:' + q[1] + 'px;width:' + size + 'px;height:' + size + 'px;margin:' + -size / 2 + 'px 0 0 ' + -size / 2 + 'px';
         this.lens.append(bird);
         this.revealEl = bird;
@@ -2113,7 +2140,7 @@
       ['practice', '1 for a practice board (fixed, the same for everyone)'],
       ['t_ms', 'ms since this puzzle appeared (Tumbler: when the try was submitted)'],
       ['move_no', 'state-changing moves so far in this puzzle, including moves later undone; Glimpse: the look number in the round'],
-      ['target', 'Outbound: car id (c1...). Conduit: tile r{row}c{col}. Tumbler: the try as letters, or pin{n}={letter} for a revealed pin'],
+      ['target', 'Outbound: car id (c1...). Conduit: tile r{row}c{col}. Tumbler: the try as letters, or pin{n}={letter} for a revealed pin. Glimpse: the thing out around the middle (bird, butterfly, star...)'],
       ['from / to', 'Outbound: cells driven forward from the start position, or exit. Conduit: quarter turns clockwise away from the solved orientation'],
       ['d_before / d_after', 'fewest moves (Outbound) or turns (Conduit) still needed before and after; inf = can no longer be solved'],
       ['cls', 'move label, see below'],
@@ -2128,9 +2155,9 @@
       ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
       ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
       ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 400 to 699, seeded) and mask time (planned 300)'],
-      ['shown / chosen', 'Glimpse: the animal in the middle, and the one picked'],
+      ['shown / chosen', 'Glimpse: the item in the middle, and the one picked'],
       ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
-      ['n_distract', 'Glimpse: leaves around the bird'],
+      ['n_distract', 'Glimpse: distractors around the target (leaves, shells or clouds, by scene)'],
       ['rt_center_ms / rt_where_ms', 'Glimpse: time to pick the animal from when the choices appeared, and to tap a place from when the spots appeared; answers are not speeded'],
       ['stair_next_ms / reversal', 'Glimpse: display time planned for the next look, and 1 if this look reversed the staircase direction'],
       ['field_px', 'Glimpse: field radius in CSS pixels; degrees of visual angle depend on the screen and viewing distance'],
@@ -2181,6 +2208,9 @@
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled.', '',
         '## Levels', '', '### Outbound', lv('outbound'), 'L3 to L5 contain planted traps; difficulty is set by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
+        '## Glimpse scenes', '',
+        Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
+        'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play draw the scene from the puzzle seed and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
         'A round is 6 looks. The first starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 400 to 699 ms (seeded) with a ring closing in over the first 260 ms, the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss four steps longer (weighted up/down, settles at 80% correct). A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',

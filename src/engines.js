@@ -1150,6 +1150,15 @@
     }
     return best;
   }
+  // Scenes. Each has an easy and a harder pair for the middle, three things to
+  // find around it and one distractor. Fixed (measurement) blocks and practice
+  // use the classic set: meadow, always the bird.
+  const GL_THEMES = {
+    meadow: { pairs: { easy: ['rabbit', 'cat'], hard: ['cat', 'fox'] }, targets: ['bird', 'butterfly', 'snail'], distractor: 'leaf' },
+    sea: { pairs: { easy: ['fish', 'turtle'], hard: ['fish', 'whale'] }, targets: ['star', 'sailboat', 'jellyfish'], distractor: 'shell' },
+    sky: { pairs: { easy: ['plane', 'balloon'], hard: ['plane', 'gull'] }, targets: ['kite', 'rocket', 'star'], distractor: 'cloud' },
+  };
+  const GL_THEME_ORDER = ['meadow', 'sea', 'sky'];
   function glMedian(xs) {
     if (!xs.length) return null;
     const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1;
@@ -1169,7 +1178,8 @@
     maskMs: 300,
     fixMs: [400, 700],
     up: 4, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 0.8
-    pairs: { easy: ['rabbit', 'cat'], hard: ['cat', 'fox'] },
+    themes: GL_THEMES,
+    themeOrder: GL_THEME_ORDER,
     // advanceMs: a round at or under this display time counts as a success (two in a row: next level)
     levels: {
       1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 60 },
@@ -1182,29 +1192,39 @@
     ringR: GL_RING_R,
     slotOf: glSlotOf,
     ladder: glLadder,
+    // p is a puzzle (pair given as names) or a level entry (pair given as 'easy' or 'hard')
     describe(p) {
-      const pair = Array.isArray(p.pair) ? p.pair : this.pairs[p.pair];
+      const pair = Array.isArray(p.pair) ? p.pair.join('/') : p.pair === 'hard' ? 'harder pair' : 'easy pair';
       const rings = p.rings.length === 1 ? 'ring ' + p.rings[0] : 'rings ' + p.rings[0] + '-' + p.rings[p.rings.length - 1];
-      return (p.periph ? 'center + bird on ' + rings : 'center only') + (p.distract ? ', ' + p.distract + ' leaves' : '') + ', ' + pair.join('/');
+      const find = p.targetSet ? p.targetSet.join('/') : 'target';
+      const among = p.distract ? ', ' + p.distract + ' ' + (p.distractor === 'leaf' ? 'leaves' : p.distractor ? p.distractor + 's' : 'distractors') : '';
+      return (p.theme ? p.theme + ': ' : '') + (p.periph ? 'center + ' + find + ' on ' + rings : 'center only') + among + ', ' + pair;
     },
-    build(level, seed, L, trials, fixedMs) {
-      const pair = this.pairs[L.pair];
+    build(level, seed, L, trials, fixedMs, themeName, targetSet) {
+      const theme = GL_THEMES[themeName];
+      const pair = theme.pairs[L.pair];
       return {
-        game: 'glimpse', level, seed,
+        game: 'glimpse', level, seed, theme: themeName,
         n: trials.length, periph: L.periph, rings: L.rings.slice(), distract: L.distract, pair: pair.slice(),
+        distractor: theme.distractor, targetSet: targetSet.slice(),
         trials, maskMs: this.maskMs, fixedMs: fixedMs || null, advanceMs: L.advanceMs || null,
         reference: null,
         features: {
-          looks: trials.length, periphery: L.periph ? 1 : 0, rings: L.rings.join(' '), leaves: L.distract,
-          pair: pair.join('/'), mask_ms: this.maskMs, target_correct: this.up / (this.up + this.down),
-          advance_ms: L.advanceMs || null,
+          looks: trials.length, theme: themeName, periphery: L.periph ? 1 : 0, rings: L.rings.join(' '), distractors: L.distract,
+          pair: pair.join('/'), targets: L.periph ? targetSet.join('/') : '', distractor: L.distract ? theme.distractor : '',
+          mask_ms: this.maskMs, target_correct: this.up / (this.up + this.down), advance_ms: L.advanceMs || null,
         },
       };
     },
-    generate(level, seed) {
+    // variant 'classic': meadow scene, always the bird (fixed blocks); anything else: a seeded scene, targets in turn
+    generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
       const n = this.trials;
+      const classic = variant === 'classic';
+      const themeName = classic ? 'meadow' : GL_THEME_ORDER[rng.int(GL_THEME_ORDER.length)];
+      const targetSet = classic ? ['bird'] : GL_THEMES[themeName].targets;
+      const tgs = rng.shuffle(Array.from({ length: n }, (_, i) => targetSet[i % targetSet.length]));
       const centers = rng.shuffle(Array.from({ length: n }, (_, i) => i % 2));
       let dirs = [], rings = [];
       if (L.periph) {
@@ -1219,6 +1239,7 @@
         if (L.periph) {
           t.ring = rings[i];
           t.dir = dirs[i];
+          t.tg = tgs[i];
           t.flip = rng() < 0.5 ? 1 : 0;
           const tgt = glSlotOf(t.ring, t.dir);
           const free = [];
@@ -1228,14 +1249,14 @@
         }
         trials.push(t);
       }
-      return this.build(level, seed, L, trials);
+      return this.build(level, seed, L, trials, null, themeName, targetSet);
     },
     // three looks with long, fixed display times: the bird sits on the middle ring
     practice() {
       const L = { periph: true, rings: [2], distract: 0, pair: 'easy' };
       const spec = [[0, 1], [1, 5], [0, 6]];
-      const trials = spec.map((x, i) => ({ c: x[0], fix: 550, mask: 1000 + i, ring: 2, dir: x[1], flip: x[1] >= 4 ? 1 : 0, d: [] }));
-      return this.build(0, 0, L, trials, [1000, 600, 350]);
+      const trials = spec.map((x, i) => ({ c: x[0], fix: 550, mask: 1000 + i, ring: 2, dir: x[1], tg: 'bird', flip: x[1] >= 4 ? 1 : 0, d: [] }));
+      return this.build(0, 0, L, trials, [1000, 600, 350], 'meadow', ['bird']);
     },
     // start: { ms } carries a staircase on; without it the staircase starts fresh at startMs
     newRun(p, start) {
@@ -1302,7 +1323,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.3.0',
+    version: '1.4.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse'],

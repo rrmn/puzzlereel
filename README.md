@@ -13,18 +13,19 @@ Each game opens with a short practice round and a guiding hand, so it can be lea
 
 | Level | Shows | Like |
 | --- | --- | --- |
-| 1 | the animal only (rabbit or cat) | processing speed |
-| 2 | plus a bird on the middle ring, 8 directions | divided attention |
-| 3 | the bird on any of 3 rings | wider field |
-| 4 | plus 23 leaves | selective attention |
-| 5 | 47 leaves, and a harder pair (cat or fox) | selective attention, finer discrimination |
+| 1 | the middle item only (for example rabbit or cat) | processing speed |
+| 2 | plus a target on the middle ring, 8 directions | divided attention |
+| 3 | the target on any of 3 rings | wider field |
+| 4 | plus 23 distractors | selective attention |
+| 5 | 47 distractors, and a harder pair (such as cat or fox) | selective attention, finer discrimination |
 
 - **Timing.** Everything shown during a look is drawn on one canvas inside `requestAnimationFrame`, so the flash and the mask change on screen frames. The frame period is measured during each fixation (and snapped to a standard rate within 1.5%), display times are whole frames, and each look logs the planned and the measured on-screen time plus a `frame_drop` flag. Frame timestamps are not photometry: check a new device type with a photodiode before relying on very short times.
 - **Rounds.** 6 looks. The first starts on a tap; the rest follow by themselves (fixation 400 to 699 ms, flash, 300 ms mask, two answers, short feedback), about 20 seconds a round.
 - **Staircase.** Display times come from a ladder from 500 ms down by x0.9 per step, rounded to frames (at 60 Hz: 30 … 1 frames). One step shorter after a correct look, four steps longer after a miss (weighted up/down, settles at 80% correct). A fresh staircase starts at 300 ms and earns every step. It carries over between rounds of the same level (within a block in research sessions, between visits in free play), and each carried-over round starts one step slower so it opens with a likely hit.
 - **Levels.** Two rounds in a row at or under the level's display-time target move up a level; Glimpse never moves down. The targets are game settings, not study values.
 - **Field size.** The field scales with the screen (radius logged as `field_px`). On a phone held at 35 cm the outer ring sits about 4 to 5 degrees from the middle, on a 24-inch monitor at 60 cm about 6. The clinical test places its targets about 11 cm out, which is 10 degrees or more at desktop viewing distances, so eccentricity is the main setting gap on phones.
-- **Stimuli** are our own silhouettes (animals, a bird, leaves), not the vehicles of the clinical test, so a check built on that test stays a transfer measure.
+- **Scenes.** Rounds in adaptive blocks and free play are set in a meadow (rabbit or cat; find a bird, butterfly or snail among leaves), the sea (fish or turtle; a starfish, sailboat or jellyfish among shells) or a sunset sky (plane or balloon; a kite, rocket or star among clouds), with the target changing from look to look. Fixed blocks and practice always use the classic meadow set with the bird, so measurement stays comparable. The scene is logged with each round and the target with each look.
+- **Stimuli** are our own silhouettes, not the vehicles of the clinical test, so a check built on that test stays a transfer measure.
 
 ## Layout
 
