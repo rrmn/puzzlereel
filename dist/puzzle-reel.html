@@ -96,6 +96,7 @@ button { cursor: pointer; }
 [data-scene="outbound"], .scene[data-game="outbound"] { --bg1: #FFE68A; --bg2: #FFB648; --ink: #3A2810; --ink2: rgba(58,40,16,.68); --chip: rgba(255,255,255,.6); --btn: #3A2810; --btn-ink: #FFF6E0; --halo: rgba(255,250,225,.75); }
 [data-scene="conduit"], .scene[data-game="conduit"] { --bg1: #C5F0B0; --bg2: #5FBF6C; --ink: #0F3A1D; --ink2: rgba(15,58,29,.7); --chip: rgba(255,255,255,.55); --btn: #0F3A1D; --btn-ink: #EEFFEE; --halo: rgba(240,255,232,.7); }
 [data-scene="tumbler"], .scene[data-game="tumbler"] { --bg1: #6550B8; --bg2: #26185A; --ink: #FBF8FF; --ink2: rgba(251,248,255,.74); --chip: rgba(255,255,255,.15); --btn: #FFC83A; --btn-ink: #26185A; --halo: rgba(170,150,255,.45); }
+[data-scene="glimpse"], .scene[data-game="glimpse"] { --bg1: #3A86EE; --bg2: #152C78; --ink: #FFFFFF; --ink2: rgba(255,255,255,.78); --chip: rgba(255,255,255,.16); --btn: #FFFFFF; --btn-ink: #152C78; --halo: rgba(255,255,255,.5); }
 
 .app {
   position: relative; height: 100%; overflow: hidden;
@@ -134,6 +135,7 @@ button { cursor: pointer; }
 .logo i:nth-child(1) { height: 11px; background: #FFB627; }
 .logo i:nth-child(2) { height: 18px; background: #3BB273; }
 .logo i:nth-child(3) { height: 14px; background: #7C5CFF; }
+.logo i:nth-child(4) { height: 10px; background: #3A86EE; }
 .hud-right { display: flex; gap: 6px; align-items: center; }
 .pill {
   display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px 0 9px; border-radius: 999px;
@@ -332,6 +334,89 @@ button { cursor: pointer; }
 .vbtn.go:active { box-shadow: 0 1px 0 #C98A0B; transform: translateY(3px); }
 .vbtn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
 
+/* ------------------------------------------------------------ Glimpse */
+@media (min-width: 700px) {
+  .scene[data-game="glimpse"] { width: min(760px, calc(100% - 40px)); margin-left: calc(-0.5 * min(760px, calc(100% - 40px))); }
+}
+.gl-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; height: 100%; }
+.lens {
+  position: relative; flex: none; width: 300px; height: 300px; border-radius: 50%;
+  background: #F6FAFF;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.92), 0 0 0 13px rgba(255, 255, 255, 0.12), 0 28px 64px rgba(4, 12, 48, 0.55);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.lens-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
+.go {
+  position: absolute; left: 50%; top: 50%; width: 88px; height: 88px; margin: -44px 0 0 -44px; border-radius: 50%; border: 0; padding: 0;
+  display: grid; place-items: center; background: #1D3C8A; color: #FFFFFF;
+  box-shadow: 0 5px 0 #0E2156, 0 12px 26px rgba(10, 25, 80, 0.35);
+  transition: transform 0.2s cubic-bezier(.3,1.5,.5,1), opacity 0.16s;
+}
+.go svg { width: 44px; height: 44px; }
+.go::before { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 3px solid #1D3C8A; opacity: 0; animation: lookpulse 1.7s ease-out infinite; pointer-events: none; }
+.go:active { transform: scale(0.93); }
+.go:focus { outline: none; }
+.go:focus-visible { box-shadow: 0 0 0 4px #FFFFFF, 0 0 0 7px #1D3C8A; }
+.go.away { transform: scale(0.06); opacity: 0; pointer-events: none; transition: transform 0.16s ease-in, opacity 0.16s ease-in; }
+.go.away::before { animation: none; }
+.choices { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: calc(var(--R, 150px) * 0.1); transition: opacity 0.15s, transform 0.15s; z-index: 1; }
+.choices.gone { opacity: 0; transform: translate(-50%, -50%) scale(0.9); pointer-events: none; }
+.choice {
+  width: clamp(64px, calc(var(--R, 150px) * 0.5), 128px); height: clamp(64px, calc(var(--R, 150px) * 0.5), 128px);
+  border-radius: 28%; border: 0; padding: 0; display: grid; place-items: center; background: #FFFFFF; color: #16224A;
+  box-shadow: 0 4px 0 rgba(22, 34, 74, 0.16), 0 10px 22px rgba(22, 34, 74, 0.2), inset 0 0 0 2px rgba(22, 34, 74, 0.08);
+  transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s, color 0.2s;
+  animation: pop 0.26s cubic-bezier(.3,1.7,.5,1);
+}
+.choice svg { width: 72%; height: 72%; fill: currentColor; }
+.choice:active { transform: scale(0.92); }
+.choice:focus { outline: none; }
+.choice:focus-visible { box-shadow: 0 0 0 4px #1D3C8A; }
+.choice.picked { transform: scale(0.94); box-shadow: 0 0 0 4px #1D3C8A, 0 6px 16px rgba(22, 34, 74, 0.2); }
+.choice.ok { box-shadow: 0 0 0 5px var(--good), 0 0 24px rgba(31, 179, 110, 0.45); color: #0B6A40; }
+.choice.bad { box-shadow: 0 0 0 5px var(--bad); color: #A3231F; animation: rattle 0.45s; }
+.choice.dim { opacity: 0.3; }
+.choice[disabled] { cursor: default; }
+.spots { position: absolute; inset: 0; }
+.spot {
+  position: absolute; border-radius: 50%; border: 0; padding: 0;
+  background: rgba(29, 60, 138, 0.07); box-shadow: inset 0 0 0 2.5px rgba(29, 60, 138, 0.42);
+  animation: pop 0.24s cubic-bezier(.3,1.7,.5,1) both;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.spot:nth-child(2) { animation-delay: 0.02s; } .spot:nth-child(3) { animation-delay: 0.04s; } .spot:nth-child(4) { animation-delay: 0.06s; }
+.spot:nth-child(5) { animation-delay: 0.08s; } .spot:nth-child(6) { animation-delay: 0.1s; } .spot:nth-child(7) { animation-delay: 0.12s; } .spot:nth-child(8) { animation-delay: 0.14s; }
+.spot:focus { outline: none; }
+.spot:focus-visible { box-shadow: inset 0 0 0 3px #1D3C8A, 0 0 0 3px rgba(29, 60, 138, 0.3); }
+.spot.picked { background: #1D3C8A; box-shadow: none; }
+.spot.ok { background: var(--good); box-shadow: 0 0 0 5px rgba(31, 179, 110, 0.3); }
+.spot.bad { background: var(--bad); box-shadow: none; animation: rattle 0.45s; }
+.spot.fade { opacity: 0; transition: opacity 0.2s; }
+.spot[disabled] { cursor: default; }
+.gl-answer {
+  position: absolute; left: 50%; top: 50%; z-index: 1; display: grid; place-items: center;
+  width: calc(var(--R, 150px) * 0.32); height: calc(var(--R, 150px) * 0.32); margin: calc(var(--R, 150px) * -0.16) 0 0 calc(var(--R, 150px) * -0.16);
+  border-radius: 30%; background: #FFFFFF; color: #16224A; pointer-events: none;
+  animation: pop 0.28s cubic-bezier(.3,1.7,.5,1);
+}
+.gl-answer svg { width: 76%; height: 76%; fill: currentColor; }
+.gl-answer.ok { color: #0B6A40; box-shadow: 0 0 0 4px var(--good), 0 0 22px rgba(31, 179, 110, 0.45); }
+.gl-answer.bad { color: #16224A; box-shadow: 0 0 0 4px var(--bad), 0 0 18px rgba(239, 79, 74, 0.35); animation: pop 0.28s cubic-bezier(.3,1.7,.5,1), rattle 0.45s 0.28s; }
+.gl-bird { position: absolute; z-index: 2; pointer-events: none; animation: birdin 0.42s cubic-bezier(.3,1.7,.5,1) both; filter: drop-shadow(0 3px 4px rgba(10, 20, 60, 0.3)); }
+.gl-bird svg { display: block; width: 100%; height: 100%; }
+.gl-bird.flip svg { transform: scaleX(-1); }
+.gl-dots { display: flex; gap: 7px; height: 12px; align-items: center; }
+.gl-dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.26); transition: background 0.3s, transform 0.3s; }
+.gl-dots i.now { background: #FFFFFF; transform: scale(1.3); }
+.gl-dots i.done { background: rgba(255, 255, 255, 0.8); }
+.gl-dots i.ok { background: #6EE7A8; }
+.gl-dots i.bad { background: #FF8A80; }
+.goal.speed { min-width: 108px; justify-content: center; font-size: 17px; padding: 0 12px 0 9px; }
+.goal.speed svg { color: var(--gold); filter: drop-shadow(0 1px 0 rgba(0,0,0,.2)); }
+.res-level.best svg { width: 18px; height: 18px; color: var(--gold-deep); }
+/* nothing else moves while a look is on screen */
+.app.steady *, .app.steady *::before, .app.steady *::after { animation-play-state: paused !important; }
+
 /* ------------------------------------------------------- hand and fx */
 .fx { position: absolute; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
 .fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -423,6 +508,22 @@ button { cursor: pointer; }
 .sheet-body { overflow-y: auto; padding-block: 6px 22px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 20px; }
 .sheet-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--sheet-rule); padding-block: 14px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
 .sheet-foot .note { flex: 1 1 200px; margin: 0; font-size: 13px; color: var(--sheet-soft); }
+.game-pick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.gp {
+  display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; padding: 11px 2px 9px;
+  border-radius: 18px; border: 0; background: var(--field); color: var(--sheet-ink);
+  font-family: var(--display); font-weight: 600; font-size: 13px; line-height: 1.1; text-align: center;
+  box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow 0.15s, transform 0.12s;
+}
+.gp:active { transform: scale(0.95); }
+.gp .gp-ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; }
+.gp .gp-ico svg { width: 23px; height: 23px; }
+.gp[data-game="mixed"] .gp-ico { background: #3A4770; color: #FFFFFF; }
+.gp[data-game="outbound"] .gp-ico { background: #FFC94D; color: #3A2810; }
+.gp[data-game="conduit"] .gp-ico { background: #6CCB78; color: #0F3A1D; }
+.gp[data-game="tumbler"] .gp-ico { background: #5B47AE; color: #FFFFFF; }
+.gp[data-game="glimpse"] .gp-ico { background: #2F72DC; color: #FFFFFF; }
+.gp.on { box-shadow: inset 0 0 0 2px var(--accent); }
 .menu { display: flex; flex-direction: column; gap: 8px; }
 .menu-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border-radius: 18px; border: 0; background: var(--field); text-align: left; }
 .menu-item .ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; background: var(--sheet); flex: none; }
@@ -513,6 +614,8 @@ code { font-family: var(--mono); font-size: 12px; }
 @keyframes starin { 0% { transform: scale(0) rotate(-30deg); } 100% { transform: scale(1) rotate(0); } }
 @keyframes nudgeup { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lookpulse { 0% { transform: scale(0.86); opacity: 0.55; } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes birdin { 0% { transform: scale(0.2) rotate(-18deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 
 @media (max-height: 640px) {
   .scene { padding-top: calc(54px + env(safe-area-inset-top, 0px)); }
@@ -1657,15 +1760,201 @@ function PuzzleEnginesFactory(root) {
     },
   };
 
+  // =====================================================================
+  // GLIMPSE: speed of processing in the useful-field-of-view format.
+  // An animal in the middle (one of two) and, from level 2, a bird around it
+  // flash for a few screen frames, then a mask covers them. The player picks
+  // the animal, then taps where the bird was. Display time adapts every look
+  // with a weighted up/down staircase that settles at 75% correct.
+  // The generator fixes what is shown; display times depend on the answers.
+  // =====================================================================
+  const GL_RING_R = [0.34, 0.62, 0.88];   // ring radius as a share of the field radius
+  const GL_RING_N = [8, 16, 24];          // 48 positions: the bird plus up to 47 leaves
+  const GL_SLOTS = [];
+  GL_RING_R.forEach((r, i) => {
+    for (let k = 0; k < GL_RING_N[i]; k++) GL_SLOTS.push({ ring: i + 1, a: (360 * k) / GL_RING_N[i], r });
+  });
+  // direction 0 = up, then clockwise in 45 degree steps
+  function glSlotOf(ring, dir) {
+    let base = 0;
+    for (let i = 0; i < ring - 1; i++) base += GL_RING_N[i];
+    return base + (dir * GL_RING_N[ring - 1]) / 8;
+  }
+  // Display times from 500 ms down in steps of x0.85, as whole frames of the
+  // measured frame period T; repeats are dropped, the last step is one frame.
+  function glLadder(T) {
+    const out = [];
+    for (let ms = 500; ; ms *= 0.85) {
+      const f = Math.max(1, Math.round(ms / T));
+      if (!out.length || f < out[out.length - 1]) out.push(f);
+      if (f === 1) return out;
+    }
+  }
+  function glNearest(lad, T, ms) {
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < lad.length; i++) {
+      const d = Math.abs(Math.log((lad[i] * T) / ms));
+      if (d < bd - 1e-9) { bd = d; best = i; }
+    }
+    return best;
+  }
+  function glMedian(xs) {
+    if (!xs.length) return null;
+    const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1;
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
+
+  const Glimpse = {
+    id: 'glimpse',
+    name: 'Glimpse',
+    noun: 'look',
+    kind: 'trials',
+    levelDown: false,      // the display time already adapts; levels only add load
+    trials: 10,
+    startMs: 500,
+    maskMs: 500,
+    fixMs: [500, 900],
+    up: 3, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 0.75
+    fastDown: 3,           // a fresh staircase drops 3 steps per correct look until the first miss
+    pairs: { easy: ['rabbit', 'cat'], hard: ['cat', 'fox'] },
+    // advanceMs: a round at or under this display time counts as a success (two in a row: next level)
+    levels: {
+      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 60 },
+      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 90 },
+      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 120 },
+      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 180 },
+      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 240 },
+    },
+    slots: GL_SLOTS,
+    ringR: GL_RING_R,
+    slotOf: glSlotOf,
+    ladder: glLadder,
+    describe(p) {
+      const pair = Array.isArray(p.pair) ? p.pair : this.pairs[p.pair];
+      const rings = p.rings.length === 1 ? 'ring ' + p.rings[0] : 'rings ' + p.rings[0] + '-' + p.rings[p.rings.length - 1];
+      return (p.periph ? 'center + bird on ' + rings : 'center only') + (p.distract ? ', ' + p.distract + ' leaves' : '') + ', ' + pair.join('/');
+    },
+    build(level, seed, L, trials, fixedMs) {
+      const pair = this.pairs[L.pair];
+      return {
+        game: 'glimpse', level, seed,
+        n: trials.length, periph: L.periph, rings: L.rings.slice(), distract: L.distract, pair: pair.slice(),
+        trials, maskMs: this.maskMs, fixedMs: fixedMs || null, advanceMs: L.advanceMs || null,
+        reference: null,
+        features: {
+          looks: trials.length, periphery: L.periph ? 1 : 0, rings: L.rings.join(' '), leaves: L.distract,
+          pair: pair.join('/'), mask_ms: this.maskMs, target_correct: this.up / (this.up + this.down),
+          advance_ms: L.advanceMs || null,
+        },
+      };
+    },
+    generate(level, seed) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const n = this.trials;
+      const centers = rng.shuffle(Array.from({ length: n }, (_, i) => i % 2));
+      let dirs = [], rings = [];
+      if (L.periph) {
+        // every direction at least once per round, rings in equal shares
+        while (dirs.length < n) dirs = dirs.concat(rng.shuffle([0, 1, 2, 3, 4, 5, 6, 7]));
+        dirs = rng.shuffle(dirs.slice(0, n));
+        rings = rng.shuffle(Array.from({ length: n }, (_, i) => L.rings[i % L.rings.length]));
+      }
+      const trials = [];
+      for (let i = 0; i < n; i++) {
+        const t = { c: centers[i], fix: this.fixMs[0] + rng.int(this.fixMs[1] - this.fixMs[0]), mask: (rng() * 4294967296) >>> 0 };
+        if (L.periph) {
+          t.ring = rings[i];
+          t.dir = dirs[i];
+          t.flip = rng() < 0.5 ? 1 : 0;
+          const tgt = glSlotOf(t.ring, t.dir);
+          const free = [];
+          for (let k = 0; k < GL_SLOTS.length; k++) if (k !== tgt) free.push(k);
+          rng.shuffle(free);
+          t.d = free.slice(0, L.distract).sort((a, b) => a - b).map((k) => [k, rng.int(360)]);
+        }
+        trials.push(t);
+      }
+      return this.build(level, seed, L, trials);
+    },
+    // four looks with long, fixed display times: the bird sits on the middle ring
+    practice() {
+      const L = { periph: true, rings: [2], distract: 0, pair: 'easy' };
+      const spec = [[0, 1], [1, 5], [0, 6], [1, 3]];
+      const trials = spec.map((x, i) => ({ c: x[0], fix: 650, mask: 1000 + i, ring: 2, dir: x[1], flip: x[1] >= 4 ? 1 : 0, d: [] }));
+      return this.build(0, 0, L, trials, [1000, 700, 450, 300]);
+    },
+    // start: { ms } carries a staircase on; without it the staircase starts fresh at 500 ms
+    newRun(p, start) {
+      const carried = start && start.ms > 0;
+      const ms = p.fixedMs ? null : carried ? Math.min(this.startMs, start.ms) : this.startMs;
+      return { i: 0, ms, start: ms, fresh: !p.fixedMs && !carried, fast: !p.fixedMs && !carried, last: 0, rev: [], res: [] };
+    },
+    // the display time for the next look, given the frame period T in ms
+    plan(p, run, T) {
+      T = T > 0 ? T : 1000 / 60;
+      if (p.fixedMs) {
+        const want = p.fixedMs[Math.min(run.i, p.fixedMs.length - 1)];
+        const f = Math.max(1, Math.round(want / T));
+        return { idx: -1, frames: f, ms: f * T, T };
+      }
+      const lad = glLadder(T);
+      const idx = glNearest(lad, T, run.ms);
+      return { idx, frames: lad[idx], ms: lad[idx] * T, T, steps: lad.length };
+    },
+    // r: { correct, plan, drop }
+    record(p, run, r) {
+      const out = { i: run.i + 1, ok: r.correct ? 1 : 0, ms: round(r.plan.ms, 2), f: r.plan.frames, T: round(r.plan.T, 3), drop: r.drop ? 1 : 0, rev: 0, next: null };
+      if (!p.fixedMs) {
+        const lad = glLadder(r.plan.T);
+        const dir = r.correct ? 1 : -1;
+        let idx = r.plan.idx;
+        if (r.correct) idx += run.fast ? this.fastDown : this.down;
+        else { idx -= this.up; run.fast = false; }
+        idx = Math.max(0, Math.min(lad.length - 1, idx));
+        if (run.last && dir !== run.last) { out.rev = 1; run.rev.push(out.ms); }
+        run.last = dir;
+        run.ms = lad[idx] * r.plan.T;
+        out.next = round(run.ms, 2);
+      }
+      run.res.push(out);
+      run.i++;
+      return out;
+    },
+    summary(p, run) {
+      const res = run.res, n = res.length;
+      const k = res.filter((x) => x.ok).length;
+      // operating point: geometric mean display time once a fresh staircase has stopped its quick descent
+      let from = 0;
+      if (run.fresh) { const e = res.findIndex((x) => !x.ok); from = e < 0 ? 0 : e; }
+      const tail = res.slice(from);
+      const gm = tail.length ? Math.exp(tail.reduce((a, x) => a + Math.log(x.ms), 0) / tail.length) : null;
+      const hits = res.filter((x) => x.ok).map((x) => x.ms);
+      return {
+        n, correct: k, accuracy: n ? k / n : null,
+        threshold_ms: p.fixedMs || gm == null ? null : round(gm, 2),
+        best_ms: hits.length ? Math.min.apply(null, hits) : null,
+        start_ms: run.start == null ? null : round(run.start, 2),
+        end_ms: p.fixedMs || run.ms == null ? null : round(run.ms, 2),
+        reversals: run.rev.length,
+        refresh_ms: glMedian(res.map((x) => x.T)),
+        drops: res.filter((x) => x.drop).length,
+      };
+    },
+    progress(p, run) { return { done: run.i, total: p.n }; },
+    serialize(run) { return JSON.parse(JSON.stringify(run)); },
+    restore(p, data) { return JSON.parse(JSON.stringify(data)); },
+  };
+
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.1.0',
+    version: '1.2.0',
     fnv1a, makeRng, puzzleSeed,
-    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler },
-    order: ['outbound', 'conduit', 'tumbler'],
+    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse },
+    order: ['outbound', 'conduit', 'tumbler', 'glimpse'],
     EXIT,
-    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf },
+    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;
@@ -1675,11 +1964,11 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.0.0';
+  const APP_VERSION = '2.1.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
-  const LABEL = { mixed: 'All three', outbound: 'Outbound', conduit: 'Conduit', tumbler: 'Tumbler' };
+  const LABEL = { mixed: 'All games', outbound: 'Outbound', conduit: 'Conduit', tumbler: 'Tumbler', glimpse: 'Glimpse' };
 
   // ---------------------------------------------------------------- helpers
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -1777,8 +2066,11 @@ PuzzleEnginesFactory(window);
     lock: '<rect x="5" y="10.5" width="14" height="10.5" rx="2.6"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/><path d="M12 14.5v2.5"/>',
     star: '<path fill="currentColor" stroke="none" d="M12 2.4l2.95 6 6.6.95-4.78 4.66 1.13 6.57L12 17.48l-5.9 3.1 1.13-6.57L2.45 9.35l6.6-.95z"/>',
     flame: '<path fill="currentColor" stroke="none" d="M12.6 2.4c.7 3.3 5 5.5 5 10.4a5.6 5.6 0 0 1-11.2 0c0-2.8 1.5-4.4 2.8-5.6.2 1.8 1 3 2.3 3.7-.6-3.3.3-6.1 1.1-8.5z"/>',
+    eye: '<path d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z"/><circle cx="12" cy="12" r="3.1"/>',
+    bolt: '<path fill="currentColor" stroke="none" d="M13.6 2.2 4.8 13.4h6.1l-1.4 8.4 8.8-11.2h-6.1z"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
   };
-  const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock' };
+  const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', mixed: 'grid' };
   function icon(name, cls) {
     const el = document.createElementNS(SVGNS, 'svg');
     el.setAttribute('viewBox', '0 0 24 24');
@@ -1891,6 +2183,11 @@ PuzzleEnginesFactory(window);
     dead: (S) => S.tone(240, 105, 0.5, 'sawtooth', 0.06),
     hint: (S) => { S.tone(1320, 1320, 0.12, 'sine', 0.12); S.tone(1760, 1760, 0.18, 'sine', 0.1, 0.08); },
     lose: (S) => S.tone(700, 520, 0.12, 'sine', 0.08),
+    look: (S) => { S.tone(380, 620, 0.1, 'sine', 0.12); S.noise(0.06, 2400, 1600, 2, 0.04); },
+    pick: (S, k) => S.tone(600 + (k || 0) * 90, 660 + (k || 0) * 90, 0.07, 'triangle', 0.16),
+    yes: (S) => { S.tone(880, 880, 0.09, 'sine', 0.16); S.tone(1320, 1320, 0.16, 'sine', 0.14, 0.07); S.tone(2600, 3400, 0.05, 'sine', 0.04, 0.12); },
+    no: (S) => S.tone(320, 230, 0.2, 'triangle', 0.13),
+    tick: (S) => S.tone(900, 900, 0.03, 'sine', 0.06),
   };
   function buzz(pattern) {
     if (!Sound.on) return;
@@ -2064,7 +2361,8 @@ PuzzleEnginesFactory(window);
     S.n++;
     return spec;
   }
-  // 2-up / 1-down staircase per game within a block
+  // 2-up / 1-down staircase per game within a block. Glimpse never steps
+  // down: its display time already adapts on every look.
   function seqRecord(S, spec, success) {
     if (!spec.adaptive) return null;
     const a = S.adapt[(spec.block - 1) + ':' + spec.game];
@@ -2074,7 +2372,7 @@ PuzzleEnginesFactory(window);
       a.streak++;
       if (a.streak >= 2) { a.level = Math.min(5, a.level + 1); a.streak = 0; }
     } else {
-      a.level = Math.max(1, a.level - 1);
+      if (E.games[spec.game].levelDown !== false) a.level = Math.max(1, a.level - 1);
       a.streak = 0;
     }
     return { from: before, to: a.level, changed: a.level !== before };
@@ -2088,12 +2386,17 @@ PuzzleEnginesFactory(window);
   const STUDY_OPTIONS = { feedback: false, hints: false, undo: true, skip: false, counter: false, par: 1.5, limit: 0, practice: true, sound: false, clue: 'pin' };
   const PRESETS = [
     { id: 'prepost', name: 'Pre / train / post', blocks: [
-      { game: 'mixed', count: 3, level: 2, adaptive: false },
+      { game: 'mixed', count: 4, level: 2, adaptive: false },
       { game: 'outbound', count: 8, level: 2, adaptive: true },
-      { game: 'mixed', count: 3, level: 2, adaptive: false },
+      { game: 'mixed', count: 4, level: 2, adaptive: false },
+    ] },
+    { id: 'speed', name: 'Glimpse training', blocks: [
+      { game: 'glimpse', count: 2, level: 2, adaptive: false },
+      { game: 'glimpse', count: 12, level: 2, adaptive: true },
+      { game: 'glimpse', count: 2, level: 2, adaptive: false },
     ] },
     { id: 'practice', name: 'Mixed practice', blocks: [{ game: 'mixed', count: 12, level: 2, adaptive: true }] },
-    { id: 'fixed', name: 'Fixed set', blocks: [{ game: 'mixed', count: 6, level: 3, adaptive: false }] },
+    { id: 'fixed', name: 'Fixed set', blocks: [{ game: 'mixed', count: 8, level: 3, adaptive: false }] },
   ];
 
   // ------------------------------------------------------- sessions
@@ -2166,6 +2469,7 @@ PuzzleEnginesFactory(window);
     outbound: ['#F2564D', '#3D8BFD', '#FFC93C', '#22BFB0', '#FFFFFF'],
     conduit: ['#2E9CF2', '#FF6FA7', '#FFD23F', '#2FA75A', '#FFFFFF'],
     tumbler: ['#FFC83A', '#F04E5E', '#3A7BFF', '#2DBF6C', '#A066FF', '#FFFFFF'],
+    glimpse: ['#FFFFFF', '#FFC83A', '#3D8BFD', '#FF8A3D', '#7CE3B0'],
   };
   const DIRV = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
   const ANGLE = { N: 0, E: 90, S: 180, W: 270 };
@@ -2176,6 +2480,7 @@ PuzzleEnginesFactory(window);
     outbound: ['optimal', 'wasted', 'dead_end', 'in_dead_end', 'blocked', 'undo', 'restart', 'hint'],
     conduit: ['optimal', 'wasted', 'undo', 'restart', 'hint'],
     tumbler: ['optimal', 'suboptimal', 'zero_info', 'inconsistent', 'hint'],
+    glimpse: [],
   };
   function blankCounts() {
     return { moves: 0, optimal: 0, wasted: 0, dead_end: 0, in_dead_end: 0, blocked: 0, undo: 0, restart: 0, hint: 0, suboptimal: 0, zero_info: 0, inconsistent: 0, neutral: 0, solved: 0, infoRatioSum: 0, infoRatioN: 0 };
@@ -2194,8 +2499,8 @@ PuzzleEnginesFactory(window);
       this.G = E.games[spec.game];
       this.practice = !!spec.practice;
       this.o = app.session.options;
-      this.par = Math.max(1, Math.ceil(puzzle.reference * this.o.par));
-      this.run = snap ? this.G.restore(puzzle, snap.run) : this.G.newRun(puzzle);
+      this.par = puzzle.reference == null ? null : Math.max(1, Math.ceil(puzzle.reference * this.o.par));
+      this.run = snap ? this.G.restore(puzzle, snap.run) : this.freshRun(puzzle);
       this.c = snap ? Object.assign(blankCounts(), snap.c) : blankCounts();
       this.t0 = now() - (snap ? snap.elapsed : 0);
       this.frozen = snap && snap.summary ? snap.elapsed : null;
@@ -2214,6 +2519,8 @@ PuzzleEnginesFactory(window);
       this.updateStatus();
       if (this.summary) this.showResult(this.summary, true);
     }
+    freshRun(p) { return this.G.newRun(p); }
+    usesClock() { return true; }
     later(fn, ms) { const t = setTimeout(() => { this.timers.delete(t); fn(); }, ms); this.timers.add(t); return t; }
     destroy() {
       clearInterval(this.tick);
@@ -2252,7 +2559,7 @@ PuzzleEnginesFactory(window);
         this.restartBtn = this.tool('restart', 'Restart', () => this.doRestart());
         t.append(this.undoBtn, this.restartBtn);
       }
-      if (this.o.hints && !this.practice) {
+      if (this.o.hints && !this.practice && this.G.hint) {
         this.hintBtn = this.tool('hint', 'Hint', () => this.doHint());
         t.append(this.hintBtn);
       }
@@ -2273,7 +2580,7 @@ PuzzleEnginesFactory(window);
     startTimer() {
       clearInterval(this.tick);
       if (this.summary) return;
-      if (this.o.limit) this.tick = setInterval(() => this.updateStatus(), 500);
+      if (this.o.limit && this.usesClock()) this.tick = setInterval(() => this.updateStatus(), 500);
     }
     potentialStars() { const m = this.c.moves; return m <= this.p.reference ? 3 : m <= this.par ? 2 : 1; }
     updateStatus() {
@@ -2289,7 +2596,7 @@ PuzzleEnginesFactory(window);
         });
         this.meterEl.setAttribute('aria-label', n + ' stars possible, ' + this.c.moves + ' moves');
       }
-      if (this.o.limit && !this.practice) {
+      if (this.o.limit && !this.practice && this.usesClock()) {
         const left = this.o.limit * 1000 - this.elapsed();
         this.clockEl.hidden = false;
         this.clockEl.textContent = clock(left);
@@ -2411,9 +2718,23 @@ PuzzleEnginesFactory(window);
     resolve(outcome) {
       if (this.summary) return;
       clearInterval(this.tick);
+      if (this.beforeResolve) this.beforeResolve(outcome);
       if (this.hiddenAt != null) { this.hiddenMs += now() - this.hiddenAt; this.hiddenAt = null; }
       const dur = Math.round(this.elapsed());
       this.frozen = dur;
+      const sm = this.makeSummary(outcome, dur);
+      this.summary = sm;
+      this.hideHand();
+      this.call(this.undoBtn, false);
+      this.call(this.restartBtn, false);
+      const res = this.app.onPuzzleEnd(this, sm);
+      sm.level_next = res.level_next;
+      sm.level_change = res.change && res.change.changed ? res.change : null;
+      this.updateStatus();
+      if (this.onResolved) this.onResolved(outcome);
+      this.later(() => this.showResult(sm, false), this.celebrate(sm));
+    }
+    makeSummary(outcome, dur) {
       const solved = outcome === 'solved';
       const sm = {
         outcome,
@@ -2427,24 +2748,28 @@ PuzzleEnginesFactory(window);
         efficiency: this.c.moves ? r4(this.p.reference / this.c.moves) : '',
       };
       sm.stars = starsFor(sm);
-      this.summary = sm;
-      this.hideHand();
-      this.call(this.undoBtn, false);
-      this.call(this.restartBtn, false);
-      const res = this.app.onPuzzleEnd(this, sm);
-      sm.level_next = res.level_next;
-      sm.level_change = res.change && res.change.changed ? res.change : null;
-      this.updateStatus();
-      if (this.onResolved) this.onResolved(outcome);
-      if (solved) {
+      return sm;
+    }
+    // sound and confetti at the end; returns the delay before the result card
+    celebrate(sm) {
+      if (sm.outcome === 'solved') {
         Sound.play('win');
         buzz([18, 50, 18]);
         this.later(() => confetti(this, CONFETTI[this.spec.game]), 120);
-      } else if (outcome === 'failed' || outcome === 'timeout') {
+        return 650;
+      }
+      if (sm.outcome === 'failed' || sm.outcome === 'timeout') {
         Sound.play('fail');
         buzz(60);
       }
-      this.later(() => this.showResult(sm, false), solved ? 650 : 420);
+      return 420;
+    }
+    resultStats(sm) {
+      const unit = this.spec.game === 'tumbler' ? ['try', 'tries'] : this.spec.game === 'conduit' ? ['turn', 'turns'] : ['move', 'moves'];
+      const refWord = this.spec.game === 'tumbler' ? 'solver ' : 'best ';
+      return h('div', { class: 'res-stats' },
+        h('span', null, icon('tapped'), h('b', { text: String(sm.moves) }), ' ' + unit[sm.moves === 1 ? 0 : 1], h('span', { text: ' · ' + refWord + sm.reference })),
+        h('span', null, icon('clock'), h('b', { text: clock(sm.duration_ms) })));
     }
     resultTitle(sm) {
       if (sm.outcome === 'solved') {
@@ -2460,7 +2785,7 @@ PuzzleEnginesFactory(window);
     showResult(sm, instant) {
       if (this.resultEl) this.resultEl.remove();
       const panel = h('section', { class: 'result', 'aria-label': 'Result' });
-      const solved = sm.outcome === 'solved';
+      const solved = sm.outcome === 'solved' || sm.outcome === 'complete';
       const showStars = solved && this.o.counter && !this.practice;
       if (showStars) {
         const row = h('div', { class: 'res-stars', role: 'img', 'aria-label': sm.stars + ' of 3 stars' });
@@ -2477,12 +2802,12 @@ PuzzleEnginesFactory(window);
       }
       panel.append(h('h3', { class: 'res-title', text: this.resultTitle(sm) }));
       if (this.o.counter && !this.practice && sm.outcome !== 'abandoned') {
-        const unit = this.spec.game === 'tumbler' ? ['try', 'tries'] : this.spec.game === 'conduit' ? ['turn', 'turns'] : ['move', 'moves'];
-        const refWord = this.spec.game === 'tumbler' ? 'solver ' : 'best ';
-        const stats = h('div', { class: 'res-stats' },
-          h('span', null, icon('tapped'), h('b', { text: String(sm.moves) }), ' ' + unit[sm.moves === 1 ? 0 : 1], h('span', { text: ' · ' + refWord + sm.reference })),
-          h('span', null, icon('clock'), h('b', { text: clock(sm.duration_ms) })));
-        panel.append(stats);
+        const stats = this.resultStats(sm);
+        if (stats) panel.append(stats);
+      }
+      if (sm.newBest && this.o.counter && !this.practice) {
+        panel.append(h('div', { class: 'res-level best' }, icon('bolt'), 'New best · ' + Math.round(sm.newBest) + ' ms'));
+        if (!instant) this.later(() => Sound.play('level'), 700);
       }
       if (sm.level_change && this.o.counter) {
         const up = sm.level_change.to > sm.level_change.from;
@@ -3134,15 +3459,569 @@ PuzzleEnginesFactory(window);
     }
   }
 
+  // ------------------------------------------------------------- Glimpse
+  // All shapes share one 100 x 100 box, so the flash, the mask and the answer
+  // buttons draw exactly the same silhouettes. Everything shown during a look
+  // is drawn on one canvas inside requestAnimationFrame callbacks, so the
+  // flash and the mask change on whole screen frames.
+  const GL_PATHS = {
+    rabbit: 'M35.18 8.33A8.5 22 -10 1 1 42.82 51.67A8.5 22 -10 1 1 35.18 8.33Z M64.82 8.33A8.5 22 10 1 1 57.18 51.67A8.5 22 10 1 1 64.82 8.33Z M50 39A25 25 0 1 1 50 89A25 25 0 1 1 50 39Z',
+    cat: 'M50 33A31 27 0 1 1 50 87A31 27 0 1 1 50 33Z M21 50L25 13L48 35Z M79 50L52 35L75 13Z',
+    fox: 'M50 30L58 30L80 7Q85 23 83 40Q91 50 89 58Q79 71 64 77Q56 88 50 93Q44 88 36 77Q21 71 11 58Q9 50 17 40Q15 23 20 7L42 30Z',
+    bird: 'M44 36A30 22 0 1 1 44 80A30 22 0 1 1 44 36Z M70 25A15 15 0 1 1 70 55A15 15 0 1 1 70 25Z M84 35L97 41L84 47Z M22 50L8 59L2 33Z',
+    leaf: 'M50 5C81 22 83 68 50 94C17 68 19 22 50 5Z M48 88L52 88L52 99L48 99Z',
+  };
+  const GL_INK = '#16224A';
+  const GL_BIRD_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+    '<path d="M22 50L8 59L2 33Z" fill="#2563D9"/>' +
+    '<path d="M44 36A30 22 0 1 1 44 80A30 22 0 1 1 44 36Z" fill="#3D8BFD"/>' +
+    '<path d="M24 64Q44 84 70 62Q46 72 24 64Z" fill="#A9D0FF"/>' +
+    '<path d="M70 25A15 15 0 1 1 70 55A15 15 0 1 1 70 25Z" fill="#3D8BFD"/>' +
+    '<path d="M28 52Q44 38 60 54Q44 62 28 52Z" fill="#2563D9"/>' +
+    '<path d="M84 35L97 41L84 47Z" fill="#FFB020"/>' +
+    '<circle cx="74" cy="37" r="3.8" fill="#16224A"/><circle cx="75.3" cy="35.7" r="1.3" fill="#FFFFFF"/></svg>';
+  const GL_DIRS = ['up', 'up right', 'right', 'down right', 'down', 'down left', 'left', 'up left'];
+  const GL_NUMPAD = { 8: 0, 9: 1, 6: 2, 3: 3, 2: 4, 1: 5, 4: 6, 7: 7 };
+  const GL_P2D = {};
+  function glPath(name) {
+    if (!(name in GL_P2D)) { try { GL_P2D[name] = new Path2D(GL_PATHS[name]); } catch (e) { GL_P2D[name] = null; } }
+    return GL_P2D[name];
+  }
+  function glDraw(ctx, name, x, y, size, rot, flip) {
+    const p = glPath(name);
+    if (!p) return;
+    const k = size / 100;
+    ctx.save();
+    ctx.translate(x, y);
+    if (rot) ctx.rotate((rot * Math.PI) / 180);
+    ctx.scale(flip ? -k : k, k);
+    ctx.translate(-50, -50);
+    ctx.fill(p);
+    ctx.restore();
+  }
+  function glSvg(name) {
+    return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, s('path', { d: GL_PATHS[name] }));
+  }
+  function glXY(G, R, slot) {
+    const sl = G.slots[slot], a = (sl.a * Math.PI) / 180;
+    return [R + Math.sin(a) * sl.r * R, R - Math.cos(a) * sl.r * R];
+  }
+  // the animal at 0.34 R, the bird and leaves at 0.2 R, all in one ink on the pale field
+  const GL_CENTER = 0.34, GL_ITEM = 0.2;
+  function glStim(ctx, R, p, t, G) {
+    ctx.fillStyle = GL_INK;
+    glDraw(ctx, p.pair[t.c], R, R, GL_CENTER * R, 0, false);
+    if (!p.periph) return;
+    const size = GL_ITEM * R;
+    const b = glXY(G, R, G.slotOf(t.ring, t.dir));
+    glDraw(ctx, 'bird', b[0], b[1], size, 0, !!t.flip);
+    for (const d of t.d) { const q = glXY(G, R, d[0]); glDraw(ctx, 'leaf', q[0], q[1], size, d[1], false); }
+  }
+  // pattern mask: outlines of the same shapes plus short strokes, denser in the middle
+  function glMask(ctx, R, seed) {
+    const rng = E.makeRng(seed);
+    const names = Object.keys(GL_PATHS);
+    const pt = (maxR) => { const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * maxR; return [R + Math.cos(a) * r, R + Math.sin(a) * r]; };
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(R, R, R, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.strokeStyle = GL_INK;
+    ctx.fillStyle = GL_INK;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < 96; i++) {
+      const q = pt(i < 12 ? 0.24 * R : 1.05 * R);
+      const path = glPath(names[rng.int(names.length)]);
+      if (!path) continue;
+      const k = ((0.14 + rng() * 0.22) * R) / 100;
+      ctx.save();
+      ctx.translate(q[0], q[1]);
+      ctx.rotate(rng() * Math.PI * 2);
+      ctx.scale(k, k);
+      ctx.translate(-50, -50);
+      ctx.lineWidth = (0.016 * R) / k;
+      ctx.stroke(path);
+      ctx.restore();
+    }
+    for (let i = 0; i < 190; i++) {
+      const q = pt(1.05 * R);
+      const len = (0.035 + rng() * 0.1) * R, a = rng() * Math.PI * 2;
+      ctx.lineWidth = (0.008 + rng() * 0.016) * R;
+      ctx.beginPath();
+      if (rng() < 0.55) { ctx.moveTo(q[0], q[1]); ctx.lineTo(q[0] + Math.cos(a) * len, q[1] + Math.sin(a) * len); }
+      else ctx.arc(q[0], q[1], len * 0.6, a, a + 1 + rng() * 3);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function glFix(ctx, R) {
+    ctx.fillStyle = GL_INK;
+    ctx.strokeStyle = GL_INK;
+    ctx.beginPath();
+    ctx.arc(R, R, Math.max(3, 0.022 * R), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.5, 0.009 * R);
+    ctx.beginPath();
+    ctx.arc(R, R, 0.075 * R, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  const raf = (fn) => (window.requestAnimationFrame ? window.requestAnimationFrame(fn) : setTimeout(() => fn(now()), 16));
+  const caf = (id) => { if (id == null) return; if (window.cancelAnimationFrame) window.cancelAnimationFrame(id); else clearTimeout(id); };
+  // frame period: median interval between animation frames during fixation,
+  // snapped to a standard refresh rate when within 1.5% (timestamps can be coarse)
+  const GL_RATES = [24, 30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
+  function frameEstimate(deltas, fallback) {
+    const xs = deltas.slice(2).filter((d) => d > 2 && d < 120).sort((a, b) => a - b);
+    if (xs.length < 8) return fallback;
+    const m = xs[xs.length >> 1];
+    for (const hz of GL_RATES) { const P = 1000 / hz; if (Math.abs(m - P) / P < 0.015) return P; }
+    return Math.max(4, Math.min(70, m));
+  }
+
+  class GlimpseCard extends Card {
+    freshRun(p) { return this.G.newRun(p, this.app.glimpseStart(this.spec)); }
+    usesClock() { return false; }
+    potentialStars() { return 3; }
+    refresh() {}
+    buildBoard() {
+      const p = this.p;
+      this.phase = this.summary ? 'done' : 'ready';
+      this.D = 0; this.R = 0; this.dpr = 1;
+      this.lens = h('div', { class: 'lens' });
+      this.canvas = h('canvas', { class: 'lens-canvas', 'aria-hidden': 'true' });
+      this.stimC = document.createElement('canvas');
+      this.maskC = document.createElement('canvas');
+      this.goBtn = h('button', { class: 'go', type: 'button', 'aria-label': 'Look' }, icon('eye'));
+      this.goBtn.addEventListener('click', () => this.begin());
+      this.choiceEl = h('div', { class: 'choices', role: 'group', 'aria-label': 'Which animal', hidden: true });
+      this.choiceBtns = p.pair.map((name, k) => {
+        const b = h('button', { class: 'choice', type: 'button', 'aria-label': name }, glSvg(name));
+        b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.pick(k); });
+        b.addEventListener('click', () => this.pick(k));
+        this.choiceEl.append(b);
+        return b;
+      });
+      this.spotsEl = h('div', { class: 'spots', role: 'group', 'aria-label': 'Where the bird was', hidden: true });
+      this.spotBtns = GL_DIRS.map((name, d) => {
+        const b = h('button', { class: 'spot', type: 'button', 'aria-label': name });
+        b.addEventListener('click', () => this.where(d));
+        this.spotsEl.append(b);
+        return b;
+      });
+      this.lens.addEventListener('pointerdown', (e) => this.lensDown(e));
+      this.dotsEl = h('div', { class: 'gl-dots', 'aria-hidden': 'true' });
+      this.lens.append(this.canvas, this.spotsEl, this.choiceEl, this.goBtn);
+      this.area.classList.add('gl-area');
+      this.area.append(h('div', { class: 'gl-wrap' }, this.lens, this.dotsEl));
+      if (this.phase === 'done') this.goBtn.hidden = true;
+      this.renderDots();
+      if (typeof ResizeObserver !== 'undefined') {
+        this.ro = new ResizeObserver(() => this.onResize());
+        this.ro.observe(this.area);
+      } else {
+        this.onWinResize = () => this.onResize();
+        window.addEventListener('resize', this.onWinResize);
+      }
+    }
+    destroy() {
+      super.destroy();
+      caf(this.rafId);
+      this.st = null;
+      if (this.ro) this.ro.disconnect();
+      if (this.onWinResize) window.removeEventListener('resize', this.onWinResize);
+      this.app.steady(false);
+    }
+    // ---- layout
+    onResize() {
+      const changed = this.layout();
+      if (changed) this.abort('resize');
+    }
+    layout() {
+      const aw = this.area.clientWidth - 28, ah = this.area.clientHeight - 24 - 26;
+      if (aw <= 0 || ah <= 0) return false;
+      let D = Math.floor(Math.min(aw, ah, 720));
+      D = Math.max(180, D - (D % 2));
+      // keep the field (and so every eccentricity) fixed through small layout shifts
+      if (this.D && Math.abs(D - this.D) < this.D * 0.04) return false;
+      this.D = D;
+      this.R = D / 2;
+      this.lens.style.width = D + 'px';
+      this.lens.style.height = D + 'px';
+      this.lens.style.setProperty('--R', this.R + 'px');
+      this.dpr = Math.min(3, window.devicePixelRatio || 1);
+      const px = Math.round(D * this.dpr);
+      [this.canvas, this.stimC, this.maskC].forEach((c) => { c.width = px; c.height = px; });
+      this.ctx = this.canvas.getContext('2d');
+      this.placeSpots();
+      this.clearReveal();
+      return true;
+    }
+    placeSpots() {
+      if (!this.R) return;
+      const t = this.p.trials[Math.min(this.run.i, this.p.n - 1)];
+      const rr = this.G.ringR[((t && t.ring) || 2) - 1] * this.R;
+      const size = Math.round(Math.max(30, Math.min(48, 0.24 * this.R)));
+      this.spotBtns.forEach((b, d) => {
+        const a = (d * Math.PI) / 4;
+        b.style.left = this.R + Math.sin(a) * rr + 'px';
+        b.style.top = this.R - Math.cos(a) * rr + 'px';
+        b.style.width = size + 'px';
+        b.style.height = size + 'px';
+        b.style.margin = -size / 2 + 'px 0 0 ' + -size / 2 + 'px';
+      });
+    }
+    // ---- drawing
+    blit(src) {
+      const c = this.ctx;
+      if (!c) return;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      if (src) c.drawImage(src, 0, 0);
+    }
+    drawFix() {
+      this.blit(null);
+      if (!this.ctx) return;
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      glFix(this.ctx, this.R);
+    }
+    prepare() {
+      const t = this.p.trials[this.run.i], W = this.canvas.width, k = this.dpr;
+      const sc = this.stimC.getContext('2d');
+      sc.setTransform(1, 0, 0, 1, 0, 0);
+      sc.clearRect(0, 0, W, W);
+      sc.setTransform(k, 0, 0, k, 0, 0);
+      glStim(sc, this.R, this.p, t, this.G);
+      const mc = this.maskC.getContext('2d');
+      mc.setTransform(1, 0, 0, 1, 0, 0);
+      mc.clearRect(0, 0, W, W);
+      mc.setTransform(k, 0, 0, k, 0, 0);
+      glMask(mc, this.R, t.mask);
+    }
+    // ---- one look: fixation, flash, mask, then the two answers
+    begin() {
+      if (this.summary || this.phase !== 'ready' || this.run.i >= this.p.n) return;
+      if (!this.R) this.layout();
+      if (!this.ctx) return;
+      Sound.unlock();
+      Sound.play('look');
+      this.hideHand();
+      clearTimeout(this.idleTimer);
+      this.prepare();
+      this.goBtn.classList.add('away');
+      this.goBtn.disabled = true;
+      this.app.steady(true);
+      this.phase = 'fix';
+      this.runLook();
+    }
+    runLook() {
+      const p = this.p, t = p.trials[this.run.i];
+      const st = { deltas: [], start: null, last: null, onset: null, offset: null, end: null, gap: 0, plan: null, T: null };
+      this.st = st;
+      const step = (ts) => {
+        if (this.st !== st) return;
+        if (st.last != null) {
+          const d = ts - st.last;
+          if (this.phase === 'fix') st.deltas.push(d);
+          else if (this.phase === 'stim') st.gap = Math.max(st.gap, d);
+        }
+        st.last = ts;
+        if (this.phase === 'fix') {
+          if (st.start == null) { st.start = ts; this.drawFix(); }
+          else if (ts - st.start >= t.fix) {
+            st.T = frameEstimate(st.deltas, this.app.frameMs);
+            this.app.frameMs = st.T;
+            st.plan = this.G.plan(p, this.run, st.T);
+            this.blit(this.stimC);
+            st.onset = ts;
+            this.phase = 'stim';
+          }
+        } else if (this.phase === 'stim') {
+          if (ts - st.onset >= (st.plan.frames - 0.5) * st.T) {
+            this.blit(this.maskC);
+            st.offset = ts;
+            this.phase = 'mask';
+          }
+        } else if (this.phase === 'mask') {
+          if (ts - st.offset >= p.maskMs - st.T / 2) {
+            this.blit(null);
+            st.end = ts;
+            this.app.steady(false);
+            this.askWhat();
+            return;
+          }
+        } else return;
+        this.rafId = raf(step);
+      };
+      this.rafId = raf(step);
+    }
+    abort(reason) {
+      const ph = this.phase;
+      if (ph !== 'fix' && ph !== 'stim' && ph !== 'mask') return;
+      caf(this.rafId);
+      this.rafId = null;
+      this.st = null;
+      this.blit(null);
+      this.app.steady(false);
+      this.log('interrupted', { move_no: this.run.i + 1, detail: ph + ', ' + reason });
+      this.phase = 'ready';
+      this.goBtn.disabled = false;
+      this.goBtn.classList.remove('away');
+    }
+    onHidden() { this.abort('page hidden'); }
+    askWhat() {
+      this.phase = 'what';
+      this.ans = {};
+      this.choiceBtns.forEach((b) => { b.className = 'choice'; b.disabled = false; });
+      this.choiceEl.classList.remove('gone');
+      this.choiceEl.hidden = false;
+      this.whatAt = now();
+      this.later(() => this.guide(), 260);
+    }
+    pick(k) {
+      if (this.phase !== 'what') return;
+      Sound.unlock();
+      this.ans.c = k;
+      this.ans.rtC = Math.round(now() - this.whatAt);
+      Sound.play('pick', k);
+      buzz(6);
+      this.choiceBtns[k].classList.add('picked');
+      this.hideHand();
+      if (this.p.periph) this.askWhere(); else this.finishLook();
+    }
+    askWhere() {
+      this.phase = 'where';
+      this.choiceEl.classList.add('gone');
+      this.placeSpots();
+      this.spotBtns.forEach((b) => { b.className = 'spot'; b.disabled = false; });
+      this.spotsEl.hidden = false;
+      this.whereAt = now();
+      this.later(() => this.guide(), 260);
+    }
+    lensDown(e) {
+      if (this.phase !== 'where' || e.button > 0) return;
+      const r = this.lens.getBoundingClientRect();
+      const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+      if (Math.hypot(dx, dy) < 0.16 * this.R) return;
+      e.preventDefault();
+      let a = (Math.atan2(dx, -dy) * 180) / Math.PI;
+      if (a < 0) a += 360;
+      this.where(Math.round(a / 45) % 8);
+    }
+    where(d) {
+      if (this.phase !== 'where') return;
+      Sound.unlock();
+      this.ans.d = d;
+      this.ans.rtW = Math.round(now() - this.whereAt);
+      this.spotBtns[d].classList.add('picked');
+      Sound.play('pick', 2);
+      buzz(6);
+      this.hideHand();
+      this.finishLook();
+    }
+    finishLook() {
+      this.phase = 'fb';
+      const p = this.p, t = p.trials[this.run.i], st = this.st, a = this.ans;
+      const cOk = a.c === t.c, dOk = p.periph ? a.d === t.dir : true;
+      const correct = cOk && dOk;
+      const measured = st.offset - st.onset;
+      const planned = st.plan.frames * st.T;
+      const drop = Math.abs(measured - planned) > 0.5 * st.T || st.gap > 1.5 * st.T;
+      const rec = this.G.record(p, this.run, { correct, plan: st.plan, drop });
+      this.st = null;
+      this.c.moves++;
+      this.app.session.hasMoves = true;
+      this.log('trial', {
+        move_no: rec.i,
+        cls: correct ? 'correct' : !cOk && !dOk ? 'both_wrong' : !cOk ? 'center_wrong' : 'where_wrong',
+        refresh_ms: r4(st.T), frames: st.plan.frames, flash_ms: r4(planned), flash_measured_ms: r4(measured), frame_drop: drop ? 1 : 0,
+        fix_ms: Math.round(st.onset - st.start), mask_ms: Math.round(st.end - st.offset),
+        shown: p.pair[t.c], chosen: p.pair[a.c],
+        ring: p.periph ? t.ring : '', dir: p.periph ? t.dir : '', dir_chosen: p.periph ? a.d : '', n_distract: p.periph ? t.d.length : '',
+        rt_center_ms: a.rtC, rt_where_ms: p.periph ? a.rtW : '',
+        stair_next_ms: rec.next == null ? '' : rec.next, reversal: p.fixedMs ? '' : rec.rev,
+        field_px: Math.round(this.R),
+      });
+      const show = this.o.feedback || this.practice;
+      this.feedback(correct, cOk, dOk, t, a, show);
+      this.renderDots();
+      this.updateStatus();
+      this.app.touch();
+      this.later(() => this.nextLook(), show ? 1050 : 380);
+    }
+    feedback(correct, cOk, dOk, t, a, show) {
+      if (!show) { Sound.play('tick'); return; }
+      let spark = null;
+      // what was there: the animal in the middle, ringed green or red
+      this.choiceEl.hidden = true;
+      const ans = h('div', { class: 'gl-answer ' + (cOk ? 'ok' : 'bad'), 'aria-hidden': 'true' }, glSvg(this.p.pair[t.c]));
+      this.lens.append(ans);
+      this.answerEl = ans;
+      if (this.p.periph) {
+        this.spotBtns.forEach((b, d) => { b.disabled = true; b.classList.toggle('fade', d !== t.dir && d !== a.d); });
+        this.spotBtns[t.dir].classList.add('ok');
+        if (!dOk) this.spotBtns[a.d].classList.add('bad');
+        const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
+        const size = Math.round(0.28 * this.R);
+        const bird = h('div', { class: 'gl-bird' + (t.flip ? ' flip' : ''), 'aria-hidden': 'true' });
+        bird.innerHTML = GL_BIRD_SVG;
+        bird.style.cssText = 'left:' + q[0] + 'px;top:' + q[1] + 'px;width:' + size + 'px;height:' + size + 'px;margin:' + -size / 2 + 'px 0 0 ' + -size / 2 + 'px';
+        this.lens.append(bird);
+        this.revealEl = bird;
+        spark = q;
+      }
+      Sound.play(correct ? 'yes' : 'no');
+      buzz(correct ? 12 : [24, 40, 24]);
+      if (correct) {
+        const L = relPos(this, this.lens);
+        const q = spark || [this.R, this.R];
+        sparks(this, L.x - this.R + q[0], L.y - this.R + q[1], ['#FFC83A', '#FFFFFF', '#7CE3B0'], 12);
+      }
+    }
+    clearReveal() {
+      if (this.revealEl) { this.revealEl.remove(); this.revealEl = null; }
+      if (this.answerEl) { this.answerEl.remove(); this.answerEl = null; }
+    }
+    nextLook() {
+      if (this.summary) return;
+      this.clearReveal();
+      this.choiceEl.hidden = true;
+      this.spotsEl.hidden = true;
+      if (this.run.i >= this.p.n) { this.resolve('complete'); return; }
+      this.phase = 'ready';
+      this.placeSpots();
+      this.goBtn.disabled = false;
+      this.goBtn.classList.remove('away');
+      this.later(() => this.guide(), 300);
+    }
+    // ---- status
+    nextMs() {
+      if (this.p.fixedMs) return this.p.fixedMs[Math.min(this.run.i, this.p.n - 1)];
+      return this.run.ms;
+    }
+    goal() {
+      const ms = this.nextMs();
+      const txt = Math.round(ms) + ' ms';
+      if (this.goalTxt !== txt) {
+        const faster = this.goalMs != null && ms < this.goalMs;
+        this.goalTxt = txt;
+        this.goalMs = ms;
+        this.goalEl.textContent = '';
+        this.goalEl.append(icon('bolt'), h('span', { text: txt }));
+        if (faster) { this.goalEl.classList.remove('bump'); void this.goalEl.offsetWidth; this.goalEl.classList.add('bump'); }
+      }
+      this.goalEl.classList.add('speed');
+      this.goalEl.hidden = !(this.o.counter || this.practice);
+      this.goalEl.setAttribute('aria-label', 'Next flash ' + txt);
+    }
+    updateStatus() {
+      super.updateStatus();
+      this.meterEl.hidden = true;
+    }
+    renderDots() {
+      const n = this.p.n, res = this.run.res, show = this.o.feedback || this.practice;
+      this.dotsEl.textContent = '';
+      for (let i = 0; i < n; i++) {
+        const r = res[i];
+        this.dotsEl.append(h('i', { class: r ? (show ? (r.ok ? 'ok' : 'bad') : 'done') : i === res.length && !this.summary ? 'now' : '' }));
+      }
+    }
+    guideTarget() {
+      if (this.summary) return null;
+      const first = this.run.i === 0;
+      if (this.phase === 'ready') {
+        if (first) return this.goBtn;
+        clearTimeout(this.idleTimer);
+        this.idleTimer = this.later(() => { if (this.phase === 'ready' && !this.summary) this.pointAt(this.goBtn, 2600); }, 3200);
+        return null;
+      }
+      if (!first) return null;
+      const t = this.p.trials[this.run.i];
+      if (this.phase === 'what') return this.choiceBtns[t.c];
+      if (this.phase === 'where') return this.spotBtns[t.dir];
+      return null;
+    }
+    // ---- end of the round
+    beforeResolve() {
+      caf(this.rafId);
+      this.rafId = null;
+      this.st = null;
+      this.blit(null);
+      this.app.steady(false);
+      this.phase = 'done';
+      this.goBtn.hidden = true;
+      this.choiceEl.hidden = true;
+      this.spotsEl.hidden = true;
+      this.clearReveal();
+    }
+    makeSummary(outcome, dur) {
+      const g = this.G.summary(this.p, this.run);
+      const complete = outcome === 'complete';
+      const miss = g.n - g.correct, n = this.p.n;
+      const stars = complete && !this.practice ? (miss <= 0.1 * n ? 3 : miss <= 0.3 * n ? 2 : miss <= 0.5 * n ? 1 : 0) : 0;
+      return {
+        outcome,
+        success: complete && !this.practice && g.threshold_ms != null && this.p.advanceMs != null && g.threshold_ms <= this.p.advanceMs,
+        duration_ms: dur, first_move_ms: null, hidden_ms: Math.round(this.hiddenMs),
+        moves: g.n, reference: null, par: null, efficiency: '',
+        stars, gl: g,
+      };
+    }
+    celebrate(sm) {
+      this.renderDots();
+      if (sm.outcome !== 'complete') return 300;
+      Sound.play('win');
+      if (sm.stars >= 3 || this.practice) {
+        buzz([18, 50, 18]);
+        this.later(() => confetti(this, CONFETTI.glimpse), 120);
+        return 650;
+      }
+      return 480;
+    }
+    resultTitle(sm) {
+      if (sm.outcome !== 'complete') return super.resultTitle(sm);
+      if (this.practice) return 'Got it!';
+      if (!this.o.counter) return 'Done!';
+      if (sm.gl.correct === sm.gl.n) return 'Perfect!';
+      return sm.stars === 3 ? 'Great!' : sm.stars === 2 ? 'Nice!' : sm.stars === 1 ? 'Done!' : 'Tough round';
+    }
+    resultStats(sm) {
+      const g = sm.gl;
+      if (!g || !g.n) return null;
+      return h('div', { class: 'res-stats' },
+        h('span', { 'aria-label': 'Fastest correct look' }, icon('bolt'), h('b', { text: g.best_ms != null ? Math.round(g.best_ms) + ' ms' : '–' })),
+        h('span', { 'aria-label': 'Looks right' }, icon('eye'), h('b', { text: g.correct + '/' + g.n })));
+    }
+    onKey(e) {
+      if (this.summary) return false;
+      const k = e.key;
+      if (this.phase === 'ready' && (k === ' ' || k === 'Enter')) { this.begin(); return true; }
+      if (this.phase === 'what') {
+        if (k === 'ArrowLeft' || k === '1') { this.pick(0); return true; }
+        if (k === 'ArrowRight' || k === '2') { this.pick(1); return true; }
+      }
+      if (this.phase === 'where') {
+        const n = parseInt(k, 10);
+        if (GL_NUMPAD[n] != null) { this.where(GL_NUMPAD[n]); return true; }
+        const arrows = { ArrowUp: 0, ArrowRight: 2, ArrowDown: 4, ArrowLeft: 6 };
+        if (arrows[k] != null) { this.where(arrows[k]); return true; }
+      }
+      return false;
+    }
+  }
+
   function makeCard(app, spec, puzzle, snap) {
     if (spec.game === 'outbound') return new OutboundCard(app, spec, puzzle, snap);
     if (spec.game === 'conduit') return new ConduitCard(app, spec, puzzle, snap);
+    if (spec.game === 'glimpse') return new GlimpseCard(app, spec, puzzle, snap);
     return new TumblerCard(app, spec, puzzle, snap);
   }
 
   // ============================================================ export
-  const EVENT_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'event_index', 'event', 'wall_time', 't_session_ms', 'seq', 'block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 't_ms', 'move_no', 'target', 'from', 'to', 'd_before', 'd_after', 'cls', 'exact', 'partial', 'marks', 'cands_before', 'cands_after', 'consistent', 'info_expected', 'info_best', 'info_actual', 'best_try', 'detail'];
-  const PUZZLE_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'seq', 'block', 'in_block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 'params', 'outcome', 'success', 'stars', 'started_at', 'ended_at', 'duration_ms', 'first_move_ms', 'hidden_ms', 'moves', 'reference', 'par', 'efficiency', 'n_optimal', 'n_wasted', 'n_dead_end', 'n_in_dead_end', 'n_blocked', 'n_undo', 'n_restart', 'n_hint', 'n_suboptimal', 'n_zero_info', 'n_inconsistent', 'mean_info_ratio', 'level_next', 'features'];
+  const EVENT_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'event_index', 'event', 'wall_time', 't_session_ms', 'seq', 'block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 't_ms', 'move_no', 'target', 'from', 'to', 'd_before', 'd_after', 'cls', 'exact', 'partial', 'marks', 'cands_before', 'cands_after', 'consistent', 'info_expected', 'info_best', 'info_actual', 'best_try',
+    'refresh_ms', 'frames', 'flash_ms', 'flash_measured_ms', 'frame_drop', 'fix_ms', 'mask_ms', 'shown', 'chosen', 'ring', 'dir', 'dir_chosen', 'n_distract', 'rt_center_ms', 'rt_where_ms', 'stair_next_ms', 'reversal', 'field_px', 'detail'];
+  const PUZZLE_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'seq', 'block', 'in_block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 'params', 'outcome', 'success', 'stars', 'started_at', 'ended_at', 'duration_ms', 'first_move_ms', 'hidden_ms', 'moves', 'reference', 'par', 'efficiency', 'n_optimal', 'n_wasted', 'n_dead_end', 'n_in_dead_end', 'n_blocked', 'n_undo', 'n_restart', 'n_hint', 'n_suboptimal', 'n_zero_info', 'n_inconsistent', 'mean_info_ratio',
+    'n_correct', 'accuracy', 'threshold_ms', 'best_ms', 'start_ms', 'end_ms', 'n_reversals', 'refresh_ms', 'n_frame_drops', 'field_px', 'level_next', 'features'];
 
   function sessionFields(S) {
     return { session_id: S.id, participant: S.participant, condition: S.condition, session_kind: S.kind, session_seed: S.seed, app_version: S.app_version };
@@ -3188,13 +4067,13 @@ PuzzleEnginesFactory(window);
       ['session_kind', 'study, or free for free play'],
       ['session_seed', 'with the plan, this fixes every puzzle'],
       ['event_index', 'order of the event within the session'],
-      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, hidden, visible, puzzle_end, level_change, resume, session_end'],
+      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look stopped before the answers, not scored), hidden, visible, puzzle_end, level_change, resume, session_end'],
       ['wall_time / t_session_ms', 'clock time, and ms since the session started'],
       ['seq / block', 'puzzle number in the plan and its block; practice boards have block 0 and seq 0'],
       ['puzzle_id', 'B{block}-{game}-L{level}-{occurrence}, or P-{game} for a practice board'],
       ['practice', '1 for a practice board (fixed, the same for everyone)'],
       ['t_ms', 'ms since this puzzle appeared (Tumbler: when the try was submitted)'],
-      ['move_no', 'state-changing moves so far in this puzzle, including moves later undone'],
+      ['move_no', 'state-changing moves so far in this puzzle, including moves later undone; Glimpse: the look number in the round'],
       ['target', 'Outbound: car id (c1...). Conduit: tile r{row}c{col}. Tumbler: the try as letters, or pin{n}={letter} for a revealed pin'],
       ['from / to', 'Outbound: cells driven forward from the start position, or exit. Conduit: quarter turns clockwise away from the solved orientation'],
       ['d_before / d_after', 'fewest moves (Outbound) or turns (Conduit) still needed before and after; inf = can no longer be solved'],
@@ -3205,19 +4084,36 @@ PuzzleEnginesFactory(window);
       ['consistent', 'Tumbler: 1 if the try could still have been the code'],
       ['info_expected / info_best / info_actual', 'Tumbler, in bits: expected information of the try, of the most informative possible try, and information actually gained'],
       ['best_try', 'Tumbler: one most informative try at that point'],
-      ['detail', 'extra context: puzzle features at puzzle_start, the blocking car for blocked taps, hidden time at visible'],
+      ['refresh_ms', 'Glimpse: screen frame period measured during the fixation just before the flash (median interval between animation frames, snapped to the nearest standard rate such as 60 or 120 Hz when within 1.5%)'],
+      ['frames / flash_ms', 'Glimpse: planned display time in whole frames, and frames x refresh_ms'],
+      ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
+      ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
+      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 500 to 899, seeded) and mask time (planned 500)'],
+      ['shown / chosen', 'Glimpse: the animal in the middle, and the one picked'],
+      ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
+      ['n_distract', 'Glimpse: leaves around the bird'],
+      ['rt_center_ms / rt_where_ms', 'Glimpse: time to pick the animal from when the choices appeared, and to tap a place from when the spots appeared; answers are not speeded'],
+      ['stair_next_ms / reversal', 'Glimpse: display time planned for the next look, and 1 if this look reversed the staircase direction'],
+      ['field_px', 'Glimpse: field radius in CSS pixels; degrees of visual angle depend on the screen and viewing distance'],
+      ['detail', 'extra context: puzzle features at puzzle_start, the blocking car for blocked taps, hidden time at visible, the phase of an interrupted look'],
     ],
     puzzles: [
       ['params', 'board description'],
-      ['outcome', 'solved, failed, skipped, timeout, abandoned'],
-      ['success', '1 if solved with moves <= par (drives adaptive levels)'],
-      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved'],
+      ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered'],
+      ['success', '1 if solved with moves <= par (drives adaptive levels); Glimpse: a complete round with threshold_ms at or under the level\'s target'],
+      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in 10 looks, 2 = at most 3, 1 = at most 5'],
       ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move, time the page was hidden'],
       ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries'],
       ['reference', 'Outbound: fewest moves. Conduit: fewest turns. Tumbler: tries used by the most-informative-try solver for this code'],
       ['par / efficiency', 'ceil(reference x multiplier); reference / moves (Tumbler can exceed 1 by luck)'],
       ['n_*', 'counts of each move label and of undo, restart, hint; blank when it does not apply to the game'],
       ['mean_info_ratio', 'Tumbler: mean of info_expected / info_best over tries'],
+      ['n_correct / accuracy', 'Glimpse: looks with the animal and the place both right, and their share'],
+      ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out the quick first descent of a fresh staircase; the staircase settles at 75% correct'],
+      ['best_ms', 'Glimpse: shortest display time answered correctly'],
+      ['start_ms / end_ms', 'Glimpse: staircase value at the start of the round, and the value carried to the next round'],
+      ['n_reversals', 'Glimpse: staircase reversals in the round'],
+      ['refresh_ms / n_frame_drops / field_px', 'Glimpse: median frame period over the round, looks flagged frame_drop, field radius in CSS pixels'],
       ['level_next', 'adaptive blocks: this game\'s level for its next puzzle'],
       ['features', 'solver-derived puzzle features (JSON), such as p_random_solve, dead_end_states, search_nodes, solver_path'],
     ],
@@ -3225,6 +4121,7 @@ PuzzleEnginesFactory(window);
       outbound: 'optimal (one step closer), wasted (no closer, still solvable), dead_end (the lot can no longer be cleared), in_dead_end (a move made while already in a dead end), blocked (the car could not move; its own event)',
       conduit: 'optimal (the tile needed that turn), wasted (the tile was already right)',
       tumbler: 'optimal (as informative as the best possible try), suboptimal (less informative), zero_info (could not narrow the codes), solved (the winning try); consistency is its own column',
+      glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong',
     },
     colors: 'Tumbler letters: A red (circle), B blue (square), C yellow (triangle), D green (diamond), E purple (plus), F orange (star), G teal (bar). Keys 1 to 7 enter them in order.',
   };
@@ -3232,6 +4129,7 @@ PuzzleEnginesFactory(window);
     const lv = (g) => Object.keys(E.games[g].levels).map((k) => {
       const L = E.games[g].levels[k];
       if (g === 'tumbler') return '- L' + k + ': per-pin clues ' + L.pin.P + ' pins x ' + L.pin.C + ' colors, ' + L.pin.max + ' tries; count clues ' + L.count.P + ' pins x ' + L.count.C + ' colors, ' + L.count.max + ' tries';
+      if (g === 'glimpse') return '- L' + k + ': ' + E.games.glimpse.describe(L) + '; success at threshold_ms <= ' + L.advanceMs;
       const desc = E.games[g].describe(Object.assign({}, L, { cars: { length: L.cars } }));
       return '- L' + k + ': ' + desc + (g === 'outbound' ? ', ' + (L.traps || 0) + ' planted trap' + (L.traps === 1 ? '' : 's') : '');
     }).join('\n');
@@ -3242,8 +4140,14 @@ PuzzleEnginesFactory(window);
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled.', '',
-        '## Levels', '', '### Outbound', lv('outbound'), 'L3 to L5 contain planted traps; difficulty is set by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates.', '', '### Tumbler', lv('tumbler'), '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier).', '']);
+        '## Levels', '', '### Outbound', lv('outbound'), 'L3 to L5 contain planted traps; difficulty is set by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
+        '## Glimpse timing', '',
+        'Each look: tap the eye, a fixation mark for 500 to 899 ms (seeded), the flash, a 500 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
+        'Display times come from a ladder that starts at 500 ms and shrinks by x0.85 per step, rounded to whole frames (at 60 Hz: 30, 25, 22, 18, 16, 13, 11, 10, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss three steps longer (weighted up/down, settles at 75% correct). A fresh staircase starts at 500 ms and drops three steps per correct look until the first miss. At level 2 and up a look is correct only when the animal and the place are both right.',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. Practice uses fixed times of 1000, 700, 450 and 300 ms.',
+        'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
+        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look.', '']);
     return lines.join('\n');
   }
 
@@ -3346,6 +4250,34 @@ PuzzleEnginesFactory(window);
     busy: false,
     saveTimer: null,
     warnedStorage: false,
+    frameMs: 1000 / 60,
+
+    // decorative animations pause while a Glimpse look is on screen
+    steady(on) { const a = $('#app'); if (a) a.classList.toggle('steady', !!on); },
+    // Glimpse staircases carry over per level: within a block in research
+    // sessions, between visits in free play. A level without a value starts
+    // 83 ms (5 frames at 60 Hz) above the level below it, if that one has a value.
+    glimpseBook(spec) {
+      const S = this.session;
+      if (S.kind === 'free') return { book: store.get('pr1.glimpse', {}), free: true };
+      if (!S.glimpse) S.glimpse = {};
+      const key = 'b' + spec.block;
+      if (!S.glimpse[key]) S.glimpse[key] = {};
+      return { book: S.glimpse[key], free: false };
+    },
+    glimpseStart(spec) {
+      if (spec.practice) return null;
+      const { book } = this.glimpseBook(spec);
+      if (book[spec.level] > 0) return { ms: book[spec.level] };
+      for (let k = spec.level - 1; k >= 1; k--) if (book[k] > 0) return { ms: Math.min(E.games.glimpse.startMs, book[k] + 83) };
+      return null;
+    },
+    glimpseKeep(spec, ms) {
+      if (spec.practice || !(ms > 0)) return;
+      const { book, free } = this.glimpseBook(spec);
+      book[spec.level] = Math.round(ms * 100) / 100;
+      if (free) store.set('pr1.glimpse', book);
+    },
 
     boot(data) {
       Gen.init();
@@ -3365,12 +4297,17 @@ PuzzleEnginesFactory(window);
     },
 
     // ---------- sessions
-    startFree(first) {
+    startFree(first, focus) {
       this.closeCurrent();
+      if (focus) store.set('pr1.focus', focus);
+      let game = store.get('pr1.focus', 'mixed');
+      if (game !== 'mixed' && ORDER.indexOf(game) < 0) game = 'mixed';
       const levels = store.get('pr1.levels', {});
-      const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: FREE_OPTIONS, blocks: [{ game: 'mixed', count: FREE_COUNT, level: 2, adaptive: true }] });
+      const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: FREE_OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 2, adaptive: true }] });
       ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 2)), streak: 0 }; });
       S.practiced = Object.assign({}, store.get('pr1.practiced', {}));
+      // the mixed feed opens with a game this player has not tried yet
+      if (game === 'mixed') { const k = ORDER.findIndex((g) => !S.practiced[g]); if (k > 0) S.seq.k = k; }
       this.session = S;
       this.applySound();
       this.logEvent({ event: 'session_start', detail: JSON.stringify({ options: S.options, blocks: S.blocks }) });
@@ -3504,6 +4441,15 @@ PuzzleEnginesFactory(window);
       if (change && change.changed) this.logPuzzle(card, 'level_change', { from: change.from, to: change.to });
       const c = card.c, applies = APPLIES[sp.game];
       const n = (k) => (applies.indexOf(k) >= 0 ? c[k] : '');
+      const g = sm.gl || null;
+      if (g && !sp.practice && g.n) {
+        this.glimpseKeep(sp, card.run.ms);
+        if (S.kind === 'free' && g.best_ms != null && sm.outcome === 'complete') {
+          const best = store.get('pr1.glbest', {});
+          if (best[sp.level] != null && g.best_ms < best[sp.level] - 0.5) sm.newBest = g.best_ms;
+          if (best[sp.level] == null || g.best_ms < best[sp.level]) { best[sp.level] = g.best_ms; store.set('pr1.glbest', best); }
+        }
+      }
       S.puzzles.push({
         seq: sp.seq, block: sp.block, in_block: sp.inBlock, puzzle_id: sp.id, puzzle_seed: card.p.seed,
         game: sp.game, level: sp.level, adaptive: sp.adaptive ? 1 : 0, practice: sp.practice ? 1 : 0, params: card.G.describe(card.p),
@@ -3514,6 +4460,11 @@ PuzzleEnginesFactory(window);
         n_blocked: n('blocked'), n_undo: n('undo'), n_restart: n('restart'), n_hint: n('hint'),
         n_suboptimal: n('suboptimal'), n_zero_info: n('zero_info'), n_inconsistent: n('inconsistent'),
         mean_info_ratio: sp.game === 'tumbler' && c.infoRatioN ? r4(c.infoRatioSum / c.infoRatioN) : '',
+        n_correct: g ? g.correct : '', accuracy: g && g.n ? r4(g.accuracy) : '',
+        threshold_ms: g && g.threshold_ms != null ? g.threshold_ms : '', best_ms: g && g.best_ms != null ? g.best_ms : '',
+        start_ms: g && g.start_ms != null ? g.start_ms : '', end_ms: g && g.end_ms != null ? g.end_ms : '',
+        n_reversals: g ? g.reversals : '', refresh_ms: g && g.refresh_ms != null ? r4(g.refresh_ms) : '',
+        n_frame_drops: g ? g.drops : '', field_px: g && card.R ? Math.round(card.R) : '',
         level_next,
         features: JSON.stringify(card.p.features),
       });
@@ -3523,8 +4474,9 @@ PuzzleEnginesFactory(window);
       } else if (S.kind === 'free') {
         // free play keeps stars, a streak and per-game levels between visits
         if (sm.outcome !== 'abandoned') {
+          const won = sm.outcome === 'solved' || (sm.outcome === 'complete' && sm.stars > 0);
           store.set('pr1.stars', store.get('pr1.stars', 0) + sm.stars);
-          store.set('pr1.streak', sm.outcome === 'solved' ? store.get('pr1.streak', 0) + 1 : 0);
+          store.set('pr1.streak', won ? store.get('pr1.streak', 0) + 1 : 0);
         }
         if (change) { const lv = store.get('pr1.levels', {}); lv[sp.game] = change.to; store.set('pr1.levels', lv); }
         this.hudBump = sm.stars > 0;
@@ -3623,7 +4575,7 @@ PuzzleEnginesFactory(window);
         R.append(holdEnd(() => this.finish('ended_early')));
       } else {
         L.append(h('button', { class: 'hud-btn', type: 'button', 'aria-label': 'Menu', onclick: () => this.openMenu() }, icon('menu')));
-        M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i')), 'Puzzle Reel'));
+        M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
         if (!S || S.kind === 'free') {
           const stars = h('span', { class: 'pill', 'aria-label': store.get('pr1.stars', 0) + ' stars' }, icon('star', 'star'), String(store.get('pr1.stars', 0)));
           R.append(stars);
@@ -3637,7 +4589,7 @@ PuzzleEnginesFactory(window);
       const S = this.session;
       $('#app').dataset.scene = 'panel';
       const real = S.puzzles.filter((p) => !p.practice);
-      const solved = real.filter((p) => p.outcome === 'solved').length;
+      const solved = real.filter((p) => p.outcome === 'solved' || p.outcome === 'complete').length;
       const stars = real.reduce((a, p) => a + (p.stars || 0), 0);
       const total = real.reduce((a, p) => a + (p.duration_ms || 0), 0);
       const done = S.status === 'complete';
@@ -3695,11 +4647,20 @@ PuzzleEnginesFactory(window);
 
     // ---------- menu
     openMenu() {
-      const item = (ico, title, sub, onclick, end) => h('button', { class: 'menu-item', type: 'button', onclick }, h('span', { class: 'ico' }, icon(ico)), h('span', null, h('b', { text: title }), sub ? h('small', { text: sub }) : null), end ? h('span', { class: 'end' }, end) : null);
+      if (this.card && this.card.abort) this.card.abort('menu opened');
+      const item =(ico, title, sub, onclick, end) => h('button', { class: 'menu-item', type: 'button', onclick }, h('span', { class: 'ico' }, icon(ico)), h('span', null, h('b', { text: title }), sub ? h('small', { text: sub }) : null), end ? h('span', { class: 'end' }, end) : null);
       const soundToggle = toggle('m-sound', Sound.on, (on) => { store.set('pr1.sound', on); Sound.on = on; if (on) { Sound.unlock(); Sound.play('pop', 3); } });
       const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const soundRow = h('div', { class: 'menu-item' }, h('span', { class: 'ico' }, icon('sound')), h('label', { for: 'm-sound' }, h('b', { text: 'Sound and vibration' }), ios ? h('small', { text: 'Silent mode on iPhone mutes it' }) : null), h('span', { class: 'end' }, soundToggle));
-      openSheet('Puzzle Reel', [h('div', { class: 'menu' },
+      const S = this.session;
+      const focus = S && S.kind === 'free' && S.blocks[0] ? S.blocks[0].game : store.get('pr1.focus', 'mixed');
+      const picker = h('div', { class: 'game-pick', role: 'group', 'aria-label': 'Play' },
+        ['mixed'].concat(ORDER).map((g) => h('button', {
+          class: 'gp' + (g === focus ? ' on' : ''), type: 'button', 'data-game': g, 'aria-pressed': g === focus ? 'true' : 'false',
+          'aria-label': g === 'mixed' ? 'All games' : LABEL[g],
+          onclick: () => { closeSheet(); this.startFree(false, g); },
+        }, h('span', { class: 'gp-ico' }, icon(GAME_ICON[g])), h('span', { text: g === 'mixed' ? 'All' : LABEL[g] }))));
+      openSheet('Puzzle Reel', [picker, h('div', { class: 'menu' },
         soundRow,
         item('help', 'How to play', 'Replay the practice board', () => { closeSheet(); this.replayPractice(); }),
         item('flask', 'Research session', 'Participant, seed, plan and options', () => { closeSheet(); this.openSetup(); }),
@@ -3787,12 +4748,12 @@ PuzzleEnginesFactory(window);
             h('div', { class: 'inline' }, seed, h('button', { class: 'btn', type: 'button', onclick: () => { seed.value = String(randomSeed()); } }, 'New seed')),
             h('span', { class: 'help', text: 'Same seed and plan, same puzzles for everyone.' })),
           h('div', { class: 'field' }, h('span', { class: 'lbl', text: 'Plan' }), plan, sumLine,
-            h('span', { class: 'help', text: 'All three rotates Outbound, Conduit and Tumbler. Adaptive blocks start at the chosen level, go up after two solves at or under par, and down after a miss.' }))),
+            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler and Glimpse. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 10 looks; its display time adapts on every look and its level never goes down.' }))),
         h('fieldset', null, h('legend', { text: 'What participants see' }),
           h('div', { class: 'checks' },
             opt('practice', 'o-practice', 'Practice board before each new game'),
-            opt('feedback', 'o-feedback', 'Move quality colors'),
-            opt('counter', 'o-counter', 'Stars and move count'),
+            opt('feedback', 'o-feedback', 'Feedback on each move or look'),
+            opt('counter', 'o-counter', 'Stars, move count and speed'),
             opt('hints', 'o-hints', 'Hint button'),
             opt('undo', 'o-undo', 'Undo and restart'),
             opt('skip', 'o-skip', 'Skip button'),
@@ -3885,6 +4846,7 @@ PuzzleEnginesFactory(window);
       document.addEventListener('visibilitychange', () => {
         const c = this.card;
         if (document.visibilityState === 'hidden') {
+          if (c && !c.summary && c.onHidden) c.onHidden();
           if (c && !c.summary && c.hiddenAt == null) { c.hiddenAt = now(); this.logPuzzle(c, 'hidden', {}); }
           this.save();
         } else if (c && !c.summary && c.hiddenAt != null) {

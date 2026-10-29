@@ -1111,15 +1111,201 @@
     },
   };
 
+  // =====================================================================
+  // GLIMPSE: speed of processing in the useful-field-of-view format.
+  // An animal in the middle (one of two) and, from level 2, a bird around it
+  // flash for a few screen frames, then a mask covers them. The player picks
+  // the animal, then taps where the bird was. Display time adapts every look
+  // with a weighted up/down staircase that settles at 75% correct.
+  // The generator fixes what is shown; display times depend on the answers.
+  // =====================================================================
+  const GL_RING_R = [0.34, 0.62, 0.88];   // ring radius as a share of the field radius
+  const GL_RING_N = [8, 16, 24];          // 48 positions: the bird plus up to 47 leaves
+  const GL_SLOTS = [];
+  GL_RING_R.forEach((r, i) => {
+    for (let k = 0; k < GL_RING_N[i]; k++) GL_SLOTS.push({ ring: i + 1, a: (360 * k) / GL_RING_N[i], r });
+  });
+  // direction 0 = up, then clockwise in 45 degree steps
+  function glSlotOf(ring, dir) {
+    let base = 0;
+    for (let i = 0; i < ring - 1; i++) base += GL_RING_N[i];
+    return base + (dir * GL_RING_N[ring - 1]) / 8;
+  }
+  // Display times from 500 ms down in steps of x0.85, as whole frames of the
+  // measured frame period T; repeats are dropped, the last step is one frame.
+  function glLadder(T) {
+    const out = [];
+    for (let ms = 500; ; ms *= 0.85) {
+      const f = Math.max(1, Math.round(ms / T));
+      if (!out.length || f < out[out.length - 1]) out.push(f);
+      if (f === 1) return out;
+    }
+  }
+  function glNearest(lad, T, ms) {
+    let best = 0, bd = Infinity;
+    for (let i = 0; i < lad.length; i++) {
+      const d = Math.abs(Math.log((lad[i] * T) / ms));
+      if (d < bd - 1e-9) { bd = d; best = i; }
+    }
+    return best;
+  }
+  function glMedian(xs) {
+    if (!xs.length) return null;
+    const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1;
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
+
+  const Glimpse = {
+    id: 'glimpse',
+    name: 'Glimpse',
+    noun: 'look',
+    kind: 'trials',
+    levelDown: false,      // the display time already adapts; levels only add load
+    trials: 10,
+    startMs: 500,
+    maskMs: 500,
+    fixMs: [500, 900],
+    up: 3, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 0.75
+    fastDown: 3,           // a fresh staircase drops 3 steps per correct look until the first miss
+    pairs: { easy: ['rabbit', 'cat'], hard: ['cat', 'fox'] },
+    // advanceMs: a round at or under this display time counts as a success (two in a row: next level)
+    levels: {
+      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 60 },
+      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 90 },
+      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 120 },
+      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 180 },
+      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 240 },
+    },
+    slots: GL_SLOTS,
+    ringR: GL_RING_R,
+    slotOf: glSlotOf,
+    ladder: glLadder,
+    describe(p) {
+      const pair = Array.isArray(p.pair) ? p.pair : this.pairs[p.pair];
+      const rings = p.rings.length === 1 ? 'ring ' + p.rings[0] : 'rings ' + p.rings[0] + '-' + p.rings[p.rings.length - 1];
+      return (p.periph ? 'center + bird on ' + rings : 'center only') + (p.distract ? ', ' + p.distract + ' leaves' : '') + ', ' + pair.join('/');
+    },
+    build(level, seed, L, trials, fixedMs) {
+      const pair = this.pairs[L.pair];
+      return {
+        game: 'glimpse', level, seed,
+        n: trials.length, periph: L.periph, rings: L.rings.slice(), distract: L.distract, pair: pair.slice(),
+        trials, maskMs: this.maskMs, fixedMs: fixedMs || null, advanceMs: L.advanceMs || null,
+        reference: null,
+        features: {
+          looks: trials.length, periphery: L.periph ? 1 : 0, rings: L.rings.join(' '), leaves: L.distract,
+          pair: pair.join('/'), mask_ms: this.maskMs, target_correct: this.up / (this.up + this.down),
+          advance_ms: L.advanceMs || null,
+        },
+      };
+    },
+    generate(level, seed) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const n = this.trials;
+      const centers = rng.shuffle(Array.from({ length: n }, (_, i) => i % 2));
+      let dirs = [], rings = [];
+      if (L.periph) {
+        // every direction at least once per round, rings in equal shares
+        while (dirs.length < n) dirs = dirs.concat(rng.shuffle([0, 1, 2, 3, 4, 5, 6, 7]));
+        dirs = rng.shuffle(dirs.slice(0, n));
+        rings = rng.shuffle(Array.from({ length: n }, (_, i) => L.rings[i % L.rings.length]));
+      }
+      const trials = [];
+      for (let i = 0; i < n; i++) {
+        const t = { c: centers[i], fix: this.fixMs[0] + rng.int(this.fixMs[1] - this.fixMs[0]), mask: (rng() * 4294967296) >>> 0 };
+        if (L.periph) {
+          t.ring = rings[i];
+          t.dir = dirs[i];
+          t.flip = rng() < 0.5 ? 1 : 0;
+          const tgt = glSlotOf(t.ring, t.dir);
+          const free = [];
+          for (let k = 0; k < GL_SLOTS.length; k++) if (k !== tgt) free.push(k);
+          rng.shuffle(free);
+          t.d = free.slice(0, L.distract).sort((a, b) => a - b).map((k) => [k, rng.int(360)]);
+        }
+        trials.push(t);
+      }
+      return this.build(level, seed, L, trials);
+    },
+    // four looks with long, fixed display times: the bird sits on the middle ring
+    practice() {
+      const L = { periph: true, rings: [2], distract: 0, pair: 'easy' };
+      const spec = [[0, 1], [1, 5], [0, 6], [1, 3]];
+      const trials = spec.map((x, i) => ({ c: x[0], fix: 650, mask: 1000 + i, ring: 2, dir: x[1], flip: x[1] >= 4 ? 1 : 0, d: [] }));
+      return this.build(0, 0, L, trials, [1000, 700, 450, 300]);
+    },
+    // start: { ms } carries a staircase on; without it the staircase starts fresh at 500 ms
+    newRun(p, start) {
+      const carried = start && start.ms > 0;
+      const ms = p.fixedMs ? null : carried ? Math.min(this.startMs, start.ms) : this.startMs;
+      return { i: 0, ms, start: ms, fresh: !p.fixedMs && !carried, fast: !p.fixedMs && !carried, last: 0, rev: [], res: [] };
+    },
+    // the display time for the next look, given the frame period T in ms
+    plan(p, run, T) {
+      T = T > 0 ? T : 1000 / 60;
+      if (p.fixedMs) {
+        const want = p.fixedMs[Math.min(run.i, p.fixedMs.length - 1)];
+        const f = Math.max(1, Math.round(want / T));
+        return { idx: -1, frames: f, ms: f * T, T };
+      }
+      const lad = glLadder(T);
+      const idx = glNearest(lad, T, run.ms);
+      return { idx, frames: lad[idx], ms: lad[idx] * T, T, steps: lad.length };
+    },
+    // r: { correct, plan, drop }
+    record(p, run, r) {
+      const out = { i: run.i + 1, ok: r.correct ? 1 : 0, ms: round(r.plan.ms, 2), f: r.plan.frames, T: round(r.plan.T, 3), drop: r.drop ? 1 : 0, rev: 0, next: null };
+      if (!p.fixedMs) {
+        const lad = glLadder(r.plan.T);
+        const dir = r.correct ? 1 : -1;
+        let idx = r.plan.idx;
+        if (r.correct) idx += run.fast ? this.fastDown : this.down;
+        else { idx -= this.up; run.fast = false; }
+        idx = Math.max(0, Math.min(lad.length - 1, idx));
+        if (run.last && dir !== run.last) { out.rev = 1; run.rev.push(out.ms); }
+        run.last = dir;
+        run.ms = lad[idx] * r.plan.T;
+        out.next = round(run.ms, 2);
+      }
+      run.res.push(out);
+      run.i++;
+      return out;
+    },
+    summary(p, run) {
+      const res = run.res, n = res.length;
+      const k = res.filter((x) => x.ok).length;
+      // operating point: geometric mean display time once a fresh staircase has stopped its quick descent
+      let from = 0;
+      if (run.fresh) { const e = res.findIndex((x) => !x.ok); from = e < 0 ? 0 : e; }
+      const tail = res.slice(from);
+      const gm = tail.length ? Math.exp(tail.reduce((a, x) => a + Math.log(x.ms), 0) / tail.length) : null;
+      const hits = res.filter((x) => x.ok).map((x) => x.ms);
+      return {
+        n, correct: k, accuracy: n ? k / n : null,
+        threshold_ms: p.fixedMs || gm == null ? null : round(gm, 2),
+        best_ms: hits.length ? Math.min.apply(null, hits) : null,
+        start_ms: run.start == null ? null : round(run.start, 2),
+        end_ms: p.fixedMs || run.ms == null ? null : round(run.ms, 2),
+        reversals: run.rev.length,
+        refresh_ms: glMedian(res.map((x) => x.T)),
+        drops: res.filter((x) => x.drop).length,
+      };
+    },
+    progress(p, run) { return { done: run.i, total: p.n }; },
+    serialize(run) { return JSON.parse(JSON.stringify(run)); },
+    restore(p, data) { return JSON.parse(JSON.stringify(data)); },
+  };
+
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.1.0',
+    version: '1.2.0',
     fnv1a, makeRng, puzzleSeed,
-    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler },
-    order: ['outbound', 'conduit', 'tumbler'],
+    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse },
+    order: ['outbound', 'conduit', 'tumbler', 'glimpse'],
     EXIT,
-    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf },
+    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;

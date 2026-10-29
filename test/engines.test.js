@@ -327,7 +327,7 @@ test('serialize/restore round-trips runs for every game', () => {
 });
 
 test('generation is fast enough to run ahead of play', () => {
-  const budget = { outbound: 2500, conduit: 400, tumbler: 600 };
+  const budget = { outbound: 2500, conduit: 400, tumbler: 600, glimpse: 50 };
   for (const g of E.order) {
     for (const lv of [1, 2, 3, 4, 5]) {
       let worst = 0;
@@ -339,4 +339,130 @@ test('generation is fast enough to run ahead of play', () => {
       assert.ok(worst < budget[g], g + ' L' + lv + ' worst ' + worst + 'ms');
     }
   }
+});
+
+// ---------------------------------------------------------------- Glimpse
+const G = E.games.glimpse;
+const { glLadder, glSlotOf } = E.internals;
+
+test('glimpse: rounds are balanced and the bird never shares a spot with a leaf', () => {
+  for (const lv of [1, 2, 3, 4, 5]) {
+    const L = G.levels[lv];
+    for (let s = 0; s < 20; s++) {
+      const p = G.generate(lv, 900 + s);
+      assert.equal(p.n, G.trials);
+      assert.equal(p.trials.filter((t) => t.c === 0).length, G.trials / 2, 'animals in equal shares');
+      for (const t of p.trials) {
+        assert.ok(t.fix >= G.fixMs[0] && t.fix < G.fixMs[1]);
+        if (!L.periph) { assert.equal(t.dir, undefined); continue; }
+        assert.ok(L.rings.includes(t.ring));
+        assert.equal(t.d.length, L.distract);
+        const tgt = glSlotOf(t.ring, t.dir);
+        assert.ok(t.d.every(([k]) => k !== tgt && k >= 0 && k < G.slots.length));
+        assert.equal(new Set(t.d.map(([k]) => k)).size, t.d.length, 'one leaf per spot');
+      }
+      if (L.periph) {
+        assert.equal(new Set(p.trials.map((t) => t.dir)).size, 8, 'every direction at least once');
+        const per = L.rings.map((r) => p.trials.filter((t) => t.ring === r).length);
+        assert.ok(Math.max(...per) - Math.min(...per) <= 1, 'rings in equal shares');
+      }
+    }
+  }
+});
+
+test('glimpse: direction spots sit on the ring at the right angle, and items cannot overlap', () => {
+  for (const ring of [1, 2, 3]) {
+    for (let d = 0; d < 8; d++) {
+      const sl = G.slots[glSlotOf(ring, d)];
+      assert.equal(sl.ring, ring);
+      assert.equal(sl.a, d * 45);
+    }
+  }
+  // items are drawn 0.2 R wide (0.34 R in the middle); centers must be further apart
+  const xy = G.slots.map((sl) => [Math.sin((sl.a * Math.PI) / 180) * sl.r, -Math.cos((sl.a * Math.PI) / 180) * sl.r]);
+  let min = Infinity;
+  for (let i = 0; i < xy.length; i++) for (let j = i + 1; j < xy.length; j++) min = Math.min(min, Math.hypot(xy[i][0] - xy[j][0], xy[i][1] - xy[j][1]));
+  assert.ok(min > 0.2, 'closest pair ' + min.toFixed(3));
+  assert.ok(Math.min(...xy.map(([x, y]) => Math.hypot(x, y))) - 0.1 > 0.17, 'clear of the middle animal');
+  assert.ok(Math.max(...xy.map(([x, y]) => Math.hypot(x, y))) + 0.1 < 1, 'inside the field');
+});
+
+test('glimpse: the frame ladder runs from about 500 ms to one frame at any refresh rate', () => {
+  for (const hz of [30, 50, 60, 90, 120, 144]) {
+    const T = 1000 / hz;
+    const lad = glLadder(T);
+    assert.equal(lad[lad.length - 1], 1);
+    assert.ok(Math.abs(lad[0] * T - 500) <= T / 2 + 1e-9, hz + ' Hz starts at 500 ms');
+    for (let i = 1; i < lad.length; i++) assert.ok(lad[i] < lad[i - 1], 'strictly shorter');
+  }
+  assert.deepEqual(glLadder(1000 / 60), [30, 25, 22, 18, 16, 13, 11, 10, 8, 7, 6, 5, 4, 3, 2, 1]);
+});
+
+test('glimpse: a fresh staircase drops fast until the first miss, then 1 down / 3 up', () => {
+  const p = G.generate(2, 77);
+  const run = G.newRun(p, null);
+  const T = 1000 / 60;
+  const steps = [];
+  for (const ok of [1, 1, 0, 1, 1, 0]) {
+    const plan = G.plan(p, run, T);
+    steps.push(plan.idx);
+    G.record(p, run, { correct: !!ok, plan });
+  }
+  assert.deepEqual(steps, [0, 3, 6, 3, 4, 5]);
+  const sm = G.summary(p, run);
+  assert.equal(sm.correct, 4);
+  assert.equal(sm.reversals, 3);
+  // carried staircases start where they left off and step by one
+  const run2 = G.newRun(p, { ms: run.ms });
+  assert.equal(G.plan(p, run2, T).idx, 2);
+  G.record(p, run2, { correct: true, plan: G.plan(p, run2, T) });
+  assert.equal(G.plan(p, run2, T).idx, 3);
+});
+
+test('glimpse: the staircase settles near the 75% point of a simulated observer', () => {
+  // Weibull observer, 2 alternatives in the middle and 8 directions around: chance 1/16
+  for (const [alpha, hz] of [[60, 60], [140, 60], [45, 120]]) {
+    const beta = 2.2, g = 1 / 16;
+    const pc = (ms) => g + (1 - g) * (1 - Math.exp(-Math.pow(ms / alpha, beta)));
+    const d75 = alpha * Math.pow(-Math.log(1 - (0.75 - g) / (1 - g)), 1 / beta);
+    const rng = E.makeRng(alpha * 31 + hz);
+    const p = G.generate(3, 1);
+    const run = G.newRun(p, null);
+    const shown = [];
+    for (let i = 0; i < 600; i++) {
+      const plan = G.plan(p, run, 1000 / hz);
+      shown.push(plan.ms);
+      G.record(p, run, { correct: rng() < pc(plan.ms), plan });
+    }
+    const tail = shown.slice(200);
+    const gm = Math.exp(tail.reduce((a, x) => a + Math.log(x), 0) / tail.length);
+    assert.ok(gm > d75 / 1.3 && gm < d75 * 1.3, 'alpha ' + alpha + ': settled at ' + gm.toFixed(1) + ' ms, 75% point ' + d75.toFixed(1));
+    const acc = run.res.slice(200).filter((x) => x.ok).length / 400;
+    assert.ok(acc > 0.68 && acc < 0.82, 'accuracy ' + acc.toFixed(3));
+  }
+});
+
+test('glimpse: practice is fixed, uses long display times and does not adapt', () => {
+  const a = G.practice(), b = G.practice();
+  assert.deepEqual(a, b);
+  assert.equal(a.n, 4);
+  const run = G.newRun(a, { ms: 40 });
+  const T = 1000 / 60;
+  const shown = [];
+  for (let i = 0; i < a.n; i++) {
+    const plan = G.plan(a, run, T);
+    shown.push(plan.frames);
+    G.record(a, run, { correct: false, plan });
+  }
+  assert.deepEqual(shown, [60, 42, 27, 18]);
+  assert.equal(G.summary(a, run).threshold_ms, null);
+});
+
+test('glimpse: runs survive serialize/restore', () => {
+  const p = G.generate(4, 3);
+  const run = G.newRun(p, { ms: 120 });
+  for (let i = 0; i < 4; i++) G.record(p, run, { correct: i % 2 === 0, plan: G.plan(p, run, 1000 / 60) });
+  const back = G.restore(p, JSON.parse(JSON.stringify(G.serialize(run))));
+  assert.deepEqual(back, run);
+  assert.deepEqual(G.plan(p, back, 1000 / 60), G.plan(p, run, 1000 / 60));
 });
