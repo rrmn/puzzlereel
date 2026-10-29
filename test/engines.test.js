@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const E = require('../src/engines.js');
-const { obAnalyze, obOccupancy, obSlide, cdSolve, tbSpace, tbFeedback, tbBest, tbEntropy, tbEncode, tbSeen } = E.internals;
+const { obAnalyze, obOccupancy, obSlide, cdSolve, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbSeen } = E.internals;
 const O = E.games.outbound, C = E.games.conduit, T = E.games.tumbler;
 
 const strip = (p) => JSON.stringify(p, (k, v) => (k === 'an' ? undefined : v));
@@ -12,6 +12,7 @@ test('generators are deterministic for a given level and seed', () => {
     for (const lv of [1, 3, 5]) {
       const a = E.games[g].generate(lv, 12345);
       const b = E.games[g].generate(lv, 12345);
+      if (g === 'tumbler') assert.notEqual(strip(a), strip(E.games[g].generate(lv, 12345, 'count')), 'clue style changes the puzzle');
       assert.equal(strip(a), strip(b), g + ' L' + lv);
       const c = E.games[g].generate(lv, 12346);
       assert.notEqual(strip(a), strip(c), g + ' L' + lv + ' different seed');
@@ -158,7 +159,7 @@ test('conduit: unique solution, scrambled start, labels match distance', () => {
   }
 });
 
-function naiveFeedback(a, b) {
+function naiveCount(a, b) {
   let exact = 0;
   const ca = {}, cb = {};
   for (let k = 0; k < a.length; k++) {
@@ -170,67 +171,143 @@ function naiveFeedback(a, b) {
   for (const c in ca) common += Math.min(ca[c], cb[c] || 0);
   return [exact, common - exact];
 }
-
-test('tumbler: feedback matches a naive implementation', () => {
-  const sp = tbSpace(4, 6);
-  const rng = E.makeRng(7);
-  for (let k = 0; k < 2000; k++) {
-    const a = rng.int(sp.total), b = rng.int(sp.total);
-    const fb = tbFeedback(sp, a, b);
-    const [ex, pa] = naiveFeedback(T.toLetters(sp, a), T.toLetters(sp, b));
-    assert.equal(Math.floor(fb / 5), ex);
-    assert.equal(fb % 5, pa);
+// Wordle rules: exact first, then repeated colors marked left to right while unmatched copies remain
+function naivePin(guess, code) {
+  const marks = new Array(guess.length).fill(0);
+  const left = {};
+  for (let k = 0; k < guess.length; k++) {
+    if (guess[k] === code[k]) marks[k] = 2;
+    else left[code[k]] = (left[code[k]] || 0) + 1;
   }
+  for (let k = 0; k < guess.length; k++) {
+    if (marks[k] === 2) continue;
+    if (left[guess[k]] > 0) { marks[k] = 1; left[guess[k]]--; }
+  }
+  return marks;
+}
+
+test('tumbler: both clue styles match naive implementations', () => {
+  const rng = E.makeRng(7);
+  for (const [P, C] of [[4, 6], [5, 7], [3, 4]]) {
+    const sp = tbSpace(P, C);
+    for (let k = 0; k < 3000; k++) {
+      const a = rng.int(sp.total), b = rng.int(sp.total);
+      const A = T.toLetters(sp, a), B = T.toLetters(sp, b);
+      const fb = tbCount(sp, a, b);
+      const [ex, pa] = naiveCount(A, B);
+      assert.equal(Math.floor(fb / (P + 1)), ex);
+      assert.equal(fb % (P + 1), pa);
+      assert.deepEqual(tbMarks(sp, tbPin(sp, a, b)), naivePin(A, B), A + ' vs ' + B);
+    }
+  }
+  // repeated colors: one A in the code marks only the first extra A
+  const sp = tbSpace(4, 6);
+  assert.deepEqual(tbMarks(sp, tbPin(sp, tbEncode(sp, [0, 0, 1, 1]), tbEncode(sp, [2, 0, 0, 3]))), [1, 2, 0, 0]);
+  assert.deepEqual(tbMarks(sp, tbPin(sp, tbEncode(sp, [0, 0, 0, 1]), tbEncode(sp, [1, 2, 3, 0]))), [1, 0, 0, 1]);
 });
 
 test('tumbler: symmetry pruning finds the same best information as a full search', () => {
   const rng = E.makeRng(11);
-  for (const lv of [3, 4, 5]) {
-    const L = T.levels[lv];
-    const sp = tbSpace(L.P, L.C);
-    for (let trial = 0; trial < 8; trial++) {
-      const p = T.generate(lv, 60 + trial);
-      const run = T.newRun(p);
-      for (let step = 0; step < 3; step++) {
-        const digits = Array.from({ length: L.P }, () => rng.int(Math.min(L.C, 2 + step * 2)));
-        const r = T.guess(p, run, digits);
-        if (r.solved) break;
-        const seen = tbSeen(sp, run.tries.map((t) => tbEncode(sp, t.digits)));
-        const fast = tbBest(sp, run.S, seen).H;
-        let slow = -1;
-        const buf = new Int32Array((L.P + 1) * (L.P + 1));
-        for (let g = 0; g < sp.total; g++) slow = Math.max(slow, tbEntropy(sp, g, run.S, buf));
-        assert.ok(Math.abs(fast - slow) < 1e-9, 'L' + lv + ' step ' + step + ': ' + fast + ' vs ' + slow);
+  for (const mode of ['pin', 'count']) {
+    for (const lv of [2, 3, 4]) {
+      for (let trial = 0; trial < 5; trial++) {
+        const p = T.generate(lv, 60 + trial, mode);
+        const sp = tbSpace(p.P, p.C);
+        const run = T.newRun(p);
+        for (let step = 0; step < 3; step++) {
+          if (step === 1 && trial % 2 === 0) T.hint(p, run); // revealed pins must count as seen colors
+          const digits = Array.from({ length: p.P }, () => rng.int(Math.min(p.C, 2 + step * 2)));
+          const r = T.guess(p, run, digits);
+          if (r.solved || run.S.length <= 1) break;
+          const seen = tbSeen(sp, run.tries.map((t) => tbEncode(sp, t.digits)), run.revealed);
+          const fast = tbBest(sp, run.S, seen, mode).H;
+          let slow = -1;
+          const buf = new Int32Array(mode === 'pin' ? Math.pow(3, p.P) : (p.P + 1) * (p.P + 1));
+          for (let g = 0; g < sp.total; g++) slow = Math.max(slow, tbEntropy(sp, g, run.S, buf, mode));
+          assert.ok(Math.abs(fast - slow) < 1e-9, mode + ' L' + lv + ' step ' + step + ': ' + fast + ' vs ' + slow);
+        }
       }
     }
   }
 });
 
-test('tumbler: solver path cracks the code, annotate labels tries', () => {
-  for (const lv of [1, 2, 3, 4, 5]) {
-    for (let s = 0; s < 6; s++) {
-      const p = T.generate(lv, 80 + s);
-      const parts = p.features.solver_path.split(' ');
-      assert.equal(parts[parts.length - 1], p.secretDigits.map((d) => T.letters[d]).join(''));
-      assert.equal(parts.length, p.reference);
-      // replay the solver's tries: each must be labelled optimal (or solved)
-      const run = T.newRun(p);
-      for (const word of parts) {
-        const r = T.annotate(p, T.guess(p, run, word.split('').map((ch) => T.letters.indexOf(ch))));
-        assert.ok(r.cls === 'optimal' || r.cls === 'solved', r.cls);
-        assert.ok(r.consistent || r.cls !== 'solved');
+test('tumbler: solver path cracks the code, annotate labels tries, hints narrow the codes', () => {
+  for (const mode of ['pin', 'count']) {
+    for (const lv of [1, 2, 3, 4, 5]) {
+      for (let s = 0; s < 4; s++) {
+        const p = T.generate(lv, 80 + s, mode);
+        assert.equal(p.clue, mode);
+        const parts = p.features.solver_path.split(' ');
+        assert.equal(parts[parts.length - 1], p.secretDigits.map((d) => T.letters[d]).join(''));
+        assert.equal(parts.length, p.reference);
+        assert.ok(p.reference <= p.max, 'solver fits in the allowed tries');
+        const run = T.newRun(p);
+        for (const word of parts) {
+          const r = T.annotate(p, T.guess(p, run, word.split('').map((ch) => T.letters.indexOf(ch))));
+          assert.ok(r.cls === 'optimal' || r.cls === 'solved', r.cls);
+        }
+        assert.ok(run.tries[run.tries.length - 1].exact === p.P);
       }
-      assert.ok(run.tries[run.tries.length - 1].exact === p.P);
     }
   }
   // repeating a try gives no information
-  const p = T.generate(3, 1);
+  const p = T.generate(3, 1, 'count');
   const run = T.newRun(p);
   const g = p.secretDigits.map((d) => (d + 1) % p.C);
   T.annotate(p, T.guess(p, run, g));
   const again = T.annotate(p, T.guess(p, run, g));
   assert.equal(again.cls, 'zero_info');
   assert.equal(again.consistent, false);
+  // a hint reveals a true pin and keeps the code among the candidates
+  const q = T.generate(4, 9, 'pin');
+  const r2 = T.newRun(q);
+  const hint = T.hint(q, r2);
+  assert.equal(hint.kind, 'reveal');
+  assert.equal(hint.color, q.secretDigits[hint.pos]);
+  assert.ok(Array.from(r2.S).includes(q.secret));
+  assert.ok(hint.candsAfter < hint.candsBefore);
+});
+
+test('practice boards are small, solvable and unique', () => {
+  const ob = O.practice();
+  assert.equal(ob.reference, 3);
+  const run = O.newRun(ob);
+  assert.equal(O.tap(ob, run, 1).cls, 'blocked'); // blue waits for red
+  assert.equal(O.blocker(ob, run, 1), 0);
+  const cd = C.practice();
+  assert.equal(cdSolve(cd.w, cd.h, cd.sol, 2).solutions, 1);
+  assert.equal(cd.reference, 3);
+  for (const mode of ['pin', 'count']) {
+    const tb = T.practice(mode);
+    assert.equal(tb.P, 2);
+    const r = T.newRun(tb);
+    const first = T.guess(tb, r, [0, 1]); // red, blue: both colors in the wrong spots
+    assert.equal(first.partial, 2);
+    assert.ok(T.guess(tb, r, [1, 0]).solved);
+  }
+});
+
+test('outbound: stuck cars are reported only in dead ends', () => {
+  let checked = 0;
+  for (let s = 0; s < 12; s++) {
+    const p = O.generate(4, 700 + s);
+    const run = O.newRun(p);
+    assert.deepEqual(O.stuckCars(p, run), []);
+    for (let step = 0; step < 40; step++) {
+      const mov = O.movable(p, run);
+      if (!mov.length) break;
+      let pick = mov[0];
+      for (const i of mov) {
+        const ns = run.st.slice(); ns[i] = obSlide(p, ns, obOccupancy(p, ns), i);
+        if (O.dist(p, ns) === Infinity) { pick = i; break; }
+      }
+      const r = O.tap(p, run, pick);
+      const stuck = O.stuckCars(p, run);
+      if (r.dAfter === Infinity) { assert.ok(stuck.length >= 2, 'a dead end traps at least two cars'); checked++; break; }
+      assert.deepEqual(stuck, []);
+    }
+  }
+  assert.ok(checked > 0);
 });
 
 test('serialize/restore round-trips runs for every game', () => {
@@ -240,10 +317,13 @@ test('serialize/restore round-trips runs for every game', () => {
   const p2 = C.generate(3, 5); const r2 = C.newRun(p2);
   C.tap(p2, r2, 3); C.tap(p2, r2, 7);
   assert.deepEqual(C.restore(p2, JSON.parse(JSON.stringify(C.serialize(r2)))), r2);
-  const p3 = T.generate(4, 5); const r3 = T.newRun(p3);
-  T.guess(p3, r3, [0, 0, 1, 1]); T.guess(p3, r3, [2, 3, 4, 5]);
-  const back = T.restore(p3, JSON.parse(JSON.stringify(T.serialize(r3))));
-  assert.deepEqual(Array.from(back.S), Array.from(r3.S));
+  for (const mode of ['pin', 'count']) {
+    const p3 = T.generate(4, 5, mode); const r3 = T.newRun(p3);
+    T.guess(p3, r3, p3.secretDigits.map(() => 0)); T.hint(p3, r3); T.guess(p3, r3, p3.secretDigits.map((d, k) => k % p3.C));
+    const back = T.restore(p3, JSON.parse(JSON.stringify(T.serialize(r3))));
+    assert.deepEqual(Array.from(back.S), Array.from(r3.S));
+    assert.deepEqual(back.revealed, r3.revealed);
+  }
 });
 
 test('generation is fast enough to run ahead of play', () => {

@@ -395,6 +395,57 @@
       return { kind: 'none' };
     },
     progress(p, run) { return { done: p.cars.length - this.remaining(p, run), total: p.cars.length }; },
+    // the car standing in front of car i, or -1 when its lane is clear
+    blocker(p, run, i) {
+      if (run.st[i] === EXIT) return -1;
+      const occ = obOccupancy(p, run.st);
+      const c = p.cars[i], a = run.st[i], d = DIR[c.dir];
+      let x = c.x + (c.len - 1 + a) * d[0], y = c.y + (c.len - 1 + a) * d[1];
+      for (;;) {
+        x += d[0]; y += d[1];
+        if (x < 0 || y < 0 || x >= p.w || y >= p.h) return -1;
+        const o = occ[y * p.w + x];
+        if (o !== -1) return o;
+      }
+    },
+    // cars that can never leave from the current state (empty unless in a dead end)
+    stuckCars(p, run) {
+      const n = p.cars.length, B = p.an.B;
+      const canLeave = new Array(n).fill(false);
+      const seen = new Set([obKey(run.st, B)]);
+      const stack = [run.st.slice()];
+      while (stack.length && seen.size < 20000) {
+        const st = stack.pop();
+        const occ = obOccupancy(p, st);
+        for (let i = 0; i < n; i++) {
+          if (st[i] === EXIT) { canLeave[i] = true; continue; }
+          const na = obSlide(p, st, occ, i);
+          if (na === st[i]) continue;
+          const ns = st.slice(); ns[i] = na;
+          const k = obKey(ns, B);
+          if (!seen.has(k)) { seen.add(k); stack.push(ns); }
+        }
+      }
+      const out = [];
+      for (let i = 0; i < n; i++) if (run.st[i] !== EXIT && !canLeave[i]) out.push(i);
+      return out;
+    },
+    // three cars in a chain: red frees blue, blue frees yellow
+    practice() {
+      const raw = [
+        { x: 1, y: 1, dir: 'E', len: 2, color: 0 },
+        { x: 2, y: 3, dir: 'N', len: 2, color: 1 },
+        { x: 0, y: 3, dir: 'E', len: 2, color: 2 },
+      ];
+      const cars = raw.map((c, i) => Object.assign({ id: i, label: 'c' + (i + 1) }, c));
+      const p = { w: 4, h: 4, cars };
+      const an = obAnalyze(p);
+      return {
+        game: 'outbound', level: 0, seed: 0, w: 4, h: 4, cars, an,
+        reference: an.optimal,
+        features: { cars: 3, trucks: 0, optimal_moves: an.optimal, p_random_solve: round(an.pRandom, 4), reachable_states: an.states, dead_end_states: an.deadStates, practice: true },
+      };
+    },
     serialize(run) { return { st: run.st.slice(), hist: run.hist.map((h) => h.slice()) }; },
     restore(p, data) { return { st: data.st.slice(), hist: data.hist.map((h) => h.slice()) }; },
   };
@@ -709,6 +760,22 @@
       }
       return fallback >= 0 ? { kind: 'target', index: fallback } : { kind: 'none' };
     },
+    // 3x3 garden: five plants, three tiles one turn away from right
+    practice() {
+      const w = 3, h = 3;
+      const sol = [2, 14, 8, 2, 13, 4, 2, 11, 9];
+      const start = [0, 0, 0, 3, 0, 3, 0, 0, 3];
+      const res = cdSolve(w, h, sol, 2);
+      if (res.solutions !== 1) throw new Error('Conduit practice board is not unique');
+      const per = sol.map(periodOf);
+      let need = 0;
+      for (let i = 0; i < sol.length; i++) need += (per[i] - (start[i] % per[i])) % per[i];
+      return {
+        game: 'conduit', level: 0, seed: 0, w, h, src: 4, sol, per, start,
+        reference: need,
+        features: { tiles: 9, optimal_turns: need, forced_by_local_rules: res.forced, search_nodes: res.nodes, practice: true },
+      };
+    },
     progress(p, run) {
       const on = this.connected(p, run);
       let c = 0;
@@ -721,7 +788,10 @@
 
   // =====================================================================
   // TUMBLER: a hidden code of P pins in C colors (repeats allowed).
-  // Each try reports exact matches and right-color-wrong-spot matches.
+  // Two clue styles:
+  //   pin   - every pin of a try is marked: right spot, elsewhere, or absent
+  //           (repeated colors are matched left to right, as in Wordle)
+  //   count - only the number of right-spot and right-color pins is shown
   // We track the set of codes still consistent with every clue and score
   // each try by the information it was expected to give.
   // =====================================================================
@@ -743,11 +813,12 @@
     }
     const all = new Int32Array(total);
     for (let i = 0; i < total; i++) all[i] = i;
-    const sp = { P, C, total, dig, cnt, all, firstBest: null };
+    const sp = { P, C, total, dig, cnt, all, rem: new Int8Array(C), firstBest: {}, canon: new Map() };
     spaceCache.set(key, sp);
     return sp;
   }
-  function tbFeedback(sp, a, b) {
+  // count clue: exact * (P + 1) + right-color-wrong-spot
+  function tbCount(sp, a, b) {
     const P = sp.P, C = sp.C, dig = sp.dig, cnt = sp.cnt;
     let ex = 0, com = 0;
     const ao = a * P, bo = b * P;
@@ -759,9 +830,35 @@
     }
     return ex * (P + 1) + (com - ex);
   }
-  function tbEntropy(sp, g, S, buf) {
+  // pin clue for try a against code b: base-3 number of per-pin marks
+  // (2 right spot, 1 elsewhere, 0 absent), first pin most significant
+  function tbPin(sp, a, b) {
+    const P = sp.P, dig = sp.dig, rem = sp.rem;
+    rem.fill(0);
+    const ao = a * P, bo = b * P;
+    for (let k = 0; k < P; k++) if (dig[ao + k] !== dig[bo + k]) rem[dig[bo + k]]++;
+    let key = 0;
+    for (let k = 0; k < P; k++) {
+      const g = dig[ao + k];
+      let m = 0;
+      if (g === dig[bo + k]) m = 2;
+      else if (rem[g] > 0) { m = 1; rem[g]--; }
+      key = key * 3 + m;
+    }
+    return key;
+  }
+  const tbFn = (mode) => (mode === 'count' ? tbCount : tbPin);
+  const tbKeys = (sp, mode) => (mode === 'count' ? (sp.P + 1) * (sp.P + 1) : Math.pow(3, sp.P));
+  const tbWin = (sp, mode) => (mode === 'count' ? sp.P * (sp.P + 1) : Math.pow(3, sp.P) - 1);
+  function tbMarks(sp, key) {
+    const out = new Array(sp.P);
+    for (let k = sp.P - 1; k >= 0; k--) { out[k] = key % 3; key = Math.floor(key / 3); }
+    return out;
+  }
+  function tbEntropy(sp, g, S, buf, mode) {
+    const f = tbFn(mode);
     buf.fill(0);
-    for (let i = 0; i < S.length; i++) buf[tbFeedback(sp, g, S[i])]++;
+    for (let i = 0; i < S.length; i++) buf[f(sp, g, S[i])]++;
     let H = 0;
     const n = S.length;
     for (let k = 0; k < buf.length; k++) {
@@ -802,7 +899,6 @@
   // them needs checking: a code is kept when its unseen colors first appear
   // in increasing order (e.g. with C..G unseen, CCDE is kept, DDCE is not).
   function tbCanonical(sp, seen) {
-    if (!sp.canon) sp.canon = new Map();
     if (sp.canon.has(seen)) return sp.canon.get(seen);
     const unseen = [];
     for (let c = 0; c < sp.C; c++) if (!(seen & (1 << c))) unseen.push(c);
@@ -822,48 +918,58 @@
     sp.canon.set(seen, arr);
     return arr;
   }
-  function tbSeen(sp, codes) {
+  // colors that clues or revealed pins have singled out
+  function tbSeen(sp, codes, revealed) {
     let seen = 0;
     for (const g of codes) for (let k = 0; k < sp.P; k++) seen |= 1 << sp.dig[g * sp.P + k];
+    if (revealed) for (const c of revealed) if (c != null) seen |= 1 << c;
     return seen;
   }
   // Most informative try for the current candidate set.
   // Ties go to a code that could still be the answer, then to the lowest code.
-  function tbBest(sp, S, seen) {
+  function tbBest(sp, S, seen, mode) {
+    mode = mode || 'pin';
     const full = S.length === sp.total;
-    if (full && sp.firstBest) return sp.firstBest;
-    const buf = new Int32Array((sp.P + 1) * (sp.P + 1));
+    if (full && sp.firstBest[mode]) return sp.firstBest[mode];
+    const buf = new Int32Array(tbKeys(sp, mode));
     const inS = new Uint8Array(sp.total);
     for (let i = 0; i < S.length; i++) inS[S[i]] = 1;
     const candidates = full ? tbPatternReps(sp) : tbCanonical(sp, seen || 0);
     let best = -1, bestCode = -1, bestIn = false;
     for (let i = 0; i < candidates.length; i++) {
       const g = candidates[i];
-      const H = tbEntropy(sp, g, S, buf);
+      const H = tbEntropy(sp, g, S, buf, mode);
       if (H > best + 1e-12 || (Math.abs(H - best) <= 1e-12 && inS[g] && !bestIn)) {
         best = H; bestCode = g; bestIn = !!inS[g];
       }
     }
     const res = { H: best, code: bestCode };
-    if (full) sp.firstBest = res;
+    if (full) sp.firstBest[mode] = res;
     return res;
   }
-  function tbFilter(sp, S, g, fb) {
+  function tbFilter(sp, S, g, fb, mode) {
+    const f = tbFn(mode);
     const out = [];
-    for (let i = 0; i < S.length; i++) if (tbFeedback(sp, g, S[i]) === fb) out.push(S[i]);
+    for (let i = 0; i < S.length; i++) if (f(sp, g, S[i]) === fb) out.push(S[i]);
     return Int32Array.from(out);
   }
-  // Number of tries a greedy most-informative-try strategy needs for this code.
-  function tbSolverPath(sp, secret) {
+  function tbFilterPin(sp, S, k, color) {
+    const out = [];
+    for (let i = 0; i < S.length; i++) if (sp.dig[S[i] * sp.P + k] === color) out.push(S[i]);
+    return Int32Array.from(out);
+  }
+  // Tries a greedy most-informative-try strategy needs for this code.
+  function tbSolverPath(sp, secret, mode) {
+    mode = mode || 'pin';
     let S = sp.all;
     const path = [];
-    const win = sp.P * (sp.P + 1);
+    const win = tbWin(sp, mode), f = tbFn(mode);
     for (let step = 0; step < 30; step++) {
-      const g = tbBest(sp, S, tbSeen(sp, path)).code;
+      const g = tbBest(sp, S, tbSeen(sp, path), mode).code;
       path.push(g);
-      const fb = tbFeedback(sp, g, secret);
+      const fb = f(sp, g, secret);
       if (fb === win) break;
-      S = tbFilter(sp, S, g, fb);
+      S = tbFilter(sp, S, g, fb, mode);
     }
     return path;
   }
@@ -872,31 +978,27 @@
     id: 'tumbler',
     name: 'Tumbler',
     noun: 'try',
-    rule: 'Crack the hidden code. After each try, a solid dot means a right color in the right spot; a ring means a right color in the wrong spot.',
-    goal: 'Repeats are allowed.',
+    // pin clues say more per try, so their ladder uses longer codes
     levels: {
-      1: { P: 3, C: 4, max: 8 },
-      2: { P: 3, C: 5, max: 9 },
-      3: { P: 4, C: 5, max: 10 },
-      4: { P: 4, C: 6, max: 10 },
-      5: { P: 4, C: 7, max: 12 },
+      1: { pin: { P: 3, C: 4, max: 6 }, count: { P: 3, C: 4, max: 8 } },
+      2: { pin: { P: 4, C: 5, max: 6 }, count: { P: 3, C: 5, max: 9 } },
+      3: { pin: { P: 4, C: 6, max: 7 }, count: { P: 4, C: 5, max: 10 } },
+      4: { pin: { P: 5, C: 6, max: 7 }, count: { P: 4, C: 6, max: 10 } },
+      5: { pin: { P: 5, C: 7, max: 8 }, count: { P: 4, C: 7, max: 12 } },
     },
     letters: 'ABCDEFG',
-    describe(p) { return p.P + ' pins, ' + p.C + ' colors'; },
-    generate(level, seed) {
-      const L = this.levels[level];
-      const rng = makeRng(seed);
-      const sp = tbSpace(L.P, L.C);
-      const secret = rng.int(sp.total);
-      const path = tbSolverPath(sp, secret);
+    describe(p) { return p.P + ' pins, ' + p.C + ' colors, ' + (p.clue === 'count' ? 'count clues' : 'pin clues'); },
+    build(level, seed, P, C, max, secret, clue) {
+      const sp = tbSpace(P, C);
+      const path = tbSolverPath(sp, secret, clue);
       return {
-        game: 'tumbler', level, seed,
-        P: L.P, C: L.C, max: L.max,
+        game: 'tumbler', level, seed, clue,
+        P, C, max,
         secret,
         secretDigits: tbDecode(sp, secret),
         reference: path.length,
         features: {
-          pins: L.P, colors: L.C, max_tries: L.max,
+          pins: P, colors: C, max_tries: max, clues: clue,
           possible_codes: sp.total,
           bits: round(Math.log2(sp.total), 3),
           solver_tries: path.length,
@@ -904,33 +1006,48 @@
         },
       };
     },
+    generate(level, seed, variant) {
+      const clue = variant === 'count' ? 'count' : 'pin';
+      const L = this.levels[level][clue];
+      const rng = makeRng(seed);
+      const sp = tbSpace(L.P, L.C);
+      return this.build(level, seed, L.P, L.C, L.max, rng.int(sp.total), clue);
+    },
+    // two pins, three colors: the first guided try lands both colors in the wrong spots
+    practice(variant) {
+      const clue = variant === 'count' ? 'count' : 'pin';
+      const sp = tbSpace(2, 3);
+      return this.build(0, 0, 2, 3, 5, tbEncode(sp, [1, 0]), clue);
+    },
     toLetters(sp, code) { return tbDecode(sp, code).map((d) => this.letters[d]).join(''); },
-    newRun(p) { return { tries: [], S: tbSpace(p.P, p.C).all }; },
+    newRun(p) { return { tries: [], S: tbSpace(p.P, p.C).all, revealed: new Array(p.P).fill(null) }; },
     candidates(p, run) { return run.S.length; },
     // Scores a try against the hidden code. Feedback is immediate; the
     // comparison with the most informative possible try is filled in by
     // annotate(), which is slower and can run after the board updates.
     guess(p, run, digits) {
       const sp = tbSpace(p.P, p.C);
+      const mode = p.clue;
       const g = tbEncode(sp, digits);
       const S = run.S;
       const before = S.length;
       let consistent = false;
       for (let i = 0; i < S.length; i++) if (S[i] === g) { consistent = true; break; }
-      const buf = new Int32Array((p.P + 1) * (p.P + 1));
-      const Hg = tbEntropy(sp, g, S, buf);
-      const fb = tbFeedback(sp, g, p.secret);
-      const exact = Math.floor(fb / (p.P + 1)), partial = fb % (p.P + 1);
-      const S2 = tbFilter(sp, S, g, fb);
-      const seenBefore = tbSeen(sp, run.tries.map((t) => tbEncode(sp, t.digits)));
+      const Hg = tbEntropy(sp, g, S, new Int32Array(tbKeys(sp, mode)), mode);
+      const fb = tbFn(mode)(sp, g, p.secret);
+      const marks = tbMarks(sp, tbPin(sp, g, p.secret));
+      const exact = marks.filter((m) => m === 2).length;
+      const partial = marks.filter((m) => m === 1).length;
+      const S2 = tbFilter(sp, S, g, fb, mode);
+      const seenBefore = tbSeen(sp, run.tries.map((t) => tbEncode(sp, t.digits)), run.revealed);
       run.S = S2;
-      run.tries.push({ digits: digits.slice(), exact, partial });
+      run.tries.push({ digits: digits.slice(), exact, partial, marks });
       const solved = exact === p.P;
       const failed = !solved && run.tries.length >= p.max;
       return {
         kind: 'move',
         target: this.toLetters(sp, g),
-        exact, partial,
+        exact, partial, marks: mode === 'pin' ? marks : null,
         candsBefore: before, candsAfter: S2.length,
         consistent,
         infoExpected: Hg, infoBest: null, infoActual: Math.log2(before / S2.length),
@@ -943,7 +1060,7 @@
     annotate(p, rec) {
       if (!rec._S) return rec;
       const sp = tbSpace(p.P, p.C);
-      const best = tbBest(sp, rec._S, rec._seen);
+      const best = tbBest(sp, rec._S, rec._seen, p.clue);
       rec.infoBest = best.H;
       rec.bestTry = this.toLetters(sp, best.code);
       if (!rec.solved) {
@@ -955,26 +1072,54 @@
       delete rec._seen;
       return rec;
     },
-    hint(p, run) { return { kind: 'count', count: run.S.length }; },
+    // Hint: reveal the leftmost pin the clues have not pinned down yet.
+    hint(p, run) {
+      const sp = tbSpace(p.P, p.C);
+      let k = -1;
+      for (let i = 0; i < p.P && k < 0; i++) {
+        if (run.revealed[i] != null) continue;
+        let first = -1, varies = false;
+        for (let j = 0; j < run.S.length && !varies; j++) {
+          const d = sp.dig[run.S[j] * p.P + i];
+          if (first < 0) first = d; else if (d !== first) varies = true;
+        }
+        if (varies) k = i;
+      }
+      if (k < 0) return { kind: 'none' };
+      const color = p.secretDigits[k];
+      const before = run.S.length;
+      run.revealed[k] = color;
+      run.S = tbFilterPin(sp, run.S, k, color);
+      return { kind: 'reveal', pos: k, color, target: 'pin' + (k + 1) + '=' + this.letters[color], candsBefore: before, candsAfter: run.S.length };
+    },
     progress(p, run) { return { done: run.tries.length, total: p.max }; },
-    serialize(run) { return { tries: run.tries.map((t) => ({ digits: t.digits.slice(), exact: t.exact, partial: t.partial })) }; },
+    serialize(run) {
+      return { tries: run.tries.map((t) => ({ digits: t.digits.slice(), exact: t.exact, partial: t.partial, marks: t.marks.slice() })), revealed: run.revealed.slice() };
+    },
     restore(p, data) {
       const sp = tbSpace(p.P, p.C);
       let S = sp.all;
-      for (const t of data.tries) S = tbFilter(sp, S, tbEncode(sp, t.digits), t.exact * (p.P + 1) + t.partial);
-      return { tries: data.tries.map((t) => ({ digits: t.digits.slice(), exact: t.exact, partial: t.partial })), S };
+      const tries = data.tries.map((t) => {
+        const g = tbEncode(sp, t.digits);
+        const marks = t.marks || tbMarks(sp, tbPin(sp, g, p.secret));
+        S = tbFilter(sp, S, g, tbFn(p.clue)(sp, g, p.secret), p.clue);
+        return { digits: t.digits.slice(), exact: t.exact, partial: t.partial, marks: marks.slice() };
+      });
+      const revealed = data.revealed ? data.revealed.slice() : new Array(p.P).fill(null);
+      revealed.forEach((c, k) => { if (c != null) S = tbFilterPin(sp, S, k, c); });
+      return { tries, S, revealed };
     },
   };
 
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.0.0',
+    version: '1.1.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler },
     order: ['outbound', 'conduit', 'tumbler'],
     EXIT,
-    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbFeedback, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf },
+    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;
