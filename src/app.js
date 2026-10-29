@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.2.0';
+  const APP_VERSION = '2.3.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -398,16 +398,17 @@
     S.n++;
     return spec;
   }
-  // 2-up / 1-down staircase per game within a block. Glimpse never steps
-  // down: its display time already adapts on every look.
-  function seqRecord(S, spec, success) {
+  // 2-up / 1-down staircase per game within a block (upAfter can make it
+  // 1-up in free play). Glimpse never steps down: its display time already
+  // adapts on every look.
+  function seqRecord(S, spec, success, upAfter) {
     if (!spec.adaptive) return null;
     const a = S.adapt[(spec.block - 1) + ':' + spec.game];
     if (!a) return null;
     const before = a.level;
     if (success) {
       a.streak++;
-      if (a.streak >= 2) { a.level = Math.min(5, a.level + 1); a.streak = 0; }
+      if (a.streak >= (upAfter || 2)) { a.level = Math.min(5, a.level + 1); a.streak = 0; }
     } else {
       if (E.games[spec.game].levelDown !== false) a.level = Math.max(1, a.level - 1);
       a.streak = 0;
@@ -1322,7 +1323,14 @@
       this.vault = vault;
       this.area.append(vault);
     }
-    freshDraft() { return this.run.revealed.map((c) => (c == null ? null : c)); }
+    // revealed pins are locked in; with per-pin clues, pins already in the right
+    // spot carry into the next row too (those can still be changed)
+    freshDraft() {
+      const d = this.run.revealed.map((c) => (c == null ? null : c));
+      const last = this.run.tries[this.run.tries.length - 1];
+      if (this.p.clue === 'pin' && last && last.marks) last.marks.forEach((m, k) => { if (m === 2 && d[k] == null) d[k] = last.digits[k]; });
+      return d;
+    }
     hasHistory() { return false; }
     goal() { this.goalEl.hidden = true; }
     put(c) {
@@ -2205,8 +2213,8 @@
       '## Event columns', '',
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
-      ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled.', '',
-        '## Levels', '', '### Outbound', lv('outbound'), 'L3 to L5 contain planted traps; difficulty is set by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+      ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them.', '',
+        '## Levels', '', '### Outbound', lv('outbound'), 'L3 to L5 contain planted traps; difficulty is set by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.45 and 0.7 turns per tile.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse scenes', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
@@ -2216,7 +2224,7 @@
         'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss four steps longer (weighted up/down, settles at 80% correct). A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts one step slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 1000, 600 and 350 ms.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look.', '']);
+        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. In free play Outbound moves up after every success instead of two.', '']);
     return lines.join('\n');
   }
 
@@ -2507,19 +2515,21 @@
       }
     },
     prefetchSpec(spec) { Gen.get(spec.game, spec.level, spec.seed, spec.variant).catch(() => {}); },
+    upAfter(game) { return this.session && this.session.kind === 'free' ? E.games[game].freeUp || 2 : 2; },
     prefetch(spec) {
       const S = this.session;
       const outcomes = spec.adaptive ? [true, false] : [true];
       for (const ok of outcomes) {
         const c = clone(S.seq);
-        seqRecord(c, spec, ok);
+        seqRecord(c, spec, ok, this.upAfter(spec.game));
         const nx = seqNext(c);
         if (nx) this.prefetchSpec(nx);
       }
     },
     onPuzzleEnd(card, sm) {
       const S = this.session, sp = card.spec;
-      const change = sp.practice ? null : seqRecord(S.seq, sp, sm.success);
+      // leaving a puzzle by switching games or ending the session is not a miss
+      const change = sp.practice || sm.outcome === 'abandoned' ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game));
       const level_next = sp.adaptive && change ? change.to : '';
       this.logPuzzle(card, 'puzzle_end', { move_no: card.c.moves, cls: sm.outcome, detail: JSON.stringify({ success: sm.success, stars: sm.stars, moves: sm.moves, par: sm.par, reference: sm.reference }) });
       if (change && change.changed) this.logPuzzle(card, 'level_change', { from: change.from, to: change.to });

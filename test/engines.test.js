@@ -492,3 +492,23 @@ test('glimpse: fixed blocks use the classic set; others get a seeded scene and t
   for (let s = 0; s < 30; s++) seen.add(G.generate(3, 50 + s, 'mix').theme);
   assert.equal(seen.size, G.themeOrder.length, 'every scene comes up');
 });
+
+test('conduit: no pipe starts pointing off the board, and every board needs a bounded number of turns', () => {
+  const { rotCW } = E.internals;
+  for (const lv of [1, 2, 3, 4, 5]) {
+    for (let s = 0; s < 10; s++) {
+      const p = C.generate(lv, 1200 + s);
+      for (let i = 0; i < p.sol.length; i++) {
+        const x = i % p.w, y = (i / p.w) | 0, m = rotCW(p.sol[i], p.start[i]);
+        assert.ok(!((m & 1) && y === 0) && !((m & 4) && y === p.h - 1) && !((m & 8) && x === 0) && !((m & 2) && x === p.w - 1), 'tile ' + i + ' points off the board');
+      }
+      const n = p.w * p.h;
+      assert.ok(p.reference >= Math.ceil(n * C.minTurns) && p.reference <= Math.floor(n * C.maxTurns), 'L' + lv + ' turns ' + p.reference + ' of ' + n + ' tiles');
+      assert.equal(p.reference, C.dist(p, p.start));
+    }
+  }
+});
+
+test('tumbler: per-pin codes stay at four pins or fewer', () => {
+  for (const lv of [1, 2, 3, 4, 5]) assert.ok(T.levels[lv].pin.P <= 4);
+});

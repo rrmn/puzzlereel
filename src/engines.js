@@ -281,13 +281,14 @@
     noun: 'car',
     rule: 'Tap a car to drive it forward. It leaves the lot if the way is clear, or stops when it bumps into something.',
     goal: 'Clear the lot.',
+    freeUp: 1,           // free play moves up a level after every good solve (research blocks keep two)
     // band: target range for the chance that random tapping clears the lot
     levels: {
       1: { w: 5, h: 5, cars: 5, truck: 0, traps: 0, band: [0.99, 1], attempts: 40 },
       2: { w: 6, h: 6, cars: 7, truck: 0.1, traps: 0, band: [0.99, 1], attempts: 40 },
-      3: { w: 6, h: 6, cars: 8, truck: 0.15, traps: 1, band: [0.2, 0.75], attempts: 120 },
-      4: { w: 6, h: 6, cars: 10, truck: 0.2, traps: 2, band: [0.1, 0.4], attempts: 160 },
-      5: { w: 7, h: 7, cars: 12, truck: 0.25, traps: 3, band: [0, 0.18], attempts: 200 },
+      3: { w: 6, h: 6, cars: 9, truck: 0.15, traps: 1, band: [0.15, 0.6], attempts: 120 },
+      4: { w: 7, h: 7, cars: 11, truck: 0.2, traps: 2, band: [0.04, 0.3], attempts: 160 },
+      5: { w: 7, h: 7, cars: 12, truck: 0.25, traps: 3, band: [0, 0.12], attempts: 200 },
     },
     describe(p) { return p.w + '×' + p.h + ' lot, ' + p.cars.length + ' cars'; },
     generate(level, seed) {
@@ -635,6 +636,9 @@
     noun: 'tile',
     rule: 'Tap a tile to turn it a quarter turn. Water flows from the square source along connected pipes.',
     goal: 'Connect every pipe to the source with no open ends.',
+    keepRight: 0.25,     // share of tiles that start in their solved turn
+    minTurns: 0.45,      // turns to solve per tile, at least
+    maxTurns: 0.7,       // and at most, so no board turns into a long tapping job
     // pick: how many unique boards to compare; the one that needs the most
     // search beyond local edge rules is kept, so higher levels need more reasoning
     levels: {
@@ -664,20 +668,30 @@
       if (!chosen) throw new Error('Conduit: no unique puzzle for level ' + level + ' seed ' + seed);
       const sol = chosen.sol;
       const per = sol.map(periodOf);
-      const start = sol.map((m, i) => rng.int(4));
-      // make sure the board does not start nearly solved
-      let need = 0;
-      for (let i = 0; i < sol.length; i++) need += (per[i] - (start[i] % per[i])) % per[i];
-      const minNeed = Math.ceil(sol.length * 0.9);
-      let guard = 0;
-      while (need < minNeed && guard < 500) {
-        const i = rng.int(sol.length);
-        if (per[i] > 1 && start[i] % per[i] === 0) {
-          start[i] = 1 + rng.int(per[i] - 1);
-          need = 0;
-          for (let k = 0; k < sol.length; k++) need += (per[k] - (start[k] % per[k])) % per[k];
+      // Starting turns: a pipe never starts pointing off the board, and some
+      // inner tiles start right, so the work is in the reasoning, not the tapping.
+      const valid = sol.map((m, i) => {
+        const x = i % w, y = (i / w) | 0, out = [];
+        for (let r = 0; r < 4; r++) {
+          const mm = rotCW(m, r);
+          if (((mm & N) && y === 0) || ((mm & S) && y === h - 1) || ((mm & W) && x === 0) || ((mm & E) && x === w - 1)) continue;
+          out.push(r);
         }
-        guard++;
+        return out;
+      });
+      const start = valid.map((vs) => (rng() < this.keepRight ? 0 : vs[rng.int(vs.length)]));
+      const needOf = () => { let d = 0; for (let k = 0; k < sol.length; k++) d += (per[k] - (start[k] % per[k])) % per[k]; return d; };
+      // never close to solved, never a long tapping job
+      let need = needOf();
+      const minNeed = Math.ceil(sol.length * this.minTurns), maxNeed = Math.floor(sol.length * this.maxTurns);
+      for (let guard = 0; need < minNeed && guard < 500; guard++) {
+        const i = rng.int(sol.length);
+        const wrong = valid[i].filter((r) => r % per[i] !== 0);
+        if (start[i] % per[i] === 0 && wrong.length) { start[i] = wrong[rng.int(wrong.length)]; need = needOf(); }
+      }
+      for (let guard = 0; need > maxNeed && guard < 500; guard++) {
+        const i = rng.int(sol.length);
+        if (start[i] % per[i] !== 0) { start[i] = 0; need = needOf(); }
       }
       const tally = { end: 0, straight: 0, elbow: 0, tee: 0 };
       for (const m of sol) {
@@ -981,10 +995,10 @@
     // pin clues say more per try, so their ladder uses longer codes
     levels: {
       1: { pin: { P: 3, C: 4, max: 6 }, count: { P: 3, C: 4, max: 8 } },
-      2: { pin: { P: 4, C: 5, max: 6 }, count: { P: 3, C: 5, max: 9 } },
-      3: { pin: { P: 4, C: 6, max: 7 }, count: { P: 4, C: 5, max: 10 } },
-      4: { pin: { P: 5, C: 6, max: 7 }, count: { P: 4, C: 6, max: 10 } },
-      5: { pin: { P: 5, C: 7, max: 8 }, count: { P: 4, C: 7, max: 12 } },
+      2: { pin: { P: 3, C: 5, max: 6 }, count: { P: 3, C: 5, max: 9 } },
+      3: { pin: { P: 4, C: 5, max: 7 }, count: { P: 4, C: 5, max: 10 } },
+      4: { pin: { P: 4, C: 6, max: 7 }, count: { P: 4, C: 6, max: 10 } },
+      5: { pin: { P: 4, C: 7, max: 8 }, count: { P: 4, C: 7, max: 12 } },
     },
     letters: 'ABCDEFG',
     describe(p) { return p.P + ' pins, ' + p.C + ' colors, ' + (p.clue === 'count' ? 'count clues' : 'pin clues'); },
@@ -1323,7 +1337,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.4.0',
+    version: '1.5.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse'],
