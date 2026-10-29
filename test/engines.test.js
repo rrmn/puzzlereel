@@ -344,7 +344,7 @@ test('serialize/restore round-trips runs for every game', () => {
 });
 
 test('generation is fast enough to run ahead of play', () => {
-  const budget = { outbound: 2500, conduit: 400, tumbler: 600, glimpse: 50 };
+  const budget = { outbound: 2500, conduit: 400, tumbler: 600, glimpse: 50, stacks: 50 };
   for (const g of E.order) {
     for (const lv of [1, 2, 3, 4, 5]) {
       let worst = 0;
@@ -415,7 +415,7 @@ test('glimpse: the frame ladder runs from about 500 ms to one frame at any refre
   assert.deepEqual(glLadder(1000 / 60), [30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 });
 
-test('glimpse: a fresh staircase starts at 300 ms, one step shorter after a hit, four longer after a miss', () => {
+test('glimpse: a fresh staircase starts at 300 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
   const p = G.generate(2, 77);
   const run = G.newRun(p, null);
   const T = 1000 / 60;
@@ -425,21 +425,28 @@ test('glimpse: a fresh staircase starts at 300 ms, one step shorter after a hit,
     steps.push(plan.idx);
     G.record(p, run, { correct: !!ok, plan });
   }
-  assert.deepEqual(steps, [5, 6, 7, 3, 4, 5]);
+  assert.deepEqual(steps, [5, 6, 7, 1, 2, 3]);
   const sm = G.summary(p, run);
   assert.equal(sm.correct, 4);
   assert.equal(sm.reversals, 3);
-  assert.equal(Math.round(run.ms), 450, 'four steps up after the last miss');
-  // carried staircases start one step slower than where they left off
+  assert.equal(Math.round(run.ms), 500, 'six steps up after the last miss, capped at the top');
+  // carried staircases start two steps slower than where they left off
   const run2 = G.newRun(p, { ms: run.ms });
   assert.equal(G.plan(p, run2, T).idx, 0, 'capped at the top of the ladder');
   G.record(p, run2, { correct: true, plan: G.plan(p, run2, T) });
   assert.equal(G.plan(p, run2, T).idx, 1);
   const run3 = G.newRun(p, { ms: 100 });
-  assert.equal(Math.round(G.plan(p, run3, T).ms), 117, '100 ms carried starts at 117 ms');
+  assert.equal(Math.round(G.plan(p, run3, T).ms), 117, '100 ms carried starts two steps slower, at 117 ms');
+  // a long run of hits stops at the floor: 3 frames at 60 Hz, 6 at 120 Hz
+  for (const hz of [60, 120]) {
+    const r = G.newRun(p, null);
+    let last = null;
+    for (let i = 0; i < 40; i++) { last = G.plan(p, r, 1000 / hz); G.record(p, r, { correct: true, plan: last }); }
+    assert.equal(Math.round(last.ms), 50, hz + ' Hz floor');
+  }
 });
 
-test('glimpse: the staircase settles near the 80% point of a simulated observer', () => {
+test('glimpse: the staircase settles near its target point of a simulated observer', () => {
   // Weibull observer, 2 alternatives in the middle and 8 directions around: chance 1/16
   for (const [alpha, hz] of [[60, 60], [140, 60], [45, 120]]) {
     const beta = 2.2, g = 1 / 16;
@@ -572,6 +579,8 @@ test('friction: at every level the four games take about the same number of taps
     tumbler: (lv, s) => tumblerTaps(T.generate(lv, s, 'pin')),
     'tumbler (count clues)': (lv, s) => tumblerTaps(T.generate(lv, s, 'count')),
     glimpse: (lv, s) => { const p = G.generate(lv, s, 'mix'); return 1 + p.n * (p.periph ? 2 : 1); },
+    // one tap lifts a piece, one sets it down
+    stacks: (lv, s) => 2 * E.games.stacks.generate(lv, s).reference,
   };
   const table = {};
   for (const [name, taps] of Object.entries(games)) {
@@ -587,4 +596,56 @@ test('friction: at every level the four games take about the same number of taps
     }
   }
   console.log('# taps per card by level: ' + JSON.stringify(table));
+});
+
+test('stacks: each level needs its number of moves, hints follow a shortest path, labels match distances', () => {
+  const K = E.games.stacks;
+  for (const lv of [1, 2, 3, 4, 5]) {
+    for (let s = 0; s < 30; s++) {
+      const p = K.generate(lv, 800 + s);
+      assert.equal(p.reference, K.levels[lv].moves);
+      assert.equal(K.dist(p, p.start), p.reference);
+      assert.ok(K.themes.includes(p.theme));
+      const run = K.newRun(p);
+      let last = null;
+      for (let k = 0; k < p.reference; k++) {
+        const hnt = K.hint(p, run);
+        assert.equal(hnt.kind, 'target');
+        last = K.move(p, run, hnt.a, hnt.b);
+        assert.equal(last.cls, 'optimal');
+        assert.equal(last.dAfter, last.dBefore - 1);
+      }
+      assert.ok(last.solved, 'solved along the hints in ' + p.reference + ' moves');
+      assert.deepEqual(K.progress(p, run), { done: 3, total: 3 });
+      // a wasted move, then undo puts everything back
+      const r2 = K.newRun(p);
+      const opts = E.internals.skNext(r2.st).filter(([, , ns]) => K.dist(p, ns) >= p.reference);
+      if (!opts.length) continue; // every first move helps here
+      const w = K.move(p, r2, opts[0][0], opts[0][1]);
+      assert.equal(w.cls, 'wasted');
+      const u = K.undo(p, r2);
+      assert.equal(u.dAfter, p.reference);
+      assert.deepEqual(r2.st, p.start);
+    }
+  }
+  assert.equal(E.internals.SK_ALL.length, 36, 'three pieces on posts of 3, 2 and 1 have 36 arrangements');
+  for (let s = 0; s < 20; s++) assert.equal(K.generate(3, 50 + s, 'classic').theme, 'stones', 'fixed blocks keep one setting');
+});
+
+test('stacks: a full post refuses a piece, practice takes two moves, runs survive serialize/restore', () => {
+  const K = E.games.stacks;
+  const p = K.build(2, 1, [[0], [1, 2], []], [[0, 1, 2], [], []], 'harbor');
+  const run = K.newRun(p);
+  const r = K.move(p, run, 0, 1);
+  assert.equal(r.kind, 'blocked', 'the middle post holds two');
+  assert.deepEqual(run.st, [[0], [1, 2], []]);
+  assert.equal(K.move(p, run, 2, 0), null, 'nothing to lift from an empty post');
+  const pr = K.practice();
+  assert.equal(pr.reference, 2);
+  assert.equal(pr.theme, 'stones');
+  const q = K.generate(4, 9);
+  const rq = K.newRun(q);
+  const h1 = K.hint(q, rq);
+  K.move(q, rq, h1.a, h1.b);
+  assert.deepEqual(K.restore(q, JSON.parse(JSON.stringify(K.serialize(rq)))), rq);
 });

@@ -1271,10 +1271,12 @@
   // Display times from 500 ms down in steps of x0.9, as whole frames of the
   // measured frame period T; repeats are dropped, the last step is one frame.
   const GL_STEP = 0.9;
-  function glLadder(T) {
+  // floorMs: the shortest display time allowed (the ladder stops at the last step at or above it)
+  function glLadder(T, floorMs) {
     const out = [];
     for (let ms = 500; ; ms *= GL_STEP) {
       const f = Math.max(1, Math.round(ms / T));
+      if (floorMs && f * T < floorMs - 1e-6 && out.length) return out;
       if (!out.length || f < out[out.length - 1]) out.push(f);
       if (f === 1) return out;
     }
@@ -1291,7 +1293,7 @@
   // find around it and one distractor. Fixed (measurement) blocks and practice
   // use the classic set: meadow, always the bird.
   const GL_THEMES = {
-    meadow: { pairs: { easy: ['rabbit', 'cat'], hard: ['cat', 'fox'] }, targets: ['bird', 'butterfly', 'snail'], distractor: 'leaf' },
+    meadow: { pairs: { easy: ['rabbit', 'hedgehog'], hard: ['cat', 'fox'] }, targets: ['bird', 'butterfly', 'snail'], distractor: 'leaf' },
     sea: { pairs: { easy: ['fish', 'turtle'], hard: ['fish', 'whale'] }, targets: ['star', 'sailboat', 'jellyfish'], distractor: 'shell' },
     sky: { pairs: { easy: ['plane', 'balloon'], hard: ['plane', 'gull'] }, targets: ['kite', 'rocket', 'star'], distractor: 'cloud' },
   };
@@ -1311,10 +1313,11 @@
     trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
     startMs: 300,          // a fresh staircase starts here and comes down one step per correct look
     maxMs: 500,            // top of the ladder
-    warmUp: 1,             // a carried-over round starts this many steps slower, so it opens with a likely hit
+    warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
+    minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
     maskMs: 300,
     fixMs: [400, 700],
-    up: 4, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 0.8
+    up: 6, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 6/7, about 86%
     themes: GL_THEMES,
     themeOrder: GL_THEME_ORDER,
     // advanceMs: a round at or under this display time counts as a success (two in a row: next level)
@@ -1409,7 +1412,7 @@
         const f = Math.max(1, Math.round(want / T));
         return { idx: -1, frames: f, ms: f * T, T };
       }
-      const lad = glLadder(T);
+      const lad = glLadder(T, this.minMs);
       const idx = glNearest(lad, T, run.ms);
       return { idx, frames: lad[idx], ms: lad[idx] * T, T, steps: lad.length };
     },
@@ -1417,7 +1420,7 @@
     record(p, run, r) {
       const out = { i: run.i + 1, ok: r.correct ? 1 : 0, ms: round(r.plan.ms, 2), f: r.plan.frames, T: round(r.plan.T, 3), drop: r.drop ? 1 : 0, rev: 0, next: null };
       if (!p.fixedMs) {
-        const lad = glLadder(r.plan.T);
+        const lad = glLadder(r.plan.T, this.minMs);
         const dir = r.correct ? 1 : -1;
         let idx = r.plan.idx;
         if (r.correct) idx += this.down;
@@ -1457,15 +1460,132 @@
     restore(p, data) { return JSON.parse(JSON.stringify(data)); },
   };
 
+  // =====================================================================
+  // STACKS: the tower-of-London task. Three posts hold at most 3, 2 and 1
+  // pieces. A move takes the top piece of one post and sets it on a post
+  // with room; the goal is the arrangement on the card, in as few moves as
+  // possible. The 36 arrangements of three pieces form one connected graph,
+  // so a breadth-first search from the goal gives the moves left from each.
+  // =====================================================================
+  const SK_CAPS = [3, 2, 1];
+  const SK_THEMES = ['stones', 'harbor', 'bakery'];
+  const skKey = (st) => st.map((a) => a.join('')).join('|');
+  const skCopy = (st) => st.map((a) => a.slice());
+  function skNext(st) {
+    const out = [];
+    for (let a = 0; a < 3; a++) {
+      if (!st[a].length) continue;
+      for (let b = 0; b < 3; b++) {
+        if (a === b || st[b].length >= SK_CAPS[b]) continue;
+        const ns = skCopy(st);
+        ns[b].push(ns[a].pop());
+        out.push([a, b, ns]);
+      }
+    }
+    return out;
+  }
+  const skDistCache = new Map();
+  // moves left to this goal from every arrangement
+  function skDist(goal) {
+    const k0 = skKey(goal);
+    let d = skDistCache.get(k0);
+    if (d) return d;
+    d = new Map([[k0, 0]]);
+    const q = [goal];
+    for (let i = 0; i < q.length; i++) {
+      const di = d.get(skKey(q[i]));
+      for (const [, , ns] of skNext(q[i])) {
+        const k = skKey(ns);
+        if (!d.has(k)) { d.set(k, di + 1); q.push(ns); }
+      }
+    }
+    skDistCache.set(k0, d);
+    return d;
+  }
+  const SK_ALL = Array.from(skDist([[0, 1, 2], [], []]).keys(), (k) => k.split('|').map((x) => (x ? x.split('').map(Number) : [])));
+
+  const Stacks = {
+    id: 'stacks',
+    name: 'Stacks',
+    noun: 'move',
+    rule: 'Tap a post to lift its top piece, then tap another post to set it down. A post holds only as many pieces as it is tall.',
+    goal: 'Build the arrangement on the card in as few moves as possible.',
+    caps: SK_CAPS,
+    themes: SK_THEMES,
+    // moves: the fewest moves from start to goal
+    levels: { 1: { moves: 3 }, 2: { moves: 4 }, 3: { moves: 5 }, 4: { moves: 6 }, 5: { moves: 7 } },
+    describe(p) { return p.moves + '-move problem' + (p.theme ? ', ' + p.theme : ''); },
+    build(level, seed, start, goal, theme) {
+      const moves = skDist(goal).get(skKey(start));
+      return {
+        game: 'stacks', level, seed, theme,
+        caps: SK_CAPS.slice(), start: skCopy(start), goal: skCopy(goal), moves,
+        reference: moves,
+        features: { moves, start: skKey(start), goal: skKey(goal), theme },
+      };
+    },
+    // variant 'classic' (fixed blocks): always the stones; otherwise a seeded setting
+    generate(level, seed, variant) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const theme = variant === 'classic' ? SK_THEMES[0] : SK_THEMES[rng.int(SK_THEMES.length)];
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const goal = SK_ALL[rng.int(SK_ALL.length)];
+        const d = skDist(goal);
+        const starts = SK_ALL.filter((st) => d.get(skKey(st)) === L.moves);
+        if (starts.length) return this.build(level, seed, starts[rng.int(starts.length)], goal, theme);
+      }
+      throw new Error('Stacks: no ' + L.moves + '-move problem for seed ' + seed);
+    },
+    newRun(p) { return { st: skCopy(p.start), hist: [] }; },
+    dist(p, st) { return skDist(p.goal).get(skKey(st)); },
+    // take the top piece of post a and set it on post b (posts 0 to 2; logged 1 to 3)
+    move(p, run, a, b) {
+      const st = run.st;
+      if (a === b || !st[a].length) return null;
+      const dB = this.dist(p, st);
+      const target = 'p' + (a + 1) + '>p' + (b + 1);
+      const piece = st[a][st[a].length - 1];
+      if (st[b].length >= SK_CAPS[b]) return { kind: 'blocked', target, piece, a, b, from: a + 1, to: b + 1, dBefore: dB, dAfter: dB, cls: 'blocked' };
+      st[b].push(st[a].pop());
+      run.hist.push([a, b]);
+      const dA = this.dist(p, st);
+      return { kind: 'move', target, piece, a, b, from: a + 1, to: b + 1, dBefore: dB, dAfter: dA, cls: dA === dB - 1 ? 'optimal' : 'wasted', solved: dA === 0, stuck: false };
+    },
+    undo(p, run) {
+      const m = run.hist.pop();
+      if (!m) return null;
+      const dB = this.dist(p, run.st);
+      run.st[m[0]].push(run.st[m[1]].pop());
+      return { target: 'p' + (m[1] + 1) + '>p' + (m[0] + 1), a: m[1], b: m[0], from: m[1] + 1, to: m[0] + 1, dBefore: dB, dAfter: this.dist(p, run.st) };
+    },
+    restart(p, run) { run.st = skCopy(p.start); run.hist = []; },
+    hint(p, run) {
+      const d = skDist(p.goal), m = d.get(skKey(run.st));
+      for (const [a, b, ns] of skNext(run.st)) if (d.get(skKey(ns)) === m - 1) return { kind: 'target', a, b, target: 'p' + (a + 1) + '>p' + (b + 1) };
+      return { kind: 'none' };
+    },
+    // pieces in their final place: right post, right height, on a finished base
+    progress(p, run) {
+      let done = 0;
+      for (let k = 0; k < 3; k++) for (let i = 0; i < run.st[k].length && run.st[k][i] === p.goal[k][i]; i++) done++;
+      return { done, total: 3 };
+    },
+    // two moves: the top piece steps aside, the lone piece goes on top
+    practice() { return this.build(0, 0, [[0, 1], [2], []], [[0, 2], [], [1]], SK_THEMES[0]); },
+    serialize(run) { return { st: skCopy(run.st), hist: run.hist.map((m) => m.slice()) }; },
+    restore(p, data) { return { st: skCopy(data.st), hist: data.hist.map((m) => m.slice()) }; },
+  };
+
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.7.0',
+    version: '1.9.0',
     fnv1a, makeRng, puzzleSeed,
-    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse },
-    order: ['outbound', 'conduit', 'tumbler', 'glimpse'],
+    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks },
+    order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks'],
     EXIT,
-    internals: { obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf },
+    internals: { obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;

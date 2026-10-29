@@ -97,6 +97,9 @@ button { cursor: pointer; }
 [data-scene="conduit"], .scene[data-game="conduit"] { --bg1: #C5F0B0; --bg2: #5FBF6C; --ink: #0F3A1D; --ink2: rgba(15,58,29,.7); --chip: rgba(255,255,255,.55); --btn: #0F3A1D; --btn-ink: #EEFFEE; --halo: rgba(240,255,232,.7); }
 [data-scene="tumbler"], .scene[data-game="tumbler"] { --bg1: #6550B8; --bg2: #26185A; --ink: #FBF8FF; --ink2: rgba(251,248,255,.74); --chip: rgba(255,255,255,.15); --btn: #FFC83A; --btn-ink: #26185A; --halo: rgba(170,150,255,.45); }
 [data-scene="glimpse"], .scene[data-game="glimpse"] { --bg1: #3A86EE; --bg2: #152C78; --ink: #FFFFFF; --ink2: rgba(255,255,255,.78); --chip: rgba(255,255,255,.16); --btn: #FFFFFF; --btn-ink: #152C78; --halo: rgba(255,255,255,.5); }
+[data-scene="stacks"], .scene[data-game="stacks"] { --bg1: #D8F0EE; --bg2: #8FC9C8; --ink: #17383C; --ink2: rgba(23,56,60,.7); --chip: rgba(255,255,255,.55); --btn: #17383C; --btn-ink: #F0FBFA; --halo: rgba(240,255,252,.7); }
+.scene[data-game="stacks"][data-look="harbor"] { --bg1: #CFE6F7; --bg2: #6E9CC4; --ink: #14283D; --ink2: rgba(20,40,61,.7); --btn: #14283D; --btn-ink: #F1F7FD; --halo: rgba(235,245,255,.7); }
+.scene[data-game="stacks"][data-look="bakery"] { --bg1: #FFF0E6; --bg2: #F2B8C2; --ink: #4A2230; --ink2: rgba(74,34,48,.7); --btn: #4A2230; --btn-ink: #FFF4F6; --halo: rgba(255,240,244,.75); }
 
 .app {
   position: relative; height: 100%; overflow: hidden;
@@ -136,6 +139,7 @@ button { cursor: pointer; }
 .logo i:nth-child(2) { height: 18px; background: #3BB273; }
 .logo i:nth-child(3) { height: 14px; background: #7C5CFF; }
 .logo i:nth-child(4) { height: 10px; background: #3A86EE; }
+.logo i:nth-child(5) { height: 15px; background: #5FB8B3; }
 .hud-right { display: flex; gap: 6px; align-items: center; }
 .only-chip {
   display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 5px 0 12px; border-radius: 999px; border: 0;
@@ -239,6 +243,33 @@ button { cursor: pointer; }
 .car.stuck .halo { animation: blink 0.9s ease-in-out infinite; }
 .car:focus, .car:focus-visible { outline: none; }
 .car:focus-visible .halo { stroke: #7FB0FF; }
+
+/* ------------------------------------------------------------- Stacks */
+.board.stacks { cursor: pointer; touch-action: none; max-width: 440px; filter: drop-shadow(0 10px 22px rgba(20, 30, 40, 0.18)); }
+.sk-col { fill: transparent; stroke: transparent; stroke-width: 1; outline: none; }
+.sk-col:focus-visible { stroke: #7FB0FF; }
+.sk-col.hinted { stroke: var(--gold); stroke-width: 1.2; animation: blink 0.8s ease-in-out 4; }
+.sk-post { transform-box: fill-box; transform-origin: 50% 100%; }
+.sk-post.nudge { animation: postshake 0.36s ease-in-out; }
+.sk-piece { transition: transform 0.17s cubic-bezier(.3,.8,.35,1); pointer-events: none; }
+.sk-piece .sk-inner { transform-box: fill-box; transform-origin: 50% 100%; }
+.sk-piece.held .sk-inner { animation: bob 1.2s ease-in-out infinite; }
+.sk-piece.held .sk-stub { display: none; }
+.sk-piece.land .sk-inner { animation: land 0.34s cubic-bezier(.3,1.5,.5,1); }
+.sk-piece .halo { fill: none; stroke-width: 1.3; stroke: transparent; transition: stroke 0.2s; }
+.sk-piece.q-optimal .halo { stroke: var(--good); }
+.sk-piece.q-wasted .halo { stroke: var(--meh); }
+.sk-piece.hinted .halo { stroke: var(--gold); animation: blink 0.8s ease-in-out 4; }
+.sk-cable { opacity: 0; transition: opacity 0.12s; }
+.sk-piece.held .sk-cable { opacity: 1; }
+.sk-trolley, .sk-cable-line, .sk-shadow { transition: transform 0.17s cubic-bezier(.3,.8,.35,1), opacity 0.15s; }
+.sk-shadow { opacity: 0; }
+.board.stacks.solved .sk-piece .sk-inner { animation: hop 0.5s cubic-bezier(.3,1.6,.5,1); }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2px); } }
+@keyframes land { 0% { transform: scale(1.04, 0.9); } 100% { transform: scale(1, 1); } }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-3px); } }
+@keyframes postshake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1.3px); } 75% { transform: translateX(1.3px); } }
+@media (prefers-reduced-motion: reduce) { .sk-piece, .sk-trolley, .sk-cable-line, .sk-shadow { transition: none; } .sk-piece.held .sk-inner, .sk-piece.land .sk-inner { animation: none; } }
 
 /* ------------------------------------------------------------ Conduit */
 .soil { fill: #6A4628; }
@@ -517,7 +548,7 @@ button { cursor: pointer; }
 .sheet-body { overflow-y: auto; padding-block: 6px 22px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 20px; }
 .sheet-foot { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--sheet-rule); padding-block: 14px; padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
 .sheet-foot .note { flex: 1 1 200px; margin: 0; font-size: 13px; color: var(--sheet-soft); }
-.game-pick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.game-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .gp {
   display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; padding: 11px 2px 9px;
   border-radius: 18px; border: 0; background: var(--field); color: var(--sheet-ink);
@@ -532,6 +563,7 @@ button { cursor: pointer; }
 .gp[data-game="conduit"] .gp-ico { background: #6CCB78; color: #0F3A1D; }
 .gp[data-game="tumbler"] .gp-ico { background: #5B47AE; color: #FFFFFF; }
 .gp[data-game="glimpse"] .gp-ico { background: #2F72DC; color: #FFFFFF; }
+.gp[data-game="stacks"] .gp-ico { background: #7FC4C2; color: #17383C; }
 .gp.on { box-shadow: inset 0 0 0 2px var(--accent); }
 .menu { display: flex; flex-direction: column; gap: 8px; }
 .menu-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border-radius: 18px; border: 0; background: var(--field); text-align: left; }
@@ -642,6 +674,45 @@ code { font-family: var(--mono); font-size: 12px; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; transition-delay: 0ms !important; }
   .res-stars svg { transform: scale(1); }
 }
+
+/* ------------------------------------------------------------ profile */
+.pf-areas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 22px 10px; }
+.pf-area { min-width: 0; }
+.pf-area h3 { margin: 0 0 9px; font-family: var(--display); font-weight: 600; font-size: 18px; line-height: 1.15; white-space: nowrap; }
+.pf-grid { display: grid; gap: 10px; }
+.pf-tile {
+  --gc: #3A4770; --gi: #FFFFFF;
+  position: relative; display: flex; flex-direction: column; padding: 0; border: 0; overflow: hidden;
+  border-radius: 22px; background: radial-gradient(120% 90% at 50% 10%, var(--g1), var(--gc)); color: var(--gi); text-align: left;
+  aspect-ratio: 5 / 6; transition: transform 0.15s;
+}
+.pf-tile:active { transform: scale(0.96); }
+.pf-tile.on { box-shadow: 0 0 0 3px var(--sheet), 0 0 0 5.5px var(--gc); }
+.pf-tile[data-game="outbound"] { --g1: #FFE68A; --gc: #FFB648; --gi: #3A2810; }
+.pf-tile[data-game="conduit"] { --g1: #C5F0B0; --gc: #5FBF6C; --gi: #0F3A1D; }
+.pf-tile[data-game="tumbler"] { --g1: #6550B8; --gc: #3B2A86; --gi: #FBF8FF; }
+.pf-tile[data-game="glimpse"] { --g1: #3A86EE; --gc: #1D3F93; --gi: #FFFFFF; }
+.pf-tile[data-game="stacks"] { --g1: #BFE6E8; --gc: #5FAEB0; --gi: #10343A; }
+.pf-tile.fresh .pf-art { opacity: 0.55; filter: saturate(0.6); }
+.pf-art { width: 100%; flex: 1; min-height: 0; display: block; padding: 10% 8% 0; }
+.pf-tile-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 6px 11px 10px; }
+.pf-tile-foot b { width: 100%; font-family: var(--display); font-weight: 600; font-size: 16px; line-height: 1.1; }
+.pf-tile-foot .pips i { background: var(--gi); }
+.pf-stars { display: inline-flex; align-items: center; gap: 2px; font-family: var(--display); font-weight: 600; font-size: 13px; margin-left: auto; }
+.pf-stars svg { width: 13px; height: 13px; color: var(--gold); }
+.pf-tile.ghost { background: none; border: 2px dashed var(--sheet-rule); color: var(--sheet-rule); display: grid; place-items: center; }
+.pf-tile.ghost svg { width: 26px; height: 26px; }
+.pf-detail { grid-column: 1 / -1; margin-top: -8px; padding: 14px 16px; border-radius: 20px; background: var(--field); display: flex; flex-direction: column; gap: 12px; }
+.pf-level { display: flex; align-items: baseline; gap: 10px; }
+.pf-level b { font-family: var(--display); font-weight: 600; font-size: 20px; }
+.pf-level span { color: var(--sheet-soft); font-size: 14px; }
+.pf-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pf-num { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pf-num svg { width: 18px; height: 18px; color: var(--sheet-soft); margin-bottom: 3px; }
+.pf-num b { font-family: var(--display); font-weight: 600; font-size: 20px; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pf-num span { font-size: 12px; color: var(--sheet-soft); }
+.pf-ev { margin: 0; font-size: 13px; color: var(--sheet-soft); }
+.pf-ev b { color: var(--sheet-ink); margin-right: 6px; }
 </style>
 </head>
 <body>
@@ -1929,10 +2000,12 @@ function PuzzleEnginesFactory(root) {
   // Display times from 500 ms down in steps of x0.9, as whole frames of the
   // measured frame period T; repeats are dropped, the last step is one frame.
   const GL_STEP = 0.9;
-  function glLadder(T) {
+  // floorMs: the shortest display time allowed (the ladder stops at the last step at or above it)
+  function glLadder(T, floorMs) {
     const out = [];
     for (let ms = 500; ; ms *= GL_STEP) {
       const f = Math.max(1, Math.round(ms / T));
+      if (floorMs && f * T < floorMs - 1e-6 && out.length) return out;
       if (!out.length || f < out[out.length - 1]) out.push(f);
       if (f === 1) return out;
     }
@@ -1949,7 +2022,7 @@ function PuzzleEnginesFactory(root) {
   // find around it and one distractor. Fixed (measurement) blocks and practice
   // use the classic set: meadow, always the bird.
   const GL_THEMES = {
-    meadow: { pairs: { easy: ['rabbit', 'cat'], hard: ['cat', 'fox'] }, targets: ['bird', 'butterfly', 'snail'], distractor: 'leaf' },
+    meadow: { pairs: { easy: ['rabbit', 'hedgehog'], hard: ['cat', 'fox'] }, targets: ['bird', 'butterfly', 'snail'], distractor: 'leaf' },
     sea: { pairs: { easy: ['fish', 'turtle'], hard: ['fish', 'whale'] }, targets: ['star', 'sailboat', 'jellyfish'], distractor: 'shell' },
     sky: { pairs: { easy: ['plane', 'balloon'], hard: ['plane', 'gull'] }, targets: ['kite', 'rocket', 'star'], distractor: 'cloud' },
   };
@@ -1969,10 +2042,11 @@ function PuzzleEnginesFactory(root) {
     trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
     startMs: 300,          // a fresh staircase starts here and comes down one step per correct look
     maxMs: 500,            // top of the ladder
-    warmUp: 1,             // a carried-over round starts this many steps slower, so it opens with a likely hit
+    warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
+    minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
     maskMs: 300,
     fixMs: [400, 700],
-    up: 4, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 0.8
+    up: 6, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 6/7, about 86%
     themes: GL_THEMES,
     themeOrder: GL_THEME_ORDER,
     // advanceMs: a round at or under this display time counts as a success (two in a row: next level)
@@ -2067,7 +2141,7 @@ function PuzzleEnginesFactory(root) {
         const f = Math.max(1, Math.round(want / T));
         return { idx: -1, frames: f, ms: f * T, T };
       }
-      const lad = glLadder(T);
+      const lad = glLadder(T, this.minMs);
       const idx = glNearest(lad, T, run.ms);
       return { idx, frames: lad[idx], ms: lad[idx] * T, T, steps: lad.length };
     },
@@ -2075,7 +2149,7 @@ function PuzzleEnginesFactory(root) {
     record(p, run, r) {
       const out = { i: run.i + 1, ok: r.correct ? 1 : 0, ms: round(r.plan.ms, 2), f: r.plan.frames, T: round(r.plan.T, 3), drop: r.drop ? 1 : 0, rev: 0, next: null };
       if (!p.fixedMs) {
-        const lad = glLadder(r.plan.T);
+        const lad = glLadder(r.plan.T, this.minMs);
         const dir = r.correct ? 1 : -1;
         let idx = r.plan.idx;
         if (r.correct) idx += this.down;
@@ -2115,15 +2189,132 @@ function PuzzleEnginesFactory(root) {
     restore(p, data) { return JSON.parse(JSON.stringify(data)); },
   };
 
+  // =====================================================================
+  // STACKS: the tower-of-London task. Three posts hold at most 3, 2 and 1
+  // pieces. A move takes the top piece of one post and sets it on a post
+  // with room; the goal is the arrangement on the card, in as few moves as
+  // possible. The 36 arrangements of three pieces form one connected graph,
+  // so a breadth-first search from the goal gives the moves left from each.
+  // =====================================================================
+  const SK_CAPS = [3, 2, 1];
+  const SK_THEMES = ['stones', 'harbor', 'bakery'];
+  const skKey = (st) => st.map((a) => a.join('')).join('|');
+  const skCopy = (st) => st.map((a) => a.slice());
+  function skNext(st) {
+    const out = [];
+    for (let a = 0; a < 3; a++) {
+      if (!st[a].length) continue;
+      for (let b = 0; b < 3; b++) {
+        if (a === b || st[b].length >= SK_CAPS[b]) continue;
+        const ns = skCopy(st);
+        ns[b].push(ns[a].pop());
+        out.push([a, b, ns]);
+      }
+    }
+    return out;
+  }
+  const skDistCache = new Map();
+  // moves left to this goal from every arrangement
+  function skDist(goal) {
+    const k0 = skKey(goal);
+    let d = skDistCache.get(k0);
+    if (d) return d;
+    d = new Map([[k0, 0]]);
+    const q = [goal];
+    for (let i = 0; i < q.length; i++) {
+      const di = d.get(skKey(q[i]));
+      for (const [, , ns] of skNext(q[i])) {
+        const k = skKey(ns);
+        if (!d.has(k)) { d.set(k, di + 1); q.push(ns); }
+      }
+    }
+    skDistCache.set(k0, d);
+    return d;
+  }
+  const SK_ALL = Array.from(skDist([[0, 1, 2], [], []]).keys(), (k) => k.split('|').map((x) => (x ? x.split('').map(Number) : [])));
+
+  const Stacks = {
+    id: 'stacks',
+    name: 'Stacks',
+    noun: 'move',
+    rule: 'Tap a post to lift its top piece, then tap another post to set it down. A post holds only as many pieces as it is tall.',
+    goal: 'Build the arrangement on the card in as few moves as possible.',
+    caps: SK_CAPS,
+    themes: SK_THEMES,
+    // moves: the fewest moves from start to goal
+    levels: { 1: { moves: 3 }, 2: { moves: 4 }, 3: { moves: 5 }, 4: { moves: 6 }, 5: { moves: 7 } },
+    describe(p) { return p.moves + '-move problem' + (p.theme ? ', ' + p.theme : ''); },
+    build(level, seed, start, goal, theme) {
+      const moves = skDist(goal).get(skKey(start));
+      return {
+        game: 'stacks', level, seed, theme,
+        caps: SK_CAPS.slice(), start: skCopy(start), goal: skCopy(goal), moves,
+        reference: moves,
+        features: { moves, start: skKey(start), goal: skKey(goal), theme },
+      };
+    },
+    // variant 'classic' (fixed blocks): always the stones; otherwise a seeded setting
+    generate(level, seed, variant) {
+      const L = this.levels[level];
+      const rng = makeRng(seed);
+      const theme = variant === 'classic' ? SK_THEMES[0] : SK_THEMES[rng.int(SK_THEMES.length)];
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const goal = SK_ALL[rng.int(SK_ALL.length)];
+        const d = skDist(goal);
+        const starts = SK_ALL.filter((st) => d.get(skKey(st)) === L.moves);
+        if (starts.length) return this.build(level, seed, starts[rng.int(starts.length)], goal, theme);
+      }
+      throw new Error('Stacks: no ' + L.moves + '-move problem for seed ' + seed);
+    },
+    newRun(p) { return { st: skCopy(p.start), hist: [] }; },
+    dist(p, st) { return skDist(p.goal).get(skKey(st)); },
+    // take the top piece of post a and set it on post b (posts 0 to 2; logged 1 to 3)
+    move(p, run, a, b) {
+      const st = run.st;
+      if (a === b || !st[a].length) return null;
+      const dB = this.dist(p, st);
+      const target = 'p' + (a + 1) + '>p' + (b + 1);
+      const piece = st[a][st[a].length - 1];
+      if (st[b].length >= SK_CAPS[b]) return { kind: 'blocked', target, piece, a, b, from: a + 1, to: b + 1, dBefore: dB, dAfter: dB, cls: 'blocked' };
+      st[b].push(st[a].pop());
+      run.hist.push([a, b]);
+      const dA = this.dist(p, st);
+      return { kind: 'move', target, piece, a, b, from: a + 1, to: b + 1, dBefore: dB, dAfter: dA, cls: dA === dB - 1 ? 'optimal' : 'wasted', solved: dA === 0, stuck: false };
+    },
+    undo(p, run) {
+      const m = run.hist.pop();
+      if (!m) return null;
+      const dB = this.dist(p, run.st);
+      run.st[m[0]].push(run.st[m[1]].pop());
+      return { target: 'p' + (m[1] + 1) + '>p' + (m[0] + 1), a: m[1], b: m[0], from: m[1] + 1, to: m[0] + 1, dBefore: dB, dAfter: this.dist(p, run.st) };
+    },
+    restart(p, run) { run.st = skCopy(p.start); run.hist = []; },
+    hint(p, run) {
+      const d = skDist(p.goal), m = d.get(skKey(run.st));
+      for (const [a, b, ns] of skNext(run.st)) if (d.get(skKey(ns)) === m - 1) return { kind: 'target', a, b, target: 'p' + (a + 1) + '>p' + (b + 1) };
+      return { kind: 'none' };
+    },
+    // pieces in their final place: right post, right height, on a finished base
+    progress(p, run) {
+      let done = 0;
+      for (let k = 0; k < 3; k++) for (let i = 0; i < run.st[k].length && run.st[k][i] === p.goal[k][i]; i++) done++;
+      return { done, total: 3 };
+    },
+    // two moves: the top piece steps aside, the lone piece goes on top
+    practice() { return this.build(0, 0, [[0, 1], [2], []], [[0, 2], [], [1]], SK_THEMES[0]); },
+    serialize(run) { return { st: skCopy(run.st), hist: run.hist.map((m) => m.slice()) }; },
+    restore(p, data) { return { st: skCopy(data.st), hist: data.hist.map((m) => m.slice()) }; },
+  };
+
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.7.0',
+    version: '1.9.0',
     fnv1a, makeRng, puzzleSeed,
-    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse },
-    order: ['outbound', 'conduit', 'tumbler', 'glimpse'],
+    games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks },
+    order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks'],
     EXIT,
-    internals: { obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf },
+    internals: { obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;
@@ -2133,11 +2324,11 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.4.0';
+  const APP_VERSION = '2.5.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
-  const LABEL = { mixed: 'All games', outbound: 'Outbound', conduit: 'Conduit', tumbler: 'Tumbler', glimpse: 'Glimpse' };
+  const LABEL = { mixed: 'All games', outbound: 'Outbound', conduit: 'Conduit', tumbler: 'Tumbler', glimpse: 'Glimpse', stacks: 'Stacks' };
 
   // ---------------------------------------------------------------- helpers
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -2237,9 +2428,11 @@ PuzzleEnginesFactory(window);
     flame: '<path fill="currentColor" stroke="none" d="M12.6 2.4c.7 3.3 5 5.5 5 10.4a5.6 5.6 0 0 1-11.2 0c0-2.8 1.5-4.4 2.8-5.6.2 1.8 1 3 2.3 3.7-.6-3.3.3-6.1 1.1-8.5z"/>',
     eye: '<path d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z"/><circle cx="12" cy="12" r="3.1"/>',
     bolt: '<path fill="currentColor" stroke="none" d="M13.6 2.2 4.8 13.4h6.1l-1.4 8.4 8.8-11.2h-6.1z"/>',
+    stack: '<rect x="4" y="15" width="16" height="5" rx="2"/><rect x="6" y="9.5" width="12" height="5" rx="2"/><rect x="8" y="4" width="8" height="5" rx="2"/>',
+    person: '<circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0"/>',
     grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
   };
-  const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', mixed: 'grid' };
+  const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', stacks: 'stack', mixed: 'grid' };
   function icon(name, cls) {
     const el = document.createElementNS(SVGNS, 'svg');
     el.setAttribute('viewBox', '0 0 24 24');
@@ -2357,6 +2550,8 @@ PuzzleEnginesFactory(window);
     yes: (S) => { S.tone(880, 880, 0.09, 'sine', 0.16); S.tone(1320, 1320, 0.16, 'sine', 0.14, 0.07); S.tone(2600, 3400, 0.05, 'sine', 0.04, 0.12); },
     no: (S) => S.tone(320, 230, 0.2, 'triangle', 0.13),
     tick: (S) => S.tone(900, 900, 0.03, 'sine', 0.06),
+    lift: (S) => S.tone(330, 560, 0.09, 'triangle', 0.13),
+    set: (S, k) => { S.tone(260 + (k || 0) * 40, 170 + (k || 0) * 30, 0.09, 'sine', 0.3); S.noise(0.04, 1300, 600, 1, 0.07); },
   };
   function buzz(pattern) {
     if (!Sound.on) return;
@@ -2523,7 +2718,7 @@ PuzzleEnginesFactory(window);
     const spec = {
       seq: S.n + 1, block: S.b + 1, inBlock: S.k + 1, game, level, adaptive: !!B.adaptive, j,
       seed: E.puzzleSeed(S.seed, S.b, game, level, j),
-      variant: game === 'tumbler' ? (S.clue || 'pin') : game === 'glimpse' ? (B.adaptive ? 'mix' : 'classic') : '',
+      variant: game === 'tumbler' ? (S.clue || 'pin') : game === 'glimpse' || game === 'stacks' ? (B.adaptive ? 'mix' : 'classic') : '',
     };
     spec.id = 'B' + spec.block + '-' + game + '-L' + level + '-' + (j + 1);
     S.k++;
@@ -2640,6 +2835,7 @@ PuzzleEnginesFactory(window);
     conduit: ['#2E9CF2', '#FF6FA7', '#FFD23F', '#2FA75A', '#FFFFFF'],
     tumbler: ['#FFC83A', '#F04E5E', '#3A7BFF', '#2DBF6C', '#A066FF', '#FFFFFF'],
     glimpse: ['#FFFFFF', '#FFC83A', '#3D8BFD', '#FF8A3D', '#7CE3B0'],
+    stacks: ['#5D7FB9', '#D46F4D', '#78A257', '#F2C14E', '#FFFFFF'],
   };
   const DIRV = { N: [0, -1], E: [1, 0], S: [0, 1], W: [-1, 0] };
   const ANGLE = { N: 0, E: 90, S: 180, W: 270 };
@@ -2651,6 +2847,7 @@ PuzzleEnginesFactory(window);
     conduit: ['optimal', 'wasted', 'undo', 'restart', 'hint'],
     tumbler: ['optimal', 'suboptimal', 'zero_info', 'inconsistent', 'hint'],
     glimpse: [],
+    stacks: ['optimal', 'wasted', 'blocked', 'undo', 'restart', 'hint'],
   };
   function blankCounts() {
     return { moves: 0, optimal: 0, wasted: 0, dead_end: 0, in_dead_end: 0, blocked: 0, undo: 0, restart: 0, hint: 0, suboptimal: 0, zero_info: 0, inconsistent: 0, neutral: 0, solved: 0, infoRatioSum: 0, infoRatioN: 0 };
@@ -2842,7 +3039,7 @@ PuzzleEnginesFactory(window);
     }
     doRestart() {
       if (this.summary || this.busy) return;
-      const key = this.spec.game === 'outbound' ? 'st' : 'rot';
+      const key = this.spec.game === 'conduit' ? 'rot' : 'st';
       const dB = fin(this.G.dist(this.p, this.run[key]));
       this.G.restart(this.p, this.run);
       this.c.restart++;
@@ -3644,6 +3841,7 @@ PuzzleEnginesFactory(window);
   const GL_PATHS = {
     rabbit: 'M35.18 8.33A8.5 22 -10 1 1 42.82 51.67A8.5 22 -10 1 1 35.18 8.33Z M64.82 8.33A8.5 22 10 1 1 57.18 51.67A8.5 22 10 1 1 64.82 8.33Z M50 39A25 25 0 1 1 50 89A25 25 0 1 1 50 39Z',
     cat: 'M50 33A31 27 0 1 1 50 87A31 27 0 1 1 50 33Z M21 50L25 13L48 35Z M79 50L52 35L75 13Z',
+    hedgehog: 'M11.1 76.5L13.9 70.2L8.3 62.6L17.1 58.8L15.1 49.8L24.8 49.5L26.7 40.5L35.7 43.8L41.2 36.2L48.1 42.6L56.3 37.6L60.0 46.1L69.6 44.6L69.5 53.8L79.0 55.9L75.1 64.3L82.9 69.8L78.9 76.5L84 62Q92 64 97 70Q92 75 84 76L80 78L9 78Z M22 76L32 76L32 86Q27 89 22 86Z M56 76L66 76L66 86Q61 89 56 86Z',
     fox: 'M50 30L58 30L80 7Q85 23 83 40Q91 50 89 58Q79 71 64 77Q56 88 50 93Q44 88 36 77Q21 71 11 58Q9 50 17 40Q15 23 20 7L42 30Z',
     bird: 'M44 36A30 22 0 1 1 44 80A30 22 0 1 1 44 36Z M70 25A15 15 0 1 1 70 55A15 15 0 1 1 70 25Z M84 35L97 41L84 47Z M22 50L8 59L2 33Z',
     leaf: 'M50 5C81 22 83 68 50 94C17 68 19 22 50 5Z M48 88L52 88L52 99L48 99Z',
@@ -3750,8 +3948,9 @@ PuzzleEnginesFactory(window);
     }
     ctx.restore();
   }
-  // fixation: a dot inside a ring that closes in over the first GL_RING_MS
-  const GL_RING_MS = 260;
+  // fixation: a dot inside a ring that closes in over the first GL_RING_MS;
+  // the first look after the eye is tapped gets GL_LEAD_MS more, with a slower ring
+  const GL_RING_MS = 260, GL_LEAD_MS = 800;
   function glFix(ctx, R, k, ink) {
     const e = k == null ? 1 : 1 - Math.pow(1 - Math.min(1, k), 3);
     ctx.fillStyle = ink;
@@ -3913,6 +4112,7 @@ PuzzleEnginesFactory(window);
       Sound.unlock();
       Sound.play('look');
       this.hideHand();
+      this.leadIn = true;
       this.startLook();
     }
     startLook() {
@@ -3927,7 +4127,10 @@ PuzzleEnginesFactory(window);
     }
     runLook() {
       const p = this.p, t = p.trials[this.run.i];
-      const st = { deltas: [], start: null, last: null, onset: null, offset: null, end: null, gap: 0, plan: null, T: null };
+      const lead = this.leadIn ? GL_LEAD_MS : 0;
+      this.leadIn = false;
+      const fix = t.fix + lead, ring = GL_RING_MS + lead;
+      const st = { deltas: [], start: null, last: null, onset: null, offset: null, end: null, gap: 0, plan: null, T: null, lead };
       this.st = st;
       const step = (ts) => {
         if (this.st !== st) return;
@@ -3939,9 +4142,9 @@ PuzzleEnginesFactory(window);
         st.last = ts;
         if (this.phase === 'fix') {
           if (st.start == null) { st.start = ts; this.drawFix(0); }
-          else if (ts - st.start < GL_RING_MS) this.drawFix((ts - st.start) / GL_RING_MS);
+          else if (ts - st.start < ring) this.drawFix((ts - st.start) / ring);
           else if (!st.ringDone) { st.ringDone = true; this.drawFix(1); }
-          if (st.start !== ts && ts - st.start >= t.fix) {
+          if (st.start !== ts && ts - st.start >= fix) {
             st.T = frameEstimate(st.deltas, this.app.frameMs);
             this.app.frameMs = st.T;
             st.plan = this.G.plan(p, this.run, st.T);
@@ -4216,10 +4419,508 @@ PuzzleEnginesFactory(window);
     }
   }
 
+  // -------------------------------------------------------------- Stacks
+  // One illustrated scene per setting on a 100 x 136 board: the goal on a
+  // sign, clipboard or ticket at the top, three posts below. Pieces are drawn
+  // in three-quarter view around their middle and stack SK_STEP apart; the
+  // stack is redrawn bottom to top so the upper piece always covers the lower.
+  const SK_X = [20, 50, 80], SK_BASE = 122, SK_STEP = 10.4, SK_HOVER = 66, SK_MINI = 0.46;
+  const skSlotY = (k) => SK_BASE - SK_STEP / 2 - k * SK_STEP;
+  const skPostTop = (k) => SK_BASE - E.games.stacks.caps[k] * SK_STEP - 4;
+  const SK_GLYPH = [
+    'M0 -2.3a2.3 2.3 0 1 1 0 4.6a2.3 2.3 0 1 1 0-4.6z',
+    'M0 -2.7L2.7 2.1H-2.7z',
+    'M-2.1 -2.1h4.2v4.2h-4.2z',
+  ];
+  const SK_LOOKS = {
+    stones: { names: ['blue stone', 'red stone', 'green stone'], fill: ['#6F90C2', '#C9654C', '#6E9F5D'], rod: '#8A5C3B', puff: ['#E9D3A6', '#D5C091', '#FFFFFF'] },
+    harbor: { names: ['red container', 'blue container', 'yellow container'], fill: ['#D24B3E', '#2F6DB0', '#E7B12F'], ink: ['#FFFFFF', '#FFFFFF', '#3A2A00'], rod: '#38506A', puff: ['#FFFFFF', '#C9D2DB', '#F0B23A'] },
+    bakery: { names: ['strawberry layer', 'chocolate layer', 'lemon layer'], fill: ['#EE8AA3', '#8A5537', '#F0CF63'], ink: ['#FFFFFF', '#FFE6C2', '#7A5A00'], rod: '#D9B98C', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'] },
+  };
+  function skMix(hex, t) {
+    const n = parseInt(hex.slice(1), 16), to = t > 0 ? 255 : 0, k = Math.abs(t);
+    const f = (c) => Math.round(c + (to - c) * k).toString(16).padStart(2, '0');
+    return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255);
+  }
+  const skLin = (id, stops, x2, y2) => s('linearGradient', { id, x1: 0, y1: 0, x2: x2 == null ? 1 : x2, y2: y2 || 0 }, stops.map(([o, c, a]) => s('stop', { offset: o, 'stop-color': c, 'stop-opacity': a == null ? 1 : a })));
+  // gradients for one card: per piece a side and a top, plus wood and steel
+  function skDefs(uid, look) {
+    const L = SK_LOOKS[look], d = s('defs');
+    L.fill.forEach((c, i) => {
+      if (look === 'harbor') {
+        d.append(skLin(uid + 'p' + i, [[0, skMix(c, 0.12)], [0.55, c], [1, skMix(c, -0.22)]], 0, 1));
+      } else if (look === 'stones') {
+        d.append(s('radialGradient', { id: uid + 'p' + i, cx: 0.36, cy: 0.18, r: 0.86 }, s('stop', { offset: 0, 'stop-color': skMix(c, 0.42) }), s('stop', { offset: 0.45, 'stop-color': skMix(c, 0.06) }), s('stop', { offset: 0.8, 'stop-color': skMix(c, -0.16) }), s('stop', { offset: 1, 'stop-color': skMix(c, -0.36) })));
+      } else {
+        d.append(skLin(uid + 'p' + i, [[0, skMix(c, -0.28)], [0.22, skMix(c, 0.1)], [0.5, c], [0.86, skMix(c, -0.18)], [1, skMix(c, -0.36)]]));
+        d.append(s('radialGradient', { id: uid + 't' + i, cx: 0.38, cy: 0.3, r: 0.75 }, s('stop', { offset: 0, 'stop-color': skMix(c, 0.38) }), s('stop', { offset: 1, 'stop-color': skMix(c, 0.06) })));
+      }
+    });
+    d.append(skLin(uid + 'wood', [[0, '#6A4225'], [0.35, '#A26E45'], [0.7, '#8A5C3B'], [1, '#5B381E']]));
+    d.append(skLin(uid + 'steel', [[0, '#4E6984'], [0.5, '#6E8AA6'], [1, '#34495E']]));
+    d.append(skLin(uid + 'dowel', [[0, '#C7A06C'], [0.45, '#F1DDB8'], [1, '#B98F5C']]));
+    d.append(s('filter', { id: uid + 'blur', x: '-50%', y: '-50%', width: '200%', height: '200%' }, s('feGaussianBlur', { stdDeviation: '0.9' })));
+    d.append(s('clipPath', { id: uid + 'clip' }, s('rect', { x: 0, y: 0, width: 100, height: 136, rx: 7 })));
+    return d;
+  }
+  // one piece around its middle; mini (the goal card) leaves out the stub of the post
+  function skPiece(uid, look, id, mini) {
+    const L = SK_LOOKS[look], c = L.fill[id];
+    const g = s('g', null);
+    if (look === 'harbor') {
+      g.append(
+        s('path', { d: 'M-12 -4.2L-10.4 -6.9H10.4L12 -4.2Z', fill: skMix(c, 0.26) }),
+        s('rect', { x: -12, y: -4.2, width: 24, height: 9.4, rx: 0.5, fill: 'url(#' + uid + 'p' + id + ')' }));
+      let corr = '', lite = '';
+      for (let x = -10.2; x <= 10.3; x += 1.7) { corr += 'M' + x.toFixed(1) + ' -3V4'; lite += 'M' + (x + 0.55).toFixed(2) + ' -3V4'; }
+      g.append(
+        s('path', { d: corr, stroke: 'rgba(0,0,0,.2)', 'stroke-width': 0.42 }),
+        s('path', { d: lite, stroke: 'rgba(255,255,255,.16)', 'stroke-width': 0.3 }),
+        s('rect', { x: -12, y: -4.2, width: 24, height: 1, fill: 'rgba(255,255,255,.18)' }),
+        s('rect', { x: -12, y: 4, width: 24, height: 1.2, fill: skMix(c, -0.4) }));
+      for (const [x, y] of [[-12, -4.2], [10.5, -4.2], [-12, 3.7], [10.5, 3.7]]) g.append(s('rect', { x, y, width: 1.5, height: 1.5, rx: 0.2, fill: '#262B33', opacity: 0.85 }));
+      g.append(s('rect', { x: -4, y: -2.6, width: 8, height: 6.4, rx: 0.8, fill: 'rgba(0,0,0,.14)' }),
+        s('path', { d: SK_GLYPH[id], fill: L.ink[id], transform: 'translate(0 0.6)' }));
+    } else if (look === 'bakery') {
+      g.append(
+        s('path', { d: 'M-12 -5.2V5.2A12 2.8 0 0 0 12 5.2V-5.2Z', fill: 'url(#' + uid + 'p' + id + ')' }),
+        s('path', { d: 'M-12 2.2A12 2.8 0 0 0 12 2.2', stroke: skMix(c, 0.5), 'stroke-width': 1.2, fill: 'none' }),
+        s('ellipse', { cx: 0, cy: -5.2, rx: 12, ry: 2.8, fill: '#FFF7EE' }),
+        s('path', { d: 'M-12 -5.2A12 2.8 0 0 0 12 -5.2', stroke: '#FFF7EE', 'stroke-width': 1.6, fill: 'none' }));
+      for (const [x, len] of [[-9.2, 2.4], [-4.4, 3.6], [1.2, 2], [6.4, 3.2]]) {
+        const ya = -5.2 + 2.8 * Math.sqrt(1 - (x / 12) * (x / 12));
+        g.append(s('rect', { x: x - 1.1, y: ya - 1, width: 2.2, height: len + 1, rx: 1.1, fill: '#FFF7EE' }));
+      }
+      if (!mini) {
+        const sp = ['#FF6FA7', '#FFD23F', '#58C4F0', '#6FD38C'];
+        [[-6, -5.6, 20], [-2.4, -6.6, -35], [2.6, -5.2, 60], [6.8, -6.2, -10], [-8.6, -4.9, 75], [0.4, -4.4, -60], [4.6, -7, 30]].forEach(([x, y, a], i) => g.append(s('rect', { x: x - 0.6, y: y - 0.18, width: 1.2, height: 0.36, rx: 0.18, fill: sp[i % 4], transform: 'rotate(' + a + ' ' + x + ' ' + y + ')' })));
+      }
+      g.append(s('path', { d: SK_GLYPH[id], fill: 'rgba(0,0,0,.18)', transform: 'translate(0.3 2.4)' }),
+        s('path', { d: SK_GLYPH[id], fill: L.ink[id], transform: 'translate(0 2)' }));
+      if (!mini) g.append(s('g', { class: 'sk-stub' }, s('ellipse', { cx: 0, cy: -5.2, rx: 1.1, ry: 0.45, fill: '#7A5A3C', opacity: 0.6 }), s('rect', { x: -0.75, y: -9.2, width: 1.5, height: 4, fill: 'url(#' + uid + 'dowel)' })));
+    } else {
+      // a smooth river stone: a domed lens, lit from the upper left, with a hole for the stake
+      g.append(
+        s('path', { d: 'M-12.4 0.2C-12.6 -3.7 -7.6 -6 0 -6C7.8 -6 12.8 -3.5 12.4 0.4C12.1 3.8 7 5.7 -0.4 5.7C-7.6 5.7 -12.2 3.7 -12.4 0.2Z', fill: 'url(#' + uid + 'p' + id + ')' }),
+        s('path', { d: 'M-10.6 2.4C-6 5.2 6.4 5.4 10.8 2.2', stroke: 'rgba(0,0,0,.16)', 'stroke-width': 1.1, 'stroke-linecap': 'round', fill: 'none' }),
+        s('ellipse', { cx: -4.6, cy: -3.3, rx: 3.4, ry: 0.95, fill: '#FFFFFF', opacity: 0.32, transform: 'rotate(-6 -4.6 -3.3)' }));
+      const dots = [[-8.4, -1.6], [-6.4, 2.2], [-2.8, -0.2], [4.4, 2.6], [7.6, -1.4], [9.2, 1.2], [-9.6, 0.8], [5.4, -3.2], [1.6, 3.6]];
+      dots.forEach(([x, y], i) => g.append(s('circle', { cx: x + id * 0.6 - 0.6, cy: y, r: i % 3 === 0 ? 0.42 : 0.28, fill: i % 2 ? skMix(c, -0.35) : skMix(c, 0.45), opacity: 0.7 })));
+      g.append(s('path', { d: SK_GLYPH[id], fill: 'rgba(255,255,255,.34)', transform: 'translate(0 1.25)' }),
+        s('path', { d: SK_GLYPH[id], fill: skMix(c, -0.42), transform: 'translate(0 0.85)' }));
+      if (!mini) g.append(s('g', { class: 'sk-stub' }, s('ellipse', { cx: 0, cy: -5.1, rx: 1.9, ry: 0.7, fill: '#2E2013', opacity: 0.65 }), s('rect', { x: -1.55, y: -9.6, width: 3.1, height: 4.5, fill: 'url(#' + uid + 'wood)' })));
+    }
+    return g;
+  }
+  function skPost(uid, look, k) {
+    const x = SK_X[k], top = skPostTop(k);
+    const g = s('g', { class: 'sk-post' });
+    if (look === 'harbor') {
+      g.append(
+        s('rect', { x: x - 15.5, y: SK_BASE - 0.4, width: 31, height: 2.4, rx: 0.6, fill: '#566270' }),
+        s('path', { d: 'M' + (x - 15.5) + ' ' + (SK_BASE + 0.4) + 'h31', stroke: '#F2C14E', 'stroke-width': 0.9, 'stroke-dasharray': '1.6 1.6' }));
+      for (const gx of [x - 14.4, x + 12.8]) {
+        g.append(s('rect', { x: gx, y: top, width: 1.6, height: SK_BASE - top, rx: 0.4, fill: 'url(#' + uid + 'steel)' }));
+      }
+      g.append(s('rect', { x: x - 14.4, y: top - 0.8, width: 28.8, height: 1.6, rx: 0.5, fill: 'url(#' + uid + 'steel)' }),
+        s('path', { d: 'M' + (x - 14.4) + ' ' + (top + 3.4) + 'l1.6 -1.6M' + (x + 12.8) + ' ' + (top + 1.8) + 'l1.6 1.6', stroke: '#F2C14E', 'stroke-width': 0.9 }));
+    } else if (look === 'bakery') {
+      g.append(
+        s('ellipse', { cx: x, cy: SK_BASE + 8.6, rx: 7.5, ry: 1.6, fill: 'rgba(80,50,40,.14)' }),
+        s('path', { d: 'M' + (x - 2.4) + ' ' + (SK_BASE + 2) + 'L' + (x - 1.6) + ' ' + (SK_BASE + 7) + 'H' + (x + 1.6) + 'L' + (x + 2.4) + ' ' + (SK_BASE + 2) + 'Z', fill: '#E9E2DA' }),
+        s('ellipse', { cx: x, cy: SK_BASE + 7.6, rx: 6, ry: 1.4, fill: '#F6F1EB' }),
+        s('ellipse', { cx: x, cy: SK_BASE + 1.4, rx: 14.6, ry: 2.8, fill: '#E4DCD3' }),
+        s('ellipse', { cx: x, cy: SK_BASE + 0.8, rx: 14.6, ry: 2.6, fill: '#FFFFFF' }),
+        s('ellipse', { cx: x, cy: SK_BASE + 0.8, rx: 11.5, ry: 1.8, fill: 'none', stroke: '#EFE7DE', 'stroke-width': 0.4 }),
+        s('rect', { x: x - 0.75, y: top + 1, width: 1.5, height: SK_BASE - top - 1, fill: 'url(#' + uid + 'dowel)' }),
+        s('circle', { cx: x, cy: top + 1, r: 1.6, fill: '#E9A23B' }),
+        s('circle', { cx: x - 0.5, cy: top + 0.5, r: 0.5, fill: '#FFE3A8' }));
+    } else {
+      g.append(
+        s('ellipse', { cx: x, cy: SK_BASE + 2, rx: 9.5, ry: 2.4, fill: '#D3BC8B' }),
+        s('ellipse', { cx: x, cy: SK_BASE + 1.6, rx: 6, ry: 1.3, fill: 'rgba(90,64,30,.25)' }),
+        s('rect', { x: x - 1.55, y: top, width: 3.1, height: SK_BASE - top + 1.6, rx: 1.2, fill: 'url(#' + uid + 'wood)' }),
+        s('path', { d: 'M' + (x - 0.4) + ' ' + (top + 3) + 'v' + (SK_BASE - top - 6) + 'M' + (x + 0.7) + ' ' + (top + 6) + 'v' + (SK_BASE - top - 12), stroke: 'rgba(40,20,5,.22)', 'stroke-width': 0.3 }),
+        s('ellipse', { cx: x, cy: top + 0.3, rx: 1.55, ry: 0.65, fill: '#B98A5C' }));
+    }
+    return g;
+  }
+  // the scene behind the posts, and the goal on a sign, clipboard or ticket
+  function skScene(uid, look) {
+    const g = s('g', { 'aria-hidden': 'true' });
+    if (look === 'harbor') {
+      g.append(s('rect', { x: 0, y: 0, width: 100, height: 64, fill: '#D6E8F7' }),
+        s('rect', { x: 0, y: 0, width: 100, height: 30, fill: '#C3DDF3' }));
+      const city = [[8, 9], [13, 14], [19, 7], [25, 18], [31, 11], [60, 13], [66, 20], [72, 9], [78, 15], [84, 10], [90, 16]];
+      city.forEach(([x, hh]) => g.append(s('rect', { x, y: 63 - hh, width: 5.2, height: hh, fill: '#AFC6DC' })));
+      g.append(s('path', { d: 'M40 63V44M40 46H52M50 46V52M44 46L40 50M36 63L40 52L44 63', stroke: '#9BB5CF', 'stroke-width': 0.7, fill: 'none' }),
+        s('rect', { x: 0, y: 62, width: 100, height: 52, fill: '#3F7FB7' }),
+        s('rect', { x: 0, y: 62, width: 100, height: 16, fill: '#4A8AC0' }));
+      let w = '';
+      for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++) { const x = 4 + c * 26 + (r % 2) * 12, y = 70 + r * 7; w += 'M' + x + ' ' + y + 'q2.2 -1.2 4.4 0t4.4 0'; }
+      g.append(s('path', { d: w, stroke: 'rgba(255,255,255,.3)', 'stroke-width': 0.6, fill: 'none', 'stroke-linecap': 'round' }),
+        s('rect', { x: 0, y: 112, width: 100, height: 24, fill: '#BFC6CF' }),
+        s('rect', { x: 0, y: 112, width: 100, height: 1.6, fill: '#F2C14E' }),
+        s('path', { d: 'M33 114V136M67 114V136', stroke: '#A7AFB9', 'stroke-width': 0.4 }));
+      // the gantry crane: legs, braces and the beam the trolley runs on
+      g.append(
+        s('rect', { x: 1.8, y: 47, width: 4.4, height: 80, fill: '#F0B23A' }), s('rect', { x: 5, y: 47, width: 1.2, height: 80, fill: '#C98A1E' }),
+        s('rect', { x: 93.8, y: 47, width: 4.4, height: 80, fill: '#F0B23A' }), s('rect', { x: 97, y: 47, width: 1.2, height: 80, fill: '#C98A1E' }),
+        s('path', { d: 'M6 60L14 53M94 60L86 53', stroke: '#E2A22E', 'stroke-width': 1.4 }),
+        s('rect', { x: 0, y: 46.6, width: 100, height: 6.4, fill: '#F0B23A' }),
+        s('rect', { x: 0, y: 51.8, width: 100, height: 1.2, fill: '#C98A1E' }));
+      let z = 'M0 51.8';
+      for (let x = 0; x < 100; x += 5) z += 'L' + (x + 2.5) + ' 47.6L' + (x + 5) + ' 51.8';
+      g.append(s('path', { d: z, stroke: '#D49624', 'stroke-width': 0.7, fill: 'none' }));
+    } else if (look === 'bakery') {
+      g.append(s('rect', { x: 0, y: 0, width: 100, height: 113, fill: '#FBE6EB' }));
+      for (let x = 2; x < 100; x += 8) g.append(s('rect', { x, y: 0, width: 3, height: 113, fill: '#F5D5DD', opacity: 0.55 }));
+      g.append(s('rect', { x: 0, y: 70, width: 100, height: 43, fill: '#F6D9DF', opacity: 0.6 }),
+        s('rect', { x: 4, y: 63.4, width: 92, height: 2.6, rx: 0.8, fill: '#C99366' }),
+        s('path', { d: 'M12 66v4l3 -4M88 66v4l-3 -4', stroke: '#B07D52', 'stroke-width': 0.9, fill: 'none' }));
+      // jars and a cake dome on the shelf
+      for (const [x, w, hh, fill, lid] of [[8, 7, 9, '#F3E5CC', '#D9A86C'], [16.5, 6, 7, '#E7F1E4', '#9CC79A'], [24, 6.5, 10, '#FCE7C8', '#E59A6A']]) {
+        g.append(s('rect', { x, y: 63.4 - hh, width: w, height: hh, rx: 1.3, fill, opacity: 0.9 }), s('rect', { x: x - 0.4, y: 63.4 - hh - 1.4, width: w + 0.8, height: 1.8, rx: 0.6, fill: lid }));
+      }
+      g.append(s('path', { d: 'M74 63.4A9 8.5 0 0 1 92 63.4Z', fill: '#FFFFFF', opacity: 0.75 }), s('circle', { cx: 83, cy: 54.4, r: 1, fill: '#E9A23B' }),
+        s('rect', { x: 77, y: 59.4, width: 12, height: 4, rx: 1.4, fill: '#F0879F', opacity: 0.8 }));
+      // the ticket rail
+      g.append(s('rect', { x: 16, y: 3.4, width: 68, height: 1.6, rx: 0.8, fill: '#B9C1CA' }), s('circle', { cx: 16.8, cy: 4.2, r: 1.3, fill: '#9EA7B1' }), s('circle', { cx: 83.2, cy: 4.2, r: 1.3, fill: '#9EA7B1' }));
+      // marble counter
+      g.append(s('rect', { x: 0, y: 112, width: 100, height: 24, fill: '#F3EFEB' }),
+        s('path', { d: 'M4 120C18 116 26 128 40 122S66 118 74 126M58 131C70 127 82 133 98 128M10 132C16 129 22 131 30 129', stroke: '#D9D1C9', 'stroke-width': 0.4, fill: 'none' }),
+        s('rect', { x: 0, y: 112, width: 100, height: 1.4, fill: '#DCD3CA' }));
+    } else {
+      g.append(s('rect', { x: 0, y: 0, width: 100, height: 70, fill: '#E3F3F2' }),
+        s('rect', { x: 0, y: 0, width: 100, height: 34, fill: '#D3ECF0' }),
+        s('path', { d: 'M0 56C12 48 24 50 34 55S58 46 72 52S92 48 100 52V70H0Z', fill: '#B9DBCB' }),
+        s('path', { d: 'M0 62C14 57 30 60 44 58S72 56 84 59S96 58 100 59V70H0Z', fill: '#A6CFBA' }));
+      for (const [x, r] of [[6, 3.4], [11, 4.4], [17, 3], [62, 3.6], [68, 4.6], [74, 3.2], [90, 4], [95, 3]]) g.append(s('circle', { cx: x, cy: 61 - r * 0.4, r, fill: '#8FC3A9' }));
+      g.append(s('rect', { x: 0, y: 64, width: 100, height: 4, fill: '#DCD2AB' }),
+        s('rect', { x: 0, y: 67.5, width: 100, height: 46, fill: '#7FC4D3' }),
+        s('rect', { x: 0, y: 67.5, width: 100, height: 14, fill: '#93CFDB' }));
+      for (const [x, y, rx] of [[14, 74, 7], [44, 79, 5], [70, 72, 8], [26, 88, 6], [60, 92, 7], [84, 85, 5], [36, 99, 6], [8, 97, 4]]) g.append(s('ellipse', { cx: x, cy: y, rx, ry: 0.55, fill: '#FFFFFF', opacity: 0.45 }));
+      g.append(s('path', { d: 'M0 108C18 103 36 111 58 106S88 102 100 105V136H0Z', fill: '#EBD8AF' }),
+        s('path', { d: 'M0 108C18 103 36 111 58 106S88 102 100 105', stroke: '#F6EBCF', 'stroke-width': 1, fill: 'none' }));
+      for (const [x, y, r, c] of [[8, 126, 1.8, '#CDBF9F'], [31, 131, 1.3, '#BDB09A'], [64, 128, 1.5, '#D2C4A4'], [93, 130, 2, '#C4B596'], [47, 112.5, 1.1, '#CDBF9F'], [88, 113, 1.2, '#BDB09A']]) {
+        g.append(s('ellipse', { cx: x, cy: y, rx: r * 1.5, ry: r, fill: c }), s('ellipse', { cx: x - r * 0.4, cy: y - r * 0.35, rx: r * 0.6, ry: r * 0.3, fill: '#FFFFFF', opacity: 0.35 }));
+      }
+      const reeds = (x0, dir) => { let d = ''; [[0, 16], [2.2, 21], [4, 14], [5.8, 18]].forEach(([dx, hh]) => { const x = x0 + dx * dir; d += 'M' + x + ' 116Q' + (x + 1.4 * dir) + ' ' + (116 - hh / 2) + ' ' + (x + 0.6 * dir) + ' ' + (116 - hh); }); return s('path', { d, stroke: '#6E9E5A', 'stroke-width': 0.9, fill: 'none', 'stroke-linecap': 'round' }); };
+      g.append(reeds(2.5, 1), reeds(97.5, -1));
+    }
+    return g;
+  }
+  function skCard(uid, look, goal) {
+    const L = SK_LOOKS[look];
+    const g = s('g', { class: 'sk-card' });
+    if (look === 'harbor') {
+      g.append(s('rect', { x: 24, y: 5, width: 52, height: 38.5, rx: 2.4, fill: '#7A5634' }), s('rect', { x: 24, y: 5, width: 52, height: 1.4, rx: 0.7, fill: '#946A44' }),
+        s('rect', { x: 26.6, y: 8.4, width: 46.8, height: 32.6, rx: 0.8, fill: '#FFFFFF' }),
+        s('rect', { x: 30, y: 11.4, width: 20, height: 1.3, rx: 0.6, fill: '#C9D3DD' }), s('rect', { x: 30, y: 14, width: 12, height: 1, rx: 0.5, fill: '#DCE3EA' }),
+        s('rect', { x: 43, y: 2.8, width: 14, height: 5.2, rx: 1.2, fill: '#AEB8C2' }), s('rect', { x: 46.5, y: 4.4, width: 7, height: 1.6, rx: 0.8, fill: '#7F8A96' }));
+    } else if (look === 'bakery') {
+      let zig = 'M25 7.5Q25 6 26.5 6H73.5Q75 6 75 7.5V40';
+      for (let x = 75; x > 25.1; x -= 3.125) zig += 'L' + (x - 1.5625).toFixed(3) + ' 42.4L' + (x - 3.125).toFixed(3) + ' 40';
+      g.append(s('path', { d: zig + 'Z', fill: '#FFFFFF' }), s('rect', { x: 25, y: 6, width: 50, height: 3.6, rx: 1.4, fill: '#F0879F' }),
+        s('rect', { x: 46.5, y: 2.4, width: 7, height: 5.4, rx: 1, fill: '#9EA7B1' }),
+        s('rect', { x: 30, y: 12.4, width: 16, height: 1.1, rx: 0.55, fill: '#F2C9D3' }));
+    } else {
+      g.append(s('path', { d: 'M31 42V58M69 42V58', stroke: '#7E5332', 'stroke-width': 2.2 }),
+        s('rect', { x: 23.5, y: 5, width: 53, height: 38, rx: 2.6, fill: '#97643C' }),
+        s('rect', { x: 23.5, y: 5, width: 53, height: 1.4, rx: 0.7, fill: '#B07D52' }),
+        s('rect', { x: 26.4, y: 8, width: 47.2, height: 32, rx: 1.6, fill: '#F7ECD5' }));
+      for (const [x, y] of [[25.3, 6.8], [74.7, 6.8], [25.3, 41.2], [74.7, 41.2]]) g.append(s('circle', { cx: x, cy: y, r: 0.65, fill: '#5B3B22' }));
+    }
+    const base = 37.2;
+    for (let k = 0; k < 3; k++) {
+      const mx = 50 + (SK_X[k] - 50) * SK_MINI, cap = E.games.stacks.caps[k], ph = (cap * SK_STEP + 4) * SK_MINI;
+      g.append(s('rect', { x: mx - 0.6, y: base - ph, width: 1.2, height: ph, rx: 0.5, fill: L.rod }));
+      goal[k].forEach((id, i) => g.append(s('g', { transform: 'translate(' + mx + ' ' + (base - (SK_STEP / 2 + i * SK_STEP) * SK_MINI).toFixed(2) + ') scale(' + SK_MINI + ')' }, skPiece(uid, look, id, true))));
+    }
+    g.append(s('rect', { x: 29, y: base, width: 42, height: 0.9, rx: 0.45, fill: L.rod, opacity: 0.55 }));
+    return g;
+  }
+  class StacksCard extends Card {
+    hasHistory() { return this.run.hist.length > 0; }
+    buildBoard() {
+      const p = this.p, look = SK_LOOKS[p.theme] ? p.theme : 'stones', L = SK_LOOKS[look];
+      this.look = look;
+      this.el.dataset.look = look;
+      this.held = null;
+      this.gest = null;
+      const uid = this.uid = 'sk' + Math.random().toString(36).slice(2, 8);
+      const svgEl = s('svg', { class: 'board stacks', viewBox: '0 0 100 136', role: 'group', 'aria-label': 'Three posts holding 3, 2 and 1 ' + L.names[0].split(' ').pop() + 's' });
+      svgEl.append(skDefs(uid, look));
+      const world = s('g', { 'clip-path': 'url(#' + uid + 'clip)' });
+      world.append(skScene(uid, look));
+      const cardEl = skCard(uid, look, p.goal);
+      cardEl.setAttribute('role', 'img');
+      cardEl.setAttribute('aria-label', 'Goal: ' + p.goal.map((a, k) => 'post ' + (k + 1) + (a.length ? ' ' + a.map((id) => L.names[id]).join(', ') : ' empty')).join('; '));
+      world.append(cardEl);
+      if (look === 'harbor') {
+        // the crane's trolley rides the beam above the lifted container; its cable scales to reach it
+        this.cable = s('g', { class: 'sk-cable-line' }, s('path', { d: 'M-1.4 0V1M1.4 0V1', stroke: '#20262E', 'stroke-width': 0.55, 'vector-effect': 'non-scaling-stroke' }));
+        this.trolley = s('g', { class: 'sk-trolley' }, s('rect', { x: -6, y: 53, width: 12, height: 4.4, rx: 0.9, fill: '#2E3A46' }), s('rect', { x: -6, y: 53, width: 12, height: 1.2, rx: 0.6, fill: '#46586B' }), s('circle', { cx: -3.8, cy: 53.1, r: 1, fill: '#151B22' }), s('circle', { cx: 3.8, cy: 53.1, r: 1, fill: '#151B22' }));
+        world.append(this.cable, this.trolley);
+      }
+      this.shadow = s('ellipse', { class: 'sk-shadow', cx: 0, cy: 0, rx: 10.5, ry: 2, fill: 'rgba(30,25,20,.3)', filter: 'url(#' + uid + 'blur)' });
+      this.posts = [0, 1, 2].map((k) => { const g = skPost(uid, look, k); world.append(g); return g; });
+      world.append(this.shadow);
+      this.layer = s('g', null);
+      world.append(this.layer);
+      this.pieces = [0, 1, 2].map((id) => {
+        const el = s('g', { class: 'sk-piece', 'aria-hidden': 'true' });
+        const inner = s('g', { class: 'sk-inner' });
+        if (look === 'harbor') inner.append(s('g', { class: 'sk-cable' }, s('rect', { x: -9, y: -9.6, width: 18, height: 1.5, rx: 0.5, fill: '#2B333D' }), s('path', { d: 'M-8.2 -8.1L-10.8 -6.9M8.2 -8.1L10.8 -6.9', stroke: '#2B333D', 'stroke-width': 0.6 })));
+        inner.append(skPiece(uid, look, id, false), s('rect', { class: 'halo', x: -13.8, y: -9, width: 27.6, height: 17.6, rx: 3.6 }));
+        el.append(inner);
+        this.layer.append(el);
+        return el;
+      });
+      this.cols = [0, 1, 2].map((k) => {
+        const col = s('rect', { class: 'sk-col', x: SK_X[k] - 15, y: 58, width: 30, height: 76, rx: 4, tabindex: '0', role: 'button' });
+        col.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.tap(k); } });
+        world.append(col);
+        return col;
+      });
+      svgEl.append(world, s('rect', { x: 0.25, y: 0.25, width: 99.5, height: 135.5, rx: 6.8, fill: 'none', stroke: 'rgba(0,0,0,.12)', 'stroke-width': 0.5 }));
+      svgEl.addEventListener('pointerdown', (e) => {
+        if (e.button > 0) return;
+        const k = this.postAt(e);
+        if (k == null) return;
+        e.preventDefault();
+        try { svgEl.setPointerCapture(e.pointerId); } catch (x) { /* optional */ }
+        this.down(k, e);
+      });
+      svgEl.addEventListener('pointermove', (e) => this.drag(e));
+      svgEl.addEventListener('pointerup', (e) => this.up(e));
+      svgEl.addEventListener('pointercancel', () => { if (this.gest && this.gest.moved) this.putBack(); this.gest = null; });
+      this.svg = svgEl;
+      this.area.append(svgEl);
+      this.crane(SK_X[2], null, true);
+    }
+    toSvg(e) {
+      const m = this.svg.getScreenCTM();
+      if (!m) return null;
+      const pt = this.svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      return pt.matrixTransform(m.inverse());
+    }
+    postAt(e) {
+      const q = this.toSvg(e);
+      if (!q || q.y < 50 || q.y > 140 || q.x < -4 || q.x > 104) return null;
+      return q.x < 35 ? 0 : q.x < 65 ? 1 : 2;
+    }
+    top(k) { const a = this.run.st[k]; return a.length ? a[a.length - 1] : null; }
+    // draw order: every stack bottom to top, the lifted piece last
+    restack() {
+      this.run.st.forEach((a) => a.forEach((id) => this.layer.append(this.pieces[id])));
+      if (this.held != null) this.layer.append(this.pieces[this.top(this.held)]);
+      void this.layer.getBoundingClientRect();
+    }
+    setPos(id, x, y, instant) {
+      const el = this.pieces[id];
+      el.style.transition = instant ? 'none' : '';
+      if (!instant) void el.getBoundingClientRect();
+      el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      if (instant) { void el.getBoundingClientRect(); el.style.transition = ''; }
+      if (id === this.moving || (this.held != null && this.top(this.held) === id)) { this.crane(x, y, instant); this.shade(x, y, instant); }
+    }
+    // the trolley over x; the cable reaches down to a container hanging at y (or hangs short)
+    crane(x, y, instant) {
+      if (!this.trolley) return;
+      const len = y == null ? 3 : Math.max(1, y - 9.6 - 57.4);
+      [this.trolley, this.cable].forEach((el) => { el.style.transition = instant ? 'none' : ''; });
+      this.trolley.style.transform = 'translate(' + x + 'px,0)';
+      this.cable.style.transform = 'translate(' + x + 'px,57.4px) scaleY(' + len + ')';
+    }
+    // the lifted piece's shadow falls on the stack below it
+    shade(x, y, instant) {
+      if (y == null) { this.shadow.style.opacity = '0'; return; }
+      const k = x < 35 ? 0 : x < 65 ? 1 : 2;
+      const n = this.run.st[k].length - (this.held === k ? 1 : 0);
+      const gy = SK_BASE - n * SK_STEP;
+      const sc = Math.max(0.55, 1 - (gy - y) / 120);
+      this.shadow.style.transition = instant ? 'none' : '';
+      this.shadow.style.opacity = '1';
+      this.shadow.style.transform = 'translate(' + SK_X[k] + 'px,' + gy + 'px) scale(' + sc.toFixed(3) + ')';
+    }
+    refresh(animated) {
+      this.held = null;
+      this.gest = null;
+      this.restack();
+      this.run.st.forEach((a, k) => a.forEach((id, i) => { this.pieces[id].classList.remove('held'); this.setPos(id, SK_X[k], skSlotY(i), !animated); }));
+      this.shade(0, null);
+      if (this.trolley) this.crane(this.parkX || SK_X[2], null, !animated);
+      this.label();
+      this.goal();
+    }
+    label() {
+      const L = SK_LOOKS[this.look];
+      this.cols.forEach((col, k) => {
+        const a = this.run.st[k];
+        col.setAttribute('aria-label', 'Post ' + (k + 1) + ', holds ' + E.games.stacks.caps[k] + ': ' + (a.length ? a.map((id) => L.names[id]).join(', ') + ', top ' + L.names[a[a.length - 1]] : 'empty'));
+      });
+    }
+    goal() {
+      if (!this.goalEl) return;
+      this.goalEl.textContent = '';
+      this.goalEl.append(icon('stack'), h('span', { text: this.c.moves + '/' + this.p.reference }));
+      this.goalEl.setAttribute('aria-label', this.c.moves + ' moves made; the fewest possible is ' + this.p.reference);
+    }
+    down(k, e) {
+      if (this.summary || this.busy) return;
+      Sound.unlock();
+      this.hideHand();
+      if (this.held == null) {
+        if (this.top(k) == null) { this.nudge(k); return; }
+        this.lift(k);
+        this.gest = { from: k, lifted: true, moved: false, x: e.clientX, y: e.clientY, id: e.pointerId };
+      } else if (k !== this.held) {
+        this.drop(this.held, k);
+        this.gest = null;
+      } else {
+        this.gest = { from: k, lifted: false, moved: false, x: e.clientX, y: e.clientY, id: e.pointerId };
+      }
+    }
+    drag(e) {
+      const g = this.gest;
+      if (!g || e.pointerId !== g.id || this.held !== g.from) return;
+      if (!g.moved && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 9) return;
+      g.moved = true;
+      const q = this.toSvg(e);
+      if (!q) return;
+      this.setPos(this.top(g.from), Math.max(10, Math.min(90, q.x)), Math.max(64, Math.min(112, q.y)), true);
+    }
+    up(e) {
+      const g = this.gest;
+      if (!g || e.pointerId !== g.id) return;
+      this.gest = null;
+      if (this.held !== g.from) return;
+      const k = this.postAt(e);
+      if (k != null && k !== g.from) this.drop(g.from, k);
+      else if (g.moved || !g.lifted) this.putBack();
+    }
+    // keyboard and screen readers: the same as a tap
+    tap(k) {
+      if (this.summary || this.busy) return;
+      Sound.unlock();
+      this.hideHand();
+      if (this.held == null) { if (this.top(k) == null) this.nudge(k); else this.lift(k); }
+      else if (k !== this.held) this.drop(this.held, k);
+      else this.putBack();
+    }
+    lift(k) {
+      const id = this.top(k);
+      this.held = k;
+      this.layer.append(this.pieces[id]);
+      this.pieces[id].classList.add('held');
+      this.setPos(id, SK_X[k], SK_HOVER, false);
+      Sound.play('lift');
+      buzz(6);
+      this.later(() => this.guide(), 260);
+    }
+    putBack() {
+      const k = this.held;
+      if (k == null) return;
+      const id = this.top(k);
+      this.setPos(id, SK_X[k], skSlotY(this.run.st[k].length - 1), false);
+      this.held = null;
+      this.pieces[id].classList.remove('held');
+      this.shade(0, null);
+      this.parkX = SK_X[k];
+      this.crane(SK_X[k], null, false);
+      Sound.play('set', 0);
+      this.later(() => this.guide(), 300);
+    }
+    nudge(k) {
+      const g = this.posts[k];
+      g.classList.remove('nudge');
+      void g.getBoundingClientRect();
+      g.classList.add('nudge');
+      this.later(() => g.classList.remove('nudge'), 400);
+    }
+    drop(a, b) {
+      const rec = this.G.move(this.p, this.run, a, b);
+      if (!rec) return;
+      if (rec.kind === 'blocked') {
+        // the post is full: it shakes and the piece stays up
+        this.setPos(this.top(a), SK_X[a], SK_HOVER, false);
+        this.nudge(b);
+        Sound.play('no');
+        buzz(12);
+        rec.detail = 'post ' + (b + 1) + ' is full';
+        this.commit(rec);
+        return;
+      }
+      const id = rec.piece, el = this.pieces[id];
+      const y = skSlotY(this.run.st[b].length - 1);
+      // across at hover height, then down onto the post
+      this.held = null;
+      this.moving = id;
+      this.setPos(id, SK_X[b], SK_HOVER, false);
+      this.later(() => { this.setPos(id, SK_X[b], y, false); }, 170);
+      this.later(() => {
+        if (this.moving === id) this.moving = null;
+        el.classList.remove('held');
+        if (this.held == null) {
+          this.shade(0, null);
+          this.parkX = SK_X[b];
+          this.crane(SK_X[b], null, false);
+        }
+        el.classList.remove('land');
+        void el.getBoundingClientRect();
+        el.classList.add('land');
+        this.later(() => el.classList.remove('land'), 360);
+        Sound.play('set', this.run.st[b].length);
+        buzz(8);
+        if (!reducedMotion()) {
+          const r = el.getBoundingClientRect(), fr = this.el.getBoundingClientRect();
+          sparks(this, r.left + r.width / 2 - fr.left, r.bottom - fr.top - 3, SK_LOOKS[this.look].puff, 7);
+        }
+      }, 340);
+      this.label();
+      if (this.o.feedback && !this.practice) this.flash(id, rec.cls);
+      this.commit(rec);
+    }
+    flash(id, cls) {
+      const el = this.pieces[id], k = 'q-' + cls;
+      el.classList.add(k);
+      this.later(() => el.classList.remove(k), 900);
+    }
+    afterUndo() { this.refresh(true); }
+    showHint(hint) {
+      if (hint.kind !== 'target') return;
+      if (this.held != null) this.putBack();
+      const id = this.top(hint.a);
+      const el = this.pieces[id];
+      el.classList.add('hinted');
+      this.later(() => el.classList.remove('hinted'), 2800);
+      this.cols[hint.b].classList.add('hinted');
+      this.later(() => this.cols[hint.b].classList.remove('hinted'), 2800);
+      this.pointAt(el, 2600);
+    }
+    guideTarget() {
+      const hnt = this.G.hint(this.p, this.run);
+      if (hnt.kind !== 'target') return null;
+      if (this.held == null) return this.pieces[this.top(hnt.a)];
+      return this.held === hnt.a ? this.posts[hnt.b] : this.posts[this.held];
+    }
+    onKey(e) {
+      if (this.summary) return false;
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= 3) { this.tap(n - 1); return true; }
+      if (e.key === 'Escape' && this.held != null) { this.putBack(); return true; }
+      return false;
+    }
+    onResolved(outcome) { if (outcome === 'solved') this.svg.classList.add('solved'); }
+  }
+
   function makeCard(app, spec, puzzle, snap) {
     if (spec.game === 'outbound') return new OutboundCard(app, spec, puzzle, snap);
     if (spec.game === 'conduit') return new ConduitCard(app, spec, puzzle, snap);
     if (spec.game === 'glimpse') return new GlimpseCard(app, spec, puzzle, snap);
+    if (spec.game === 'stacks') return new StacksCard(app, spec, puzzle, snap);
     return new TumblerCard(app, spec, puzzle, snap);
   }
 
@@ -4280,9 +4981,9 @@ PuzzleEnginesFactory(window);
       ['practice', '1 for a practice board (fixed, the same for everyone)'],
       ['t_ms', 'ms since this puzzle appeared (Tumbler: when the try was submitted)'],
       ['move_no', 'state-changing moves so far in this puzzle, including moves later undone; Glimpse: the look number in the round'],
-      ['target', 'Outbound: car id (c1...). Conduit: tile r{row}c{col}. Tumbler: the try as letters, or pin{n}={letter} for a revealed pin. Glimpse: the thing out around the middle (bird, butterfly, star...)'],
-      ['from / to', 'Outbound: cells driven forward from the start position, or exit. Conduit: quarter turns clockwise away from the solved orientation'],
-      ['d_before / d_after', 'fewest moves (Outbound) or turns (Conduit) still needed before and after; inf = can no longer be solved'],
+      ['target', 'Outbound: car id (c1...). Conduit: tile r{row}c{col}. Tumbler: the try as letters, or pin{n}={letter} for a revealed pin. Glimpse: the thing out around the middle (bird, butterfly, star...). Stacks: p{from}>p{to}'],
+      ['from / to', 'Outbound: cells driven forward from the start position, or exit. Conduit: quarter turns clockwise away from the solved orientation. Stacks: posts 1 to 3 (holding 3, 2 and 1 pieces)'],
+      ['d_before / d_after', 'fewest moves (Outbound, Stacks) or turns (Conduit) still needed before and after; inf = can no longer be solved'],
       ['cls', 'move label, see below'],
       ['exact / partial', 'Tumbler: pins with the right color in the right spot, and right colors in the wrong spot'],
       ['marks', 'Tumbler with per-pin clues: one digit per pin, 2 right spot, 1 elsewhere, 0 not in the code'],
@@ -4294,28 +4995,28 @@ PuzzleEnginesFactory(window);
       ['frames / flash_ms', 'Glimpse: planned display time in whole frames, and frames x refresh_ms'],
       ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
       ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
-      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 400 to 699, seeded) and mask time (planned 300)'],
+      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 400 to 699, seeded; 800 more on the first look after the eye is tapped) and mask time (planned 300)'],
       ['shown / chosen', 'Glimpse: the item in the middle, and the one picked'],
       ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
       ['n_distract', 'Glimpse: distractors around the target (leaves, shells or clouds, by scene)'],
       ['rt_center_ms / rt_where_ms', 'Glimpse: time to pick the animal from when the choices appeared, and to tap a place from when the spots appeared; answers are not speeded'],
       ['stair_next_ms / reversal', 'Glimpse: display time planned for the next look, and 1 if this look reversed the staircase direction'],
       ['field_px', 'Glimpse: field radius in CSS pixels; degrees of visual angle depend on the screen and viewing distance'],
-      ['detail', 'extra context: puzzle features at puzzle_start, the blocking car for blocked taps, hidden time at visible, the phase of an interrupted look'],
+      ['detail', 'extra context: puzzle features at puzzle_start, the blocking car or the full post for blocked moves, hidden time at visible, the phase of an interrupted look'],
     ],
     puzzles: [
       ['params', 'board description'],
       ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered'],
       ['success', '1 if solved with moves <= par (drives adaptive levels); Glimpse: a complete round with threshold_ms at or under the level\'s target'],
       ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round, 2 = two misses, 1 = more; every finished round earns at least 1'],
-      ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move, time the page was hidden'],
-      ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries'],
-      ['reference', 'Outbound: fewest moves. Conduit: fewest turns. Tumbler: tries used by the most-informative-try solver for this code'],
+      ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move (Stacks: planning time before the first piece is set down), time the page was hidden'],
+      ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries. Stacks: pieces moved to another post (lifting a piece and putting it back is not a move)'],
+      ['reference', 'Outbound and Stacks: fewest moves. Conduit: fewest turns. Tumbler: tries used by the most-informative-try solver for this code'],
       ['par / efficiency', 'ceil(reference x multiplier); reference / moves (Tumbler can exceed 1 by luck)'],
       ['n_*', 'counts of each move label and of undo, restart, hint; blank when it does not apply to the game'],
       ['mean_info_ratio', 'Tumbler: mean of info_expected / info_best over tries'],
       ['n_correct / accuracy', 'Glimpse: looks with the animal and the place both right, and their share'],
-      ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out a fresh staircase\'s descent before its first miss; the staircase settles at 80% correct'],
+      ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out a fresh staircase\'s descent before its first miss; the staircase settles at about 86% correct, never below 50 ms'],
       ['best_ms', 'Glimpse: shortest display time answered correctly'],
       ['start_ms / end_ms', 'Glimpse: staircase value at the start of the round, and the value carried to the next round'],
       ['n_reversals', 'Glimpse: staircase reversals in the round'],
@@ -4328,6 +5029,7 @@ PuzzleEnginesFactory(window);
       conduit: 'optimal (the tile needed that turn), wasted (the tile was already right)',
       tumbler: 'optimal (as informative as the best possible try), suboptimal (less informative), zero_info (could not narrow the codes), solved (the winning try); consistency is its own column',
       glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong',
+      stacks: 'optimal (one move closer to the goal), wasted (no closer), blocked (the post was full; its own event, not a move)',
     },
     colors: 'Tumbler letters: A red (circle), B blue (square), C yellow (triangle), D green (diamond), E purple (plus), F orange (star), G teal (bar). Keys 1 to 7 enter them in order.',
   };
@@ -4336,6 +5038,7 @@ PuzzleEnginesFactory(window);
       const L = E.games[g].levels[k];
       if (g === 'tumbler') return '- L' + k + ': per-pin clues ' + L.pin.P + ' pins x ' + L.pin.C + ' colors, ' + L.pin.max + ' tries; count clues ' + L.count.P + ' pins x ' + L.count.C + ' colors, ' + L.count.max + ' tries';
       if (g === 'glimpse') return '- L' + k + ': ' + E.games.glimpse.describe(L) + '; ' + L.looks + ' looks a round; success at threshold_ms <= ' + L.advanceMs;
+      if (g === 'stacks') return '- L' + k + ': ' + L.moves + ' moves at best';
       const desc = E.games[g].describe(Object.assign({}, L, { cars: { length: L.cars } }));
       return '- L' + k + ': ' + desc + (g === 'outbound' ? ', ' + (L.traps || 0) + ' planted trap' + (L.traps === 1 ? '' : 's') : '');
     }).join('\n');
@@ -4352,11 +5055,13 @@ PuzzleEnginesFactory(window);
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
         'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play draw the scene from the puzzle seed and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
-        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 400 to 699 ms (seeded) with a ring closing in over the first 260 ms, the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
-        'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss four steps longer (weighted up/down, settles at 80% correct). A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts one step slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 1000, 600 and 350 ms.',
+        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 400 to 699 ms (seeded) with a ring closing in over the first 260 ms (on the first look after the eye is tapped, 800 ms more and a slower ring, so the first flash never comes out of nowhere), the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
+        'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 1000, 600 and 350 ms.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
+        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
+        'Levels:', lv('stacks'), '',
+        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
         '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row.', '']);
     return lines.join('\n');
   }
@@ -4404,6 +5109,98 @@ PuzzleEnginesFactory(window);
       h('p', { class: 'empty-state', text: 'Saving files is not available here. Copy this into a file named ' + filename + '.' }),
       ta,
     ], [copyBtn]);
+  }
+
+  // ---------------------------------------------------------- profile
+  // The concept paper's five areas, each with the games that belong to it.
+  // Game stats stay game stats: nothing here scores an area.
+  const AREAS = [
+    { name: 'Reaction', games: ['glimpse'] },
+    { name: 'Memory', games: [] },
+    { name: 'Patterns', games: ['tumbler'] },
+    { name: 'Problem solving', games: ['stacks', 'outbound', 'conduit'] },
+    { name: 'Focus', games: [] },
+  ];
+  const LEVEL_NAMES = ['Beginner', 'Advanced', 'Pro', 'Expert', 'Master'];
+  // the paper's evidence level for each game's format, and where it comes from
+  const EVIDENCE = {
+    glimpse: ['Causal', 'ACTIVE trial, effects after 10 years (Rebok et al. 2014)'],
+    stacks: ['Near', 'Tower-of-London paradigm'],
+    outbound: ['Plausible', 'No study of this format'],
+    conduit: ['Plausible', 'No study of this format'],
+    tumbler: ['Plausible', 'No study of this format'],
+  };
+  // per-game stats from free play on this device
+  const Stats = {
+    blank() { return { cards: 0, solved: 0, perfect: 0, stars: 0, ms: 0, top: 0, tries: 0, plan: 0, planN: 0 }; },
+    add(all, r) {
+      const t = all[r.game] || (all[r.game] = this.blank());
+      t.cards++;
+      if (r.outcome === 'solved' || r.outcome === 'complete') t.solved++;
+      if (r.stars === 3) t.perfect++;
+      t.stars += r.stars || 0;
+      t.ms += r.duration_ms || 0;
+      t.top = Math.max(t.top, r.level || 0, Number(r.level_next) || 0);
+      if (r.game === 'tumbler' && r.outcome === 'solved') t.tries += r.moves || 0;
+      if (r.game === 'stacks' && r.outcome === 'solved' && r.first_move_ms !== '' && r.first_move_ms != null) { t.plan += Number(r.first_move_ms); t.planN++; }
+    },
+    // the first time, built from the free play already logged on this device
+    load(app) {
+      const all = store.get('pr1.gstats', null);
+      if (all) return { all, built: false };
+      const a = {}, cur = app.session;
+      const list = Sessions.all().filter((S) => S.kind === 'free' && (!cur || S.id !== cur.id));
+      if (cur && cur.kind === 'free') list.push(cur);
+      for (const S of list) for (const r of S.puzzles) if (!Number(r.practice) && r.outcome !== 'abandoned') this.add(a, r);
+      store.set('pr1.gstats', a);
+      return { all: a, built: true };
+    },
+    record(app, r) {
+      const st = this.load(app);
+      if (!st.built) { this.add(st.all, r); store.set('pr1.gstats', st.all); }
+    },
+  };
+  // a small picture of each game's world, 80 x 60
+  function miniWorld(g) {
+    const svg = s('svg', { class: 'pf-art', viewBox: '0 0 80 60', 'aria-hidden': 'true' });
+    const car = (x, y, a, c) => s('g', { transform: 'translate(' + x + ' ' + y + ') rotate(' + a + ')' },
+      s('rect', { x: -5, y: -9, width: 10, height: 18, rx: 3.4, fill: c }),
+      s('path', { d: 'M-3.6 -4.6L-3 -7H3L3.6 -4.6Z', fill: '#24334A' }),
+      s('rect', { x: -3.6, y: -3.6, width: 7.2, height: 6.4, rx: 1.4, fill: 'rgba(0,0,0,.12)' }));
+    if (g === 'outbound') {
+      svg.append(s('rect', { x: 8, y: 6, width: 64, height: 48, rx: 7, fill: '#3E434E' }),
+        s('path', { d: 'M29.3 9V51M50.6 9V51', stroke: 'rgba(255,255,255,.14)', 'stroke-width': 0.8 }),
+        car(19, 20, 0, '#F2564D'), car(40, 33, 90, '#3D8BFD'), car(61, 37, 0, '#FFC93C'), car(19, 41, 180, '#22BFB0'));
+    } else if (g === 'conduit') {
+      svg.append(s('rect', { x: 10, y: 6, width: 60, height: 48, rx: 7, fill: '#6A4628' }));
+      for (const [x, y] of [[13, 9], [40.5, 9], [13, 31.5], [40.5, 31.5]]) svg.append(s('rect', { x, y, width: 26.5, height: 20, rx: 4, fill: '#84603B' }));
+      svg.append(s('path', { d: 'M26 41V19H54V41', stroke: '#2E9CF2', 'stroke-width': 5, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+        s('circle', { cx: 26, cy: 41, r: 5.4, fill: '#FFFFFF' }), s('circle', { cx: 26, cy: 41, r: 3.4, fill: '#2E9CF2' }));
+      for (let k = 0; k < 5; k++) { const a = (Math.PI * 2 * k) / 5 - Math.PI / 2; svg.append(s('circle', { cx: 54 + Math.cos(a) * 3, cy: 38 + Math.sin(a) * 3, r: 2.4, fill: '#FF6FA7' })); }
+      svg.append(s('circle', { cx: 54, cy: 38, r: 1.8, fill: '#FFD23F' }));
+    } else if (g === 'tumbler') {
+      svg.append(s('rect', { x: 10, y: 8, width: 60, height: 44, rx: 9, fill: '#2B2160' }),
+        s('rect', { x: 15, y: 20, width: 50, height: 16, rx: 8, fill: 'rgba(255,255,255,.1)' }));
+      [['#F04E5E', PEGS[0].glyph], ['#3A7BFF', PEGS[1].glyph], ['#FFCB2E', PEGS[2].glyph]].forEach(([c, gl], i) => {
+        const x = 27 + i * 13;
+        svg.append(s('circle', { cx: x, cy: 28, r: 5.6, fill: c }), s('path', { d: gl, fill: i === 2 ? '#3A2A00' : '#FFFFFF', transform: 'translate(' + (x - 4) + ' 24) scale(0.5)' }));
+      });
+      for (let i = 0; i < 6; i++) svg.append(s('circle', { cx: 25 + i * 6, cy: 44, r: 1.6, fill: i < 4 ? '#FFC83A' : 'rgba(255,255,255,.25)' }));
+    } else if (g === 'glimpse') {
+      svg.append(s('circle', { cx: 40, cy: 30, r: 25, fill: '#F7FBF2' }),
+        s('circle', { cx: 40, cy: 30, r: 17, fill: 'none', stroke: 'rgba(24,41,31,.12)', 'stroke-width': 0.8 }),
+        s('g', { transform: 'translate(31 21) scale(0.18)' }, s('path', { d: GL_PATHS.rabbit, fill: '#18291F' })),
+        s('g', { transform: 'translate(51 8) scale(0.1)' }, s('path', { d: GL_PATHS.bird, fill: '#3D8BFD' })));
+    } else if (g === 'stacks') {
+      svg.append(s('clipPath', { id: 'pfsk' }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
+        s('g', { 'clip-path': 'url(#pfsk)' }, s('rect', { x: 0, y: 0, width: 80, height: 60, fill: '#8CCBD8' }), s('path', { d: 'M0 44C16 40 30 47 48 43S70 40 80 42V60H0Z', fill: '#EAD8B2' })),
+        s('rect', { x: 38.5, y: 10, width: 3, height: 40, rx: 1.2, fill: '#8A5C3B' }));
+      [['#6F90C2', 46], ['#C9654C', 37], ['#6E9F5D', 28]].forEach(([c, y]) => svg.append(
+        s('path', { d: 'M27 ' + y + 'C26.8 ' + (y - 3.8) + ' 32 ' + (y - 6) + ' 40 ' + (y - 6) + 'C48 ' + (y - 6) + ' 53.2 ' + (y - 3.6) + ' 53 ' + y + 'C52.8 ' + (y + 3.6) + ' 47.6 ' + (y + 5.4) + ' 40 ' + (y + 5.4) + 'C32.4 ' + (y + 5.4) + ' 27.2 ' + (y + 3.6) + ' 27 ' + y + 'Z', fill: c }),
+        s('ellipse', { cx: 35.5, cy: y - 3, rx: 3.6, ry: 1, fill: '#FFFFFF', opacity: 0.3 })));
+      svg.append(s('rect', { x: 38.5, y: 10, width: 3, height: 9, rx: 1.2, fill: '#8A5C3B' }));
+    }
+    return svg;
   }
 
   // ============================================================ sheets
@@ -4701,8 +5498,11 @@ PuzzleEnginesFactory(window);
         features: JSON.stringify(card.p.features),
       });
       if (sp.practice) {
-        S.practiced[sp.game] = true;
-        if (S.kind === 'free') store.set('pr1.practiced', S.practiced);
+        // leaving the practice board for another game does not count as having played it
+        if (sm.outcome !== 'abandoned') {
+          S.practiced[sp.game] = true;
+          if (S.kind === 'free') store.set('pr1.practiced', S.practiced);
+        }
       } else if (S.kind === 'free') {
         if (!sm.success && sm.outcome !== 'abandoned') {
           const settled = store.get('pr1.settled', {});
@@ -4715,6 +5515,7 @@ PuzzleEnginesFactory(window);
           store.set('pr1.streak', won ? store.get('pr1.streak', 0) + 1 : 0);
         }
         if (change) { const lv = store.get('pr1.levels', {}); lv[sp.game] = change.to; store.set('pr1.levels', lv); }
+        if (sm.outcome !== 'abandoned') Stats.record(this, S.puzzles[S.puzzles.length - 1]);
         this.hudBump = sm.stars > 0;
       }
       this.renderHud();
@@ -4816,7 +5617,7 @@ PuzzleEnginesFactory(window);
           M.append(h('button', { class: 'only-chip', type: 'button', 'aria-label': 'Only ' + LABEL[only] + '. Back to all games', onclick: () => this.startFree(false, 'mixed') },
             icon(GAME_ICON[only]), h('span', { text: LABEL[only] + ' only' }), h('span', { class: 'chip-x' }, icon('x'))));
         } else {
-          M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
+          M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
         }
         if (!S || S.kind === 'free') {
           const stars = h('span', { class: 'pill', 'aria-label': store.get('pr1.stars', 0) + ' stars' }, icon('star', 'star'), String(store.get('pr1.stars', 0)));
@@ -4887,6 +5688,57 @@ PuzzleEnginesFactory(window);
       this.show(practiceSpec(game, S.options.clue), null, true);
     },
 
+    // ---------- profile
+    openProfile() {
+      if (this.card && this.card.abort) this.card.abort('menu opened');
+      const { all } = Stats.load(this);
+      const levels = store.get('pr1.levels', {}), glbest = store.get('pr1.glbest', {});
+      const wrap = h('div', { class: 'pf-areas' });
+      const detail = h('div', { class: 'pf-detail', hidden: true });
+      let open = null;
+      const show = (g, tile, area) => {
+        wrap.querySelectorAll('.pf-tile').forEach((x) => { x.classList.remove('on'); x.setAttribute('aria-expanded', 'false'); });
+        detail.textContent = '';
+        if (open === g) { open = null; detail.hidden = true; return; }
+        open = g;
+        tile.classList.add('on');
+        tile.setAttribute('aria-expanded', 'true');
+        area.after(detail);
+        detail.hidden = false;
+        const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 2));
+        const num = (ico, v, l) => h('div', { class: 'pf-num' }, icon(ico), h('b', { text: String(v) }), h('span', { text: l }));
+        if (played) {
+          const min = Math.round(t.ms / 60000), top = Math.max(t.top, lv);
+          let fig = null;
+          if ((g === 'outbound' || g === 'conduit') && t.solved) fig = num('bolt', t.perfect + '/' + t.solved, 'fewest ' + (g === 'conduit' ? 'turns' : 'moves'));
+          if (g === 'tumbler' && t.solved) fig = num('key', Math.round((t.tries / t.solved) * 10) / 10, 'tries a code');
+          if (g === 'stacks' && t.planN) fig = num('hint', (Math.round(t.plan / t.planN / 100) / 10) + ' s', 'to plan');
+          if (g === 'glimpse' && glbest[lv] != null) fig = num('eye', Math.round(glbest[lv]) + ' ms', 'best flash');
+          detail.append(h('div', { class: 'pf-level' }, h('b', { text: LABEL[g] + ' · ' + LEVEL_NAMES[lv - 1] }), top > lv ? h('span', { text: 'best ' + LEVEL_NAMES[top - 1] }) : null),
+            h('div', { class: 'pf-nums' }, num('tapped', t.cards, g === 'glimpse' ? 'rounds' : 'cards'), num('check', t.solved, g === 'glimpse' ? 'finished' : 'solved'), num('clock', min < 1 ? '<1' : min, 'min'), fig));
+        } else {
+          detail.append(h('div', { class: 'pf-level' }, h('b', { text: LABEL[g] }), h('span', { text: 'not played yet' })));
+        }
+        detail.append(h('p', { class: 'pf-ev' }, h('b', { text: EVIDENCE[g][0] }), EVIDENCE[g][1]));
+      };
+      for (const A of AREAS) {
+        const n = Math.max(1, A.games.length);
+        const grid = h('div', { class: 'pf-grid', style: 'grid-template-columns:repeat(' + n + ',minmax(0,1fr))' });
+        const area = h('section', { class: 'pf-area', style: 'grid-column:span ' + n }, h('h3', { text: A.name }), grid);
+        if (!A.games.length) grid.append(h('div', { class: 'pf-tile ghost', role: 'img', 'aria-label': 'No game yet' }, icon('lock')));
+        for (const g of A.games) {
+          const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 2));
+          const tile = h('button', { class: 'pf-tile' + (played ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-expanded': 'false', 'aria-label': LABEL[g] + (played ? ', level ' + lv + ', ' + t.stars + ' stars' : ', not played yet') },
+            miniWorld(g),
+            h('span', { class: 'pf-tile-foot' }, h('b', { text: LABEL[g] }), played ? pips(lv) : null, played ? h('span', { class: 'pf-stars' }, icon('star'), String(t.stars)) : null));
+          tile.addEventListener('click', () => show(g, tile, area));
+          grid.append(tile);
+        }
+        wrap.append(area);
+      }
+      openSheet('Profile', [wrap]).classList.add('profile');
+    },
+
     // ---------- menu
     openMenu() {
       if (this.card && this.card.abort) this.card.abort('menu opened');
@@ -4904,6 +5756,7 @@ PuzzleEnginesFactory(window);
         }, h('span', { class: 'gp-ico' }, icon(GAME_ICON[g])), h('span', { text: g === 'mixed' ? 'All' : LABEL[g] }))));
       openSheet('Puzzle Reel', [picker, h('div', { class: 'menu' },
         soundRow,
+        item('person', 'Profile', 'Your games by skill area', () => { closeSheet(); this.openProfile(); }),
         item('help', 'How to play', 'Replay the practice board', () => { closeSheet(); this.replayPractice(); }),
         item('flask', 'Research session', 'Participant, seed, plan and options', () => { closeSheet(); this.openSetup(); }),
         item('chart', 'Data', 'Save logs as CSV or JSON', () => { closeSheet(); this.openData(); }))]);
@@ -4990,7 +5843,7 @@ PuzzleEnginesFactory(window);
             h('div', { class: 'inline' }, seed, h('button', { class: 'btn', type: 'button', onclick: () => { seed.value = String(randomSeed()); } }, 'New seed')),
             h('span', { class: 'help', text: 'Same seed and plan, same puzzles for everyone.' })),
           h('div', { class: 'field' }, h('span', { class: 'lbl', text: 'Plan' }), plan, sumLine,
-            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler and Glimpse. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks (6 in fixed blocks); its display time adapts on every look and its level never goes down.' }))),
+            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler, Glimpse and Stacks. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks (6 in fixed blocks); its display time adapts on every look and its level never goes down. Fixed blocks show Glimpse and Stacks in one setting.' }))),
         h('fieldset', null, h('legend', { text: 'What participants see' }),
           h('div', { class: 'checks' },
             opt('practice', 'o-practice', 'Practice board before each new game'),
