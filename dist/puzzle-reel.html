@@ -588,6 +588,8 @@ button { cursor: pointer; }
 .sb-btn.cue::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 3px solid #FFFFFF; opacity: 0; animation: lookpulse 1.7s ease-out infinite; pointer-events: none; }
 .sb-btn:focus { outline: none; }
 .sb-btn:focus-visible { box-shadow: 0 0 0 4px #FFFFFF, 0 0 0 7px #3A1F14; }
+.sb-anchor { position: absolute; left: 0; top: 0; width: 2px; height: 2px; margin: -1px 0 0 -1px; pointer-events: none; }
+.res-stats .res-item { width: 22px; height: 22px; }
 .hand.drag svg { animation: dragx 1.3s ease-in-out infinite; transform-origin: 36% 8%; }
 .hand.drag .ripple { display: none; }
 @media (max-height: 640px) {
@@ -624,6 +626,7 @@ button { cursor: pointer; }
 .res-icon { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: #E8F8EF; color: var(--good); animation: starin 0.45s cubic-bezier(.3,1.8,.5,1); }
 .res-icon.miss { background: #FDECEB; color: var(--bad); }
 .res-icon.skip { background: #F1EEE6; color: var(--paper-soft); }
+.res-icon.again { background: #FFF3DC; color: #C77C12; }
 .res-icon svg { width: 32px; height: 32px; }
 .res-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: 0.005em; }
 .res-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; color: var(--paper-soft); font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -2454,27 +2457,32 @@ function PuzzleEnginesFactory(root) {
   // =====================================================================
   // SWITCHBACK: the dual-task format of the Focus core (adaptive
   // multitasking training, Anguera et al. 2013). Steer a car along a winding
-  // road and tap only when one road sign shows; let every other sign pass.
-  // Both tasks adapt as you play: how long a sign stays up changes after
-  // every target and every tap on another sign (weighted up/down, about 80%
-  // of targets caught), and the speed changes every 1.5 s of driving (up
-  // while the car stays on the road, down when it leaves). The generator
-  // fixes the road and the signs; sign times and speed depend on play.
+  // road and tap only when one road sign shows (tap the sign itself, or the
+  // button that shows it); let every other sign pass. Both tasks adapt as you
+  // play: how long a sign stays up changes after every target and every tap
+  // on another sign (weighted up/down, about 80% of targets caught), and the
+  // speed changes every 1.5 s of driving (up while the car stays on the road,
+  // down when it leaves). Each level has two places, picked by the seed, and
+  // each place has its own animal: it is on the target sign, and now and then
+  // it steps onto the road, where a tap sends it off (or the car brakes).
+  // Things to collect lie along the road. The generator fixes the place, the
+  // road, the signs, when the animals step out and where the things lie; sign
+  // times and speed depend on play.
   // =====================================================================
   const SB_SEG = 0.4;      // road segment length; the camera rides 1 unit above the road
   const SB_KMH = 0.12;     // world units per second for each km/h shown
-  const SB_TARGETS = ['rabbit', 'fox', 'cat'];
-  // signs that are not the target, from nothing in common (L1) to a look-alike animal (L5)
+  const SB_SLOT = 3.0;     // s from an animal stepping out to the next sign
+  // each place's animal: on its target sign and on its road
+  const SB_ANIMALS = { farm: 'cow', savanna: 'elephant', fields: 'rabbit', desert: 'camel', forest: 'deer', jungle: 'monkey', coast: 'crab', outback: 'kangaroo', village: 'duck', north: 'moose' };
+  // signs that are not the target, from nothing in common (L1) to look-alike animals (L5)
   const SB_FOILS = {
     shape: [['round_blue', 'arrow'], ['square_blue', 'P'], ['round_blue', 'turn']],
     color: [['round_red', '50'], ['round_red', 'car'], ['square_blue', 'P']],
     symbol: [['tri', 'bang'], ['tri', 'curve'], ['tri', 'bumps']],
     animal: [['tri', 'bird'], ['tri', 'snail'], ['tri', 'turtle']],
+    village: [['tri', 'goose'], ['tri', 'swan'], ['tri', 'hen']],
+    north: [['tri', 'reindeer'], ['tri', 'deer'], ['tri', 'bear']],
   };
-  function sbFoils(kind, target) {
-    if (kind !== 'similar') return SB_FOILS[kind];
-    return SB_TARGETS.filter((a) => a !== target).concat(['hedgehog']).map((a) => ['tri', a]);
-  }
   // curvature per segment: a straight start, then bends with eased entry and exit;
   // an S joins two opposite bends
   function sbRoad(R, rng, n) {
@@ -2501,6 +2509,18 @@ function PuzzleEnginesFactory(root) {
     }
     return out.slice(0, n).map((x) => Math.round(x * 1000) / 1000);
   }
+  // things to collect, in rows of 3 to 5 along the road, straight or slanting across;
+  // w is the distance along the road, x across it (0 is the middle)
+  function sbItems(rng, half, w0, w1, every) {
+    const out = [], lim = half - 0.13;
+    let w = w0;
+    while (w < w1) {
+      const n = 3 + rng.int(3), xa = (rng() * 2 - 1) * lim, xb = rng() < 0.5 ? xa : (xa > 0 ? -1 : 1) * rng() * lim;
+      for (let k = 0; k < n; k++) out.push({ w: round(w + k * 1.5, 2), x: round(xa + ((xb - xa) * k) / (n - 1), 3) });
+      w += (n - 1) * 1.5 + every * (0.8 + rng() * 0.4);
+    }
+    return out;
+  }
 
   const Switchback = {
     id: 'switchback',
@@ -2510,6 +2530,7 @@ function PuzzleEnginesFactory(root) {
     levelDown: false,       // both tasks already adapt as you drive; levels only add load
     seg: SB_SEG,
     kmhToUnits: SB_KMH,
+    animals: SB_ANIMALS,
     startMs: 1500,          // a fresh sign staircase starts here
     minMs: 450, maxMs: 2200,
     step: 0.9,              // one step is x0.9 of the time a sign stays up
@@ -2519,31 +2540,35 @@ function PuzzleEnginesFactory(root) {
     speedEvery: 1.5,        // seconds of driving between speed changes
     speedUp: 3, speedDown: 6, speedRange: [-10, 40],
     warm: 2,                // seconds of driving before the road and speed count (the car gets going)
-    targets: SB_TARGETS,
+    // places: the seed picks one; beasts: times the place's animal steps onto the road;
     // half: road half-width; s: share of bends that run into an S
     levels: {
-      1: { targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
-      2: { targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
-      3: { targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
-      4: { targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
-      5: { targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
+      1: { places: ['farm', 'savanna'], beasts: 1, targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
+      2: { places: ['fields', 'desert'], beasts: 1, targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
+      3: { places: ['forest', 'jungle'], beasts: 2, targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
+      4: { places: ['coast', 'outback'], beasts: 2, targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
+      5: { places: ['village', 'north'], beasts: 2, targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
     },
     // p is a puzzle or a level entry
     describe(p) {
       const n = p.signs ? p.signs.filter((x) => x.go).length : p.targets;
       const f = p.signs ? p.signs.length - n : p.foils;
-      return (p.target ? p.target + ' sign, ' : '') + n + ' targets and ' + f + ' other signs (' + p.foil + '), from ' + p.kmh + ' km/h';
+      const nb = Array.isArray(p.beasts) ? p.beasts.length : p.beasts || 0;
+      const where = p.place ? p.place + ', ' + p.target + ' sign, ' : p.places.map((q) => q + ' (' + SB_ANIMALS[q] + ')').join(' or ') + ', ';
+      return where + n + ' targets and ' + f + ' other sign' + (f === 1 ? '' : 's') + ' (' + p.foil + '), the animal on the road ' + nb + ' time' + (nb === 1 ? '' : 's') + ', from ' + p.kmh + ' km/h';
     },
-    build(level, seed, L, target, signs, road, duration, fixed) {
+    build(level, seed, L, place, signs, beasts, items, road, duration, fixed) {
+      const target = SB_ANIMALS[place];
       return {
-        game: 'switchback', level, seed, target, foil: L.foil,
-        signs, road, half: L.road.half, duration,
+        game: 'switchback', level, seed, place, target, foil: L.foil,
+        signs, beasts, items, road, half: L.road.half, duration,
         kmh: L.kmh, minKmh: L.kmh + this.speedRange[0], maxKmh: L.kmh + this.speedRange[1],
         advanceKmh: L.advanceKmh || null, advanceMs: L.advanceMs || null,
         fixedMs: fixed ? fixed.ms : null, fixedKmh: fixed ? fixed.kmh : null,
         reference: null,
         features: {
-          target, targets: signs.filter((x) => x.go).length, foils: signs.filter((x) => !x.go).length, foil: L.foil,
+          place, target, targets: signs.filter((x) => x.go).length, foils: signs.filter((x) => !x.go).length, foil: L.foil,
+          animals: beasts.length, items: items.length,
           gap_s: L.gap, road_half: L.road.half, bends: L.road.curve ? L.road.curve.join('-') : 'practice', s_bends: L.road.s || 0,
           kmh: L.kmh, advance_kmh: L.advanceKmh || null, advance_ms: L.advanceMs || null,
           target_hits: this.up / (this.up + this.down),
@@ -2553,8 +2578,8 @@ function PuzzleEnginesFactory(root) {
     generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const target = SB_TARGETS[rng.int(SB_TARGETS.length)];
-      const foils = sbFoils(L.foil, target);
+      const place = L.places[rng.int(L.places.length)], target = SB_ANIMALS[place];
+      const foils = SB_FOILS[L.foil === 'similar' ? place : L.foil];
       // the first sign is a target; after it, never more than three of a kind in a row
       let order;
       for (let tries = 0; tries < 200; tries++) {
@@ -2564,29 +2589,43 @@ function PuzzleEnginesFactory(root) {
         if (ok) break;
       }
       const fseq = rng.shuffle(Array.from({ length: L.foils }, (_, i) => foils[i % foils.length]));
+      // the animal steps out between two signs, once in each part of the drive,
+      // never before the third sign or after the last but one
+      const after = new Set(), gaps = order.length - 4;
+      for (let b = 0; b < L.beasts; b++) {
+        const a = Math.floor((b * gaps) / L.beasts), z = Math.floor(((b + 1) * gaps) / L.beasts);
+        after.add(2 + a + rng.int(Math.max(1, z - a)));
+      }
       let t = 2.6, fi = 0;
-      const signs = order.map((go) => {
+      const signs = [], beasts = [];
+      order.forEach((go, k) => {
         const f = go ? ['tri', target] : fseq[fi++];
-        const sg = { t: round(t, 2), go, shape: f[0], glyph: f[1] };
+        signs.push({ t: round(t, 2), go, shape: f[0], glyph: f[1] });
         t += L.gap + (rng() - 0.5) * 0.7;
-        return sg;
+        if (after.has(k)) { beasts.push({ t: round(t, 2), side: rng() < 0.5 ? -1 : 1 }); t += SB_SLOT; }
       });
       const duration = round(signs[signs.length - 1].t + L.gap + 1.5, 2);
-      const vmax = (L.kmh + this.speedRange[1]) * SB_KMH;
+      const vmax = (L.kmh + this.speedRange[1]) * SB_KMH, v = L.kmh * SB_KMH;
       const road = sbRoad(L.road, rng, Math.ceil((duration * vmax) / SB_SEG) + 260);
-      return this.build(level, seed, L, target, signs, road, duration, null);
+      const items = sbItems(rng, L.road.half, 3 * v + 4, road.length * SB_SEG - 40, 7 * v);
+      return this.build(level, seed, L, place, signs, beasts, items, road, duration, null);
     },
-    // three signs at a slow, fixed pace: the target, another sign, the target again
+    // a slow drive on the farm at a fixed pace: the cow sign, another sign, a cow on
+    // the road, the cow sign again; a few apples on the way
     practice() {
-      const L = { targets: 2, foils: 1, foil: 'shape', gap: 3.6, kmh: 36, advanceKmh: null, advanceMs: null, road: { half: 0.44 } };
+      const L = { beasts: 1, targets: 2, foils: 1, foil: 'shape', gap: 3.6, kmh: 36, advanceKmh: null, advanceMs: null, road: { half: 0.44 } };
       const road = [];
       for (let i = 0; i < 80; i++) road.push(0);
       for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * t * t * (3 - 2 * t)); }
       for (let i = 0; i < 40; i++) road.push(-0.55);
       for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * (1 - t * t * (3 - 2 * t))); }
-      while (road.length < 700) road.push(0);
-      const signs = [{ t: 3.4, go: 1, shape: 'tri', glyph: 'rabbit' }, { t: 7.6, go: 0, shape: 'round_blue', glyph: 'arrow' }, { t: 11.6, go: 1, shape: 'tri', glyph: 'rabbit' }];
-      return this.build(0, 0, L, 'rabbit', signs, road.map((x) => Math.round(x * 1000) / 1000), 15.2, { ms: [2600, 2200, 2000], kmh: 36 });
+      while (road.length < 720) road.push(0);
+      const signs = [{ t: 3.4, go: 1, shape: 'tri', glyph: 'cow' }, { t: 7.6, go: 0, shape: 'round_blue', glyph: 'arrow' }, { t: 14.6, go: 1, shape: 'tri', glyph: 'cow' }];
+      const beasts = [{ t: 10.6, side: 1 }];
+      const items = [];
+      for (let k = 0; k < 4; k++) items.push({ w: 24 + k * 1.5, x: 0 });
+      for (let k = 0; k < 4; k++) items.push({ w: 64 + k * 1.5, x: round(-0.24 * (k / 3), 3) });
+      return this.build(0, 0, L, 'farm', signs, beasts, items, road.map((x) => Math.round(x * 1000) / 1000), 18.4, { ms: [2600, 2200, 2400], kmh: 36 });
     },
     // start: { ms, kmh } carries both staircases on from an earlier round
     newRun(p, start) {
@@ -2597,14 +2636,17 @@ function PuzzleEnginesFactory(root) {
       if (!fixed) kmh = Math.max(p.minKmh, Math.min(p.maxKmh, kmh));
       return {
         i: 0, ms, kmh, start: { ms, kmh }, fresh: !fixed && !carried, last: 0, rev: [], res: [], speed: [], stray: 0,
-        drive: { t: 0, on: 0, vt: 0, off: 0 },
+        bi: 0, ba: [], items: [],
+        drive: { t: 0, on: 0, vt: 0, vs: 0, off: 0, brake: 0 },
       };
     },
-    // how long sign k stays up: the staircase, but always clear of the next sign
+    // how long sign k stays up: the staircase, but always clear of the next sign or animal
     windowMs(p, run, k) {
       if (p.fixedMs) return p.fixedMs[Math.min(k, p.fixedMs.length - 1)];
-      const next = p.signs[k + 1] ? p.signs[k + 1].t : p.duration;
-      return Math.round(Math.min(run.ms, (next - p.signs[k].t - 0.45) * 1000));
+      const t = p.signs[k].t;
+      let next = p.signs[k + 1] ? p.signs[k + 1].t : p.duration;
+      for (const b of p.beasts) if (b.t > t && b.t < next) next = b.t;
+      return Math.round(Math.min(run.ms, (next - t - 0.45) * 1000));
     },
     // r: { responded, rt, planned }; one record per sign, in order
     record(p, run, r) {
@@ -2622,6 +2664,19 @@ function PuzzleEnginesFactory(root) {
       run.res.push(out);
       run.i++;
       return out;
+    },
+    // the animal on the road: shooed (tapped away; rt from when it stepped out) or braked for
+    beast(p, run, r) {
+      const out = { i: run.bi + 1, cls: r.shooed ? 'shooed' : 'braked', rt: r.shooed ? Math.round(r.rt) : null };
+      run.ba.push(out);
+      run.bi++;
+      return out;
+    },
+    // the car went past thing k (in order along the road), with it or without it
+    item(p, run, k, got) {
+      if (k !== run.items.length) return false;
+      run.items.push(got ? 1 : 0);
+      return true;
     },
     // f: share of the last speedEvery seconds with the car on the road
     speedStep(p, run, f) {
@@ -2644,6 +2699,7 @@ function PuzzleEnginesFactory(root) {
       const tail = go.slice(from);
       const gm = tail.length ? Math.exp(tail.reduce((a, x) => a + Math.log(x.ms), 0) / tail.length) : null;
       const rts = res.filter((x) => x.cls === 'hit').map((x) => x.rt);
+      const shoo = run.ba.filter((b) => b.cls === 'shooed').map((b) => b.rt);
       const D = run.drive;
       return {
         n, hits, misses, false_alarms: fas, correct_rejections: crs, stray: run.stray,
@@ -2652,8 +2708,10 @@ function PuzzleEnginesFactory(root) {
         rt_mean_ms: rts.length ? Math.round(rts.reduce((a, x) => a + x, 0) / rts.length) : null,
         start_ms: run.start.ms == null ? null : Math.round(run.start.ms), end_ms: p.fixedMs ? null : Math.round(run.ms),
         reversals: run.rev.length,
-        on_road: D.t > 0 ? round(D.on / D.t, 4) : null, off_road_episodes: D.off,
-        speed_mean_kmh: D.t > 0 ? round(D.vt / D.t, 1) : null, speed_start_kmh: run.start.kmh, speed_end_kmh: run.kmh,
+        animals: run.ba.length, shooed: shoo.length, animal_rt_mean_ms: shoo.length ? Math.round(shoo.reduce((a, x) => a + x, 0) / shoo.length) : null,
+        items: run.items.length, collected: run.items.filter((x) => x).length,
+        on_road: D.t > 0 ? round(D.on / D.t, 4) : null, off_road_episodes: D.off, brake_s: round(D.brake, 2),
+        speed_mean_kmh: D.vs > 0 ? round(D.vt / D.vs, 1) : null, speed_start_kmh: run.start.kmh, speed_end_kmh: run.kmh,
       };
     },
     success(p, s) {
@@ -2761,12 +2819,12 @@ function PuzzleEnginesFactory(root) {
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.11.0',
+    version: '1.12.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
     EXIT,
-    internals: { ksDist, sbRoad, sbFoils, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
+    internals: { ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;
@@ -2776,7 +2834,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.9.0';
+  const APP_VERSION = '2.10.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -3041,6 +3099,9 @@ PuzzleEnginesFactory(window);
     go: (S) => { S.noise(0.5, 220, 900, 1.3, 0.16); S.tone(110, 240, 0.45, 'sawtooth', 0.035); },
     rumble: (S) => S.noise(0.11, 160, 120, 1.6, 0.18),
     hop: (S) => [0.2, 0.53, 0.86].forEach((d, i) => S.tone(430 + i * 40, 760 + i * 50, 0.09, 'sine', 0.07, d)),
+    toot: (S) => [0, 0.16].forEach((d) => { S.tone(466, 466, 0.11, 'triangle', 0.17, d); S.tone(587, 587, 0.11, 'triangle', 0.12, d); }),
+    screech: (S) => { S.noise(0.5, 2800, 1900, 7, 0.08); S.tone(1350, 1050, 0.45, 'sine', 0.025); },
+    ping: (S, k) => { const f = 1175 * Math.pow(1.122, k || 0); S.tone(f, f, 0.07, 'sine', 0.11); S.tone(f * 1.5, f * 1.5, 0.12, 'sine', 0.07, 0.05); },
     skip: (S) => { S.noise(0.26, 500, 2600, 1.1, 0.13); S.tone(520, 780, 0.07, 'triangle', 0.1); S.tone(700, 1040, 0.08, 'triangle', 0.09, 0.08); },
   };
   function buzz(pattern) {
@@ -3594,6 +3655,8 @@ PuzzleEnginesFactory(window);
       const dur = Math.round(this.elapsed());
       this.frozen = dur;
       const sm = this.makeSummary(outcome, dur);
+      // a practice round is passed only when it was played right; otherwise it comes round again
+      if (this.practice && outcome !== 'abandoned' && outcome !== 'skipped') { sm.passed = !!this.practicePassed(sm); sm.success = sm.passed; }
       this.summary = sm;
       this.hideHand();
       this.call(this.undoBtn, false);
@@ -3622,6 +3685,20 @@ PuzzleEnginesFactory(window);
       sm.stars = starsFor(sm);
       return sm;
     }
+    practicePassed(sm) { return sm.outcome === 'solved'; }
+    // the trial games end with a fanfare for a round played well, confetti for a
+    // great one or a passed practice, and only a soft note otherwise
+    trialCelebrate(sm, colors) {
+      if (sm.outcome !== 'complete') return 300;
+      const good = this.practice ? sm.passed : sm.stars >= 2, great = this.practice ? sm.passed : sm.stars >= 3;
+      Sound.play(good ? 'win' : 'lose');
+      if (great) {
+        buzz([18, 50, 18]);
+        this.later(() => confetti(this, colors), 120);
+        return 650;
+      }
+      return 480;
+    }
     // sound and confetti at the end; returns the delay before the result card
     celebrate(sm) {
       if (sm.outcome === 'solved') {
@@ -3644,6 +3721,7 @@ PuzzleEnginesFactory(window);
         h('span', null, icon('clock'), h('b', { text: clock(sm.duration_ms) })));
     }
     resultTitle(sm) {
+      if (this.practice && sm.passed === false) return 'Once more';
       if (sm.outcome === 'solved') {
         if (this.practice) return 'Got it!';
         if (!this.o.counter) return 'Solved!';
@@ -3668,6 +3746,8 @@ PuzzleEnginesFactory(window);
           const go = () => { x.classList.add('in'); if (i < sm.stars) { x.classList.add('gold'); if (!instant) Sound.play('star', i); } };
           if (instant) go(); else this.later(go, 220 + i * 260);
         });
+      } else if (this.practice && sm.passed === false) {
+        panel.append(h('div', { class: 'res-icon again' }, icon('restart')));
       } else {
         const kind = solved ? '' : sm.outcome === 'skipped' || sm.outcome === 'abandoned' ? ' skip' : ' miss';
         panel.append(h('div', { class: 'res-icon' + kind }, icon(solved ? 'check' : sm.outcome === 'skipped' || sm.outcome === 'abandoned' ? 'skip' : 'x')));
@@ -3687,7 +3767,8 @@ PuzzleEnginesFactory(window);
         if (up && !instant) this.later(() => Sound.play('level'), 900);
       }
       const last = this.app.isLast(this.spec);
-      const next = h('button', { class: 'next', type: 'button', onclick: () => this.app.next() }, last ? 'Finish' : 'Next', icon('next'));
+      const again = this.practice && sm.passed === false && !this.app.practiceDone(this.spec.game);
+      const next = h('button', { class: 'next', type: 'button', onclick: () => this.app.next() }, last ? 'Finish' : again ? 'Try again' : 'Next', icon(again ? 'restart' : 'next'));
       panel.append(next);
       if (!last) panel.append(h('div', { class: 'swipe', 'aria-hidden': 'true' }, icon('up')));
       this.el.append(panel);
@@ -5082,20 +5163,15 @@ PuzzleEnginesFactory(window);
         stars, gl: g,
       };
     }
+    // passed: at most one look wrong of the three
+    practicePassed(sm) { return sm.outcome === 'complete' && !!sm.gl && sm.gl.correct >= sm.gl.n - 1; }
     celebrate(sm) {
       this.renderDots();
-      if (sm.outcome !== 'complete') return 300;
-      Sound.play('win');
-      if (sm.stars >= 3 || this.practice) {
-        buzz([18, 50, 18]);
-        this.later(() => confetti(this, CONFETTI.glimpse), 120);
-        return 650;
-      }
-      return 480;
+      return this.trialCelebrate(sm, CONFETTI.glimpse);
     }
     resultTitle(sm) {
       if (sm.outcome !== 'complete') return super.resultTitle(sm);
-      if (this.practice) return 'Got it!';
+      if (this.practice) return sm.passed ? 'Got it!' : 'Once more';
       if (!this.o.counter) return 'Done!';
       if (sm.gl.correct === sm.gl.n) return 'Perfect!';
       return sm.stars === 3 ? 'Great!' : sm.stars === 2 ? 'Nice!' : 'Done!';
@@ -5635,6 +5711,10 @@ PuzzleEnginesFactory(window);
   const SB_CAR = 0.17;      // half the car's width (world units)
   const SB_SIGN_Z = 9;      // a sign stands this far ahead, just off the right edge
   const SB_GRACE = 150;     // ms after a sign goes in which a tap still counts for it
+  const SB_STOP = 4.2;      // the car brakes for an animal still on the road this far ahead
+  const SB_IN = 0.9;        // s an animal takes to walk out to the middle of the road
+  const SB_RUN = 1.7;       // how fast it runs off (world units a second)
+  const SB_EASE = 0.45;     // the car eases off to this share of its speed while an animal is on the road
   const SB_COL = {
     sky: ['#79B3F0', '#BCDDF7', '#FFE4C4'], far: '#A9BFDB', hill: ['#8CC57C', '#7BB86E'],
     grass: ['#95D17F', '#8AC774'], rumble: ['#E5564D', '#F8F3EA'], road: ['#737886', '#6E7381'], lane: '#F8F3E6',
@@ -5667,6 +5747,7 @@ PuzzleEnginesFactory(window);
     ctx.closePath();
   }
   function sbGlyph(ctx, glyph, x, y, size, color) {
+    if (SB_ANIM[glyph]) { sbAnimGlyph(ctx, glyph, x, y, size, color); return; }
     ctx.fillStyle = color;
     ctx.strokeStyle = color;
     if (GL_PATHS[glyph]) { glDraw(ctx, glyph, x, y, size); return; }
@@ -5814,35 +5895,62 @@ PuzzleEnginesFactory(window);
     sbRR(ctx, -48 * u, -18 * u, 96 * u, 6 * u, 3 * u); ctx.fill();
     ctx.restore();
   }
-  // ---- the five places
-  // One for each level: the day goes from morning to dusk, and every drive heads for
+  // ---- the places
+  // Two for each level: the day goes from morning to dusk, and every drive heads for
   // a landmark that stands on the horizon from the start and is where the car stops.
-  // The road, its lines and the signs look the same in every place.
-  const SB_PLACES = [null,
-    { // a farm in the morning: rolling pasture with hedgerows, sheep and cows, a red barn
+  // The road, its lines and the signs look the same in every place. item: the thing
+  // to collect along that road.
+  const SB_PLACES = {
+    farm: { // a farm in the morning: rolling pasture with hedgerows, sheep and cows, a red barn
       sky: ['#8CC3F0', '#D3E9F8', '#FFEBCB'], sun: [0.22, 0.26, 0.036, '#FFF6DE', '255, 236, 196'],
       far: 'rolling', land: 'pasture', hedge: '#4E9849',
       ground: '#8DC977', verge: '#C3DD96', road: '#777C88', haze: '240, 244, 236', clouds: 'puff', cloud: '#FFFFFF', birds: '#4A5868', dust: '190, 172, 128',
-      things: ['tree', 'sheep', 'flowers', 'cow', 'sheep', 'tree', 'flowers', 'bush', 'sheep', 'cow'], small: 'flowers', fence: 0.7, posts: 'white', dest: 'barn', flag: '#E5564D' },
-    { // fields at noon: wheat, lavender and green crops in rows, a flat horizon, a windmill
+      things: ['tree', 'sheep', 'flowers', 'cow', 'sheep', 'tree', 'flowers', 'bush', 'sheep', 'cow'], small: 'flowers', fence: 0.7, posts: 'white', dest: 'barn', flag: '#E5564D', item: 'apple' },
+    fields: { // fields at noon: wheat, lavender and green crops in rows, a flat horizon, a windmill
       sky: ['#3F95EA', '#9ACCF6', '#E9F5FB'], sun: [0.8, 0.08, 0.03, '#FFFFF4', '255, 255, 232'],
       far: 'flat', land: 'crops',
       crops: [['#E7C45E', 'rgba(150, 98, 20, 0.26)'], ['#E7C45E', 'rgba(150, 98, 20, 0.26)'], ['#EDD27A', 'rgba(150, 98, 20, 0.22)'], ['#B5CE62', 'rgba(70, 110, 30, 0.26)'], ['#AE97DA', 'rgba(80, 52, 130, 0.3)']],
       ground: '#E3C462', verge: '#A3C46B', road: '#777C88', haze: '236, 244, 250', clouds: 'cumulus', cloud: '#FFFFFF', birds: '#4A5868', dust: '206, 180, 112',
-      things: ['hay', 'sunflower', 'hay', 'tall', 'sunflower', 'hay', 'poppy'], small: 'poppy', fence: 0, posts: 'white', dest: 'windmill', flag: '#3D8BFD' },
-    { // a forest in the afternoon: snowy peaks, tall pines close on both sides, shafts of light, a cabin
+      things: ['hay', 'sunflower', 'hay', 'tall', 'sunflower', 'hay', 'poppy'], small: 'poppy', fence: 0, posts: 'white', dest: 'windmill', flag: '#3D8BFD', item: 'carrot' },
+    forest: { // a forest in the afternoon: snowy peaks, tall pines close on both sides, shafts of light, a cabin
       sky: ['#6DA6E2', '#BCD9F1', '#FCE0B0'], sun: [0.68, 0.2, 0.034, '#FFF2D2', '255, 222, 170'],
       far: 'peaks', land: 'forest', ground: '#4A874D', verge: '#87AA65', road: '#727784', haze: '246, 232, 206', clouds: 'puff', cloud: '#FFFFFF', birds: null, dust: '130, 110, 84',
-      things: ['fern', 'rock', 'mushroom', 'log', 'fern', 'mushroom'], small: 'fern', fence: 0, posts: 'wood', shafts: true, dest: 'cabin', destLat: 0, flag: '#2FB36E' },
-    { // the coast at sunset: the sea beside the road, a beach, dunes, a lighthouse on the headland
+      walls: ['wallpine', 'wallpine', 'wallpine', 'wallpine', 'wallpine', 'wallpine', 'birch'],
+      things: ['fern', 'rock', 'mushroom', 'log', 'fern', 'mushroom'], small: 'fern', fence: 0, posts: 'wood', shafts: true, dest: 'cabin', destLat: 0, flag: '#2FB36E', item: 'acorn' },
+    coast: { // the coast at sunset: the sea beside the road, a beach, dunes, a lighthouse on the headland
       sky: ['#535EAE', '#E08AA4', '#FFC184'], sun: [0.24, 0.338, 0.058, '#FFE4AA', '255, 184, 116'],
       far: 'sea', land: 'coast', sand: '#EFDBA6', water: '#7F86C8', ground: '#D6CB91', verge: '#EFDDAA', road: '#7A7C88', haze: '255, 210, 180', clouds: 'streak', cloud: '#FFD3C6', birds: '#FFFFFF', dust: '226, 206, 160',
-      things: ['grass', 'dune', 'grass', 'rock', 'dune', 'grass'], small: 'grass', fence: 0.4, wood: '#B89B74', posts: 'white', dest: 'lighthouse', flag: '#FF7A59' },
-    { // hills at dusk: a village street with houses, gardens, fences and lamps, under the moon
+      things: ['grass', 'dune', 'grass', 'rock', 'dune', 'grass'], small: 'grass', fence: 0.4, wood: '#B89B74', posts: 'white', dest: 'lighthouse', flag: '#FF7A59', item: 'starfish' },
+    village: { // hills at dusk: a village street with houses, gardens, fences and lamps, under the moon
       sky: ['#202C62', '#6E559A', '#EE9C78'], moon: [0.76, 0.12, 0.03],
       far: 'dusk', land: 'street', ground: '#4C7C50', verge: '#A49EB2', road: '#62677A', haze: '140, 112, 156', clouds: null, cloud: null, birds: null, stars: 40, dust: '140, 128, 116',
-      trees: ['#2C6446', '#367353', '#24573C'], things: ['bush', 'tree', 'bush'], small: 'tuft', fence: 0, posts: null, dest: 'village', flag: '#FFC83A' },
-  ];
+      trees: ['#2C6446', '#367353', '#24573C'], things: ['bush', 'tree', 'bush'], small: 'tuft', fence: 0, posts: null, dest: 'village', flag: '#FFC83A', item: 'cherry' },
+    savanna: { // the savanna in the morning: golden grass, acacias, a snowy mountain far off, a balloon, a baobab
+      sky: ['#78B2E6', '#CFE2EC', '#FFE0AE'], sun: [0.18, 0.28, 0.04, '#FFF2D0', '255, 210, 140'],
+      far: 'savanna', land: null, ground: '#D2B464', verge: '#E2C984', road: '#7A7D86', haze: '255, 232, 190', clouds: 'puff', cloud: '#FFF6E8', birds: '#5A4A3A', dust: '205, 160, 100',
+      trees: ['#7E9A4A', '#93AE58', '#6A8A3E'], things: ['acacia', 'gold', 'termite', 'bush', 'gold', 'acacia', 'gold'], small: 'gold', fence: 0, posts: null, balloon: true,
+      dest: 'baobab', flag: '#F28C28', item: 'melon' },
+    desert: { // the desert at noon: dunes with sharp crests, a caravan far off, palms, an oasis
+      sky: ['#3D8FE0', '#9CCBF0', '#F6E8CC'], sun: [0.74, 0.07, 0.03, '#FFFFF4', '255, 250, 225'],
+      far: 'dunes', land: 'sand', ground: '#E6BF78', verge: '#F0D397', road: '#7D7F88', haze: '252, 238, 210', clouds: null, cloud: null, birds: null, dust: '228, 196, 132',
+      trees: ['#8E9C5E', '#A0AE6A', '#7C8A50'], things: ['palm', 'dune', 'sandrock', 'bush', 'dune', 'palm', 'sandrock'], small: 'grass', fence: 0, posts: 'white', shimmer: true,
+      dest: 'oasis', flag: '#2FB3C8', item: 'drop' },
+    jungle: { // the jungle in the afternoon: walls of green, red earth, mist, parrots, a waterfall
+      sky: ['#5FA8BE', '#B6DCCF', '#F4E6B6'], sun: [0.62, 0.17, 0.034, '#FFF6DA', '255, 236, 190'],
+      far: 'canopy', land: null, ground: '#3B7F45', verge: '#B9754A', road: '#71757F', haze: '238, 246, 236', clouds: 'puff', cloud: '#FFFFFF', birds: null, dust: '150, 110, 80',
+      trees: ['#2E7A44', '#3F9452', '#246B3A'], walls: ['jtree', 'jtree', 'palm', 'jtree', 'banana'], things: ['heliconia', 'fern', 'banana', 'mossrock', 'heliconia', 'fern'], small: 'fern', fence: 0, posts: null, shafts: true, mist: true, parrots: true,
+      dest: 'waterfall', destLat: 0, flag: '#FF5D8F', item: 'banana' },
+    outback: { // the outback at sunset: red earth, spinifex, gum trees, the great red rock
+      sky: ['#3B3F7E', '#D9735E', '#FFBE78'], sun: [0.72, 0.335, 0.06, '#FFE3A6', '255, 168, 96'],
+      far: 'outback', land: null, ground: '#C0613B', verge: '#D88A56', road: '#6D6970', haze: '255, 186, 140', clouds: 'streak', cloud: '#FFC9A8', birds: '#5A3448', dust: '196, 100, 60',
+      things: ['spinifex', 'gum', 'spinifex', 'termite', 'redrock', 'spinifex', 'gum'], small: 'spinifex', fence: 0.3, wood: '#8A6A50', posts: 'white',
+      dest: 'monolith', flag: '#FFC83A', item: 'opal' },
+    north: { // the north at night: snow, spruces, the northern lights, snow poles, a red cottage
+      sky: ['#0A1736', '#103653', '#2C6C7A'], moon: [0.22, 0.12, 0.026],
+      far: 'north', land: 'snow', ground: '#D3E0EE', verge: '#EBF2F9', road: '#454B5B', haze: '110, 160, 190', clouds: null, cloud: null, birds: null, stars: 70, dust: '230, 238, 248',
+      things: ['spruce', 'spruce', 'snowrock', 'spruce', 'snowman', 'spruce', 'snowrock', 'spruce'], small: null, fence: 0, posts: 'snow', aurora: true, snow: true, lights: true,
+      dest: 'cottage', flag: '#7CE3B0', item: 'flake' },
+  };
   // a soft round glow, made once per colour and drawn scaled
   const SB_GLOWS = {};
   function sbGlow(rgb) {
@@ -5871,6 +5979,21 @@ PuzzleEnginesFactory(window);
       g.beginPath(); g.arc(44, 24, 25, 0, Math.PI * 2); g.fill();
     }
     return (SB_MOON = c);
+  }
+  // one stripe of the northern lights: green at the foot fading up through rose
+  let SB_AURORA = null;
+  function sbAurora() {
+    if (SB_AURORA) return SB_AURORA;
+    const c = document.createElement('canvas');
+    c.width = 4; c.height = 128;
+    const g = c.getContext('2d');
+    if (g) {
+      const gr = g.createLinearGradient(0, 0, 0, 128);
+      gr.addColorStop(0, 'rgba(255, 120, 210, 0)'); gr.addColorStop(0.3, 'rgba(200, 120, 255, 0.35)'); gr.addColorStop(0.7, 'rgba(70, 255, 170, 0.75)');
+      gr.addColorStop(0.93, 'rgba(170, 255, 210, 1)'); gr.addColorStop(1, 'rgba(120, 255, 190, 0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 4, 128);
+    }
+    return (SB_AURORA = c);
   }
   // a flat-bottomed cloud w pixels wide, its base on y
   function sbCloud(ctx, x, y, w, tall) {
@@ -5926,6 +6049,19 @@ PuzzleEnginesFactory(window);
       ctx.lineTo(x, base - hgt * 0.32); ctx.lineTo(x + step * 0.5, base - hgt); ctx.lineTo(x + step, base - hgt * 0.32);
     }
     ctx.lineTo(W + 10, base + 2); ctx.closePath(); ctx.fill();
+  }
+  // round crowns of jungle along the horizon, a tall tree above the rest now and then
+  function sbCanopy(ctx, W, base, amp, off, color) {
+    const step = Math.max(8, W * 0.036), k0 = Math.floor(off / step) - 1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    for (let k = k0; k < k0 + W / step + 3; k++) {
+      const q = sbHash(k * 173 + 3), x = k * step - off, r = step * (0.62 + (q % 100) / 170), y = base - amp * (0.45 + ((q >>> 8) % 100) / 180);
+      ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2);
+      if (q % 9 === 0) { ctx.moveTo(x + r * 0.9, y - amp * 0.85); ctx.arc(x, y - amp * 0.85, r * 0.9, 0, Math.PI * 2); }
+    }
+    ctx.rect(-10, base - amp * 0.45, W + 20, amp * 0.45 + 2);
+    ctx.fill();
   }
   // the sky's clouds for each place: small puffs, tall summer clouds, or streaks at sunset
   function sbClouds(ctx, PL, W, H, bgX, t) {
@@ -6026,6 +6162,102 @@ PuzzleEnginesFactory(window);
       ctx.beginPath(); ctx.moveTo(x0 + W * 0.3, hy - H * 0.04); ctx.lineTo(x0 + W * 0.42, hy - H * 0.05); ctx.lineTo(x0 + W * 0.36, hy + 1); ctx.lineTo(x0 + W * 0.27, hy + 1); ctx.closePath(); ctx.fill();
       return;
     }
+    if (PL.far === 'savanna') {
+      // the plain runs to a far mountain with snow on its flat top; flat-topped
+      // acacias and a few giraffes stand on the skyline
+      const span = W * 2.2, mx = ((W * 0.92 - bgX * 0.07) % span + span) % span - W * 0.5, mw = W * 0.62, mh = H * 0.085;
+      ctx.fillStyle = '#B7B0CC';
+      ctx.beginPath(); ctx.moveTo(mx - mw, hy + 1);
+      ctx.bezierCurveTo(mx - mw * 0.55, hy - mh * 0.2, mx - mw * 0.32, hy - mh * 0.9, mx - mw * 0.14, hy - mh);
+      ctx.lineTo(mx + mw * 0.12, hy - mh * 1.02);
+      ctx.bezierCurveTo(mx + mw * 0.3, hy - mh * 0.92, mx + mw * 0.55, hy - mh * 0.2, mx + mw, hy + 1);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#A59EBF';
+      ctx.beginPath(); ctx.moveTo(mx + mw * 0.12, hy - mh * 1.02); ctx.bezierCurveTo(mx + mw * 0.3, hy - mh * 0.92, mx + mw * 0.55, hy - mh * 0.2, mx + mw, hy + 1);
+      ctx.lineTo(mx + mw * 0.22, hy + 1); ctx.bezierCurveTo(mx + mw * 0.26, hy - mh * 0.45, mx + mw * 0.14, hy - mh * 0.8, mx + mw * 0.12, hy - mh * 1.02); ctx.fill();
+      ctx.fillStyle = '#F6F3FB';
+      ctx.beginPath(); ctx.moveTo(mx - mw * 0.21, hy - mh * 0.93); ctx.lineTo(mx - mw * 0.14, hy - mh); ctx.lineTo(mx + mw * 0.12, hy - mh * 1.02); ctx.lineTo(mx + mw * 0.2, hy - mh * 0.93);
+      ctx.lineTo(mx + mw * 0.14, hy - mh * 0.84); ctx.lineTo(mx + mw * 0.09, hy - mh * 0.9); ctx.lineTo(mx + mw * 0.03, hy - mh * 0.79); ctx.lineTo(mx - mw * 0.03, hy - mh * 0.88);
+      ctx.lineTo(mx - mw * 0.1, hy - mh * 0.81); ctx.lineTo(mx - mw * 0.15, hy - mh * 0.88); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255, 248, 236, 0.75)';
+      sbRR(ctx, mx - mw * 0.42, hy - mh * 0.56, mw * 0.52, H * 0.012, H * 0.006); ctx.fill();
+      sbRR(ctx, mx - mw * 0.08, hy - mh * 0.47, mw * 0.4, H * 0.009, H * 0.0045); ctx.fill();
+      const off = bgX * 0.4 + 70;
+      sbHills(ctx, W, hy, H * 0.012, off, 5, 13, 1.7, '#C9AA60');
+      const step = W * 0.1;
+      for (let k = Math.floor(off / step); k * step - off < W + step; k++) {
+        const q = sbHash(k * 89 + 5), x = k * step - off + ((q % 100) / 100) * step * 0.7;
+        const y = sbHillY(W, hy, H * 0.012, off, 5, 13, 1.7, x) + 1;
+        if (q % 7 === 0) {
+          // a giraffe, far away
+          ctx.fillStyle = '#8F7048';
+          ctx.beginPath(); ctx.ellipse(x, y - 6.2, 3.3, 1.7, -0.2, 0, Math.PI * 2); ctx.fill();
+          for (const lx of [-2.6, -1.6, 1.5, 2.5]) ctx.fillRect(x + lx - 0.35, y - 5.5, 0.7, 5.5);
+          ctx.strokeStyle = '#8F7048'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(x + 2.2, y - 7); ctx.lineTo(x + 4.2, y - 12.5); ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(x + 5, y - 12.8, 1.5, 0.75, 0.3, 0, Math.PI * 2); ctx.fill();
+        } else if (q % 3 === 0) {
+          // a flat-topped acacia
+          const tw = 6 + (q % 5);
+          ctx.fillStyle = '#7C7646';
+          ctx.fillRect(x - 0.6, y - 6, 1.2, 6);
+          ctx.beginPath(); ctx.ellipse(x, y - 7, tw, 1.9, 0, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      return;
+    }
+    if (PL.far === 'dunes') {
+      // soft dunes far off, then dunes with a sunlit slope and a sharp shaded face;
+      // a caravan walks along a far crest
+      const off0 = bgX * 0.16 + 20;
+      sbHills(ctx, W, hy, H * 0.05, off0, 1.3, 2.9, 1.2, '#EFCF96');
+      const span = W * 1.7, cxv = ((W * 0.15 - bgX * 0.16 + t * 5) % span + span) % span - W * 0.35;
+      for (let c = 0; c < 4; c++) {
+        const x = cxv - c * 16;
+        sbAnimal(ctx, 'camel', x, sbHillY(W, hy, H * 0.05, off0, 1.3, 2.9, 1.2, x) + 1.5, 14, 0, { mono: '#A9784A' });
+      }
+      const off = bgX * 0.42 + 160, step = W * 0.5;
+      for (let k = Math.floor(off / step) - 1; k * step - off < W + step; k++) {
+        const q = sbHash(k * 61 + 9), cx = k * step - off + ((q % 100) / 100) * step * 0.4;
+        const ch = H * (0.024 + (((q >>> 8) % 100) / 100) * 0.03), cw = step * (0.6 + ((q >>> 16) % 100) / 250);
+        ctx.fillStyle = '#F3D69E';
+        ctx.beginPath(); ctx.moveTo(cx - cw, hy + 1); ctx.quadraticCurveTo(cx - cw * 0.35, hy - ch * 0.95, cx, hy - ch); ctx.quadraticCurveTo(cx + cw * 0.3, hy - ch * 0.6, cx + cw * 0.75, hy + 1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#DFAF6A';
+        ctx.beginPath(); ctx.moveTo(cx, hy - ch); ctx.quadraticCurveTo(cx + cw * 0.3, hy - ch * 0.6, cx + cw * 0.75, hy + 1); ctx.lineTo(cx + cw * 0.14, hy + 1); ctx.quadraticCurveTo(cx + cw * 0.06, hy - ch * 0.5, cx, hy - ch); ctx.fill();
+      }
+      return;
+    }
+    if (PL.far === 'canopy') {
+      // ridges under jungle to the horizon, mist lying between them
+      sbHills(ctx, W, hy, H * 0.17, bgX * 0.1 + 80, 1.2, 2.6, 0.4, '#93BFAE');
+      ctx.fillStyle = 'rgba(244, 250, 244, 0.55)';
+      ctx.fillRect(0, hy - H * 0.07, W, H * 0.035);
+      sbHills(ctx, W, hy, H * 0.1, bgX * 0.22 + 10, 1.9, 4.1, 1.6, '#72A88E');
+      ctx.fillStyle = 'rgba(244, 250, 244, 0.4)';
+      ctx.fillRect(0, hy - H * 0.03, W, H * 0.02);
+      sbCanopy(ctx, W, hy, H * 0.04, bgX * 0.45, '#4F8E66');
+      return;
+    }
+    if (PL.far === 'outback') {
+      // the flat red plain runs out to low ranges with flat tops, purple in the evening
+      const off = bgX * 0.15 + 200, step = W * 0.7;
+      for (let k = Math.floor(off / step) - 1; k * step - off < W + step; k++) {
+        const q = sbHash(k * 37 + 11), x0 = k * step - off + ((q % 100) / 100) * step * 0.3;
+        const w = step * (0.45 + ((q >>> 8) % 100) / 300), h0 = H * (0.018 + ((q >>> 16) % 100) / 100 * 0.026);
+        ctx.fillStyle = '#8C5878';
+        ctx.beginPath(); ctx.moveTo(x0, hy + 1); ctx.lineTo(x0 + w * 0.09, hy - h0); ctx.lineTo(x0 + w * 0.55, hy - h0 * 1.06); ctx.lineTo(x0 + w * 0.88, hy - h0 * 0.9); ctx.lineTo(x0 + w, hy + 1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#7A4A6C';
+        ctx.beginPath(); ctx.moveTo(x0 + w * 0.88, hy - h0 * 0.9); ctx.lineTo(x0 + w, hy + 1); ctx.lineTo(x0 + w * 0.8, hy + 1); ctx.closePath(); ctx.fill();
+      }
+      sbHills(ctx, W, hy, H * 0.008, bgX * 0.4, 6, 15, 0.9, '#A8563E');
+      return;
+    }
+    if (PL.far === 'north') {
+      // dark mountains with snow under the night sky, and the spruce forest below them
+      sbPeaks(ctx, W, hy, H * 0.17, bgX * 0.16 + 300, '#3E5580', '#32466C', '#D8E4F2');
+      sbTreeline(ctx, W, hy, H * 0.06, bgX * 0.5, '#122637');
+      return;
+    }
     if (PL.far === 'dusk') {
       sbHills(ctx, W, hy, H * 0.09, bgX * 0.22 + 40, 1.4, 3, 0.7, '#3E4A78');
       const off = bgX * 0.45 + 200;
@@ -6089,6 +6321,29 @@ PuzzleEnginesFactory(window);
           ctx.fillStyle = 'rgba(255, 222, 176, ' + (0.6 * gl).toFixed(2) + ')';
           ctx.fillRect(xB - L * sB - 0.12 * sB, yB, 0.24 * sB, Math.max(1, 0.012 * sB));
         }
+      }
+      return;
+    }
+    if (PL.land === 'sand') {
+      // ripples in the sand on both sides
+      if (i % 3 !== 0 || zB > 24) return;
+      ctx.fillStyle = 'rgba(190, 140, 70, 0.2)';
+      for (const sd of [-1, 1]) {
+        const a = xB + sd * (e0 + 0.12 + (sbHash(i * 7 + (sd > 0 ? 1 : 0)) % 40) / 100) * sB, b = Math.max(-10, Math.min(W + 10, xB + sd * 7 * sB));
+        if ((sd < 0 && a < -10) || (sd > 0 && a > W + 10)) continue;
+        ctx.fillRect(Math.min(a, b), yB, Math.abs(b - a), Math.max(1, 0.01 * sB));
+      }
+      return;
+    }
+    if (PL.land === 'snow') {
+      // ploughed snow banked up along both edges: a shaded face toward the road, a white top
+      if (zB > 40) return;
+      for (const sd of [-1, 1]) {
+        const a = e0 + 0.03, a2 = e0 + 0.09, b = e0 + 0.36, hA = 0.06 * sA, hB = 0.06 * sB;
+        ctx.fillStyle = '#B9CADF';
+        ctx.beginPath(); quad(xA + sd * a * sA, yA, xB + sd * a * sB, yB, xB + sd * a2 * sB, yT - hB, xA + sd * a2 * sA, yA - hA); ctx.fill();
+        ctx.fillStyle = '#F2F7FC';
+        ctx.beginPath(); quad(xA + sd * a2 * sA, yA - hA, xB + sd * a2 * sB, yT - hB, xB + sd * b * sB, yT, xA + sd * b * sA, yA); ctx.fill();
       }
       return;
     }
@@ -6309,6 +6564,258 @@ PuzzleEnginesFactory(window);
         disc(gx, gy, 0.026 * s, '#FFE6A6');
         return;
       }
+      case 'acacia': {
+        // a flat-topped acacia: a forked trunk under a wide, flat crown
+        if (s < 4) return;
+        shadow(0.42);
+        const th = 0.6 * s, lw = Math.max(1, 0.034 * s);
+        ctx.strokeStyle = '#6B5038'; ctx.lineCap = 'round'; ctx.lineWidth = lw;
+        ctx.beginPath();
+        ctx.moveTo(x, y); ctx.lineTo(x - 0.02 * s, y - th * 0.5);
+        ctx.lineTo(x - 0.24 * s, y - th * 0.97); ctx.moveTo(x - 0.02 * s, y - th * 0.5); ctx.lineTo(x + 0.2 * s, y - th);
+        ctx.moveTo(x - 0.1 * s, y - th * 0.72); ctx.lineTo(x + 0.02 * s, y - th * 1.02);
+        ctx.stroke();
+        ctx.fillStyle = '#5E7A38';
+        ctx.beginPath(); ctx.ellipse(x - 0.02 * s, y - th, 0.5 * s, 0.075 * s, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#7E9A48';
+        ctx.beginPath();
+        for (let k = -2; k <= 2; k++) { const cx = x + k * 0.19 * s, cy = y - th - 0.045 * s - (2 - Math.abs(k)) * 0.012 * s; ctx.moveTo(cx + 0.17 * s, cy); ctx.ellipse(cx, cy, 0.17 * s, 0.062 * s, 0, 0, Math.PI * 2); }
+        ctx.fill();
+        if (s > 14) {
+          ctx.fillStyle = '#9BB658';
+          ctx.beginPath();
+          for (let k = -1; k <= 1; k++) { const cx = x + k * 0.21 * s - 0.03 * s, cy = y - th - 0.08 * s; ctx.moveTo(cx + 0.09 * s, cy); ctx.ellipse(cx, cy, 0.09 * s, 0.03 * s, 0, 0, Math.PI * 2); }
+          ctx.fill();
+        }
+        return;
+      }
+      case 'gold': {
+        // a clump of tall golden grass, stirring
+        if (s < 14) return;
+        const sw = Math.sin(t * 1.6 + x * 0.02) * 0.012 * s;
+        ctx.strokeStyle = '#D2AE52'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1, 0.009 * s);
+        ctx.beginPath();
+        for (let k = -3; k <= 3; k++) {
+          ctx.moveTo(x + k * 0.01 * s, y);
+          ctx.quadraticCurveTo(x + k * 0.03 * s, y - 0.1 * s, x + k * 0.05 * s + sw, y - (0.21 - Math.abs(k) * 0.022) * s);
+        }
+        ctx.stroke();
+        ctx.fillStyle = '#EED48A';
+        for (let k = -2; k <= 2; k += 2) { ctx.beginPath(); ctx.ellipse(x + k * 0.05 * s + sw, y - (0.22 - Math.abs(k) * 0.022) * s, 0.008 * s, 0.024 * s, k * 0.2, 0, Math.PI * 2); ctx.fill(); }
+        return;
+      }
+      case 'termite': {
+        // a termite mound: a tall chimney of red earth
+        if (s < 6) return;
+        shadow(0.13);
+        const c = PL.far === 'outback' ? ['#B6532E', '#9A4426', '#D06B40'] : ['#B5764A', '#99613C', '#CC8C5C'];
+        ctx.fillStyle = c[0];
+        ctx.beginPath(); ctx.moveTo(x - 0.15 * s, y);
+        ctx.quadraticCurveTo(x - 0.13 * s, y - 0.24 * s, x - 0.06 * s, y - 0.4 * s); ctx.quadraticCurveTo(x - 0.03 * s, y - 0.55 * s, x + 0.01 * s, y - 0.52 * s);
+        ctx.quadraticCurveTo(x + 0.04 * s, y - 0.4 * s, x + 0.08 * s, y - 0.33 * s); ctx.quadraticCurveTo(x + 0.11 * s, y - 0.36 * s, x + 0.12 * s, y - 0.28 * s);
+        ctx.quadraticCurveTo(x + 0.16 * s, y - 0.12 * s, x + 0.16 * s, y); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = c[1];
+        ctx.beginPath(); ctx.moveTo(x + 0.03 * s, y); ctx.quadraticCurveTo(x + 0.05 * s, y - 0.25 * s, x + 0.01 * s, y - 0.5 * s); ctx.quadraticCurveTo(x + 0.06 * s, y - 0.36 * s, x + 0.12 * s, y - 0.28 * s); ctx.quadraticCurveTo(x + 0.16 * s, y - 0.12 * s, x + 0.16 * s, y); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = c[2];
+        ctx.beginPath(); ctx.ellipse(x - 0.07 * s, y - 0.22 * s, 0.025 * s, 0.1 * s, 0.15, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      case 'palm': {
+        // a palm: a leaning, ringed trunk and a crown of arching fronds, with dates or coconuts
+        if (s < 5) return;
+        shadow(0.16);
+        const hgt = 1.05 * s, lean = (r & 1 ? 1 : -1) * (0.08 + ((r >>> 3) % 10) / 100) * s, jungle = PL.far === 'canopy';
+        const cx = x + lean, cy = y - hgt;
+        ctx.strokeStyle = jungle ? '#8E7A62' : '#A07E58'; ctx.lineCap = 'round'; ctx.lineWidth = Math.max(1.5, 0.05 * s);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + lean * 0.15, y - hgt * 0.6, cx, cy); ctx.stroke();
+        if (s > 20) {
+          ctx.strokeStyle = 'rgba(70, 50, 30, 0.35)'; ctx.lineWidth = Math.max(1, 0.008 * s);
+          ctx.beginPath();
+          for (let k = 1; k < 9; k++) { const f = k / 9, px = x + lean * (f * f), py = y - hgt * f; ctx.moveTo(px - 0.022 * s, py); ctx.lineTo(px + 0.022 * s, py - 0.006 * s); }
+          ctx.stroke();
+        }
+        // fronds in pairs of one green, the darkest drawn first
+        for (const [c, as] of [['#3E8E48', [-2.9, -0.25]], ['#4FA457', [-2.4, -0.75]], ['#5CB463', [-1.95, -1.2]], ['#6AC06E', [-1.58]]]) {
+          ctx.fillStyle = c;
+          ctx.beginPath();
+          for (const a of as) {
+            const L = 0.46 * s, tx = cx + Math.cos(a) * L, ty = cy + Math.sin(a) * L * 0.55 + 0.2 * s * Math.abs(Math.cos(a));
+            const mx = cx + Math.cos(a) * L * 0.55, my = cy + Math.sin(a) * L * 0.75 - 0.05 * s;
+            ctx.moveTo(cx, cy); ctx.quadraticCurveTo(mx, my - 0.05 * s, tx, ty); ctx.quadraticCurveTo(mx, my + 0.05 * s, cx, cy);
+          }
+          ctx.fill();
+        }
+        if (s > 10) {
+          const rr = (jungle ? 0.035 : 0.022) * s;
+          ctx.fillStyle = jungle ? '#7A5A3A' : '#C8792E';
+          ctx.beginPath();
+          for (const [dx, dy] of [[-0.04, 0.05], [0.03, 0.06], [0, 0.03]]) { ctx.moveTo(cx + dx * s + rr, cy + dy * s); ctx.arc(cx + dx * s, cy + dy * s, rr, 0, Math.PI * 2); }
+          ctx.fill();
+        }
+        return;
+      }
+      case 'sandrock': {
+        // a sandstone boulder in layers
+        if (s < 6) return;
+        shadow(0.18);
+        const w = 0.2 * s, hh = 0.17 * s;
+        ctx.fillStyle = '#D48E55';
+        ctx.beginPath(); ctx.moveTo(x - w, y); ctx.quadraticCurveTo(x - w * 1.05, y - hh * 0.9, x - w * 0.4, y - hh); ctx.quadraticCurveTo(x + w * 0.5, y - hh * 1.12, x + w, y - hh * 0.5); ctx.lineTo(x + w * 1.02, y); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#BF7845';
+        ctx.beginPath(); ctx.moveTo(x + w * 0.3, y); ctx.quadraticCurveTo(x + w * 0.5, y - hh * 0.8, x + w, y - hh * 0.5); ctx.lineTo(x + w * 1.02, y); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255, 230, 190, 0.45)';
+        ctx.beginPath(); ctx.ellipse(x - w * 0.25, y - hh * 0.92, w * 0.5, hh * 0.1, -0.05, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(150, 80, 40, 0.3)';
+        ctx.fillRect(x - w * 0.95, y - hh * 0.45, w * 1.9, Math.max(1, hh * 0.06)); ctx.fillRect(x - w * 0.98, y - hh * 0.22, w * 1.96, Math.max(1, hh * 0.05));
+        return;
+      }
+      case 'jtree': {
+        // a jungle tree: buttress roots, a dome of big leaves, hanging vines
+        const L = PL.trees;
+        if (s < 13) {
+          ctx.fillStyle = L[2];
+          ctx.beginPath(); ctx.arc(x, y - 0.75 * s, 0.38 * s, 0, Math.PI * 2); ctx.fill();
+          ctx.fillRect(x - 0.03 * s, y - 0.5 * s, 0.06 * s, 0.5 * s);
+          return;
+        }
+        const th = 0.52 * s;
+        ctx.fillStyle = '#6E6250';
+        ctx.beginPath(); ctx.moveTo(x - 0.16 * s, y); ctx.quadraticCurveTo(x - 0.05 * s, y - 0.06 * s, x - 0.045 * s, y - th);
+        ctx.lineTo(x + 0.045 * s, y - th); ctx.quadraticCurveTo(x + 0.05 * s, y - 0.06 * s, x + 0.16 * s, y); ctx.closePath(); ctx.fill();
+        // the crown: a dark mass, a lighter top, then leaves catching the light
+        const blob = (pts, c) => { ctx.fillStyle = c; ctx.beginPath(); for (const [dx, dy, rr] of pts) { ctx.moveTo(x + (dx + rr) * s, y - th + dy * s); ctx.arc(x + dx * s, y - th + dy * s, rr * s, 0, Math.PI * 2); } ctx.fill(); };
+        blob([[-0.24, -0.08, 0.25], [0.24, -0.06, 0.24]], L[2]);
+        blob([[-0.06, -0.3, 0.3], [0.14, -0.24, 0.2]], L[1]);
+        if (s < 24) return;
+        blob([[-0.16, -0.46, 0.09], [0.02, -0.52, 0.08], [-0.32, -0.22, 0.07], [0.22, -0.3, 0.08], [0.36, -0.12, 0.06]], 'rgba(190, 240, 150, 0.22)');
+        ctx.strokeStyle = '#2F6E3C'; ctx.lineWidth = Math.max(1, 0.012 * s); ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (const [dx, len] of [[-0.3, 0.3], [-0.12, 0.22], [0.2, 0.34], [0.34, 0.2]]) { ctx.moveTo(x + dx * s, y - th - 0.02 * s); ctx.quadraticCurveTo(x + (dx + 0.03) * s, y - th + len * 0.5 * s, x + dx * s, y - th + len * s); }
+        ctx.stroke();
+        return;
+      }
+      case 'banana': {
+        // a banana plant: big paddle leaves with a pale rib
+        if (s < 8) return;
+        const top = y - 0.38 * s;
+        ctx.fillStyle = '#6E9A4A'; ctx.fillRect(x - 0.022 * s, top, 0.044 * s, 0.38 * s);
+        for (const [c, as] of [['#4A9A3E', [-2.7, -0.45]], ['#5CB44C', [-2.2, -0.95]], ['#6CC25A', [-1.6]]]) {
+          ctx.fillStyle = c;
+          ctx.beginPath();
+          for (const a of as) { const cx = x + Math.cos(a) * 0.22 * s, cy = top + Math.sin(a) * 0.2 * s; ctx.moveTo(cx + Math.cos(a) * 0.25 * s, cy + Math.sin(a) * 0.25 * s); ctx.ellipse(cx, cy, 0.25 * s, 0.075 * s, a, 0, Math.PI * 2); }
+          ctx.fill();
+        }
+        if (s > 24) {
+          ctx.strokeStyle = 'rgba(220, 240, 180, 0.6)'; ctx.lineWidth = Math.max(1, 0.008 * s);
+          ctx.beginPath();
+          for (const a of [-2.7, -0.45, -2.2, -0.95, -1.6]) { ctx.moveTo(x, top); ctx.lineTo(x + Math.cos(a) * 0.46 * s, top + Math.sin(a) * 0.44 * s); }
+          ctx.stroke();
+        }
+        return;
+      }
+      case 'heliconia': {
+        // heliconias: upright leaves and a zigzag of red and gold bracts
+        if (s < 12) return;
+        ctx.fillStyle = '#3E9A4A';
+        for (const [dx, a] of [[-0.06, -0.25], [0.06, 0.2], [0, 0]]) { ctx.beginPath(); ctx.ellipse(x + dx * s, y - 0.17 * s, 0.035 * s, 0.17 * s, a, 0, Math.PI * 2); ctx.fill(); }
+        const bx = x + 0.03 * s;
+        ctx.fillStyle = '#4E7A30'; ctx.fillRect(bx - 0.005 * s, y - 0.34 * s, Math.max(1, 0.01 * s), 0.34 * s);
+        for (let k = 0; k < 5; k++) {
+          const yy = y - 0.32 * s + k * 0.055 * s, sd = k % 2 ? 1 : -1;
+          ctx.fillStyle = '#E8343A';
+          ctx.beginPath(); ctx.moveTo(bx, yy); ctx.lineTo(bx + sd * 0.07 * s, yy - 0.012 * s); ctx.lineTo(bx, yy + 0.035 * s); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#FFC93C';
+          ctx.beginPath(); ctx.arc(bx + sd * 0.065 * s, yy - 0.01 * s, Math.max(0.8, 0.008 * s), 0, Math.PI * 2); ctx.fill();
+        }
+        return;
+      }
+      case 'mossrock': {
+        if (s < 6) return;
+        sbThing(ctx, 'rock', x, y, s * 1.2, r, t, PL);
+        ctx.fillStyle = '#5FA352';
+        ctx.beginPath(); ctx.ellipse(x - 0.03 * s, y - 0.085 * s, 0.1 * s, 0.03 * s, -0.1, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      case 'gum': {
+        // a gum tree: a pale trunk that forks, sparse grey-green leaves
+        if (s < 5) return;
+        shadow(0.22);
+        const th = 0.55 * s, lw = Math.max(1, 0.04 * s);
+        ctx.strokeStyle = '#E8E1D4'; ctx.lineCap = 'round'; ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 0.02 * s, y - th * 0.5, x - 0.12 * s, y - th);
+        ctx.moveTo(x + 0.01 * s, y - th * 0.45); ctx.quadraticCurveTo(x + 0.1 * s, y - th * 0.7, x + 0.16 * s, y - th * 0.95); ctx.stroke();
+        if (s > 16) { ctx.strokeStyle = 'rgba(160, 130, 110, 0.5)'; ctx.lineWidth = Math.max(1, lw * 0.35); ctx.beginPath(); ctx.moveTo(x + lw * 0.2, y - th * 0.1); ctx.lineTo(x + lw * 0.3, y - th * 0.3); ctx.stroke(); }
+        for (const [dx, dy, rr, c] of [[-0.14, -1.05, 0.16, '#7E9078'], [0.16, -1.0, 0.15, '#8FA08A'], [0.0, -1.18, 0.17, '#9DAE96'], [-0.26, -0.9, 0.1, '#8FA08A'], [0.28, -0.86, 0.1, '#7E9078']]) {
+          ctx.fillStyle = c;
+          ctx.beginPath(); ctx.ellipse(x + dx * s, y + dy * th, rr * s, rr * 0.6 * s, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        return;
+      }
+      case 'spinifex': {
+        // a spinifex tussock: a round, spiky dome
+        if (s < 6) return;
+        const w = 0.15 * s;
+        ctx.fillStyle = '#9EA35E';
+        ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.62, 0, Math.PI, Math.PI * 2); ctx.fill();
+        if (s > 12) {
+          ctx.strokeStyle = '#C4C27E'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+          ctx.beginPath();
+          for (let k = 0; k < 9; k++) { const a = Math.PI + (k + 0.5) * (Math.PI / 9); ctx.moveTo(x + Math.cos(a) * w * 0.5, y + Math.sin(a) * w * 0.3); ctx.lineTo(x + Math.cos(a) * w * 1.18, y + Math.sin(a) * w * 0.75); }
+          ctx.stroke();
+        }
+        return;
+      }
+      case 'redrock': {
+        if (s < 6) return;
+        shadow(0.14);
+        const w = 0.14 * s;
+        ctx.fillStyle = '#A84A30';
+        ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.7, 0, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#D06A42';
+        ctx.beginPath(); ctx.ellipse(x - w * 0.25, y - w * 0.45, w * 0.5, w * 0.2, -0.15, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      case 'spruce': {
+        // a spruce in snow: dark tiers, each with snow along its top
+        if (s < 5) return;
+        if (s > 12) shadow(0.16);
+        const th = 0.08 * s;
+        ctx.fillStyle = '#4A3A30'; ctx.fillRect(x - 0.02 * s, y - th, 0.04 * s, th);
+        for (let k = 0; k < 4; k++) {
+          const yb = y - th - k * 0.17 * s, hw = (0.24 - k * 0.05) * s, ht = 0.3 * s;
+          ctx.fillStyle = k % 2 ? '#24483E' : '#1C3B33';
+          ctx.beginPath(); ctx.moveTo(x - hw, yb); ctx.lineTo(x + hw, yb); ctx.lineTo(x, yb - ht); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#EAF2FA';
+          ctx.beginPath(); ctx.moveTo(x - hw * 0.62, yb - ht * 0.38); ctx.lineTo(x, yb - ht); ctx.lineTo(x + hw * 0.62, yb - ht * 0.38);
+          ctx.quadraticCurveTo(x + hw * 0.3, yb - ht * 0.48, x + hw * 0.15, yb - ht * 0.36); ctx.quadraticCurveTo(x, yb - ht * 0.5, x - hw * 0.2, yb - ht * 0.37); ctx.quadraticCurveTo(x - hw * 0.4, yb - ht * 0.48, x - hw * 0.62, yb - ht * 0.38); ctx.fill();
+        }
+        return;
+      }
+      case 'snowrock': {
+        if (s < 6) return;
+        const w = 0.13 * s;
+        ctx.fillStyle = '#6F7C92';
+        ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.62, 0, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#F0F6FC';
+        ctx.beginPath(); ctx.ellipse(x - w * 0.05, y - w * 0.5, w * 0.8, w * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      case 'snowman': {
+        // a snowman with a red scarf, coal eyes and a carrot nose
+        if (s < 10) return;
+        shadow(0.1);
+        disc(x, y - 0.09 * s, 0.1 * s, '#F4F8FC');
+        disc(x, y - 0.24 * s, 0.075 * s, '#F4F8FC');
+        disc(x, y - 0.36 * s, 0.055 * s, '#F4F8FC');
+        ctx.fillStyle = '#D33A3A'; ctx.fillRect(x - 0.06 * s, y - 0.31 * s, 0.12 * s, 0.025 * s); ctx.fillRect(x + 0.02 * s, y - 0.31 * s, 0.025 * s, 0.07 * s);
+        if (s > 18) {
+          disc(x - 0.02 * s, y - 0.375 * s, Math.max(0.8, 0.008 * s), '#1F2230'); disc(x + 0.02 * s, y - 0.375 * s, Math.max(0.8, 0.008 * s), '#1F2230');
+          ctx.fillStyle = '#FF8A2B'; ctx.beginPath(); ctx.moveTo(x, y - 0.36 * s); ctx.lineTo(x + 0.06 * s, y - 0.352 * s); ctx.lineTo(x, y - 0.345 * s); ctx.closePath(); ctx.fill();
+          ctx.strokeStyle = '#6B4423'; ctx.lineWidth = Math.max(1, 0.008 * s);
+          ctx.beginPath(); ctx.moveTo(x - 0.07 * s, y - 0.25 * s); ctx.lineTo(x - 0.15 * s, y - 0.31 * s); ctx.moveTo(x + 0.07 * s, y - 0.25 * s); ctx.lineTo(x + 0.15 * s, y - 0.3 * s); ctx.stroke();
+        }
+        return;
+      }
       case 'house': {
         if (s < 6) return;
         shadow(0.2);
@@ -6414,6 +6921,125 @@ PuzzleEnginesFactory(window);
       ctx.beginPath(); ctx.moveTo(x, ly); ctx.lineTo(x + bl, ly - spread); ctx.lineTo(x + bl, ly + spread); ctx.closePath(); ctx.fill();
       return;
     }
+    if (kind === 'baobab') {
+      // a great baobab, its trunk like a bottle and its branches like roots in the air,
+      // and a round thatched hut at its foot
+      const tw = 0.4 * s, th = 1.25 * s;
+      ctx.fillStyle = '#A38A72';
+      ctx.beginPath(); ctx.moveTo(x - tw * 1.05, y);
+      ctx.bezierCurveTo(x - tw * 1.2, y - th * 0.4, x - tw * 0.55, y - th * 0.7, x - tw * 0.6, y - th);
+      ctx.lineTo(x + tw * 0.55, y - th); ctx.bezierCurveTo(x + tw * 0.5, y - th * 0.7, x + tw * 1.2, y - th * 0.4, x + tw * 1.05, y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#8E7660';
+      ctx.beginPath(); ctx.moveTo(x + tw * 0.15, y); ctx.bezierCurveTo(x + tw * 0.4, y - th * 0.4, x + tw * 0.2, y - th * 0.7, x + tw * 0.3, y - th);
+      ctx.lineTo(x + tw * 0.55, y - th); ctx.bezierCurveTo(x + tw * 0.5, y - th * 0.7, x + tw * 1.2, y - th * 0.4, x + tw * 1.05, y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 240, 220, 0.18)'; ctx.lineWidth = Math.max(1, 0.012 * s);
+      ctx.beginPath(); for (const dx of [-0.7, -0.4, -0.1]) { ctx.moveTo(x + dx * tw, y - th * 0.05); ctx.quadraticCurveTo(x + (dx - 0.1) * tw, y - th * 0.5, x + dx * tw * 0.7, y - th * 0.92); } ctx.stroke();
+      ctx.strokeStyle = '#A38A72'; ctx.lineCap = 'round';
+      const br = [[-0.5, -1.0, -1.0, -1.32, 0.07], [-0.2, -1.0, -0.42, -1.48, 0.06], [0.15, -1.0, 0.2, -1.52, 0.06], [0.45, -1.0, 0.95, -1.36, 0.07], [-0.85, -1.26, -1.18, -1.3, 0.035], [0.8, -1.3, 1.12, -1.44, 0.035]];
+      for (const [a, b, c, d, w] of br) { ctx.lineWidth = w * s; ctx.beginPath(); ctx.moveTo(x + a * tw, y + b * th); ctx.lineTo(x + c * tw, y + d * th); ctx.stroke(); }
+      for (const [dx, dy, rr] of [[-1.0, -1.34, 0.13], [-0.42, -1.5, 0.12], [0.2, -1.54, 0.12], [0.95, -1.38, 0.13], [-1.18, -1.3, 0.08], [1.12, -1.46, 0.08], [0.6, -1.5, 0.1]]) {
+        disc(x + dx * tw, y + dy * th, rr * s, '#6E8E48');
+        disc(x + dx * tw - 0.03 * s, y + dy * th - 0.03 * s, rr * 0.55 * s, '#86A656');
+      }
+      const hx = x + 0.95 * s, hw = 0.26 * s, hh = 0.2 * s;
+      ctx.fillStyle = '#E9D6AE'; ctx.fillRect(hx - hw, y - hh, hw * 2, hh);
+      ctx.fillStyle = '#6B4A30'; ctx.fillRect(hx - 0.05 * s, y - hh * 0.8, 0.1 * s, hh * 0.8);
+      ctx.fillStyle = '#C79A4C';
+      ctx.beginPath(); ctx.moveTo(hx - hw * 1.25, y - hh + 0.01 * s); ctx.quadraticCurveTo(hx - hw * 0.4, y - hh - 0.12 * s, hx, y - hh - 0.26 * s); ctx.quadraticCurveTo(hx + hw * 0.4, y - hh - 0.12 * s, hx + hw * 1.25, y - hh + 0.01 * s); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(120, 80, 30, 0.45)'; ctx.lineWidth = Math.max(1, 0.01 * s);
+      ctx.beginPath(); for (const f of [0.35, 0.65]) { ctx.moveTo(hx - hw * (1.25 - f * 0.6), y - hh - 0.26 * s * f * 0.9); ctx.lineTo(hx + hw * (1.25 - f * 0.6), y - hh - 0.26 * s * f * 0.9); } ctx.stroke();
+      return;
+    }
+    if (kind === 'oasis') {
+      // palms round a pool, and a house of mud brick with a tower
+      ctx.fillStyle = '#3FA6C8'; ctx.beginPath(); ctx.ellipse(x - 0.3 * s, y - 0.01 * s, 0.75 * s, 0.11 * s, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7FD2E8'; ctx.beginPath(); ctx.ellipse(x - 0.42 * s, y - 0.035 * s, 0.4 * s, 0.04 * s, 0, 0, Math.PI * 2); ctx.fill();
+      const bx = x + 0.15 * s, bw = 0.7 * s, bh = 0.36 * s;
+      ctx.fillStyle = '#D8A065'; ctx.fillRect(bx, y - bh, bw, bh);
+      ctx.fillStyle = '#C48A52'; ctx.fillRect(bx + bw * 0.62, y - bh, bw * 0.38, bh);
+      for (let k = 0; k < 5; k++) { ctx.fillStyle = '#D8A065'; ctx.fillRect(bx + k * bw * 0.21, y - bh - 0.05 * s, bw * 0.12, 0.05 * s); }
+      const tx = bx + bw * 0.3, tw = 0.24 * s, tht = 0.82 * s;
+      ctx.fillStyle = '#E2AE72'; ctx.fillRect(tx, y - tht, tw, tht);
+      ctx.fillStyle = '#CB935A'; ctx.fillRect(tx + tw * 0.6, y - tht, tw * 0.4, tht);
+      for (let k = 0; k < 3; k++) { ctx.fillStyle = '#E2AE72'; ctx.fillRect(tx - 0.015 * s + k * tw * 0.42, y - tht - 0.05 * s, tw * 0.22, 0.05 * s); }
+      ctx.fillStyle = '#5A3A26';
+      ctx.fillRect(tx + tw * 0.32, y - tht * 0.8, tw * 0.36, 0.08 * s); ctx.fillRect(tx + tw * 0.32, y - tht * 0.55, tw * 0.36, 0.08 * s);
+      ctx.beginPath(); ctx.moveTo(bx + bw * 0.12, y); ctx.lineTo(bx + bw * 0.12, y - 0.16 * s); ctx.quadraticCurveTo(bx + bw * 0.2, y - 0.24 * s, bx + bw * 0.28, y - 0.16 * s); ctx.lineTo(bx + bw * 0.28, y); ctx.fill();
+      ctx.fillRect(bx + bw * 0.72, y - bh * 0.62, 0.07 * s, 0.07 * s);
+      sbThing(ctx, 'palm', x - 0.85 * s, y, s * 1.3, 3, t, {});
+      sbThing(ctx, 'palm', x - 0.35 * s, y + 0.01 * s, s * 1.05, 4, t, {});
+      sbThing(ctx, 'palm', x + 1.0 * s, y, s * 1.2, 1, t, {});
+      return;
+    }
+    if (kind === 'waterfall') {
+      // a cliff hung with green; the fall drops into a pool, throws up spray and a rainbow
+      const cw = 1.5 * s, ch = 1.9 * s;
+      ctx.fillStyle = '#6F7C74';
+      ctx.beginPath(); ctx.moveTo(x - cw, y); ctx.lineTo(x - cw * 0.95, y - ch * 0.7); ctx.quadraticCurveTo(x - cw * 0.8, y - ch * 1.02, x - cw * 0.3, y - ch);
+      ctx.lineTo(x + cw * 0.35, y - ch * 1.03); ctx.quadraticCurveTo(x + cw * 0.85, y - ch * 0.98, x + cw * 0.96, y - ch * 0.6); ctx.lineTo(x + cw, y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#5E6A64';
+      ctx.beginPath(); ctx.moveTo(x + cw * 0.3, y); ctx.lineTo(x + cw * 0.35, y - ch * 1.03); ctx.quadraticCurveTo(x + cw * 0.85, y - ch * 0.98, x + cw * 0.96, y - ch * 0.6); ctx.lineTo(x + cw, y); ctx.closePath(); ctx.fill();
+      for (const [dx, dy, rr, c] of [[-0.8, -0.98, 0.3, '#3F8F52'], [-0.45, -1.02, 0.26, '#4FA05E'], [0.55, -1.0, 0.3, '#3F8F52'], [0.85, -0.9, 0.24, '#4FA05E'], [-0.92, -0.62, 0.16, '#4FA05E'], [0.9, -0.5, 0.16, '#3F8F52'], [-0.7, -0.3, 0.14, '#3F8F52'], [0.75, -0.22, 0.13, '#4FA05E']]) disc(x + dx * cw, y + dy * ch, rr * s, c);
+      const fw = 0.3 * s, top = y - ch * 0.98;
+      ctx.fillStyle = '#BFE9F2'; ctx.fillRect(x - fw, top, fw * 2, ch * 0.98);
+      ctx.fillStyle = '#FFFFFF';
+      for (let k = 0; k < 5; k++) {
+        const lx = x - fw + (k + 0.3) * fw * 0.4, sp = ch * 0.98;
+        for (let m = 0; m < 3; m++) { const yy = top + (((t * 0.9 + k * 0.23 + m / 3) % 1) * sp); ctx.fillRect(lx, yy, Math.max(1, fw * 0.12), Math.min(sp * 0.2, y - yy)); }
+      }
+      ctx.fillStyle = '#4FB0C4'; ctx.beginPath(); ctx.ellipse(x, y, 0.8 * s, 0.1 * s, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.drawImage(sbGlow('255, 255, 255'), x - 0.7 * s, y - 0.5 * s, 1.4 * s, 0.7 * s);
+      ctx.lineWidth = Math.max(1, 0.035 * s);
+      for (const [c, rr] of [['rgba(255, 90, 90, 0.22)', 0.62], ['rgba(255, 210, 80, 0.22)', 0.58], ['rgba(110, 220, 120, 0.22)', 0.54], ['rgba(90, 150, 255, 0.22)', 0.5]]) {
+        ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(x + 0.25 * s, y + 0.05 * s, rr * s, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+      }
+      return;
+    }
+    if (kind === 'monolith') {
+      // the great red rock, glowing in the last of the sun, its face ribbed with gullies
+      const w = 1.7 * s, hh = 0.78 * s;
+      ctx.fillStyle = '#D65A32';
+      ctx.beginPath(); ctx.moveTo(x - w, y); ctx.bezierCurveTo(x - w * 1.02, y - hh * 0.7, x - w * 0.85, y - hh, x - w * 0.5, y - hh);
+      ctx.bezierCurveTo(x - w * 0.1, y - hh * 1.06, x + w * 0.4, y - hh * 1.02, x + w * 0.7, y - hh * 0.92); ctx.bezierCurveTo(x + w * 0.95, y - hh * 0.8, x + w * 1.02, y - hh * 0.4, x + w, y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#F28A50';
+      ctx.beginPath(); ctx.moveTo(x - w * 0.95, y - hh * 0.5); ctx.bezierCurveTo(x - w * 0.9, y - hh * 0.9, x - w * 0.6, y - hh * 0.98, x - w * 0.3, y - hh * 0.99);
+      ctx.bezierCurveTo(x - w * 0.5, y - hh * 0.85, x - w * 0.7, y - hh * 0.6, x - w * 0.95, y - hh * 0.5); ctx.fill();
+      ctx.strokeStyle = 'rgba(110, 30, 25, 0.4)'; ctx.lineWidth = Math.max(1, 0.025 * s); ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (const f of [-0.62, -0.4, -0.15, 0.1, 0.32, 0.55, 0.78]) { const gx = x + f * w; ctx.moveTo(gx, y - hh * (0.95 - Math.abs(f) * 0.25)); ctx.quadraticCurveTo(gx + 0.04 * s, y - hh * 0.5, gx - 0.02 * s, y - hh * 0.06); }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(80, 20, 40, 0.25)';
+      ctx.beginPath(); ctx.moveTo(x + w * 0.45, y); ctx.bezierCurveTo(x + w * 0.6, y - hh * 0.5, x + w * 0.62, y - hh * 0.9, x + w * 0.7, y - hh * 0.92); ctx.bezierCurveTo(x + w * 0.95, y - hh * 0.8, x + w * 1.02, y - hh * 0.4, x + w, y); ctx.closePath(); ctx.fill();
+      return;
+    }
+    if (kind === 'cottage') {
+      // a red cottage with white corners, snow on the roof, lit windows and smoke
+      sbThing(ctx, 'spruce', x - 0.78 * s, y, s * 1.5, 2, t, {});
+      const w = 0.86 * s, hh = 0.42 * s, l = x - w / 2;
+      for (let q = 0; q < 4; q++) {
+        const u = (t * 0.3 + q / 4) % 1;
+        ctx.fillStyle = 'rgba(214, 224, 240, ' + (0.55 * (1 - u)).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(x + 0.24 * s + u * 0.22 * s, y - hh - 0.42 * s - u * 0.55 * s, (0.04 + u * 0.09) * s, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#5A4E52'; ctx.fillRect(x + 0.18 * s, y - hh - 0.4 * s, 0.1 * s, 0.26 * s);
+      ctx.fillStyle = '#B5302C'; ctx.fillRect(l, y - hh, w, hh);
+      ctx.fillStyle = 'rgba(60, 10, 20, 0.18)'; ctx.fillRect(l + w * 0.6, y - hh, w * 0.4, hh);
+      ctx.fillStyle = '#F4F1EA'; ctx.fillRect(l, y - hh, 0.04 * s, hh); ctx.fillRect(l + w - 0.04 * s, y - hh, 0.04 * s, hh);
+      ctx.fillStyle = '#3A2E30';
+      ctx.beginPath(); ctx.moveTo(l - 0.1 * s, y - hh + 0.02 * s); ctx.lineTo(x, y - hh - 0.34 * s); ctx.lineTo(l + w + 0.1 * s, y - hh + 0.02 * s); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#F2F7FC';
+      ctx.beginPath(); ctx.moveTo(l - 0.13 * s, y - hh - 0.01 * s); ctx.lineTo(x, y - hh - 0.38 * s); ctx.lineTo(l + w + 0.13 * s, y - hh - 0.01 * s);
+      ctx.quadraticCurveTo(l + w * 0.75, y - hh + 0.03 * s, l + w * 0.5, y - hh - 0.02 * s); ctx.quadraticCurveTo(l + w * 0.25, y - hh + 0.04 * s, l - 0.13 * s, y - hh - 0.01 * s); ctx.fill();
+      for (const wx of [l + 0.12 * s, l + w - 0.3 * s]) {
+        ctx.drawImage(sbGlow('255, 214, 140'), wx - 0.12 * s, y - hh * 0.82 - 0.06 * s, 0.42 * s, 0.32 * s);
+        ctx.fillStyle = '#FFD877'; ctx.fillRect(wx, y - hh * 0.72, 0.17 * s, 0.14 * s);
+        ctx.strokeStyle = '#F4F1EA'; ctx.lineWidth = Math.max(1, 0.018 * s); ctx.strokeRect(wx, y - hh * 0.72, 0.17 * s, 0.14 * s);
+        ctx.beginPath(); ctx.moveTo(wx + 0.085 * s, y - hh * 0.72); ctx.lineTo(wx + 0.085 * s, y - hh * 0.72 + 0.14 * s); ctx.stroke();
+      }
+      ctx.fillStyle = '#5A3428'; ctx.fillRect(x - 0.06 * s, y - 0.25 * s, 0.13 * s, 0.25 * s);
+      ctx.fillStyle = '#F2F7FC'; ctx.beginPath(); ctx.ellipse(x, y, 0.62 * s, 0.05 * s, 0, Math.PI, Math.PI * 2); ctx.fill();
+      return;
+    }
     if (kind === 'village') {
       const cx = x + 0.12 * s;
       ctx.fillStyle = '#DDD6CA'; ctx.fillRect(cx - 0.2 * s, y - 0.4 * s, 0.34 * s, 0.4 * s);
@@ -6436,59 +7062,487 @@ PuzzleEnginesFactory(window);
       return;
     }
   }
-  // the animal from the sign, side on and facing right with its feet on (x, y),
-  // L pixels long; hp runs 0 to 1 through one hop or stride
-  function sbCritter(ctx, kind, x, y, L, hp) {
-    const u = L / 100, air = Math.sin(hp * Math.PI);
-    const E = (cx, cy, rx, ry, rot, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x + cx * u, y + cy * u, rx * u, ry * u, rot || 0, 0, Math.PI * 2); ctx.fill(); };
-    const T = (pts, c) => { ctx.fillStyle = c; ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(x + px * u, y + py * u) : ctx.moveTo(x + px * u, y + py * u))); ctx.closePath(); ctx.fill(); };
-    const leg = (lx, len, c) => { ctx.fillStyle = c; ctx.fillRect(x + lx * u, y - len * u, 5 * u, len * u); };
-    if (kind === 'rabbit') {
-      E(-20 - air * 6, -12 + air * 2, 17, 8.5, 0.4 * air, '#9C7C62');
-      E(-4, -27, 29, 18.5, -0.14 * air, '#B8977B');
-      E(-35, -33, 7.5, 7.5, 0, '#FFFFFF');
-      E(17 + air * 5, -6 - air * 3, 7, 4, -0.5 * air, '#A88A70');
-      E(16, -66, 5.5, 16.5, -0.42 - air * 0.3, '#B8977B');
-      E(23, -68, 5, 16, -0.2 - air * 0.3, '#AE8D72');
-      E(23, -68, 2.2, 10.5, -0.2 - air * 0.3, '#F1B5AE');
-      E(27, -44, 14.5, 12.5, 0, '#B8977B');
-      E(33, -47, 2.4, 2.4, 0, '#2B2320');
-      E(41, -41, 2.2, 1.8, 0, '#E68F94');
-      return;
+  // ---- the animals that cross the roads
+  // Each animal is one list of parts, side on and facing right, feet on y = 0, about
+  // 100 units long or tall. The same list draws the animal in colour (crossing the
+  // road, hopping off a caught sign, standing in the fields) and as the black
+  // silhouette on its sign. Parts: e ellipse, c circle, p SVG path, l line, q curve
+  // (all filled or stroked in their colour), g leg (hip, length, width, pair, foot),
+  // qg bent leg (hip, knee, foot, width, pair); clip/end clip what is between them to
+  // a shape. The last two entries of a part are its colour and flags: d is a detail
+  // left off the silhouette; k and r move back and forward in a hop.
+  const SB_ANIM = (() => {
+    const A = {};
+    A.cow = { len: 0.8, gait: 'walk', stride: 7, lift: 4, rate: 1.4, parts: [
+      ['g', -22, -38, 38, 7.5, 1, 'hoof', '#D8D1C4', ''], ['g', 20, -38, 38, 7.5, 0, 'hoof', '#D8D1C4', ''],
+      ['q', -38, -52, -46, -46, -44, -26, 2.8, '#F7F4EE', ''], ['e', -44, -23, 3.2, 5.2, 0, '#2F2B29', ''],
+      ['e', -4, -50, 37, 17, 0, '#F7F4EE', ''],
+      ['clip', 'e', -4, -50, 37, 17, 0], ['e', -18, -59, 12, 9, 0.4, '#2F2B29', 'd'], ['e', 11, -39, 9, 6, -0.2, '#2F2B29', 'd'], ['e', -40, -46, 7, 9, 0, '#2F2B29', 'd'], ['end'],
+      ['e', -12, -33.5, 6, 4, 0, '#F2B6AE', 'd'],
+      ['g', -28, -38, 38, 8, 0, 'hoof', '#EFEAE0', ''], ['g', 14, -38, 38, 8, 1, 'hoof', '#EFEAE0', ''],
+      ['e', 25, -54, 12, 11.5, -0.6, '#F7F4EE', ''],
+      ['q', 33, -67, 32, -75, 37, -78, 3.2, '#EADFC4', ''],
+      ['e', 25, -64, 8.5, 3.2, 0.2, '#F7F4EE', ''], ['e', 25.5, -64, 5.4, 1.6, 0.2, '#F2B8B0', 'd'],
+      ['p', 'M29 -67Q39 -71 44 -62L52 -48Q54 -40 46 -38.5Q39 -39 35 -46Q29 -56 29 -67Z', '#F7F4EE', ''],
+      ['p', 'M31 -67Q39 -70 42.5 -62Q41 -56 35.5 -56Q31 -60 31 -67Z', '#2F2B29', 'd'],
+      ['e', 47.5, -43.5, 7.5, 5.6, -0.55, '#F2C2B6', ''], ['c', 50.5, -43.5, 1.3, '#A86A60', 'd'],
+      ['c', 39.5, -60.5, 2.2, '#2B2320', 'd'], ['c', 40.2, -61.2, 0.8, '#FFFFFF', 'd'],
+    ] };
+    A.duck = { len: 0.5, gait: 'waddle', stride: 5, lift: 4, rate: 2.6, parts: [
+      ['g', -4, -15, 15, 3.4, 0, 'web', '#FF9A1F', ''], ['g', 7, -15, 15, 3.4, 1, 'web', '#FF9A1F', ''],
+      ['p', 'M-28 -36 L-45 -48 L-38 -28 Z', '#FFFFFF', ''],
+      ['e', -4, -31, 30, 18, -0.08, '#FFFFFF', ''],
+      ['e', -10, -34, 19, 10, 0.12, '#EDE9E0', 'd'], ['q', -24, -33, -14, -28, -2, -30, 1.2, '#DAD4C8', 'd'],
+      ['e', 14, -47, 8.5, 14, 0.15, '#FFFFFF', ''],
+      ['c', 19, -61, 12, '#FFFFFF', ''],
+      ['p', 'M27 -64 Q42 -66 45 -59 Q41 -54.5 27 -56.5 Z', '#FFA51F', ''],
+      ['c', 22.5, -65, 2.3, '#2B2320', 'd'], ['c', 23.2, -65.8, 0.8, '#FFFFFF', 'd'], ['c', 21, -57, 3, 'rgba(255, 140, 140, 0.32)', 'd'],
+    ] };
+    A.rabbit = { len: 0.5, gait: 'hop', hop: 20, rate: 2.6, parts: [
+      ['e', -20, -12, 17, 8.5, 0, '#9C7C62', 'k'],
+      ['e', -4, -27, 29, 18.5, 0, '#B8977B', ''],
+      ['c', -35, -33, 7.5, '#FFFFFF', ''],
+      ['e', 17, -6, 7, 4, 0, '#A88A70', 'r'],
+      ['e', 16, -66, 5.5, 16.5, -0.42, '#B8977B', ''], ['e', 23, -68, 5, 16, -0.2, '#AE8D72', ''], ['e', 23, -68, 2.2, 10.5, -0.2, '#F1B5AE', 'd'],
+      ['e', 27, -44, 14.5, 12.5, 0, '#B8977B', ''],
+      ['c', 33, -47, 2.4, '#2B2320', 'd'], ['c', 33.8, -47.8, 0.8, '#FFFFFF', 'd'], ['e', 41, -41, 2.2, 1.8, 0, '#E68F94', 'd'],
+    ] };
+    A.deer = { len: 0.85, gait: 'walk', stride: 7, lift: 6, rate: 1.6, parts: [
+      ['g', -22, -48, 48, 4.4, 1, 'hoof', '#8E5E36', ''], ['g', 14, -48, 48, 4.4, 0, 'hoof', '#8E5E36', ''],
+      ['e', -31, -59, 4.2, 5.5, 0.3, '#B5794A', ''],
+      ['e', -6, -56, 26, 12.5, -0.05, '#B5794A', ''],
+      ['e', -6, -47.5, 19, 5, 0, '#E3C29A', 'd'], ['e', -28, -55, 5, 7.5, 0, '#F4E9D8', 'd'],
+      ['p', 'M10 -64Q16 -82 25 -89L33 -85Q26 -71 20 -50Z', '#B5794A', ''],
+      ['g', -27, -48, 48, 4.8, 0, 'hoof', '#A56C40', ''], ['g', 10, -48, 48, 4.8, 1, 'hoof', '#A56C40', ''],
+      ['q', 27, -92, 21, -100, 22, -110, 2.6, '#7A5A3A', ''], ['l', 22, -103, 14, -109, 2.2, '#7A5A3A', ''], ['l', 21.5, -108, 26, -116, 2, '#7A5A3A', ''], ['l', 24, -97, 31, -102, 2.2, '#7A5A3A', ''],
+      ['e', 23, -92, 7, 2.8, -0.5, '#B5794A', ''],
+      ['e', 30, -86, 8.5, 6, 0.35, '#B5794A', ''], ['e', 37, -81, 5.5, 4, 0.5, '#9C6438', ''],
+      ['c', 40.5, -79.5, 1.6, '#2B2320', 'd'], ['c', 30, -88.5, 1.8, '#2B2320', 'd'],
+    ] };
+    A.crab = { len: 0.55, gait: 'scuttle', stride: 3, lift: 5, rate: 3.4, parts: [
+      ['qg', -18, -16, -32, -30, -40, 0, 3.4, 0, '#C8402F', ''], ['qg', -16, -12, -26, -24, -30, 0, 3.4, 1, '#C8402F', ''], ['qg', -12, -10, -18, -20, -20, 0, 3.4, 0, '#C8402F', ''],
+      ['qg', 18, -16, 32, -30, 40, 0, 3.4, 1, '#C8402F', ''], ['qg', 16, -12, 26, -24, 30, 0, 3.4, 0, '#C8402F', ''], ['qg', 12, -10, 18, -20, 20, 0, 3.4, 1, '#C8402F', ''],
+      ['q', -18, -26, -30, -30, -32, -40, 5, '#E5523F', ''], ['q', 18, -26, 30, -30, 32, -40, 5, '#E5523F', ''],
+      ['e', -34, -47, 9, 7.5, -0.5, '#E5523F', ''], ['e', -25, -55, 6.5, 3.4, -1.0, '#E5523F', ''],
+      ['e', 34, -47, 9, 7.5, 0.5, '#E5523F', ''], ['e', 25, -55, 6.5, 3.4, 1.0, '#E5523F', ''],
+      ['l', -6, -34, -7, -45, 2.6, '#E5523F', ''], ['l', 6, -34, 7, -45, 2.6, '#E5523F', ''],
+      ['e', 0, -22, 27, 15, 0, '#E5523F', ''],
+      ['e', -4, -28, 16, 6, -0.1, '#F07E66', 'd'],
+      ['c', -7, -47, 3.8, '#FFFFFF', ''], ['c', 7, -47, 3.8, '#FFFFFF', ''], ['c', -7, -47, 1.9, '#1F2230', 'd'], ['c', 7, -47, 1.9, '#1F2230', 'd'],
+      ['q', -5, -18, 0, -15, 5, -18, 1.3, '#9A2E22', 'd'],
+    ] };
+    A.elephant = { len: 1.2, gait: 'walk', stride: 6, lift: 4, rate: 1.1, bob: 1.2, parts: [
+      ['g', -26, -36, 36, 12, 1, 'toe', '#7F8996', ''], ['g', 16, -36, 36, 12, 0, 'toe', '#7F8996', ''],
+      ['q', -40, -56, -47, -46, -45, -30, 2.2, '#8D97A3', ''], ['e', -45, -28, 2.2, 3.6, 0, '#5E6672', ''],
+      ['e', -8, -53, 34, 26, 0, '#98A2AE', ''],
+      ['e', -14, -66, 20, 9, -0.15, 'rgba(255, 255, 255, 0.1)', 'd'],
+      ['g', -32, -36, 36, 12.5, 0, 'toe', '#909AA6', ''], ['g', 10, -36, 36, 12.5, 1, 'toe', '#909AA6', ''],
+      ['c', 28, -62, 17, '#98A2AE', ''],
+      ['q', 40, -56, 52, -40, 48, -18, 9, '#98A2AE', ''], ['q', 48, -18, 46.5, -9, 52.5, -9.5, 6.4, '#98A2AE', ''],
+      ['q', 37, -47, 45, -43, 48, -49, 3.4, '#FFF8E8', 'd'],
+      ['p', 'M22 -77Q7 -79 5 -58Q7 -40 22 -40Q29 -50 27 -62Z', '#8A94A2', ''], ['p', 'M19 -70Q12 -70 11.5 -58Q12.5 -48 19 -47Q22 -52 21.5 -62Z', '#A99BA8', 'd'],
+      ['c', 33, -66, 2.1, '#2B2320', 'd'],
+    ] };
+    A.camel = { len: 0.95, gait: 'pace', stride: 7, lift: 5, rate: 1.3, parts: [
+      ['g', -22, -46, 46, 5, 0, 'pad', '#C4914F', ''], ['g', 16, -46, 46, 5, 0, 'pad', '#C4914F', ''],
+      ['q', -32, -56, -38, -48, -36, -36, 2.2, '#D6A062', ''],
+      ['p', 'M-34 -52Q-36 -66 -20 -68Q-9 -90 7 -71Q22 -66 26 -56Q22 -44 0 -44Q-30 -42 -34 -52Z', '#DDA968', ''],
+      ['p', 'M16 -64Q27 -52 36 -58Q41 -64 44 -76L52 -76Q51 -64 45 -54Q37 -43 21 -47Z', '#DDA968', ''],
+      ['e', -6, -76, 9, 4, -0.4, 'rgba(255, 255, 255, 0.14)', 'd'],
+      ['g', -26, -46, 46, 5.4, 1, 'pad', '#D9A562', ''], ['g', 12, -46, 46, 5.4, 1, 'pad', '#D9A562', ''],
+      ['e', 45, -84.5, 2, 3.6, -0.3, '#C88E52', ''],
+      ['e', 50, -78.5, 8, 5.5, 0.12, '#DDA968', ''], ['e', 56, -75.5, 4.6, 4.2, 0, '#CF9A5C', ''],
+      ['c', 50, -81.5, 1.6, '#2B2320', 'd'], ['q', 54.5, -72.5, 57.5, -72, 59.5, -73.5, 1, '#8A5E36', 'd'],
+    ] };
+    A.monkey = { len: 0.6, gait: 'walk', stride: 6, lift: 5, rate: 2.4, bob: 2.2, parts: [
+      ['g', -16, -28, 28, 5, 1, 'paw', '#6E4A30', ''], ['g', 14, -30, 30, 5, 0, 'paw', '#6E4A30', ''],
+      ['q', -24, -38, -48, -50, -38, -66, 3.6, '#8A5A3A', ''], ['q', -38, -66, -30, -73, -32, -62, 3, '#8A5A3A', ''],
+      ['e', -4, -38, 22, 11, -0.15, '#8A5A3A', ''],
+      ['g', -20, -28, 28, 5.4, 0, 'paw', '#8A5A3A', ''], ['g', 10, -30, 30, 5.4, 1, 'paw', '#8A5A3A', ''],
+      ['c', 22, -50, 11, '#8A5A3A', ''],
+      ['c', 14.5, -52, 4.6, '#8A5A3A', ''], ['c', 14.5, -52, 2.6, '#E8C29E', 'd'],
+      ['e', 27, -48, 8, 7.6, 0, '#F2D2B0', 'd'],
+      ['c', 28.5, -51, 1.9, '#2B2320', 'd'], ['c', 32, -51, 1.9, '#2B2320', 'd'], ['q', 27, -45, 30, -43.5, 33, -45, 1.1, '#7A4E34', 'd'],
+    ] };
+    A.kangaroo = { len: 0.8, gait: 'hop', hop: 26, rate: 1.7, parts: [
+      ['p', 'M-12 -24Q-36 -16 -54 -2Q-48 2 -40 -2Q-24 -9 -8 -14Z', '#B9784A', 'k'],
+      ['e', -9, -22, 14, 15.5, -0.35, '#C98A55', 'k'],
+      ['e', -2, -3.5, 14, 3.6, 0, '#B9784A', 'k'],
+      ['e', 0, -46, 12.5, 22.5, 0.2, '#C98A55', ''],
+      ['e', 5, -44, 6.5, 15, 0.2, '#EBC8A0', 'd'],
+      ['q', 9, -55, 17, -48, 16, -39, 3.8, '#B9784A', 'r'],
+      ['e', 4.5, -86, 3, 8, -0.3, '#C98A55', ''], ['e', 9.5, -87, 2.8, 7.5, 0, '#B9784A', ''],
+      ['e', 11, -75, 9, 7, 0.25, '#C98A55', ''], ['e', 18.5, -71.5, 6, 4.6, 0.3, '#C98A55', ''],
+      ['c', 23.5, -72, 1.6, '#2B2320', 'd'], ['c', 12, -77, 1.8, '#2B2320', 'd'],
+    ] };
+    A.moose = { len: 1.05, gait: 'walk', stride: 7, lift: 5, rate: 1.2, parts: [
+      ['g', -24, -52, 52, 6, 1, 'hoof', '#6E6054', ''], ['g', 16, -54, 54, 6, 0, 'hoof', '#6E6054', ''],
+      ['e', -36, -64, 3, 4, 0.3, '#4A3324', ''],
+      ['e', -6, -62, 30, 15, 0, '#5C3F2C', ''], ['e', 12, -70, 14, 10, 0, '#5C3F2C', ''],
+      ['g', -30, -52, 52, 6.4, 0, 'hoof', '#8B7A6A', ''], ['g', 12, -54, 54, 6.4, 1, 'hoof', '#8B7A6A', ''],
+      ['p', 'M14 -76Q26 -83 32 -77L36 -62Q28 -56 18 -58Z', '#5C3F2C', ''],
+      ['e', 34, -54, 3, 6, 0.2, '#5C3F2C', ''],
+      ['e', 23, -83, 6.5, 2.6, -0.25, '#5C3F2C', ''],
+      ['p', 'M28 -86Q15 -90 7 -103L11.5 -105L14 -100L17.5 -108L21 -101L25 -109L27.5 -101L31.5 -106L32 -96Q31.5 -90 30 -86Z', '#D9C49A', ''],
+      ['p', 'M32 -88Q38 -97 46 -106L48.5 -100L52.5 -104L52.5 -97L57.5 -98L54 -92L58.5 -89.5L50 -87Q42 -84.5 34 -84.5Z', '#CDB68A', ''],
+      ['p', 'M27 -84Q36 -87 44 -77L52.5 -64Q55.5 -57 50.5 -55Q46.5 -54 44.5 -58Q38 -60 32 -68Q27 -74 27 -84Z', '#6A4A34', ''],
+      ['p', 'M36 -59Q33.5 -51 37 -47Q40.5 -51 39.5 -59Z', '#5C3F2C', ''],
+      ['c', 36, -76, 1.9, '#1F1612', 'd'], ['e', 51, -59, 1.7, 1.1, 0.6, '#2B2320', 'd'],
+    ] };
+    A.reindeer = { len: 0.95, gait: 'walk', stride: 7, lift: 5, rate: 1.5, parts: [
+      ['g', -22, -46, 46, 5, 1, 'hoof', '#6E5D50', ''], ['g', 14, -46, 46, 5, 0, 'hoof', '#6E5D50', ''],
+      ['e', -32, -56, 4, 4.5, 0, '#F2ECE2', ''],
+      ['e', -6, -54, 27, 13.5, 0, '#8C7462', ''],
+      ['e', -6, -45, 20, 5, 0, '#B9A694', 'd'],
+      ['p', 'M12 -62Q20 -78 28 -84L36 -78Q30 -66 26 -46Q18 -44 14 -50Z', '#EDE6DA', ''],
+      ['g', -27, -46, 46, 5.4, 0, 'hoof', '#7E6A5A', ''], ['g', 10, -46, 46, 5.4, 1, 'hoof', '#7E6A5A', ''],
+      ['q', 28, -88, 18, -104, 22, -119, 2.6, '#CDB48E', ''], ['q', 31, -88, 35, -104, 30, -120, 2.6, '#BFA47C', ''],
+      ['l', 20.5, -100, 12, -106, 2.2, '#CDB48E', ''], ['l', 21, -110, 14, -116, 2, '#CDB48E', ''], ['l', 33.5, -101, 41, -106, 2.2, '#BFA47C', ''], ['l', 32.5, -111, 38.5, -118, 2, '#BFA47C', ''], ['l', 29.5, -93, 36, -96, 2.4, '#CDB48E', ''],
+      ['e', 25, -86, 6, 2.6, -0.5, '#8C7462', ''],
+      ['e', 33, -80, 9, 6.5, 0.35, '#8C7462', ''], ['e', 40, -75, 5.5, 4.5, 0.4, '#7A6454', ''],
+      ['c', 43, -73.5, 1.7, '#2B2320', 'd'], ['c', 32, -82.5, 1.8, '#2B2320', 'd'],
+    ] };
+    A.bear = { len: 0.95, gait: 'walk', stride: 6, lift: 4, rate: 1.3, bob: 1.4, parts: [
+      ['g', -24, -26, 26, 10, 1, 'paw', '#5E3E28', ''], ['g', 18, -26, 26, 10, 0, 'paw', '#5E3E28', ''],
+      ['c', -38, -42, 4, '#6A4630', ''],
+      ['e', -4, -38, 34, 20, 0, '#7A5236', ''], ['e', 10, -50, 16, 10, 0, '#7A5236', ''],
+      ['e', -10, -50, 18, 6, -0.1, 'rgba(255, 230, 200, 0.1)', 'd'],
+      ['g', -30, -26, 26, 10.5, 0, 'paw', '#6E4A30', ''], ['g', 14, -26, 26, 10.5, 1, 'paw', '#6E4A30', ''],
+      ['c', 24, -53, 4.6, '#7A5236', ''], ['c', 24, -53, 2.4, '#B98A60', 'd'],
+      ['c', 30, -42, 12, '#7A5236', ''],
+      ['e', 41, -37, 7, 5.5, 0, '#B98A60', ''], ['c', 47, -39.5, 2.6, '#2B2320', ''],
+      ['c', 33, -46, 1.9, '#2B2320', 'd'], ['c', 33.6, -46.6, 0.7, '#FFFFFF', 'd'],
+    ] };
+    A.duckling = { len: 0.5, gait: 'waddle', stride: 3, lift: 3, rate: 4, parts: [
+      ['g', -2, -8, 8, 2.6, 0, 'web', '#FF9A1F', ''], ['g', 5, -8, 8, 2.6, 1, 'web', '#FF9A1F', ''],
+      ['p', 'M-14 -21L-21 -27L-15 -13Z', '#FFD84A', ''],
+      ['e', -2, -17, 15, 10.5, 0, '#FFD84A', ''],
+      ['e', -5, -18, 8, 5, 0.25, '#F2C230', 'd'],
+      ['c', 9, -29, 8.5, '#FFD84A', ''],
+      ['p', 'M15.5 -31L23.5 -28.5L15.5 -26Z', '#FF9A1F', ''],
+      ['c', 11.5, -31.5, 1.6, '#2B2320', 'd'], ['c', 12, -32, 0.55, '#FFFFFF', 'd'],
+    ] };
+    A.goose = { len: 0.4, gait: 'waddle', stride: 5, lift: 4, rate: 2.2, parts: [
+      ['g', -4, -16, 16, 3.6, 0, 'web', '#3A3530', ''], ['g', 8, -16, 16, 3.6, 1, 'web', '#3A3530', ''],
+      ['p', 'M-32 -34L-47 -42L-40 -27Z', '#3A3530', ''],
+      ['e', -6, -32, 32, 17, -0.08, '#9C8A76', ''],
+      ['e', -2, -22, 24, 7, 0, '#E9E2D6', 'd'], ['e', -12, -35, 20, 10, 0.12, '#7E6C5A', 'd'],
+      ['q', 17, -40, 22, -60, 24, -77, 8, '#2B2826', ''],
+      ['e', 28, -80, 9, 6.5, 0.1, '#2B2826', ''], ['e', 25, -77, 4.5, 3, 0.3, '#FFFFFF', 'd'],
+      ['p', 'M35 -82.5L46 -79L35 -76Z', '#2B2826', ''],
+      ['c', 29, -82.5, 1.5, '#FFFFFF', 'd'],
+    ] };
+    A.swan = { len: 0.45, gait: 'waddle', stride: 5, lift: 4, rate: 2, parts: [
+      ['g', -4, -14, 14, 3.6, 0, 'web', '#2E2A28', ''], ['g', 8, -14, 14, 3.6, 1, 'web', '#2E2A28', ''],
+      ['p', 'M-30 -32L-45 -40L-38 -25Z', '#FFFFFF', ''],
+      ['e', -6, -30, 32, 17, -0.1, '#FFFFFF', ''],
+      ['p', 'M-31 -32Q-20 -56 7 -47Q-4 -36 -24 -27Z', '#F1EFEA', ''],
+      ['q', 16, -38, 31, -54, 19, -68, 7, '#FFFFFF', ''], ['q', 19, -68, 12, -80, 23, -84, 6.4, '#FFFFFF', ''],
+      ['e', 26, -84.5, 7, 5, 0.2, '#FFFFFF', ''],
+      ['p', 'M31 -87L43 -80.5L30.5 -81Z', '#F08A2B', ''], ['c', 31, -85, 2, '#1F1F24', 'd'],
+      ['c', 26, -86.5, 1.5, '#1F1F24', 'd'],
+    ] };
+    A.hen = { len: 0.32, gait: 'walk', stride: 5, lift: 5, rate: 2.6, bob: 2.4, parts: [
+      ['g', -2, -16, 16, 3.2, 0, 'claw', '#E8A53A', ''], ['g', 8, -16, 16, 3.2, 1, 'claw', '#E8A53A', ''],
+      ['p', 'M-22 -38Q-40 -60 -31 -68Q-26 -52 -16 -42Z', '#7E4424', ''],
+      ['e', -2, -32, 24, 17, -0.1, '#B5683A', ''],
+      ['e', -6, -33, 14, 9, 0.2, '#9A5530', 'd'],
+      ['c', 18, -52, 9.5, '#B5683A', ''],
+      ['p', 'M11 -59Q13 -69 18 -63Q20 -71 24 -63Q28 -66 26.5 -57Z', '#E5523F', ''],
+      ['p', 'M26.5 -54.5L34 -51L26.5 -48Z', '#F2B33A', ''],
+      ['e', 25.5, -45, 2.6, 4.2, 0, '#E5523F', ''],
+      ['c', 21, -54, 1.7, '#2B2320', 'd'],
+    ] };
+    return A;
+  })();
+  const SB_P2DA = {};
+  function sbAPath(d) {
+    if (!(d in SB_P2DA)) { try { SB_P2DA[d] = new Path2D(d); } catch (e) { SB_P2DA[d] = null; } }
+    return SB_P2DA[d];
+  }
+  // draws an animal with its feet on (x, y), L pixels per 100 units; ph runs 0 to 1
+  // through one stride or hop. o: { mono: silhouette colour, flip: facing left, still: standing }
+  function sbAnimal(ctx, kind, x, y, L, ph, o) {
+    const A = SB_ANIM[kind];
+    if (!A) return false;
+    o = o || {};
+    const mono = o.mono || null, TAU = Math.PI * 2;
+    const still = !!(o.still || mono), cyc = still ? 0.25 : ((ph || 0) % 1 + 1) % 1, g = A.gait;
+    let by = 0, rot = 0, air = 0, sway = 0;
+    if (!still) {
+      if (g === 'hop') { air = Math.sin(cyc * Math.PI); by = -air * (A.hop || 18); rot = -0.16 * Math.cos(cyc * Math.PI) * air; }
+      else if (g === 'waddle') { rot = Math.sin(cyc * TAU) * 0.07; by = -Math.abs(Math.sin(cyc * TAU)) * 1.4; }
+      else if (g === 'scuttle') { sway = Math.sin(cyc * TAU) * 1.6; by = -Math.abs(Math.sin(cyc * TAU * 2)) * 0.8; }
+      else by = -Math.abs(Math.sin(cyc * TAU)) * (A.bob || 1.6);
     }
-    const sw = Math.sin(hp * Math.PI * 2) * 6;
-    if (kind === 'fox') {
-      leg(-24 + sw, 16, '#3E261C'); leg(16 - sw, 16, '#3E261C');
-      E(-44, -34, 22, 8.5, -0.35, '#E8743A');
-      E(-62, -42, 7, 5.5, -0.35, '#FFF5EA');
-      E(-2, -28, 30, 13, 0, '#E8743A');
-      E(4, -21, 19, 6, 0, '#FCEBD8');
-      leg(-18 - sw, 16, '#4A2E22'); leg(22 + sw, 16, '#4A2E22');
-      T([[24, -50], [29, -66], [35, -50]], '#D9662E');
-      T([[31, -50], [38, -64], [42, -48]], '#E8743A');
-      E(33, -40, 13, 11, 0, '#E8743A');
-      T([[38, -45], [58, -36], [38, -30]], '#E8743A');
-      T([[40, -36.5], [58, -36], [40, -30]], '#FCEBD8');
-      E(58, -36, 2.3, 2.3, 0, '#2B2320');
-      E(38, -43, 2.1, 2.1, 0, '#2B2320');
-      return;
+    const k = L / 100;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(o.flip ? -k : k, k);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    // where a foot is: on the ground, swinging forward and lifting on the way
+    const foot = (fx, grp) => {
+      if (still) return [fx + (grp ? -1 : 1) * (A.stride || 6) * 0.55, 0];
+      const a = TAU * (cyc + grp * 0.5);
+      return [fx + Math.sin(a) * (A.stride || 6), -Math.max(0, Math.cos(a)) * (A.lift || 4)];
+    };
+    let clips = 0;
+    for (const P of A.parts) {
+      const t = P[0];
+      if (t === 'clip') {
+        ctx.save(); clips++;
+        ctx.beginPath();
+        if (P[1] === 'e') ctx.ellipse(P[2] + sway, P[3] + by, P[4], P[5], P[6], 0, TAU);
+        else { ctx.translate(sway, by); const pa = sbAPath(P[2]); if (pa) ctx.clip(pa); ctx.translate(-sway, -by); continue; }
+        ctx.clip();
+        continue;
+      }
+      if (t === 'end') { if (clips) { ctx.restore(); clips--; } continue; }
+      const c = P[P.length - 2], fl = P[P.length - 1];
+      if (mono && fl.indexOf('d') >= 0) continue;
+      ctx.fillStyle = mono || c;
+      ctx.strokeStyle = ctx.fillStyle;
+      // a hop kicks the hind legs back and reaches the front ones forward
+      let dx = sway, dy = by;
+      if (air && fl.indexOf('k') >= 0) { dx -= 7 * air; dy += 3 * air; }
+      if (air && fl.indexOf('r') >= 0) { dx += 5 * air; dy -= 2 * air; }
+      if (t === 'g') {
+        const [, hx, hy, len, w, grp, ft] = P;
+        const [fx, fy] = foot(hx, grp);
+        const x0 = hx + sway, y0 = hy + by;
+        // the leg's bottom end, so a round cap stands on the ground
+        const yb = fy - w / 2;
+        ctx.lineWidth = w;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(fx, yb); ctx.stroke();
+        if (ft === 'hoof' && !mono) {
+          const f = Math.min(1, (w * 1.2) / len);
+          ctx.strokeStyle = '#3A3431';
+          ctx.beginPath(); ctx.moveTo(fx + (x0 - fx) * f, yb + (y0 - yb) * f); ctx.lineTo(fx, yb); ctx.stroke();
+        } else if (ft === 'web') {
+          ctx.beginPath(); ctx.moveTo(fx - 1.5, fy); ctx.lineTo(fx + 7, fy); ctx.lineTo(fx + 1, fy - 3.5); ctx.closePath(); ctx.fill();
+        } else if (ft === 'paw') {
+          ctx.beginPath(); ctx.ellipse(fx + w * 0.25, fy - w * 0.32, w * 0.62, w * 0.36, 0, 0, TAU); ctx.fill();
+        } else if (ft === 'pad') {
+          ctx.beginPath(); ctx.ellipse(fx + 1, fy - 1.6, w * 0.8, 1.8, 0, 0, TAU); ctx.fill();
+        } else if (ft === 'claw') {
+          ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.moveTo(fx, yb); ctx.lineTo(fx + 6, fy); ctx.moveTo(fx, yb); ctx.lineTo(fx - 3.5, fy); ctx.moveTo(fx, yb); ctx.lineTo(fx + 3, fy); ctx.stroke();
+        } else if (ft === 'toe' && !mono) {
+          ctx.fillStyle = 'rgba(255, 248, 232, 0.7)';
+          for (const q of [-0.28, 0.02, 0.32]) { ctx.beginPath(); ctx.ellipse(fx + q * w, fy - 1.5, w * 0.11, 1.3, 0, 0, TAU); ctx.fill(); }
+        }
+        continue;
+      }
+      if (t === 'qg') {
+        const [, hx, hy, kx, ky, fx0, fy0, w, grp] = P;
+        const [fx, fy] = foot(fx0, grp);
+        ctx.lineWidth = w;
+        ctx.beginPath(); ctx.moveTo(hx + sway, hy + by); ctx.quadraticCurveTo(kx + sway + (fx - fx0) * 0.5, ky + by + fy * 0.5, fx, fy - w / 2); ctx.stroke();
+        continue;
+      }
+      if (t === 'e') {
+        let r = P[5];
+        if (air && fl.indexOf('k') >= 0) r += 0.4 * air;
+        ctx.beginPath(); ctx.ellipse(P[1] + dx, P[2] + dy, P[3], P[4], r + rot, 0, TAU); ctx.fill();
+      } else if (t === 'c') {
+        ctx.beginPath(); ctx.arc(P[1] + dx, P[2] + dy, P[3], 0, TAU); ctx.fill();
+      } else if (t === 'p') {
+        const pa = sbAPath(P[1]);
+        if (pa) { ctx.save(); ctx.translate(dx, dy); if (rot) ctx.rotate(rot); ctx.fill(pa); ctx.restore(); }
+      } else if (t === 'l') {
+        ctx.lineWidth = P[5];
+        ctx.beginPath(); ctx.moveTo(P[1] + dx, P[2] + dy); ctx.lineTo(P[3] + dx, P[4] + dy); ctx.stroke();
+      } else if (t === 'q') {
+        ctx.lineWidth = P[7];
+        ctx.beginPath(); ctx.moveTo(P[1] + dx, P[2] + dy); ctx.quadraticCurveTo(P[3] + dx, P[4] + dy, P[5] + dx, P[6] + dy); ctx.stroke();
+      }
     }
-    if (kind === 'cat') {
-      const c = '#F0A24E', cd = '#D9863A';
-      leg(-20 + sw, 15, cd); leg(14 - sw, 15, cd);
-      ctx.strokeStyle = c; ctx.lineWidth = 6 * u; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(x - 26 * u, y - 30 * u); ctx.quadraticCurveTo(x - 46 * u, y - 34 * u, x - 42 * u, y - 58 * u); ctx.stroke();
-      E(-2, -28, 27, 12.5, 0, c);
-      ctx.strokeStyle = cd; ctx.lineWidth = 3 * u;
-      ctx.beginPath(); for (const q of [-14, -4, 6]) { ctx.moveTo(x + q * u, y - 39 * u); ctx.lineTo(x + (q + 3) * u, y - 31 * u); } ctx.stroke();
-      leg(-14 - sw, 15, c); leg(20 + sw, 15, c);
-      T([[20, -48], [22, -64], [30, -52]], c);
-      T([[30, -52], [37, -64], [40, -46]], c);
-      T([[23, -51], [24, -59], [28, -53]], '#F7C7B6');
-      E(30, -42, 12.5, 11.5, 0, c);
-      E(36, -44, 2, 2.4, 0, '#2B2320');
-      E(42, -38, 1.8, 1.4, 0, '#E68F94');
+    while (clips--) ctx.restore();
+    ctx.restore();
+    return true;
+  }
+  // the box around an animal's silhouette, in its units; measured once from a drawing
+  const SB_ABOX = {};
+  function sbAnimBox(kind) {
+    if (SB_ABOX[kind]) return SB_ABOX[kind];
+    let box = [-50, -100, 50, 0];
+    try {
+      const c = document.createElement('canvas');
+      c.width = 280; c.height = 220;
+      const g = c.getContext('2d');
+      sbAnimal(g, kind, 140, 170, 100, 0, { mono: '#000000' });
+      const d = g.getImageData(0, 0, 280, 220).data;
+      let x0 = 280, y0 = 220, x1 = -1, y1 = -1;
+      for (let yy = 0; yy < 220; yy++) for (let xx = 0; xx < 280; xx++) {
+        if (d[(yy * 280 + xx) * 4 + 3] > 40) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+      }
+      if (x1 > x0) box = [x0 - 140, y0 - 170, x1 + 1 - 140, y1 + 1 - 170];
+    } catch (e) { /* keep the default */ }
+    return (SB_ABOX[kind] = box);
+  }
+  // an animal's silhouette fitted into a size x size box centred on (x, y)
+  function sbAnimGlyph(ctx, kind, x, y, size, color) {
+    const b = sbAnimBox(kind), w = b[2] - b[0], hgt = b[3] - b[1];
+    const L = (100 * size) / Math.max(w, hgt * 1.04);
+    const k = L / 100;
+    sbAnimal(ctx, kind, x - ((b[0] + b[2]) / 2) * k, y - ((b[1] + b[3]) / 2) * k, L, 0, { mono: color });
+  }
+  // ---- things to collect, one kind for each place, drawn once at 96 px and scaled
+  const SB_ITEM_ART = {
+    apple(g) {
+      g.fillStyle = '#E8463D';
+      g.beginPath(); g.moveTo(0, -24); g.bezierCurveTo(16, -36, 36, -24, 36, -2); g.bezierCurveTo(36, 22, 18, 38, 0, 33); g.bezierCurveTo(-18, 38, -36, 22, -36, -2); g.bezierCurveTo(-36, -24, -16, -36, 0, -24); g.fill();
+      g.fillStyle = '#C8302A';
+      g.beginPath(); g.moveTo(8, 30); g.bezierCurveTo(26, 26, 34, 10, 33, -6); g.bezierCurveTo(30, 14, 20, 26, 8, 30); g.fill();
+      g.strokeStyle = 'rgba(255, 255, 255, 0.6)'; g.lineWidth = 6; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-22, -10); g.quadraticCurveTo(-20, -20, -10, -22); g.stroke();
+      g.strokeStyle = '#6B4423'; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(0, -24); g.quadraticCurveTo(2, -36, 8, -41); g.stroke();
+      g.fillStyle = '#3FA34D';
+      g.beginPath(); g.moveTo(6, -34); g.quadraticCurveTo(22, -46, 32, -34); g.quadraticCurveTo(18, -26, 6, -34); g.fill();
+    },
+    melon(g) {
+      g.fillStyle = '#3E9A4E';
+      g.beginPath(); g.moveTo(-38, -12); g.arc(0, -12, 38, 0, Math.PI, false); g.closePath(); g.fill();
+      g.fillStyle = '#F4F1DC';
+      g.beginPath(); g.moveTo(-33, -12); g.arc(0, -12, 33, 0, Math.PI, false); g.closePath(); g.fill();
+      g.fillStyle = '#F2545B';
+      g.beginPath(); g.moveTo(-30, -12); g.arc(0, -12, 30, 0, Math.PI, false); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      g.beginPath(); g.ellipse(-12, -6, 9, 3.5, 0.3, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#2B2320';
+      for (const [x, y] of [[-16, 0], [0, 4], [16, 0], [-8, 10], [8, 10]]) { g.beginPath(); g.ellipse(x, y, 2.4, 3.6, x * 0.03, 0, Math.PI * 2); g.fill(); }
+    },
+    carrot(g) {
+      g.save(); g.rotate(-0.55);
+      g.fillStyle = '#FF8A2B';
+      g.beginPath(); g.moveTo(-13, -22); g.quadraticCurveTo(0, -30, 13, -22); g.lineTo(3, 36); g.quadraticCurveTo(0, 40, -3, 36); g.closePath(); g.fill();
+      g.fillStyle = '#E86F18';
+      g.beginPath(); g.moveTo(6, -24); g.quadraticCurveTo(13, -22, 13, -22); g.lineTo(3, 36); g.quadraticCurveTo(6, 6, 6, -24); g.fill();
+      g.strokeStyle = '#D9620E'; g.lineWidth = 3; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-9, -8); g.lineTo(-2, -8); g.moveTo(-6, 6); g.lineTo(1, 6); g.moveTo(-4, 20); g.lineTo(1, 20); g.stroke();
+      g.fillStyle = '#3FA34D';
+      g.beginPath(); g.moveTo(0, -24); g.quadraticCurveTo(-16, -44, -8, -50); g.quadraticCurveTo(-2, -38, 0, -24); g.fill();
+      g.beginPath(); g.moveTo(0, -24); g.quadraticCurveTo(2, -50, 12, -48); g.quadraticCurveTo(8, -34, 0, -24); g.fill();
+      g.fillStyle = '#2F8A3E';
+      g.beginPath(); g.moveTo(0, -24); g.quadraticCurveTo(18, -40, 22, -32); g.quadraticCurveTo(10, -24, 0, -24); g.fill();
+      g.restore();
+    },
+    drop(g) {
+      const gr = g.createLinearGradient(-20, -30, 20, 34);
+      gr.addColorStop(0, '#8FDBFF'); gr.addColorStop(1, '#2F8BEA');
+      g.fillStyle = gr;
+      g.beginPath(); g.moveTo(0, -40); g.bezierCurveTo(10, -22, 30, -2, 30, 14); g.bezierCurveTo(30, 32, 16, 40, 0, 40); g.bezierCurveTo(-16, 40, -30, 32, -30, 14); g.bezierCurveTo(-30, -2, -10, -22, 0, -40); g.fill();
+      g.strokeStyle = 'rgba(255, 255, 255, 0.75)'; g.lineWidth = 6; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-17, 12); g.quadraticCurveTo(-17, 26, -6, 30); g.stroke();
+      g.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      g.beginPath(); g.arc(-6, -6, 4, 0, Math.PI * 2); g.fill();
+    },
+    acorn(g) {
+      g.fillStyle = '#C98A3E';
+      g.beginPath(); g.ellipse(0, 10, 22, 28, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#E3A75A';
+      g.beginPath(); g.ellipse(-8, 8, 7, 16, 0.2, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#8A5A30';
+      g.beginPath(); g.ellipse(0, 36, 3.5, 3, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#7A4E2A';
+      g.beginPath(); g.moveTo(-28, -6); g.quadraticCurveTo(-30, -30, 0, -32); g.quadraticCurveTo(30, -30, 28, -6); g.quadraticCurveTo(0, 2, -28, -6); g.fill();
+      g.strokeStyle = '#5E3A1E'; g.lineWidth = 2.4;
+      g.beginPath();
+      for (let k = -2; k <= 2; k++) { g.moveTo(k * 10 - 5, -26 + Math.abs(k) * 3); g.lineTo(k * 10 + 5, -8 + Math.abs(k)); }
+      g.stroke();
+      g.strokeStyle = '#5E3A1E'; g.lineWidth = 5; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(0, -32); g.quadraticCurveTo(2, -42, 8, -44); g.stroke();
+    },
+    banana(g) {
+      g.fillStyle = '#FFD23F';
+      g.beginPath(); g.moveTo(-34, -20); g.quadraticCurveTo(-30, 30, 30, 22); g.quadraticCurveTo(38, 20, 36, 14); g.quadraticCurveTo(-12, 18, -22, -24); g.closePath(); g.fill();
+      g.fillStyle = '#F2B91F';
+      g.beginPath(); g.moveTo(-28, -10); g.quadraticCurveTo(-22, 22, 30, 22); g.quadraticCurveTo(-14, 30, -32, -14); g.closePath(); g.fill();
+      g.fillStyle = '#6B4423';
+      g.beginPath(); g.moveTo(-36, -22); g.lineTo(-32, -32); g.lineTo(-22, -28); g.lineTo(-24, -20); g.closePath(); g.fill();
+      g.beginPath(); g.arc(36, 18, 3.4, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(255, 255, 255, 0.55)'; g.lineWidth = 4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-20, -8); g.quadraticCurveTo(-14, 12, 4, 14); g.stroke();
+    },
+    starfish(g) {
+      g.fillStyle = '#FF8A4C';
+      g.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const a = -Math.PI / 2 + (k * Math.PI) / 5, r = k % 2 ? 15 : 40;
+        const x = Math.cos(a) * r, y = Math.sin(a) * r + 4;
+        if (k) g.lineTo(x, y); else g.moveTo(x, y);
+      }
+      g.closePath(); g.lineJoin = 'round'; g.strokeStyle = '#FF8A4C'; g.lineWidth = 9; g.stroke(); g.fill();
+      g.fillStyle = '#FFC48C';
+      for (let k = 0; k < 5; k++) {
+        const a = -Math.PI / 2 + (k * 2 * Math.PI) / 5;
+        for (const r of [12, 22]) { g.beginPath(); g.arc(Math.cos(a) * r, Math.sin(a) * r + 4, 3, 0, Math.PI * 2); g.fill(); }
+      }
+      g.beginPath(); g.arc(0, 4, 4, 0, Math.PI * 2); g.fill();
+    },
+    opal(g) {
+      g.save();
+      g.beginPath(); g.ellipse(0, 0, 30, 38, 0, 0, Math.PI * 2); g.clip();
+      g.fillStyle = '#3FA7D6'; g.fillRect(-40, -40, 80, 80);
+      for (const [x, y, r, c] of [[-14, -18, 20, '#A56BFF'], [16, -10, 18, '#FF6FB4'], [-8, 16, 20, '#3FD98E'], [16, 22, 16, '#FFD23F'], [2, -30, 14, '#6FB8FF'], [-18, 2, 12, '#FF8A4C']]) {
+        const gr = g.createRadialGradient(x, y, 0, x, y, r);
+        gr.addColorStop(0, c); gr.addColorStop(0.55, c); gr.addColorStop(1, 'rgba(63, 167, 214, 0)');
+        g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      g.restore();
+      g.strokeStyle = '#FFFFFF'; g.lineWidth = 3.5;
+      g.beginPath(); g.ellipse(0, 0, 30, 38, 0, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      g.beginPath(); g.ellipse(-11, -17, 6, 10, 0.5, 0, Math.PI * 2); g.fill();
+    },
+    cherry(g) {
+      g.strokeStyle = '#5E7F2A'; g.lineWidth = 4; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(-14, 8); g.quadraticCurveTo(-8, -20, 6, -36); g.moveTo(16, 12); g.quadraticCurveTo(12, -14, 6, -36); g.stroke();
+      g.fillStyle = '#4FA83E';
+      g.beginPath(); g.moveTo(6, -36); g.quadraticCurveTo(22, -46, 32, -36); g.quadraticCurveTo(18, -28, 6, -36); g.fill();
+      for (const [x, y] of [[-15, 18], [16, 22]]) {
+        g.fillStyle = '#D92B3A'; g.beginPath(); g.arc(x, y, 17, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#B01E2C'; g.beginPath(); g.arc(x + 4, y + 4, 12, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#D92B3A'; g.beginPath(); g.arc(x - 1, y - 1, 12, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255, 255, 255, 0.7)'; g.beginPath(); g.ellipse(x - 7, y - 7, 4, 2.6, -0.6, 0, Math.PI * 2); g.fill();
+      }
+    },
+    flake(g) {
+      g.strokeStyle = '#FFFFFF'; g.lineCap = 'round';
+      for (const [w, c] of [[11, 'rgba(150, 200, 255, 0.55)'], [6, '#FFFFFF']]) {
+        g.strokeStyle = c; g.lineWidth = w;
+        g.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const a = (k * Math.PI) / 3, ca = Math.cos(a), sa = Math.sin(a);
+          g.moveTo(0, 0); g.lineTo(ca * 36, sa * 36);
+          for (const [d, b] of [[18, 11], [28, 8]]) {
+            const bx = ca * d, by = sa * d;
+            g.moveTo(bx, by); g.lineTo(bx + Math.cos(a + 0.8) * b, by + Math.sin(a + 0.8) * b);
+            g.moveTo(bx, by); g.lineTo(bx + Math.cos(a - 0.8) * b, by + Math.sin(a - 0.8) * b);
+          }
+        }
+        g.stroke();
+      }
+      g.fillStyle = '#FFFFFF'; g.beginPath(); g.arc(0, 0, 6, 0, Math.PI * 2); g.fill();
+    },
+  };
+  const SB_ITEMS = {};
+  // a thing to collect, 96 px square, on a soft light so it reads on the road
+  function sbItem(kind) {
+    if (SB_ITEMS[kind]) return SB_ITEMS[kind];
+    const c = document.createElement('canvas');
+    c.width = c.height = 96;
+    const g = c.getContext('2d');
+    if (g && SB_ITEM_ART[kind]) {
+      const gr = g.createRadialGradient(48, 48, 10, 48, 48, 48), lt = kind === 'flake' ? '140, 190, 255' : '255, 255, 240';
+      gr.addColorStop(0, 'rgba(' + lt + ', 0.75)'); gr.addColorStop(0.62, 'rgba(' + lt + ', 0.4)'); gr.addColorStop(1, 'rgba(' + lt + ', 0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 96, 96);
+      g.translate(48, 48); g.scale(0.82, 0.82);
+      SB_ITEM_ART[kind](g);
     }
+    return (SB_ITEMS[kind] = c);
   }
   function sbWheelSvg() {
     return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' },
@@ -6513,8 +7567,11 @@ PuzzleEnginesFactory(window);
       this.kmh = 0; this.carX = 0; this.tilt = 0; this.steer = 0; this.keySteer = 0; this.ptr = null; this.ptrSteer = 0;
       this.bgX = 0; this.sign = null; this.spdT = 0; this.spdOn = 0; this.wasOn = true; this.W = 0; this.H = 0;
       this.salt = Math.imul((p.seed | 0) + 7, 2654435761) | 0;
-      this.place = SB_PLACES[Math.max(1, Math.min(5, p.level || 1))];
+      this.place = SB_PLACES[p.place] || SB_PLACES.farm;
       this.puffs = []; this.critter = null;
+      // the animal on the road, braking for it, the things collected on their way to the counter
+      this.beast = null; this.brakeTo = 0; this.braked = false; this.itemK = this.run.items.length; this.flyers = []; this.streak = 0; this.streakAt = 0;
+      this.got = this.run.items.filter((x) => x).length; this.gotAt = -1e9;
       this.wrap = h('div', { class: 'sb-wrap' });
       this.canvas = h('canvas', { class: 'sb-canvas', 'aria-hidden': 'true' });
       this.goBtn = h('button', { class: 'sb-go', type: 'button', 'aria-label': this.phase === 'paused' ? 'Drive on' : 'Drive' }, icon('play'));
@@ -6522,9 +7579,11 @@ PuzzleEnginesFactory(window);
       this.wheelEl = h('div', { class: 'sb-wheel', 'aria-hidden': 'true' }, sbWheelSvg());
       this.btnCanvas = h('canvas', { 'aria-hidden': 'true' });
       this.signBtn = h('button', { class: 'sb-btn cue', type: 'button', 'aria-label': 'Tap when this sign shows: ' + p.target + ' crossing' }, this.btnCanvas);
-      this.signBtn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.respond(e); });
-      this.signBtn.addEventListener('click', (e) => { if (e.detail === 0) this.respond(e); });
-      this.wrap.append(this.canvas, this.wheelEl, this.signBtn, this.goBtn);
+      this.signBtn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.respond(e, 'button'); });
+      this.signBtn.addEventListener('click', (e) => { if (e.detail === 0) this.respond(e, 'key'); });
+      // where the guiding hand points on the road: the sign, or the animal
+      this.anchor = h('i', { class: 'sb-anchor', 'aria-hidden': 'true' });
+      this.wrap.append(this.canvas, this.anchor, this.wheelEl, this.signBtn, this.goBtn);
       this.wrap.addEventListener('pointerdown', (e) => this.steerDown(e));
       this.wrap.addEventListener('pointermove', (e) => this.steerMove(e));
       const up = (e) => { if (e.pointerId === this.ptr) { this.ptr = null; this.ptrSteer = 0; } };
@@ -6596,10 +7655,19 @@ PuzzleEnginesFactory(window);
     }
     // ---- input
     steerDown(e) {
-      if (e.button > 0 || this.summary || this.ptr != null) return;
+      if (e.button > 0 || this.summary) return;
       if (e.target.closest && e.target.closest('button')) return;
       e.preventDefault();
       Sound.unlock();
+      // a tap on the sign answers it, a tap on the animal sends it off; either way the
+      // finger can go on to steer
+      if (this.phase === 'drive') {
+        const r = this.wrap.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        const S = this.sign, xy = this.signXY, B = this.beast, bb = this.beastBox;
+        if (S && !S.res && xy && Math.hypot(x - xy[0], y - xy[1]) <= Math.max(44, this.plateP * 0.66)) this.respond(e, 'sign');
+        else if (B && !B.res && bb && x >= bb[0] - 16 && x <= bb[2] + 16 && y >= bb[1] - 16 && y <= bb[3] + 16) this.shoo(e, 'tap');
+      }
+      if (this.ptr != null) return;
       this.ptr = e.pointerId;
       this.ptrX = e.clientX;
       this.ptrSteer = 0;
@@ -6610,18 +7678,21 @@ PuzzleEnginesFactory(window);
       this.ptrSteer = Math.max(-1, Math.min(1, (e.clientX - this.ptrX) / this.steerRange));
       if (!this.steered && Math.abs(this.ptrSteer) > 0.2 && this.phase === 'drive') { this.steered = true; this.guide(); }
     }
-    respond(e) {
+    // source: button, sign (a tap on the sign itself) or key
+    respond(e, source) {
       if (this.summary || this.phase !== 'drive') return;
       Sound.unlock();
       const t = now(), ts = e && e.timeStamp > 0 && e.timeStamp <= t + 1 && e.timeStamp > t - 1000 ? e.timeStamp : t;
-      this.signBtn.classList.remove('press');
-      void this.signBtn.offsetWidth;
-      this.signBtn.classList.add('press');
-      this.later(() => this.signBtn.classList.remove('press'), 140);
+      if (source !== 'sign') {
+        this.signBtn.classList.remove('press');
+        void this.signBtn.offsetWidth;
+        this.signBtn.classList.add('press');
+        this.later(() => this.signBtn.classList.remove('press'), 140);
+      }
       const S = this.sign;
-      if (S && !S.res && ts >= S.on - 1 && ts - S.on <= S.ms + SB_GRACE) { this.score(S, true, Math.max(0, ts - S.on), t); return; }
+      if (S && !S.res && ts >= S.on - 1 && ts - S.on <= S.ms + SB_GRACE) { this.score(S, true, Math.max(0, ts - S.on), t, source); return; }
       this.run.stray++;
-      this.log('stray', { move_no: this.run.i, detail: S && S.res ? 'after ' + S.res : '' });
+      this.log('stray', { move_no: this.run.i, source, detail: S && S.res ? 'after ' + S.res : '' });
       if (this.o.feedback || this.practice) { Sound.play('no'); this.btnFlash('bad'); }
       this.app.touch();
     }
@@ -6631,6 +7702,21 @@ PuzzleEnginesFactory(window);
       this.signBtn.classList.add(k);
       clearTimeout(this.btnTimer);
       this.btnTimer = this.later(() => this.signBtn.classList.remove('ok', 'bad'), 420);
+    }
+    // a tap on the animal (or H): a toot, and it hurries off the road
+    shoo(e, source) {
+      const B = this.beast;
+      if (this.summary || this.phase !== 'drive' || !B || B.res) return;
+      const t = now(), ts = e && e.timeStamp > 0 && e.timeStamp <= t + 1 && e.timeStamp > t - 1000 ? e.timeStamp : t;
+      B.res = 'shooed';
+      B.state = 'off';
+      B.off = t;
+      const rec = this.G.beast(this.p, this.run, { shooed: true, rt: Math.max(0, ts - B.t0) });
+      this.log('beast', { move_no: this.run.i, target: this.p.target, cls: rec.cls, rt_ms: rec.rt, speed_kmh: Math.round(this.kmh), source, detail: B.side < 0 ? 'from left' : 'from right' });
+      Sound.play('toot');
+      buzz(8);
+      if (this.practice) this.later(() => this.guide(), 250);
+      this.app.touch();
     }
     // ---- driving
     begin() {
@@ -6662,6 +7748,13 @@ PuzzleEnginesFactory(window);
         this.run.voided = (this.run.voided || 0) + 1;
       }
       this.sign = null;
+      const B = this.beast;
+      if (B && !B.res) {
+        // nor does the animal on the road
+        this.log('interrupted', { move_no: this.run.i, detail: 'animal, ' + reason });
+        this.run.bi = B.k + 1;
+      }
+      this.beast = null; this.brakeTo = 0;
       this.ptr = null; this.ptrSteer = 0; this.keySteer = 0;
       this.kmh = 0;
       this.phase = 'paused';
@@ -6684,6 +7777,7 @@ PuzzleEnginesFactory(window);
       if (this.phase === 'done') return;
       if (ts - (this.engAt || 0) > 140) { this.engAt = ts; Sound.engine(this.kmh > 2 ? this.kmh : 0); }
       this.draw(ts);
+      if (this.practice && ts - (this.guideAt || 0) > 180) { this.guideAt = ts; this.guide(); }
       if (this.phase === 'drive' || this.phase === 'finish') this.rafId = raf((t) => this.loop(t));
     }
     step(dt, ts) {
@@ -6692,11 +7786,15 @@ PuzzleEnginesFactory(window);
       this.tt += dt;
       // speed: toward the staircase value, slower on the grass, to a stop at the end
       const onGrass = Math.abs(this.carX) > p.half;
-      const want = driving ? run.kmh * (onGrass ? 0.8 : 1) : 0;
+      // an animal on the road: the car eases off until it is gone, and brakes if it gets close
+      const hard = ts < this.brakeTo, held = !!(this.beast && !this.beast.res);
+      const want = driving ? (hard ? 4 : run.kmh * (onGrass ? 0.8 : 1) * (held ? SB_EASE : 1)) : 0;
       const before = this.kmh;
-      this.kmh += (want - this.kmh) * Math.min(1, dt * (driving ? (this.kmh < want ? 1.3 : 2.2) : 2.6));
+      this.kmh += (want - this.kmh) * Math.min(1, dt * (hard ? 7 : held ? 3 : driving ? (this.kmh < want ? 1.3 : 2.2) : 2.6));
       if (!driving && this.kmh < 1.5) this.kmh = 0;
       this.braking = this.kmh < before - 0.4 * dt * 60;
+      // the speed measure leaves out the time from an animal stepping out until the car is nearly back to speed
+      if (this.braked && !hard && !held && this.kmh >= run.kmh * 0.9) this.braked = false;
       const v = this.kmh * G.kmhToUnits;
       this.pos += v * dt;
       // steering: the wheel sets how fast the car moves sideways; a bend pushes it
@@ -6712,7 +7810,9 @@ PuzzleEnginesFactory(window);
       // the road and the speed count once the car is going
       const on = Math.abs(this.carX) + SB_CAR / 2 <= p.half;
       if (driving && this.tt > G.warm) {
-        D.t += dt; D.vt += this.kmh * dt;
+        D.t += dt;
+        if (this.braked) D.brake += dt;
+        else { D.vt += this.kmh * dt; D.vs += dt; }
         if (on) D.on += dt;
         if (!on && this.wasOn) { D.off++; this.log('off_road', { move_no: run.i, speed_kmh: Math.round(this.kmh), detail: this.carX < 0 ? 'left' : 'right' }); }
         this.spdT += dt;
@@ -6727,7 +7827,15 @@ PuzzleEnginesFactory(window);
       this.offEdge = !on;
       if (!on && this.kmh > 6 && ts - (this.rumbleAt || 0) > 190) { this.rumbleAt = ts; Sound.play('rumble'); }
       this.signs(ts);
-      if (driving && this.tt >= p.duration && run.i >= p.signs.length && !this.sign) {
+      this.animal(ts, dt);
+      // things to collect: each one counts as the car goes past it
+      while (this.itemK < p.items.length && p.items[this.itemK].w - this.pos <= SB_CAR_Z) {
+        const it = p.items[this.itemK], got = Math.abs(this.carX - it.x) <= SB_CAR + 0.08;
+        G.item(p, run, this.itemK, got);
+        if (got) this.grab(it, ts);
+        this.itemK++;
+      }
+      if (driving && this.tt >= p.duration && run.i >= p.signs.length && !this.sign && !(this.beast && !this.beast.res)) {
         this.phase = 'finish';
         this.finishAt = this.pos + 7.5;
       }
@@ -6744,7 +7852,48 @@ PuzzleEnginesFactory(window);
         if (this.practice) this.guide();
       }
     }
-    score(S, responded, rt, ts) {
+    // the place's animal steps onto the road ahead, walks to the middle and stands
+    // there until a tap sends it off; the car eases off meanwhile, and if it gets
+    // close, it brakes and the animal hurries off by itself
+    animal(ts, dt) {
+      const p = this.p, run = this.run;
+      let B = this.beast;
+      if (!B && this.phase === 'drive' && run.bi < p.beasts.length && this.tt >= p.beasts[run.bi].t) {
+        const sp = p.beasts[run.bi], v = Math.max(this.kmh, run.kmh * 0.9) * this.G.kmhToUnits;
+        const z0 = Math.max(12, Math.min(18, SB_STOP + v * 1.6));
+        this.braked = true;
+        B = this.beast = { k: run.bi, w: this.pos + z0, side: sp.side, dir: -sp.side, t0: ts, off: 0, x0: sp.side * (p.half + 0.7), x: sp.side * (p.half + 0.7), x1: -sp.side * 0.04, state: 'in', res: null };
+        if (this.practice) this.guide();
+      }
+      if (!B) return;
+      if (B.state === 'in') {
+        const f = Math.min(1, (ts - B.t0) / 1000 / SB_IN);
+        B.x = B.x0 + (B.x1 - B.x0) * (1 - (1 - f) * (1 - f));
+        if (f >= 1) B.state = 'stand';
+      } else if (B.state === 'off') B.x += B.dir * SB_RUN * dt;
+      if (!B.res && this.phase === 'drive' && B.w - this.pos <= SB_STOP) {
+        B.res = 'braked';
+        B.state = 'off';
+        B.off = ts;
+        this.brakeTo = ts + 900;
+        this.braked = true;
+        const rec = this.G.beast(p, run, { shooed: false });
+        this.log('beast', { move_no: run.i, target: p.target, cls: rec.cls, speed_kmh: Math.round(this.kmh), detail: B.side < 0 ? 'from left' : 'from right' });
+        Sound.play('screech');
+        buzz([30, 30, 30]);
+      }
+      if (Math.abs(B.x) > p.half + 1.4 || B.w - this.pos < 0.5) { this.beast = null; this.beastBox = null; }
+    }
+    // a thing collected: a ping that climbs with a run of them, and it flies to the counter
+    grab(it, ts) {
+      this.streak = ts - this.streakAt < 1500 ? Math.min(this.streak + 1, 8) : 0;
+      this.streakAt = ts;
+      Sound.play('ping', this.streak);
+      this.got = (this.got || 0) + 1;
+      this.gotAt = ts;
+      if (this.W) this.flyers.push({ t0: ts, x: this.W / 2 + (it.x - this.carX) * (this.H / SB_CAR_Z), y: this.H * SB_HORIZON + this.H / SB_CAR_Z - this.H * 0.08 });
+    }
+    score(S, responded, rt, ts, source) {
       const p = this.p, run = this.run, sg = p.signs[S.k], D = run.drive;
       const span = D.t - S.d0.t, onShare = span > 0.05 ? (D.on - S.d0.on) / span : null;
       const rec = this.G.record(p, run, { responded, rt, planned: S.ms, kmh: S.kmh });
@@ -6754,7 +7903,7 @@ PuzzleEnginesFactory(window);
       this.log('sign', {
         move_no: rec.i, target: sg.glyph, shown: sg.shape, cls: rec.cls,
         rt_ms: rec.rt == null ? '' : rec.rt, window_ms: S.ms, stair_next_ms: rec.next == null ? '' : rec.next,
-        reversal: p.fixedMs ? '' : rec.rev, speed_kmh: S.kmh, on_road: onShare == null ? '' : r4(onShare),
+        reversal: p.fixedMs ? '' : rec.rev, speed_kmh: S.kmh, on_road: onShare == null ? '' : r4(onShare), source: responded ? source : '',
       });
       const show = this.o.feedback || this.practice;
       S.show = show;
@@ -6815,6 +7964,21 @@ PuzzleEnginesFactory(window);
         for (const st of this.stars) { ctx.globalAlpha = 0.5 + 0.4 * Math.sin(t * st[3] + st[4]); ctx.fillRect(st[0], st[1], st[2], st[2]); }
         ctx.globalAlpha = 1;
       }
+      // the northern lights: green curtains that ripple and fold, rose at their tops
+      if (PL.aurora) {
+        const sp = sbAurora();
+        for (let a = 0; a < 2; a++) {
+          const base = H * (0.19 + a * 0.07), amp = H * 0.032, top = H * (0.05 + a * 0.04);
+          for (let x = -3; x < W + 3; x += 3) {
+            const u = (x + this.bgX * 0.05) / W;
+            const yb = base + Math.sin(u * 6 + t * 0.32 + a * 2.1) * amp + Math.sin(u * 15 - t * 0.55 + a) * amp * 0.35;
+            const len = (yb - top) * (0.5 + 0.5 * Math.sin(u * 21 + t * 0.8 + a * 4) ** 2);
+            ctx.globalAlpha = (0.18 + 0.14 * Math.sin(u * 37 + t * 1.5 + a)) * (a ? 0.75 : 1);
+            ctx.drawImage(sp, x, yb - len, 3.2, len);
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
       const body = PL.sun || PL.moon, span = W * 1.6;
       const sx = ((W * (body[0] + 0.3) - this.bgX * 0.12) % span + span) % span - W * 0.3, sy = H * body[1], sr = H * body[2];
       if (PL.sun) {
@@ -6828,6 +7992,37 @@ PuzzleEnginesFactory(window);
         ctx.drawImage(sbMoon(), sx - sr * 1.15, sy - sr * 1.15, sr * 2.3, sr * 2.3);
       }
       sbClouds(ctx, PL, W, H, this.bgX, t);
+      // a balloon drifting over the savanna
+      if (PL.balloon) {
+        const span = W * 1.6, bx = ((W * 0.82 - this.bgX * 0.1 + t * 3) % span + span) % span - W * 0.3, by = H * 0.13 + Math.sin(t * 0.5) * H * 0.006, rb = H * 0.026;
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(bx - rb * 0.32, by + rb * 1.2); ctx.bezierCurveTo(bx - rb * 1.25, by + rb * 0.3, bx - rb * 1.15, by - rb * 1.05, bx, by - rb * 1.05);
+        ctx.bezierCurveTo(bx + rb * 1.15, by - rb * 1.05, bx + rb * 1.25, by + rb * 0.3, bx + rb * 0.32, by + rb * 1.2); ctx.closePath();
+        ctx.fillStyle = '#F2C94C'; ctx.fill(); ctx.clip();
+        ctx.fillStyle = '#E8513F';
+        for (const f of [-0.75, 0, 0.75]) { ctx.beginPath(); ctx.ellipse(bx + f * rb, by, rb * 0.22, rb * 1.3, 0, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'; ctx.beginPath(); ctx.ellipse(bx - rb * 0.45, by - rb * 0.45, rb * 0.25, rb * 0.4, 0.4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        ctx.strokeStyle = '#6B4A30'; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(bx - rb * 0.3, by + rb * 1.2); ctx.lineTo(bx - rb * 0.22, by + rb * 1.58); ctx.moveTo(bx + rb * 0.3, by + rb * 1.2); ctx.lineTo(bx + rb * 0.22, by + rb * 1.58); ctx.stroke();
+        ctx.fillStyle = '#8A5A34'; ctx.fillRect(bx - rb * 0.24, by + rb * 1.56, rb * 0.48, rb * 0.36);
+      }
+      // a pair of macaws crossing the jungle sky now and then
+      if (PL.parrots) {
+        const cyc = (t % 14) / 14, px0 = -60 + cyc * (W + 160);
+        if (cyc < 0.8) for (let b = 0; b < 2; b++) {
+          const px = px0 - b * 34, py = H * 0.15 + b * 12 + Math.sin(t * 2 + b) * 5, fl = Math.sin(t * 13 + b * 2);
+          ctx.fillStyle = '#E8343A';
+          ctx.beginPath(); ctx.ellipse(px, py, 8, 3.4, 0.08, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(px - 6, py); ctx.lineTo(px - 22, py + 4); ctx.lineTo(px - 6, py + 2.5); ctx.fill();
+          ctx.beginPath(); ctx.arc(px + 8, py - 1.5, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#FFE08A'; ctx.beginPath(); ctx.moveTo(px + 10.5, py - 2); ctx.lineTo(px + 13.5, py - 0.5); ctx.lineTo(px + 10.5, py + 0.5); ctx.fill();
+          ctx.fillStyle = '#2F6FD6';
+          ctx.beginPath(); ctx.moveTo(px - 2, py - 1); ctx.lineTo(px - 9, py - 1 - 11 * fl); ctx.lineTo(px + 4, py - 1); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#FFC93C';
+          ctx.beginPath(); ctx.moveTo(px - 1, py - 0.5); ctx.lineTo(px - 5, py - 0.5 - 6 * fl); ctx.lineTo(px + 2.5, py - 0.5); ctx.closePath(); ctx.fill();
+        }
+      }
       if (PL.birds) {
         ctx.strokeStyle = PL.birds; ctx.lineWidth = 1.4; ctx.lineCap = 'round'; ctx.globalAlpha = 0.75;
         ctx.beginPath();
@@ -6848,6 +8043,17 @@ PuzzleEnginesFactory(window);
       const zD = this.destZ(), latD = PL.destLat != null ? PL.destLat : half * 1.16 + 0.8, wood = PL.wood || '#A97D52';
       let destDrawn = false, fprev = null, pkL = null, pkR = null;
       const e0 = half * 1.16, coast = PL.land === 'coast';
+      // the things to collect in sight, and the animal on the road: drawn at their depth
+      const items = p.items, iq = [], spr = sbItem(PL.item);
+      for (let k = this.itemK; k < items.length; k++) {
+        const z = items[k].w - sc;
+        if (z > N * seg) break;
+        if (z > 0.4) iq.push(k);
+      }
+      let qi = iq.length - 1;
+      const B = this.beast, zBe = B ? B.w - sc : 0;
+      let beastDrawn = !B || zBe <= 0.4;
+      this.beastBox = null;
       for (let n = N - 1; n >= 0; n--) {
         const zB = zs[n + 1];
         if (zB <= 0.4) break;
@@ -6890,8 +8096,18 @@ PuzzleEnginesFactory(window);
             fprev = { b, x: fx, y: yB, h: fh };
           } else fprev = null;
         }
+        // tall orange snow poles mark the edges in the north
+        if (PL.posts === 'snow' && i % 6 === 0 && s > 3) {
+          const pw = Math.max(1, 0.016 * s), ph = 0.44 * s, lat = e0 + 0.08;
+          for (const sd of [-1, 1]) {
+            const px = W / 2 + (xs[n + 1] + sd * lat - camX) * s;
+            if (px < -pw || px > W + pw) continue;
+            ctx.fillStyle = '#F06A2E'; ctx.fillRect(px - pw / 2, yB - ph, pw, ph);
+            ctx.fillStyle = '#FFE9D8'; ctx.fillRect(px - pw / 2, yB - ph * 0.92, pw, ph * 0.07);
+          }
+        }
         // posts with a reflector beside the road: white, or wood in the forest
-        if (PL.posts && i % 5 === 0 && s > 6) {
+        else if (PL.posts && i % 5 === 0 && s > 6) {
           const pw = Math.max(1, 0.02 * s), ph = 0.14 * s, lat = e0 + 0.07, wood = PL.posts === 'wood';
           for (const sd of [-1, 1]) {
             const px = W / 2 + (xs[n + 1] + sd * lat - camX) * s;
@@ -6901,14 +8117,26 @@ PuzzleEnginesFactory(window);
             ctx.fillStyle = wood ? '#F4F1E8' : '#F0663F'; ctx.fillRect(px - pw * 0.32, yB - ph * 0.7, pw * 0.64, ph * 0.13);
           }
         }
-        // the forest stands close on both sides
-        if (PL.land === 'forest' && zB < 46 && zB > 0.9 && s > 2.4 && i % (zB < 14 ? 1 : zB < 28 ? 2 : 3) === 0) {
+        // things to collect float over the road, bobbing
+        while (qi >= 0 && items[iq[qi]].w - sc > zA) {
+          const k = iq[qi--], it = items[k], z = it.w - sc, sI = F / z, sz = 0.22 * sI;
+          if (z > zB || sz < 2.5) continue;
+          const ix = W / 2 + (at(z) + it.x - camX) * sI, iy = hy + sI;
+          ctx.globalAlpha = Math.min(1, (N * seg - z) / 10);
+          ctx.fillStyle = 'rgba(20, 24, 40, 0.16)';
+          ctx.beginPath(); ctx.ellipse(ix, iy, sz * 0.28, sz * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.drawImage(spr, ix - sz / 2, iy - 0.16 * sI - sz / 2 + Math.sin(t * 4 + k * 1.3) * 0.025 * sI, sz, sz);
+          ctx.globalAlpha = 1;
+        }
+        if (!beastDrawn && zBe <= zB && zBe > zA) { this.drawBeast(ctx, B, zBe, at(zBe), camX, W, hy, F, ts); beastDrawn = true; }
+        // the forest and the jungle stand close on both sides
+        if (PL.walls && zB < 46 && zB > 0.9 && s > 2.4 && i % ((zB < 14 ? 1 : zB < 28 ? 2 : 3) * (PL.far === 'canopy' ? 2 : 1)) === 0) {
           for (const sd of [-1, 1]) {
             const q = sbHash((i * 2 + (sd > 0 ? 1 : 0)) ^ this.salt);
             if (q % 5 === 4) continue;
             const tx = W / 2 + (xs[n + 1] + sd * (e0 + 0.24 + (((q >>> 6) % 100) / 100) * 0.75) - camX) * s;
-            if (tx < -0.4 * s || tx > W + 0.4 * s) continue;
-            sbThing(ctx, (q >>> 12) % 7 === 0 ? 'birch' : 'wallpine', tx, yB, s * (1.25 + ((q >>> 16) % 45) / 100), q, t, PL);
+            if (tx < -0.5 * s || tx > W + 0.5 * s) continue;
+            sbThing(ctx, PL.walls[(q >>> 12) % PL.walls.length], tx, yB, s * (1.25 + ((q >>> 16) % 45) / 100), q, t, PL);
           }
         }
         // the village street: picket fences in front of the gardens, houses, lamps
@@ -6970,6 +8198,33 @@ PuzzleEnginesFactory(window);
       // haze toward the horizon
       ctx.fillStyle = this.hazeGrad;
       ctx.fillRect(0, hy - H * 0.05, W, H * 0.22);
+      // mist drifting low through the jungle
+      if (PL.mist) {
+        const gl = sbGlow('255, 255, 255'), span = W * 1.8;
+        ctx.globalAlpha = 0.13;
+        for (let q = 0; q < 5; q++) {
+          const R = W * (0.3 + (q % 3) * 0.07), mx = ((q * W * 0.45 + t * (6 + q) - this.bgX * 0.25) % span + span) % span - W * 0.4;
+          ctx.drawImage(gl, mx - R, hy + H * (0.03 + (q % 2) * 0.04) - R * 0.16, R * 2, R * 0.32);
+        }
+        ctx.globalAlpha = 1;
+      }
+      // the air shimmers over the hot sand
+      if (PL.shimmer) {
+        ctx.fillStyle = 'rgba(255, 250, 236, 0.55)';
+        for (let q = 0; q < 6; q++) {
+          const yy = hy - 1.5 + q * 1.7, ph = t * 2.6 + q * 1.3;
+          for (let x = ((q * 37) % 70) - 70; x < W; x += 70) ctx.fillRect(x + Math.sin(ph + x * 0.05) * 7, yy, 16 + 10 * Math.sin(ph * 0.7 + x), 1);
+        }
+      }
+      // headlights on the road ahead at night
+      if (PL.lights && this.phase !== 'done') {
+        const zN = 2.3, zF = 10, sN = F / zN, sF = F / zF, yN = hy + sN, yF = hy + sF;
+        const xN = W / 2, xF = W / 2 + (at(zF) + this.carX - camX) * sF;
+        const lg = ctx.createLinearGradient(0, yN, 0, yF);
+        lg.addColorStop(0, 'rgba(255, 244, 214, 0.3)'); lg.addColorStop(1, 'rgba(255, 244, 214, 0)');
+        ctx.fillStyle = lg;
+        ctx.beginPath(); ctx.moveTo(xN - 0.16 * sN, yN); ctx.lineTo(xN + 0.16 * sN, yN); ctx.lineTo(xF + 0.5 * sF, yF); ctx.lineTo(xF - 0.5 * sF, yF); ctx.closePath(); ctx.fill();
+      }
       // the finish: bunting on two posts across the road
       if (this.finishAt != null) {
         const z = this.finishAt - sc;
@@ -7020,20 +8275,18 @@ PuzzleEnginesFactory(window);
           this.signXY = [gx, cy];
         }
       }
-      // a caught sign's animal hops off into the field
+      // a caught sign's animal comes to life and runs or hops off into the field
       const C = this.critter;
       if (C) {
         const age = ts - C.t0, dur = 1000;
         if (age > dur) this.critter = null;
         else if (age >= 0) {
-          const z = SB_SIGN_Z, s = F / z, gy = hy + F / z, f = age / dur;
-          const hp = Math.min(0.999, (f * 3) % 1), L = 0.62 * s;
+          const z = SB_SIGN_Z, s = F / z, gy = hy + F / z, f = age / dur, L = 0.62 * s, A = SB_ANIM[C.kind];
           const cx0 = W / 2 + (at(z) + half + 0.16 - camX) * s + (0.12 + f * 1.25) * s;
-          const lift = (C.kind === 'rabbit' ? 0.2 : 0.06) * s * Math.sin(hp * Math.PI);
           ctx.globalAlpha = Math.max(0, Math.min(1, (1 - f) * 4));
           ctx.fillStyle = 'rgba(30, 50, 30, 0.2)';
-          ctx.beginPath(); ctx.ellipse(cx0, gy, L * 0.32 * (1 - 0.3 * Math.sin(hp * Math.PI)), L * 0.05, 0, 0, Math.PI * 2); ctx.fill();
-          sbCritter(ctx, C.kind, cx0, gy - lift, L, hp);
+          ctx.beginPath(); ctx.ellipse(cx0, gy, L * 0.32, L * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+          sbAnimal(ctx, C.kind, cx0, gy, L, (age / 1000) * (A ? A.rate : 2) * 1.8, {});
           ctx.globalAlpha = 1;
         }
       }
@@ -7044,6 +8297,10 @@ PuzzleEnginesFactory(window);
       if (PL.moon) for (const sd of [-1, 1]) ctx.drawImage(sbGlow('255, 90, 70'), W / 2 + sd * 36.5 * u - 22 * u, carY - 38.5 * u + bob - 22 * u, 44 * u, 44 * u);
       if (this.phase === 'drive' || this.phase === 'finish') {
         if (this.kmh > 4 && ts - (this.exAt || 0) > 230) { this.exAt = ts; this.puffs.push({ t0: ts, x: -20, y: -4, vx: -16, vy: 10, r0: 3, r1: 15, life: 700, c: '240, 240, 244', a: 0.22 }); }
+        if (ts < this.brakeTo && this.kmh > 3 && ts - (this.skAt || 0) > 60) {
+          this.skAt = ts;
+          for (const sd of [-1, 1]) this.puffs.push({ t0: ts, x: sd * 38, y: -3, vx: sd * (6 + Math.random() * 10), vy: -12 - Math.random() * 8, r0: 4, r1: 15, life: 520, c: '236, 236, 240', a: 0.34 });
+        }
         if (this.offEdge && this.kmh > 6 && ts - (this.duAt || 0) > 70) {
           this.duAt = ts;
           const sd = this.carX > 0 ? 1 : -1;
@@ -7058,6 +8315,16 @@ PuzzleEnginesFactory(window);
           ctx.beginPath(); ctx.arc(W / 2 + (q.x + q.vx * sec) * u, carY + (q.y + q.vy * sec) * u, (q.r0 + (q.r1 - q.r0) * f) * u, 0, Math.PI * 2); ctx.fill();
         }
       }
+      // snow falling in the north
+      if (PL.snow) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        for (let q = 0; q < 48; q++) {
+          const h0 = sbHash(q * 41 + 7), fall = 16 + (h0 % 26), r = 1 + ((h0 >>> 8) % 3) * 0.55;
+          const yy = (((h0 >>> 4) % 1000) / 1000 * (H + 12) + t * fall) % (H + 12) - 6;
+          const xx = ((((h0 >>> 14) % 1000) / 1000 * W + Math.sin(t * 0.7 + q) * 10 - this.bgX * 0.06 * (r / 2)) % W + W) % W;
+          ctx.fillRect(xx - r / 2, yy - r / 2, r, r);
+        }
+      }
       // how far along the drive, with the landmark's flag at the end
       const pr = Math.max(0, Math.min(1, this.tt / p.duration)), bx = 18, bw = W - 50, by = 16;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
@@ -7069,8 +8336,51 @@ PuzzleEnginesFactory(window);
       ctx.beginPath(); ctx.moveTo(bx + bw + 8, by - 12); ctx.lineTo(bx + bw + 19, by - 8); ctx.lineTo(bx + bw + 8, by - 4); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#E5564D';
       ctx.beginPath(); ctx.arc(bx + bw * pr, by, 5.5, 0, Math.PI * 2); ctx.fill();
+      // things collected: a count under the route bar, and the newest flying up to it
+      const cX = 30, cY = 42;
+      if (this.flyers.length) {
+        this.flyers = this.flyers.filter((q) => ts - q.t0 < 480);
+        for (const q of this.flyers) {
+          const f = (ts - q.t0) / 480, e = f * f * (3 - 2 * f), sz = 40 - 14 * e;
+          ctx.drawImage(spr, q.x + (cX - q.x) * e - sz / 2, q.y + (cY - q.y) * e - Math.sin(f * Math.PI) * H * 0.06 - sz / 2, sz, sz);
+        }
+      }
+      if (this.got && (this.o.counter || this.practice)) {
+        const since = ts - this.gotAt, bump = since > 420 && since < 640 ? Math.sin(((since - 420) / 220) * Math.PI) : 0, sz = 28 * (1 + 0.25 * bump);
+        ctx.drawImage(spr, cX - sz / 2, cY - sz / 2, sz, sz);
+        ctx.font = '700 17px Fredoka, Lexend, system-ui, sans-serif';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(30, 30, 40, 0.45)'; ctx.lineJoin = 'round';
+        ctx.strokeText(String(this.got), cX + 16, cY + 1);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(String(this.got), cX + 16, cY + 1);
+      }
       // the wheel follows the steering
       this.wheelEl.style.transform = 'rotate(' + Math.round(this.steer * 110) + 'deg)';
+    }
+    // the animal standing on the road at depth z (xr: the road's middle there), with
+    // the village duck's ducklings behind her; keeps the box a tap can hit
+    drawBeast(ctx, B, z, xr, camX, W, hy, F, ts) {
+      const p = this.p, A = SB_ANIM[p.target], s = F / z, L = A.len * s, y = hy + s, flip = B.dir < 0;
+      const moving = B.state !== 'stand', ph = moving ? ((ts - B.t0) / 1000) * A.rate * (B.state === 'off' ? 1.7 : 1) : 0;
+      const kids = p.target === 'duck' ? 3 : 0, b = sbAnimBox(p.target), k = L / 100;
+      let x0 = Infinity, x1 = -Infinity;
+      for (let i = kids; i >= 0; i--) {
+        const x = W / 2 + (xr + B.x - B.dir * (i ? 0.1 + i * 0.13 : 0) - camX) * s, kind = i ? 'duckling' : p.target, bb = i ? sbAnimBox('duckling') : b;
+        ctx.fillStyle = 'rgba(20, 24, 40, 0.2)';
+        ctx.beginPath(); ctx.ellipse(x, y, ((bb[2] - bb[0]) / 2) * k * 0.85, Math.max(1.5, 0.03 * s), 0, 0, Math.PI * 2); ctx.fill();
+        sbAnimal(ctx, kind, x, y, L, ph + i * 0.3, { flip, still: !moving });
+        x0 = Math.min(x0, flip ? x - bb[2] * k : x + bb[0] * k);
+        x1 = Math.max(x1, flip ? x - bb[0] * k : x + bb[2] * k);
+      }
+      this.beastBox = [x0, y + b[1] * k, x1, y + 2];
+      const xm = W / 2 + (xr + B.x - camX) * s;
+      this.beastXY = [xm, y + ((b[1] + b[3]) / 2) * k];
+    }
+    mark(xy) {
+      this.anchor.style.left = Math.round(xy[0]) + 'px';
+      this.anchor.style.top = Math.round(xy[1]) + 'px';
+      return this.anchor;
     }
     // ---- status
     goal() {
@@ -7099,8 +8409,9 @@ PuzzleEnginesFactory(window);
       if (this.summary) return null;
       if (this.phase === 'ready' || this.phase === 'paused') return this.goBtn;
       if (this.phase !== 'drive') return null;
-      const S = this.sign;
-      if (S && !S.res && this.p.signs[S.k].go) return this.signBtn;
+      const S = this.sign, B = this.beast;
+      if (S && !S.res && this.p.signs[S.k].go && this.signXY) return this.mark(this.signXY);
+      if (B && !B.res && this.beastBox) return this.mark(this.beastXY);
       if (!this.steered && this.tt < 10) return this.wheelEl;
       return null;
     }
@@ -7113,6 +8424,7 @@ PuzzleEnginesFactory(window);
       this.goBtn.hidden = true;
       this.signBtn.classList.remove('cue');
       this.sign = null;
+      this.beast = null;
       this.draw(now());
     }
     makeSummary(outcome, dur) {
@@ -7128,19 +8440,12 @@ PuzzleEnginesFactory(window);
         stars, sb: d,
       };
     }
-    celebrate(sm) {
-      if (sm.outcome !== 'complete') return 300;
-      Sound.play('win');
-      if (sm.stars >= 3 || this.practice) {
-        buzz([18, 50, 18]);
-        this.later(() => confetti(this, CONFETTI.switchback), 120);
-        return 650;
-      }
-      return 480;
-    }
+    // passed: every target caught and no other sign tapped
+    practicePassed(sm) { return sm.outcome === 'complete' && !!sm.sb && sm.sb.misses === 0 && sm.sb.false_alarms === 0; }
+    celebrate(sm) { return this.trialCelebrate(sm, CONFETTI.switchback); }
     resultTitle(sm) {
       if (sm.outcome !== 'complete') return super.resultTitle(sm);
-      if (this.practice) return 'Got it!';
+      if (this.practice) return sm.passed ? 'Got it!' : 'Once more';
       if (!this.o.counter) return 'Done!';
       if (sm.sb.correct === sm.sb.n && sm.sb.stray === 0 && sm.sb.on_road >= 0.95) return 'Perfect!';
       return sm.stars === 3 ? 'Great!' : sm.stars === 2 ? 'Nice!' : 'Done!';
@@ -7148,9 +8453,12 @@ PuzzleEnginesFactory(window);
     resultStats(sm) {
       const d = sm.sb;
       if (!d || !d.n) return null;
+      const c = h('canvas', { class: 'res-item', width: 44, height: 44, 'aria-hidden': 'true' }), g = c.getContext('2d');
+      if (g) g.drawImage(sbItem(this.place.item), 0, 0, 44, 44);
       return h('div', { class: 'res-stats' },
         h('span', { 'aria-label': 'Signs right' }, icon('sign'), h('b', { text: d.correct + '/' + d.n })),
-        h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' })));
+        h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' })),
+        d.items ? h('span', { 'aria-label': 'Collected' }, c, h('b', { text: d.collected + '/' + d.items })) : null);
     }
     extraSnapshot() { return { tt: this.tt, pos: this.pos }; }
     onKey(e) {
@@ -7160,7 +8468,8 @@ PuzzleEnginesFactory(window);
       if (this.phase !== 'drive' && this.phase !== 'finish') return false;
       if (k === 'ArrowLeft' || k === 'a' || k === 'A') { this.keySteer = -1; if (!this.steered) { this.steered = true; this.guide(); } return true; }
       if (k === 'ArrowRight' || k === 'd' || k === 'D') { this.keySteer = 1; if (!this.steered) { this.steered = true; this.guide(); } return true; }
-      if (k === ' ' || k === 'Enter' || k === 'ArrowUp') { if (!e.repeat) this.respond(e); return true; }
+      if (k === ' ' || k === 'Enter' || k === 'ArrowUp') { if (!e.repeat) this.respond(e, 'key'); return true; }
+      if (k === 'h' || k === 'H' || k === 'ArrowDown') { if (!e.repeat) this.shoo(e, 'key'); return true; }
       return false;
     }
   }
@@ -7619,19 +8928,12 @@ PuzzleEnginesFactory(window);
         stars, ks: d,
       };
     }
-    celebrate(sm) {
-      if (sm.outcome !== 'complete') return 300;
-      Sound.play('win');
-      if (sm.stars >= 3 || this.practice) {
-        buzz([18, 50, 18]);
-        this.later(() => confetti(this, CONFETTI.keepsake), 120);
-        return 650;
-      }
-      return 480;
-    }
+    // passed: every thing back on its own stone
+    practicePassed(sm) { return sm.outcome === 'complete' && !!sm.ks && sm.ks.correct === sm.ks.n; }
+    celebrate(sm) { return this.trialCelebrate(sm, CONFETTI.keepsake); }
     resultTitle(sm) {
       if (sm.outcome !== 'complete') return super.resultTitle(sm);
-      if (this.practice) return 'Got it!';
+      if (this.practice) return sm.passed ? 'Got it!' : 'Once more';
       if (!this.o.counter) return 'Done!';
       return sm.stars === 3 ? 'Perfect!' : sm.stars === 2 ? 'Great!' : 'Done!';
     }
@@ -7663,10 +8965,11 @@ PuzzleEnginesFactory(window);
 
   // ============================================================ export
   const EVENT_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'event_index', 'event', 'wall_time', 't_session_ms', 'seq', 'block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 't_ms', 'move_no', 'target', 'from', 'to', 'd_before', 'd_after', 'cls', 'exact', 'partial', 'marks', 'cands_before', 'cands_after', 'consistent', 'info_expected', 'info_best', 'info_actual', 'best_try',
-    'refresh_ms', 'frames', 'flash_ms', 'flash_measured_ms', 'frame_drop', 'fix_ms', 'mask_ms', 'shown', 'chosen', 'ring', 'dir', 'dir_chosen', 'n_distract', 'rt_center_ms', 'rt_where_ms', 'stair_next_ms', 'reversal', 'field_px', 'window_ms', 'rt_ms', 'speed_kmh', 'on_road', 'error_dist', 'detail'];
+    'refresh_ms', 'frames', 'flash_ms', 'flash_measured_ms', 'frame_drop', 'fix_ms', 'mask_ms', 'shown', 'chosen', 'ring', 'dir', 'dir_chosen', 'n_distract', 'rt_center_ms', 'rt_where_ms', 'stair_next_ms', 'reversal', 'field_px', 'window_ms', 'rt_ms', 'speed_kmh', 'on_road', 'source', 'error_dist', 'detail'];
   const PUZZLE_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'seq', 'block', 'in_block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 'params', 'outcome', 'success', 'stars', 'started_at', 'ended_at', 'duration_ms', 'first_move_ms', 'hidden_ms', 'moves', 'reference', 'par', 'efficiency', 'n_optimal', 'n_wasted', 'n_dead_end', 'n_in_dead_end', 'n_blocked', 'n_undo', 'n_restart', 'n_hint', 'n_suboptimal', 'n_zero_info', 'n_inconsistent', 'mean_info_ratio',
     'n_correct', 'accuracy', 'threshold_ms', 'best_ms', 'start_ms', 'end_ms', 'n_reversals', 'refresh_ms', 'n_frame_drops', 'field_px',
-    'n_hit', 'n_miss', 'n_false_alarm', 'n_stray', 'rt_mean_ms', 'on_road', 'n_off_road', 'speed_mean_kmh', 'speed_start_kmh', 'speed_end_kmh', 'study_ms', 'mean_error', 'level_next', 'features'];
+    'n_hit', 'n_miss', 'n_false_alarm', 'n_stray', 'rt_mean_ms', 'on_road', 'n_off_road', 'speed_mean_kmh', 'speed_start_kmh', 'speed_end_kmh',
+    'place', 'n_animals', 'n_shooed', 'animal_rt_mean_ms', 'brake_s', 'n_items', 'n_collected', 'study_ms', 'mean_error', 'level_next', 'features'];
 
   function sessionFields(S) {
     return { session_id: S.id, participant: S.participant, condition: S.condition, session_kind: S.kind, session_seed: S.seed, app_version: S.app_version };
@@ -7741,16 +9044,17 @@ PuzzleEnginesFactory(window);
       ['stair_next_ms / reversal', 'Glimpse: display time planned for the next look, and 1 if this look reversed the staircase direction. Switchback: sign time for the next sign, and reversals over targets and false alarms'],
       ['field_px', 'Glimpse: field radius in CSS pixels; degrees of visual angle depend on the screen and viewing distance'],
       ['window_ms', 'Switchback: how long the sign stayed up; a tap up to 150 ms after it went still counted'],
-      ['rt_ms', 'Switchback: time from the animation frame that first drew the sign to the tap (the sign is on screen about one frame later). Keepsake: on a place event, time since the basket opened or since the last thing was put back; on the look event that ends a look, how long the look lasted'],
-      ['speed_kmh', 'Switchback: speed when the sign came up (speed events: the new speed)'],
+      ['rt_ms', 'Switchback: time from the animation frame that first drew the sign to the tap (the sign is on screen about one frame later); on a beast event, from the frame the animal stepped out to the tap. Keepsake: on a place event, time since the basket opened or since the last thing was put back; on the look event that ends a look, how long the look lasted'],
+      ['speed_kmh', 'Switchback: speed when the sign came up (speed events: the new speed; beast events: the speed at the tap or the brake)'],
       ['on_road', 'Switchback: share of driving time with the car on the road while the sign was up (speed events: over the last 1.5 s)'],
+      ['source', 'Switchback: what answered a sign: sign (a tap on the sign itself), button (the sign button) or key (Space, Enter, up arrow); blank when the sign was let pass. On beast events: tap (a tap on the animal) or key (H, down arrow). On stray events: what was tapped with no sign up'],
       ['error_dist', 'Keepsake: distance from the stone used to the right stone, in map units (the map is 100 wide; stones are at least 20 apart)'],
-      ['detail', 'extra context: puzzle features at puzzle_start, the blocking car or the full post for blocked moves, hidden time at visible, the phase of an interrupted look'],
+      ['detail', 'extra context: puzzle features at puzzle_start, the blocking car or the full post for blocked moves, hidden time at visible, the phase of an interrupted look, the side a Switchback animal came from'],
     ],
     puzzles: [
       ['params', 'board description'],
       ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered, Switchback drives when the car stops at the finish'],
-      ['success', '1 if solved with moves <= par (drives adaptive levels); Glimpse: a complete round with threshold_ms at or under the level\'s target. Switchback: a complete drive with threshold_ms at or under the level\'s sign time and speed_mean_kmh at or over its speed. Keepsake: at most one thing on the wrong stone'],
+      ['success', '1 if solved with moves <= par (drives adaptive levels); on practice rows, 1 if the practice was played right (see Practice); Glimpse: a complete round with threshold_ms at or under the level\'s target. Switchback: a complete drive with threshold_ms at or under the level\'s sign time and speed_mean_kmh at or over its speed. Keepsake: at most one thing on the wrong stone'],
       ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round, 2 = two misses, 1 = more; every finished round earns at least 1. Switchback: 3 = at least 90% of signs right and 90% of the time on the road, 2 = 75% and 75%, 1 = finished. Keepsake: 3 = every thing on its stone, 2 = one wrong, 1 = more'],
       ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move (Stacks: planning time before the first piece is set down), time the page was hidden'],
       ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries. Stacks: pieces moved to another post (lifting a piece and putting it back is not a move)'],
@@ -7767,7 +9071,11 @@ PuzzleEnginesFactory(window);
       ['n_hit / n_miss / n_false_alarm / n_stray', 'Switchback: targets tapped in time, targets let pass, other signs tapped, taps with no sign up'],
       ['rt_mean_ms', 'Switchback: mean rt_ms over hits'],
       ['on_road / n_off_road', 'Switchback: share of driving time with the car on the road (at most a quarter of its width over the edge; the first 2 s of each drive are left out), and times it left the road'],
-      ['speed_mean_kmh / speed_start_kmh / speed_end_kmh', 'Switchback: mean speed over driving time, and the speed staircase at the start and end of the drive'],
+      ['speed_mean_kmh / speed_start_kmh / speed_end_kmh', 'Switchback: mean speed over driving time, leaving out brake_s, and the speed staircase at the start and end of the drive'],
+      ['place', 'Switchback: where the drive goes; its animal is on the target sign and steps onto the road (farm: cow, savanna: elephant, fields: rabbit, desert: camel, forest: deer, jungle: monkey, coast: crab, outback: kangaroo, village: duck, north: moose)'],
+      ['n_animals / n_shooed / animal_rt_mean_ms', 'Switchback: times the animal stepped onto the road, times it was tapped away before the car had to brake, and the mean rt_ms of those taps'],
+      ['brake_s', 'Switchback: seconds from each animal stepping out until the car was back to 90% of its speed (the car eases off while it is there and brakes if it gets close); left out of speed_mean_kmh'],
+      ['n_items / n_collected', 'Switchback: things to collect the car went past, and the ones it picked up by driving through them (not tapped; no task measure uses them)'],
       ['study_ms / mean_error', 'Keepsake: how long the look lasted, and the mean error_dist over the things put back'],
       ['level_next', 'adaptive blocks: this game\'s level for its next puzzle'],
       ['features', 'solver-derived puzzle features (JSON), such as p_random_solve, dead_end_states, search_nodes, solver_path'],
@@ -7778,7 +9086,7 @@ PuzzleEnginesFactory(window);
       tumbler: 'optimal (as informative as the best possible try), suboptimal (less informative), zero_info (could not narrow the codes), solved (the winning try); consistency is its own column',
       glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong',
       stacks: 'optimal (one move closer to the goal), wasted (no closer), blocked (the post was full; its own event, not a move)',
-      switchback: 'sign events: hit (the target, tapped in time), miss (the target, not tapped), false_alarm (another sign, tapped), correct_rejection (another sign, let pass)',
+      switchback: 'sign events: hit (the target, tapped in time), miss (the target, not tapped), false_alarm (another sign, tapped), correct_rejection (another sign, let pass); beast events: shooed (the animal tapped away before the car got close), braked (the car braked for it)',
       keepsake: 'place events: correct (its own stone), wrong (another stone)',
     },
     colors: 'Tumbler letters: A red (circle), B blue (square), C yellow (triangle), D green (diamond), E purple (plus), F orange (star), G teal (bar). Keys 1 to 7 enter them in order.',
@@ -7813,14 +9121,17 @@ PuzzleEnginesFactory(window);
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
-        '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the sign button only when the sign shown on it comes up; let every other sign pass. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys. The sign button: tap it, or Space.',
-        'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
-        'Each level is set in its own place and time of day (L1 pasture with hedgerows in the morning, L2 wheat and lavender fields at noon, L3 a pine forest under snowy peaks in the afternoon, L4 the coast road beside the sea at sunset, L5 a village street at dusk; practice on the farm), heading for a landmark that grows on the horizon over the drive and is where the car stops. The road, its lines, the signs and the car look the same everywhere, so scenery and light are a covariate of level, not of the task. With feedback on, a caught target\'s animal hops off the sign into the field for about 1 s after the tap; with feedback off a tap only gives a soft click.',
+        '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
+        'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
+        'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign for the whole drive and on its road (see `place`). The drive heads for the place\'s landmark, which grows on the horizon over the drive and is where the car stops. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
+        'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (once a drive at L1 and L2, twice from L3; never before the third sign or after the last but one), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
+        'With feedback on, a caught target\'s animal comes off the sign and runs or hops into the field for about 1 s after the tap; with feedback off a tap only gives a soft click. The horn toots when an animal is tapped away whatever the feedback setting, and things collected fly to a counter shown when counters are on.',
         'Levels:', lv('switchback'),
         '## Keepsake', '', 'Object-location memory (the Memory Path format of the concept paper). One park map, always the same, so its landmarks can be learned: a house, a pond, a big tree, a well, a flower bed and a bench along a winding path, with twelve stones placed by hand beside them (at least 20 map units apart on a 100 x 120 map). Each card brings some stones out and puts things on a few of them (the things: ' + E.games.keepsake.items.join(', ') + '). A tap on the eye starts the look; the things pop up on their stones and a timer runs on the basket below; a tap on the basket ends the look early (logged). Then the things hop into the basket, in tray order, which takes about a second, and the player puts each back: drag it onto a stone, or tap it and then a stone. Each thing gets one try and a stone holds one thing. With feedback on, a thing put on the right stone turns green; one put on a wrong stone turns red and then moves to its own stone, which frees the stone it was put on. With feedback off, every thing stays where it was put and nothing is shown. The card ends when every thing is back.',
         'Levels:', lv('keepsake'), '',
-        'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alike animals (the other two of rabbit, fox, cat, and the hedgehog). The target animal (rabbit, fox or cat) is drawn from the seed and shown on the button.', '',
-        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start and one per target sign, steering not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
+        'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alikes of the place\'s animal (village: goose, swan, hen; north: reindeer, deer, bear). Until app 2.10 the target was a rabbit, fox or cat drawn from the seed in every place; from 2.10 it is the place\'s animal.', '',
+        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs one or two higher from L3, with its animals). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
+        '## Practice', '', 'Each game opens with a practice card (puzzle id P-{game}, fixed content, level 0). It has to be played right before the game goes on: a puzzle solved; Glimpse with at most one look wrong; Switchback with every target caught and no other sign tapped; Keepsake with every thing on its own stone. Otherwise the result says Once more and the same practice comes round again, up to three tries; after the third the game goes on regardless. Practice rows log `success` as that pass (1 or 0) and never change a level. A new player\'s first card after practice is level 1. Rounds of the trial games (Glimpse, Switchback, Keepsake) get confetti only at three stars or a passed practice; two stars get the win chime without confetti, and fewer a soft note.', '',
         '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse and Switchback never move down a level: their display time, sign time and speed already adapt as you play. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
     return lines.join('\n');
   }
@@ -8136,8 +9447,8 @@ PuzzleEnginesFactory(window);
       let game = focus || 'mixed';
       if (game !== 'mixed' && ORDER.indexOf(game) < 0) game = 'mixed';
       const levels = store.get('pr1.levels', {});
-      const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: FREE_OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 2, adaptive: true }] });
-      ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 2)), streak: 0 }; });
+      const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: FREE_OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 1, adaptive: true }] });
+      ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 1)), streak: 0 }; });
       S.practiced = Object.assign({}, store.get('pr1.practiced', {}));
       // the mixed feed opens with a game this player has not tried yet
       if (game === 'mixed') { const k = ORDER.findIndex((g) => !S.practiced[g]); if (k > 0) S.seq.k = k; }
@@ -8195,6 +9506,7 @@ PuzzleEnginesFactory(window);
       const S = this.session;
       return !!S.options.practice && !S.practiced[game];
     },
+    practiceDone(game) { return !!(this.session && this.session.practiced[game]); },
 
     // ---------- puzzle flow
     next(fromDy) {
@@ -8311,15 +9623,23 @@ PuzzleEnginesFactory(window);
         n_hit: d ? d.hits : '', n_miss: d ? d.misses : '', n_false_alarm: d ? d.false_alarms : '', n_stray: d ? d.stray : '',
         rt_mean_ms: d && d.rt_mean_ms != null ? d.rt_mean_ms : '', on_road: d && d.on_road != null ? d.on_road : '', n_off_road: d ? d.off_road_episodes : '',
         speed_mean_kmh: d && d.speed_mean_kmh != null ? d.speed_mean_kmh : '', speed_start_kmh: d ? d.speed_start_kmh : '', speed_end_kmh: d ? d.speed_end_kmh : '',
+        place: d ? card.p.place : '', n_animals: d ? d.animals : '', n_shooed: d ? d.shooed : '', animal_rt_mean_ms: d && d.animal_rt_mean_ms != null ? d.animal_rt_mean_ms : '',
+        brake_s: d ? d.brake_s : '', n_items: d ? d.items : '', n_collected: d ? d.collected : '',
         study_ms: m && m.study_ms != null ? m.study_ms : '', mean_error: m && m.mean_error != null ? m.mean_error : '',
         level_next,
         features: JSON.stringify(card.p.features),
       });
       if (sp.practice) {
-        // leaving the practice board for another game does not count as having played it
+        // leaving the practice board for another game does not count as having played
+        // it; a practice played wrong comes round again, up to three tries in all
         if (sm.outcome !== 'abandoned') {
-          S.practiced[sp.game] = true;
-          if (S.kind === 'free') store.set('pr1.practiced', S.practiced);
+          S.practiceTries = S.practiceTries || {};
+          const tries = (S.practiceTries[sp.game] || 0) + 1;
+          S.practiceTries[sp.game] = tries;
+          if (sm.passed !== false || tries >= 3) {
+            S.practiced[sp.game] = true;
+            if (S.kind === 'free') store.set('pr1.practiced', S.practiced);
+          }
         }
       } else if (S.kind === 'free') {
         if (!sm.success && !neutral) {
@@ -8535,7 +9855,7 @@ PuzzleEnginesFactory(window);
         tile.setAttribute('aria-expanded', 'true');
         area.after(detail);
         detail.hidden = false;
-        const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 2));
+        const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 1));
         const num = (ico, v, l) => h('div', { class: 'pf-num' }, icon(ico), h('b', { text: String(v) }), h('span', { text: l }));
         if (played) {
           const min = Math.round(t.ms / 60000), top = Math.max(t.top, lv);
@@ -8559,7 +9879,7 @@ PuzzleEnginesFactory(window);
         const area = h('section', { class: 'pf-area', style: 'grid-column:span ' + n }, h('h3', { text: A.name }), grid);
         if (!A.games.length) grid.append(h('div', { class: 'pf-tile ghost', role: 'img', 'aria-label': 'No game yet' }, icon('lock')));
         for (const g of A.games) {
-          const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 2));
+          const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 1));
           const tile = h('button', { class: 'pf-tile' + (played ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-expanded': 'false', 'aria-label': LABEL[g] + (played ? ', level ' + lv + ', ' + t.stars + ' stars' : ', not played yet') },
             miniWorld(g),
             h('span', { class: 'pf-tile-foot' }, h('b', { text: LABEL[g] }), played ? pips(lv) : null, played ? h('span', { class: 'pf-stars' }, icon('star'), String(t.stars)) : null));

@@ -1580,27 +1580,32 @@
   // =====================================================================
   // SWITCHBACK: the dual-task format of the Focus core (adaptive
   // multitasking training, Anguera et al. 2013). Steer a car along a winding
-  // road and tap only when one road sign shows; let every other sign pass.
-  // Both tasks adapt as you play: how long a sign stays up changes after
-  // every target and every tap on another sign (weighted up/down, about 80%
-  // of targets caught), and the speed changes every 1.5 s of driving (up
-  // while the car stays on the road, down when it leaves). The generator
-  // fixes the road and the signs; sign times and speed depend on play.
+  // road and tap only when one road sign shows (tap the sign itself, or the
+  // button that shows it); let every other sign pass. Both tasks adapt as you
+  // play: how long a sign stays up changes after every target and every tap
+  // on another sign (weighted up/down, about 80% of targets caught), and the
+  // speed changes every 1.5 s of driving (up while the car stays on the road,
+  // down when it leaves). Each level has two places, picked by the seed, and
+  // each place has its own animal: it is on the target sign, and now and then
+  // it steps onto the road, where a tap sends it off (or the car brakes).
+  // Things to collect lie along the road. The generator fixes the place, the
+  // road, the signs, when the animals step out and where the things lie; sign
+  // times and speed depend on play.
   // =====================================================================
   const SB_SEG = 0.4;      // road segment length; the camera rides 1 unit above the road
   const SB_KMH = 0.12;     // world units per second for each km/h shown
-  const SB_TARGETS = ['rabbit', 'fox', 'cat'];
-  // signs that are not the target, from nothing in common (L1) to a look-alike animal (L5)
+  const SB_SLOT = 3.0;     // s from an animal stepping out to the next sign
+  // each place's animal: on its target sign and on its road
+  const SB_ANIMALS = { farm: 'cow', savanna: 'elephant', fields: 'rabbit', desert: 'camel', forest: 'deer', jungle: 'monkey', coast: 'crab', outback: 'kangaroo', village: 'duck', north: 'moose' };
+  // signs that are not the target, from nothing in common (L1) to look-alike animals (L5)
   const SB_FOILS = {
     shape: [['round_blue', 'arrow'], ['square_blue', 'P'], ['round_blue', 'turn']],
     color: [['round_red', '50'], ['round_red', 'car'], ['square_blue', 'P']],
     symbol: [['tri', 'bang'], ['tri', 'curve'], ['tri', 'bumps']],
     animal: [['tri', 'bird'], ['tri', 'snail'], ['tri', 'turtle']],
+    village: [['tri', 'goose'], ['tri', 'swan'], ['tri', 'hen']],
+    north: [['tri', 'reindeer'], ['tri', 'deer'], ['tri', 'bear']],
   };
-  function sbFoils(kind, target) {
-    if (kind !== 'similar') return SB_FOILS[kind];
-    return SB_TARGETS.filter((a) => a !== target).concat(['hedgehog']).map((a) => ['tri', a]);
-  }
   // curvature per segment: a straight start, then bends with eased entry and exit;
   // an S joins two opposite bends
   function sbRoad(R, rng, n) {
@@ -1627,6 +1632,18 @@
     }
     return out.slice(0, n).map((x) => Math.round(x * 1000) / 1000);
   }
+  // things to collect, in rows of 3 to 5 along the road, straight or slanting across;
+  // w is the distance along the road, x across it (0 is the middle)
+  function sbItems(rng, half, w0, w1, every) {
+    const out = [], lim = half - 0.13;
+    let w = w0;
+    while (w < w1) {
+      const n = 3 + rng.int(3), xa = (rng() * 2 - 1) * lim, xb = rng() < 0.5 ? xa : (xa > 0 ? -1 : 1) * rng() * lim;
+      for (let k = 0; k < n; k++) out.push({ w: round(w + k * 1.5, 2), x: round(xa + ((xb - xa) * k) / (n - 1), 3) });
+      w += (n - 1) * 1.5 + every * (0.8 + rng() * 0.4);
+    }
+    return out;
+  }
 
   const Switchback = {
     id: 'switchback',
@@ -1636,6 +1653,7 @@
     levelDown: false,       // both tasks already adapt as you drive; levels only add load
     seg: SB_SEG,
     kmhToUnits: SB_KMH,
+    animals: SB_ANIMALS,
     startMs: 1500,          // a fresh sign staircase starts here
     minMs: 450, maxMs: 2200,
     step: 0.9,              // one step is x0.9 of the time a sign stays up
@@ -1645,31 +1663,35 @@
     speedEvery: 1.5,        // seconds of driving between speed changes
     speedUp: 3, speedDown: 6, speedRange: [-10, 40],
     warm: 2,                // seconds of driving before the road and speed count (the car gets going)
-    targets: SB_TARGETS,
+    // places: the seed picks one; beasts: times the place's animal steps onto the road;
     // half: road half-width; s: share of bends that run into an S
     levels: {
-      1: { targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
-      2: { targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
-      3: { targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
-      4: { targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
-      5: { targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
+      1: { places: ['farm', 'savanna'], beasts: 1, targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
+      2: { places: ['fields', 'desert'], beasts: 1, targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
+      3: { places: ['forest', 'jungle'], beasts: 2, targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
+      4: { places: ['coast', 'outback'], beasts: 2, targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
+      5: { places: ['village', 'north'], beasts: 2, targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
     },
     // p is a puzzle or a level entry
     describe(p) {
       const n = p.signs ? p.signs.filter((x) => x.go).length : p.targets;
       const f = p.signs ? p.signs.length - n : p.foils;
-      return (p.target ? p.target + ' sign, ' : '') + n + ' targets and ' + f + ' other signs (' + p.foil + '), from ' + p.kmh + ' km/h';
+      const nb = Array.isArray(p.beasts) ? p.beasts.length : p.beasts || 0;
+      const where = p.place ? p.place + ', ' + p.target + ' sign, ' : p.places.map((q) => q + ' (' + SB_ANIMALS[q] + ')').join(' or ') + ', ';
+      return where + n + ' targets and ' + f + ' other sign' + (f === 1 ? '' : 's') + ' (' + p.foil + '), the animal on the road ' + nb + ' time' + (nb === 1 ? '' : 's') + ', from ' + p.kmh + ' km/h';
     },
-    build(level, seed, L, target, signs, road, duration, fixed) {
+    build(level, seed, L, place, signs, beasts, items, road, duration, fixed) {
+      const target = SB_ANIMALS[place];
       return {
-        game: 'switchback', level, seed, target, foil: L.foil,
-        signs, road, half: L.road.half, duration,
+        game: 'switchback', level, seed, place, target, foil: L.foil,
+        signs, beasts, items, road, half: L.road.half, duration,
         kmh: L.kmh, minKmh: L.kmh + this.speedRange[0], maxKmh: L.kmh + this.speedRange[1],
         advanceKmh: L.advanceKmh || null, advanceMs: L.advanceMs || null,
         fixedMs: fixed ? fixed.ms : null, fixedKmh: fixed ? fixed.kmh : null,
         reference: null,
         features: {
-          target, targets: signs.filter((x) => x.go).length, foils: signs.filter((x) => !x.go).length, foil: L.foil,
+          place, target, targets: signs.filter((x) => x.go).length, foils: signs.filter((x) => !x.go).length, foil: L.foil,
+          animals: beasts.length, items: items.length,
           gap_s: L.gap, road_half: L.road.half, bends: L.road.curve ? L.road.curve.join('-') : 'practice', s_bends: L.road.s || 0,
           kmh: L.kmh, advance_kmh: L.advanceKmh || null, advance_ms: L.advanceMs || null,
           target_hits: this.up / (this.up + this.down),
@@ -1679,8 +1701,8 @@
     generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const target = SB_TARGETS[rng.int(SB_TARGETS.length)];
-      const foils = sbFoils(L.foil, target);
+      const place = L.places[rng.int(L.places.length)], target = SB_ANIMALS[place];
+      const foils = SB_FOILS[L.foil === 'similar' ? place : L.foil];
       // the first sign is a target; after it, never more than three of a kind in a row
       let order;
       for (let tries = 0; tries < 200; tries++) {
@@ -1690,29 +1712,43 @@
         if (ok) break;
       }
       const fseq = rng.shuffle(Array.from({ length: L.foils }, (_, i) => foils[i % foils.length]));
+      // the animal steps out between two signs, once in each part of the drive,
+      // never before the third sign or after the last but one
+      const after = new Set(), gaps = order.length - 4;
+      for (let b = 0; b < L.beasts; b++) {
+        const a = Math.floor((b * gaps) / L.beasts), z = Math.floor(((b + 1) * gaps) / L.beasts);
+        after.add(2 + a + rng.int(Math.max(1, z - a)));
+      }
       let t = 2.6, fi = 0;
-      const signs = order.map((go) => {
+      const signs = [], beasts = [];
+      order.forEach((go, k) => {
         const f = go ? ['tri', target] : fseq[fi++];
-        const sg = { t: round(t, 2), go, shape: f[0], glyph: f[1] };
+        signs.push({ t: round(t, 2), go, shape: f[0], glyph: f[1] });
         t += L.gap + (rng() - 0.5) * 0.7;
-        return sg;
+        if (after.has(k)) { beasts.push({ t: round(t, 2), side: rng() < 0.5 ? -1 : 1 }); t += SB_SLOT; }
       });
       const duration = round(signs[signs.length - 1].t + L.gap + 1.5, 2);
-      const vmax = (L.kmh + this.speedRange[1]) * SB_KMH;
+      const vmax = (L.kmh + this.speedRange[1]) * SB_KMH, v = L.kmh * SB_KMH;
       const road = sbRoad(L.road, rng, Math.ceil((duration * vmax) / SB_SEG) + 260);
-      return this.build(level, seed, L, target, signs, road, duration, null);
+      const items = sbItems(rng, L.road.half, 3 * v + 4, road.length * SB_SEG - 40, 7 * v);
+      return this.build(level, seed, L, place, signs, beasts, items, road, duration, null);
     },
-    // three signs at a slow, fixed pace: the target, another sign, the target again
+    // a slow drive on the farm at a fixed pace: the cow sign, another sign, a cow on
+    // the road, the cow sign again; a few apples on the way
     practice() {
-      const L = { targets: 2, foils: 1, foil: 'shape', gap: 3.6, kmh: 36, advanceKmh: null, advanceMs: null, road: { half: 0.44 } };
+      const L = { beasts: 1, targets: 2, foils: 1, foil: 'shape', gap: 3.6, kmh: 36, advanceKmh: null, advanceMs: null, road: { half: 0.44 } };
       const road = [];
       for (let i = 0; i < 80; i++) road.push(0);
       for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * t * t * (3 - 2 * t)); }
       for (let i = 0; i < 40; i++) road.push(-0.55);
       for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * (1 - t * t * (3 - 2 * t))); }
-      while (road.length < 700) road.push(0);
-      const signs = [{ t: 3.4, go: 1, shape: 'tri', glyph: 'rabbit' }, { t: 7.6, go: 0, shape: 'round_blue', glyph: 'arrow' }, { t: 11.6, go: 1, shape: 'tri', glyph: 'rabbit' }];
-      return this.build(0, 0, L, 'rabbit', signs, road.map((x) => Math.round(x * 1000) / 1000), 15.2, { ms: [2600, 2200, 2000], kmh: 36 });
+      while (road.length < 720) road.push(0);
+      const signs = [{ t: 3.4, go: 1, shape: 'tri', glyph: 'cow' }, { t: 7.6, go: 0, shape: 'round_blue', glyph: 'arrow' }, { t: 14.6, go: 1, shape: 'tri', glyph: 'cow' }];
+      const beasts = [{ t: 10.6, side: 1 }];
+      const items = [];
+      for (let k = 0; k < 4; k++) items.push({ w: 24 + k * 1.5, x: 0 });
+      for (let k = 0; k < 4; k++) items.push({ w: 64 + k * 1.5, x: round(-0.24 * (k / 3), 3) });
+      return this.build(0, 0, L, 'farm', signs, beasts, items, road.map((x) => Math.round(x * 1000) / 1000), 18.4, { ms: [2600, 2200, 2400], kmh: 36 });
     },
     // start: { ms, kmh } carries both staircases on from an earlier round
     newRun(p, start) {
@@ -1723,14 +1759,17 @@
       if (!fixed) kmh = Math.max(p.minKmh, Math.min(p.maxKmh, kmh));
       return {
         i: 0, ms, kmh, start: { ms, kmh }, fresh: !fixed && !carried, last: 0, rev: [], res: [], speed: [], stray: 0,
-        drive: { t: 0, on: 0, vt: 0, off: 0 },
+        bi: 0, ba: [], items: [],
+        drive: { t: 0, on: 0, vt: 0, vs: 0, off: 0, brake: 0 },
       };
     },
-    // how long sign k stays up: the staircase, but always clear of the next sign
+    // how long sign k stays up: the staircase, but always clear of the next sign or animal
     windowMs(p, run, k) {
       if (p.fixedMs) return p.fixedMs[Math.min(k, p.fixedMs.length - 1)];
-      const next = p.signs[k + 1] ? p.signs[k + 1].t : p.duration;
-      return Math.round(Math.min(run.ms, (next - p.signs[k].t - 0.45) * 1000));
+      const t = p.signs[k].t;
+      let next = p.signs[k + 1] ? p.signs[k + 1].t : p.duration;
+      for (const b of p.beasts) if (b.t > t && b.t < next) next = b.t;
+      return Math.round(Math.min(run.ms, (next - t - 0.45) * 1000));
     },
     // r: { responded, rt, planned }; one record per sign, in order
     record(p, run, r) {
@@ -1748,6 +1787,19 @@
       run.res.push(out);
       run.i++;
       return out;
+    },
+    // the animal on the road: shooed (tapped away; rt from when it stepped out) or braked for
+    beast(p, run, r) {
+      const out = { i: run.bi + 1, cls: r.shooed ? 'shooed' : 'braked', rt: r.shooed ? Math.round(r.rt) : null };
+      run.ba.push(out);
+      run.bi++;
+      return out;
+    },
+    // the car went past thing k (in order along the road), with it or without it
+    item(p, run, k, got) {
+      if (k !== run.items.length) return false;
+      run.items.push(got ? 1 : 0);
+      return true;
     },
     // f: share of the last speedEvery seconds with the car on the road
     speedStep(p, run, f) {
@@ -1770,6 +1822,7 @@
       const tail = go.slice(from);
       const gm = tail.length ? Math.exp(tail.reduce((a, x) => a + Math.log(x.ms), 0) / tail.length) : null;
       const rts = res.filter((x) => x.cls === 'hit').map((x) => x.rt);
+      const shoo = run.ba.filter((b) => b.cls === 'shooed').map((b) => b.rt);
       const D = run.drive;
       return {
         n, hits, misses, false_alarms: fas, correct_rejections: crs, stray: run.stray,
@@ -1778,8 +1831,10 @@
         rt_mean_ms: rts.length ? Math.round(rts.reduce((a, x) => a + x, 0) / rts.length) : null,
         start_ms: run.start.ms == null ? null : Math.round(run.start.ms), end_ms: p.fixedMs ? null : Math.round(run.ms),
         reversals: run.rev.length,
-        on_road: D.t > 0 ? round(D.on / D.t, 4) : null, off_road_episodes: D.off,
-        speed_mean_kmh: D.t > 0 ? round(D.vt / D.t, 1) : null, speed_start_kmh: run.start.kmh, speed_end_kmh: run.kmh,
+        animals: run.ba.length, shooed: shoo.length, animal_rt_mean_ms: shoo.length ? Math.round(shoo.reduce((a, x) => a + x, 0) / shoo.length) : null,
+        items: run.items.length, collected: run.items.filter((x) => x).length,
+        on_road: D.t > 0 ? round(D.on / D.t, 4) : null, off_road_episodes: D.off, brake_s: round(D.brake, 2),
+        speed_mean_kmh: D.vs > 0 ? round(D.vt / D.vs, 1) : null, speed_start_kmh: run.start.kmh, speed_end_kmh: run.kmh,
       };
     },
     success(p, s) {
@@ -1887,12 +1942,12 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.11.0',
+    version: '1.12.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
     EXIT,
-    internals: { ksDist, sbRoad, sbFoils, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
+    internals: { ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;
