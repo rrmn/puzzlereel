@@ -141,10 +141,20 @@
       } catch (e) { this.ctx = null; }
       return this.ctx;
     },
+    // iPhones only start audio from the end of a tap (touchend or click), and
+    // only after a sound has started inside that tap, so this runs on every
+    // tap until the context is running. It can also come back 'interrupted'.
     unlock() {
       if (!this.on) return;
       const c = this.ensure();
-      if (c && c.state === 'suspended') c.resume().catch(() => {});
+      if (!c || c.state === 'running') return;
+      try {
+        const src = c.createBufferSource();
+        src.buffer = c.createBuffer(1, 1, c.sampleRate || 22050);
+        src.connect(c.destination);
+        src.start(0);
+      } catch (e) { /* ignore */ }
+      try { const r = c.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* ignore */ }
     },
     tone(f0, f1, dur, type, gain, delay) {
       const c = this.ctx;
@@ -2013,7 +2023,8 @@
     openMenu() {
       const item = (ico, title, sub, onclick, end) => h('button', { class: 'menu-item', type: 'button', onclick }, h('span', { class: 'ico' }, icon(ico)), h('span', null, h('b', { text: title }), sub ? h('small', { text: sub }) : null), end ? h('span', { class: 'end' }, end) : null);
       const soundToggle = toggle('m-sound', Sound.on, (on) => { store.set('pr1.sound', on); Sound.on = on; if (on) { Sound.unlock(); Sound.play('pop', 3); } });
-      const soundRow = h('div', { class: 'menu-item' }, h('span', { class: 'ico' }, icon('sound')), h('label', { for: 'm-sound' }, h('b', { text: 'Sound and vibration' })), h('span', { class: 'end' }, soundToggle));
+      const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const soundRow = h('div', { class: 'menu-item' }, h('span', { class: 'ico' }, icon('sound')), h('label', { for: 'm-sound' }, h('b', { text: 'Sound and vibration' }), ios ? h('small', { text: 'Silent mode on iPhone mutes it' }) : null), h('span', { class: 'end' }, soundToggle));
       openSheet('Puzzle Reel', [h('div', { class: 'menu' },
         soundRow,
         item('help', 'How to play', 'Replay the practice board', () => { closeSheet(); this.replayPractice(); }),
@@ -2182,7 +2193,8 @@
 
     // ---------- global input
     bindGlobal() {
-      document.addEventListener('pointerdown', () => Sound.unlock(), { passive: true, capture: true });
+      const unlock = () => Sound.unlock();
+      ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => document.addEventListener(ev, unlock, { passive: true, capture: true }));
       document.addEventListener('keydown', (e) => {
         if (sheetOpen() || e.metaKey || e.ctrlKey || e.altKey) return;
         const tag = (e.target && e.target.tagName) || '';
