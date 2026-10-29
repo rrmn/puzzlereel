@@ -289,45 +289,99 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .sk-piece, .sk-trolley, .sk-cable-line, .sk-shadow { transition: none; } .sk-piece.held .sk-inner, .sk-piece.land .sk-inner { animation: none; } }
 
 /* ------------------------------------------------------------ Conduit */
+.board.conduit { filter: drop-shadow(0 10px 22px rgba(20, 70, 30, 0.2)); }
 .soil { fill: #6A4628; }
 .cell { cursor: pointer; }
 .cell:focus, .cell:focus-visible { outline: none; }
+.cell .hit { fill: transparent; }
+.tuft path { fill: none; stroke-width: 0.36; stroke-linecap: round; }
+.tuft .b1 { stroke: #63B84E; }
+.tuft .b2 { stroke: #4C9C3D; }
 .bed { fill: #84603B; }
 .bed-shade { fill: rgba(0, 0, 0, 0.14); }
+/* pipe shadows are one layer, so where two overlap they do not get darker */
+.shadows { opacity: 0.2; }
+.tshade { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
+.tshade line { stroke: #2A1405; stroke-width: 3.5; stroke-linecap: round; fill: none; }
+.tshade circle { fill: #2A1405; }
 .tile { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tile .edge { stroke: #3B220F; stroke-width: 5.1; stroke-linecap: butt; fill: none; }
-.tile .hub-edge { fill: #3B220F; }
-.tile .case { stroke: #F6EBD8; stroke-width: 3.7; stroke-linecap: butt; fill: none; transition: stroke 0.25s; transition-delay: var(--d, 0ms); }
-.tile .flow { stroke: #D8F1FF; stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; transition-delay: var(--d, 0ms); }
-.tile .open { stroke-linecap: round; }
-.tile .hub { fill: #F6EBD8; transition: fill 0.25s; transition-delay: var(--d, 0ms); }
-.tile.wet .case { stroke: #2E9CF2; }
-.tile.wet .hub { fill: #2E9CF2; }
-.tile.wet .edge { stroke: #10406E; }
-.tile.wet .hub-edge { fill: #10406E; }
-.tile.wet .flow { opacity: 1; animation: flow 0.7s linear infinite; }
+.tile .case { stroke: #EADCC4; stroke-width: 3.5; stroke-linecap: round; fill: none; }
+.tile .hub { fill: #EADCC4; }
+.tile .water { stroke: #2E9CF2; stroke-width: 3.5; stroke-linecap: round; fill: none; stroke-dasharray: 5 6.2; opacity: 0; transition: opacity 0.2s; }
+.tile .whub { fill: #2E9CF2; opacity: 0; transition: opacity 0.2s; transform-box: fill-box; transform-origin: center; }
+.tile.wet .water, .tile.wet .whub { opacity: 1; transition: none; }
+.tile .core { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.1; stroke-linecap: round; fill: none; }
+.tile .flow { stroke: #D8F1FF; stroke-width: 1.05; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; }
+.tile.wet .flow { opacity: 1; transition-delay: var(--d, 0ms); animation: flow 0.7s linear infinite; }
 .tile.wet .flow.in { animation-direction: reverse; }
-.board.solved .tile.wet .case, .board.solved .tile.wet .hub { stroke: #22A6FF; }
+.board.solved .tile.wet .water { stroke: #22A6FF; }
+.board.solved .tile.wet .whub { fill: #22A6FF; }
 .cell .ring { fill: none; stroke-width: 1; stroke: transparent; transition: stroke 0.2s; }
 .cell.q-optimal .ring { stroke: var(--good); }
 .cell.q-wasted .ring { stroke: var(--meh); }
 .cell.hinted .ring, .car.hinted .halo { stroke: var(--gold); animation: blink 0.8s ease-in-out 4; }
 .cell:focus-visible .ring { stroke: #7FB0FF; }
-.plant .pot { fill: #D8703F; }
-.plant .rim { fill: #B95A2F; }
-.plant .leaf { fill: #B8A274; transition: fill 0.3s, transform 0.45s cubic-bezier(.34,1.56,.64,1); transition-delay: var(--d, 0ms); transform-box: fill-box; }
+.well .ground, .plant .ground { fill: rgba(42, 20, 5, 0.2); }
+/* a plant: leaves fold up while dry and open with a spring when the water comes;
+   the stem grows, the flower pops out with a few sparks, then sways */
+.plant .blade { fill: #B8A274; transition: fill 0.3s; transition-delay: var(--d, 0ms); }
+.plant .rib { fill: none; stroke: #CBB98A; stroke-width: 0.22; stroke-linecap: round; transition: stroke 0.3s; transition-delay: var(--d, 0ms); }
+.plant .leaf { transform-box: fill-box; transition: transform 0.45s cubic-bezier(.34,1.56,.64,1); transition-delay: var(--d, 0ms); }
 .plant .leaf.l { transform-origin: 100% 100%; transform: rotate(34deg); }
 .plant .leaf.r { transform-origin: 0% 100%; transform: rotate(-34deg); }
-.plant .bloom { transform-box: fill-box; transform-origin: center; transform: scale(0); transition: transform 0.45s cubic-bezier(.34,1.7,.64,1); transition-delay: var(--d, 0ms); }
-.plant.wet .leaf { fill: #2FA75A; }
-.plant.wet .leaf.l, .plant.wet .leaf.r { transform: rotate(0deg); }
+.plant.wet .blade { fill: #2FA75A; }
+.plant.wet .leaf.r .blade { fill: #2A9A51; }
+.plant.wet .rib { stroke: #7AD893; }
+.plant.wet .leaf.l, .plant.wet .leaf.r { transform: none; }
+.plant .stem { fill: none; stroke: #2B9A50; stroke-width: 0.5; stroke-linecap: round; transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); transition: transform 0.3s ease-out; transition-delay: var(--d, 0ms); }
+.plant.wet .stem { transform: none; }
+.plant .bloom { transform-box: fill-box; transform-origin: center; transform: scale(0); transition: transform 0.45s cubic-bezier(.34,1.7,.64,1); transition-delay: calc(var(--d, 0ms) + 140ms); }
 .plant.wet .bloom { transform: scale(1); }
-.well { fill: #2E9CF2; }
+.plant .sway { transform-box: fill-box; transform-origin: 50% 100%; }
+.plant.wet .sway { animation: cdsway 3.6s ease-in-out var(--sw, 0s) infinite; }
+.plant .spark { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.plant.burst .spark { animation: cdspark 0.75s cubic-bezier(.15,.7,.3,1) calc(var(--d, 0ms) + 220ms) both; }
+.plant .dew { fill: #E8F8FF; opacity: 0; transition: opacity 0.4s; }
+.plant.wet .dew { opacity: 0.95; transition-delay: calc(var(--d, 0ms) + 380ms); }
+.plant .pot { fill: #D8703F; }
+.plant .pot-side { fill: rgba(120, 35, 0, 0.15); }
+.plant .pot-paint { fill: #F6E2BF; }
+.plant .pot-band { fill: rgba(120, 40, 10, 0.2); }
+.plant .rim { fill: #B95A2F; }
+.plant .rim-top { fill: #C9693A; }
+.plant .soil-top { fill: #5C3A20; }
+.board.solved .plant .hopper { animation: cdhop 0.55s cubic-bezier(.3,1.6,.5,1) var(--hop, 0ms) both; }
+@keyframes cdsway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+@keyframes cdspark { 0% { opacity: 0; transform: translate(0, 0) scale(0.5); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--sx, 0), var(--sy, 0)) scale(1); } }
+@keyframes cdhop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-1.2px); } }
+/* the butterfly: wings beat fast in flight, slowly once it has landed */
+.butterfly { pointer-events: none; }
+.butterfly .bw { transform-origin: 0px 0px; animation: bflap 0.15s ease-in-out infinite alternate; }
+.butterfly.perched .bw { animation: bperch 2.4s ease-in-out infinite; }
+.bw-up { fill: #FFC23F; }
+.bw-lo { fill: #FF9533; }
+.bw-dot { fill: #FFF4D8; }
+.bf-torso { fill: #4A3326; }
+.bf-feel { fill: none; stroke: #4A3326; stroke-width: 0.17; stroke-linecap: round; }
+@keyframes bflap { from { transform: scaleX(1); } to { transform: scaleX(0.22); } }
+@keyframes bperch { 0%, 55%, 100% { transform: scaleX(1); } 70% { transform: scaleX(0.35); } 85% { transform: scaleX(0.9); } }
+/* the spring */
+.well-pool { fill: #2E9CF2; }
 .well-rim { fill: none; stroke: #CDEBFF; stroke-width: 0.7; }
+.well-ripple { fill: none; stroke: #CDEBFF; stroke-width: 0.5; transform-box: fill-box; transform-origin: center; animation: cdripple 2.6s ease-out infinite; }
 .well-drop { fill: #FFFFFF; }
-.drip { fill: #7CC9FF; animation: drip 0.9s ease-in infinite; }
-.drip:nth-child(2) { animation-delay: 0.3s; }
-.drip:nth-child(3) { animation-delay: 0.6s; }
+.well-curl { fill: none; stroke: #BFE2FF; stroke-width: 0.34; stroke-linecap: round; }
+.well-bob { animation: cdbob 2.6s ease-in-out infinite; }
+@keyframes cdripple { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.34); opacity: 0; } }
+@keyframes cdbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.3px); } }
+/* leaks: drops fly from an open end and a puddle spreads where they land */
+.puddle { fill: #55B1F4; transform-box: fill-box; transform-origin: center; animation: cdpuddle 1.4s ease-out var(--ld, 0ms) both; }
+.puddle .glint { fill: #A6DBFF; }
+.drip { fill: #6CC2FF; opacity: 0; animation: drip 0.9s ease-in var(--ld, 0ms) infinite; }
+.drip:nth-child(2) { animation-delay: calc(var(--ld, 0ms) + 0.3s); }
+.drip:nth-child(3) { animation-delay: calc(var(--ld, 0ms) + 0.6s); }
+@keyframes cdpuddle { from { transform: scale(0.15); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .plant.wet .sway, .well-ripple, .well-bob, .plant.burst .spark, .board.solved .plant .hopper { animation: none; } .well-ripple { opacity: 0; } }
 
 /* ------------------------------------------------------------ Tumbler */
 .vault {
@@ -439,14 +493,6 @@ button { cursor: pointer; }
 .gl-choice.dim { opacity: 0.3; }
 .gl-choice[disabled] { cursor: default; }
 .gl-spots { position: absolute; inset: 0; }
-.gl-ghost {
-  position: absolute; left: 50%; top: 50%; width: calc(var(--R, 150px) * 0.44); height: calc(var(--R, 150px) * 0.44);
-  margin: calc(var(--R, 150px) * -0.22) 0 0 calc(var(--R, 150px) * -0.22); pointer-events: none;
-  animation: pop 0.26s cubic-bezier(.3,1.7,.5,1);
-}
-.gl-ghost svg { width: 100%; height: 100%; overflow: visible; display: block; }
-.gl-ghost path { fill: color-mix(in srgb, var(--gl-ink, #1D3C8A) 10%, transparent); stroke: var(--gl-ink, #1D3C8A); stroke-width: 4.5; stroke-dasharray: 11 8; stroke-linecap: round; stroke-linejoin: round; opacity: 0.6; }
-.gl-ghost.flip svg { transform: scaleX(-1); }
 .gl-anchor { position: absolute; width: 2px; height: 2px; margin: -1px 0 0 -1px; visibility: hidden; pointer-events: none; }
 .gl-spot {
   position: absolute; border-radius: 50%; border: 0; padding: 0;
@@ -2643,13 +2689,15 @@ function PuzzleEnginesFactory(root) {
     noun: 'thing',
     stones: KS_STONES,
     items: KS_ITEMS,
+    // about two seconds of look for each thing; two empty stones on top
     levels: {
-      1: { items: 3, stones: 6, studyMs: 6000 },
-      2: { items: 4, stones: 7, studyMs: 7000 },
-      3: { items: 5, stones: 8, studyMs: 8000 },
-      4: { items: 6, stones: 10, studyMs: 9000 },
-      5: { items: 7, stones: 12, studyMs: 10000 },
+      1: { items: 2, stones: 4, studyMs: 5000 },
+      2: { items: 3, stones: 5, studyMs: 7000 },
+      3: { items: 4, stones: 6, studyMs: 9000 },
+      4: { items: 5, stones: 7, studyMs: 10000 },
+      5: { items: 6, stones: 8, studyMs: 11000 },
     },
+    spread: 26,             // stones out on one card stay at least this far apart where the map allows
     describe(p) {
       const n = p.things ? p.things.length : p.items, k = p.out ? p.out.length : p.stones;
       return n + ' things on ' + k + ' stones, ' + (p.studyMs / 1000) + ' s to look';
@@ -2667,7 +2715,11 @@ function PuzzleEnginesFactory(root) {
     generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const out = rng.shuffle(KS_STONES.map((_, i) => i)).slice(0, L.stones).sort((a, b) => a - b);
+      // spread out: take stones in seeded order, skipping any too close to one already out
+      const order = rng.shuffle(KS_STONES.map((_, i) => i)), out = [];
+      for (const k of order) if (out.length < L.stones && out.every((o) => ksDist(o, k) >= this.spread)) out.push(k);
+      for (const k of order) if (out.length < L.stones && out.indexOf(k) < 0) out.push(k);
+      out.sort((a, b) => a - b);
       const held = rng.shuffle(out.slice()).slice(0, L.items);
       const names = rng.shuffle(KS_ITEMS.slice()).slice(0, L.items);
       const things = held.map((stone, k) => ({ name: names[k], stone }));
@@ -2713,7 +2765,7 @@ function PuzzleEnginesFactory(root) {
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.10.0',
+    version: '1.11.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
@@ -2728,7 +2780,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.7.0';
+  const APP_VERSION = '2.8.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -2931,6 +2983,35 @@ PuzzleEnginesFactory(window);
       src.connect(bp); bp.connect(g); g.connect(this.master);
       src.start(t); src.stop(t + dur + 0.05);
     },
+    // a soft engine hum for Switchback whose pitch follows the speed; 0 stops it
+    engine(kmh) {
+      const c = this.ctx;
+      if (!kmh || !this.on || !c || c.state !== 'running') {
+        if (this.eng) {
+          const e = this.eng;
+          this.eng = null;
+          try { const t = c.currentTime; e.g.gain.cancelScheduledValues(t); e.g.gain.setTargetAtTime(0.0001, t, 0.1); e.o.stop(t + 0.7); e.o2.stop(t + 0.7); } catch (x) { /* optional */ }
+        }
+        return;
+      }
+      const t = c.currentTime;
+      if (!this.eng) {
+        try {
+          const o = c.createOscillator(), o2 = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+          o.type = 'sawtooth'; o2.type = 'sine';
+          f.type = 'lowpass'; f.Q.value = 0.8; f.frequency.value = 360;
+          g.gain.value = 0.0001;
+          o.connect(f); o2.connect(f); f.connect(g); g.connect(this.master);
+          o.start(); o2.start();
+          g.gain.setTargetAtTime(0.022, t, 0.4);
+          this.eng = { o, o2, f, g };
+        } catch (x) { return; }
+      }
+      const hz = 42 + kmh * 0.85;
+      this.eng.o.frequency.setTargetAtTime(hz, t, 0.3);
+      this.eng.o2.frequency.setTargetAtTime(hz * 2, t, 0.3);
+      this.eng.f.frequency.setTargetAtTime(240 + kmh * 7, t, 0.3);
+    },
     play(name, arg) {
       if (!this.on || !this.ctx) return;
       try { if (SFX[name]) SFX[name](this, arg); } catch (e) { /* sound is optional */ }
@@ -2963,6 +3044,7 @@ PuzzleEnginesFactory(window);
     set: (S, k) => { S.tone(260 + (k || 0) * 40, 170 + (k || 0) * 30, 0.09, 'sine', 0.3); S.noise(0.04, 1300, 600, 1, 0.07); },
     go: (S) => { S.noise(0.5, 220, 900, 1.3, 0.16); S.tone(110, 240, 0.45, 'sawtooth', 0.035); },
     rumble: (S) => S.noise(0.11, 160, 120, 1.6, 0.18),
+    hop: (S) => [0.2, 0.53, 0.86].forEach((d, i) => S.tone(430 + i * 40, 760 + i * 50, 0.09, 'sine', 0.07, d)),
     skip: (S) => { S.noise(0.26, 500, 2600, 1.1, 0.13); S.tone(520, 780, 0.07, 'triangle', 0.1); S.tone(700, 1040, 0.08, 'triangle', 0.09, 0.08); },
   };
   function buzz(pattern) {
@@ -3853,15 +3935,90 @@ PuzzleEnginesFactory(window);
   }
 
   // ------------------------------------------------------------- Conduit
+  // The garden is drawn in layers, so every pipe lies above every bed and every plant
+  // stands above every pipe: beds, puddles, pipe shadows, pipes (these turn), the
+  // spring and the plants, dripping water, and on top the cells you tap.
+  // The flowers it grows: petals (how many, how big, how far out), their colour, a
+  // deeper throat, and the centre with its seeds. The pink one was the first.
+  const CD_FLOWERS = [
+    { n: 5, r: 1.0, at: 1.15, petal: '#FF6FA7', deep: '#EE4F8C', eye: '#FFD23F', seed: '#EE9F00' },
+    { n: 6, r: 0.86, at: 1.24, petal: '#FFC53D', deep: '#F59F1B', eye: '#A65A2B', seed: '#6E3414' },
+    { n: 5, r: 1.0, at: 1.15, petal: '#A98BFF', deep: '#8A66F0', eye: '#FFD23F', seed: '#EE9F00' },
+    { n: 9, r: 0.47, at: 1.28, petal: '#FFFFFF', deep: '#EDE6F5', eye: '#FFC93C', seed: '#E08E00', daisy: true },
+    { n: 5, r: 1.0, at: 1.15, petal: '#FF815F', deep: '#EE5E42', eye: '#FFE27A', seed: '#EE9F00' },
+  ];
+  // now and then a small tuft of grass in a free corner of a bed
+  function cdTuft(seed, cx, cy) {
+    const r = Math.imul(seed + 101, 2654435761) >>> 0;
+    if (r % 3) return null;
+    const c = [[-1, -1], [1, -1], [-1, 1], [1, 1]][(r >>> 5) & 3];
+    const x = cx + c[0] * 3.2, y = cy + c[1] * 3.05 + 0.65;
+    const blade = (x0, qx, qy, ex, ey, cls) => s('path', { class: cls, d: 'M' + (x + x0) + ' ' + y + 'q' + qx + ' ' + qy + ' ' + ex + ' ' + ey });
+    return s('g', { class: 'tuft' }, blade(-0.2, -0.1, -0.65, -0.8, -1.0, 'b2'), blade(0.2, 0.12, -0.6, 0.75, -0.9, 'b2'), blade(0, 0.08, -0.85, -0.08, -1.45, 'b1'));
+  }
+  // the source: a round pool with a white ring, a drop that bobs, and a slow ripple
+  function cdWell(cx, cy) {
+    const d = 'M' + cx + ' ' + (cy - 1.9) + 'C' + (cx + 1.5) + ' ' + (cy - 0.2) + ' ' + (cx + 1.4) + ' ' + (cy + 1.7) + ' ' + cx + ' ' + (cy + 1.7) + 'C' + (cx - 1.4) + ' ' + (cy + 1.7) + ' ' + (cx - 1.5) + ' ' + (cy - 0.2) + ' ' + cx + ' ' + (cy - 1.9) + 'Z';
+    const bob = s('g', { class: 'well-bob' },
+      s('path', { class: 'well-drop', d }),
+      s('path', { class: 'well-curl', d: 'M' + (cx - 0.72) + ' ' + (cy + 0.15) + 'Q' + (cx - 0.78) + ' ' + (cy + 0.95) + ' ' + (cx - 0.05) + ' ' + (cy + 1.1) }));
+    return s('g', { class: 'well', 'aria-hidden': 'true' },
+      s('circle', { class: 'ground', cx, cy: cy + 0.55, r: 3.4 }),
+      s('circle', { class: 'well-pool', cx, cy, r: 3.4 }),
+      s('circle', { class: 'well-ripple', cx, cy, r: 2.5 }),
+      s('circle', { class: 'well-rim', cx, cy, r: 2.5 }),
+      bob);
+  }
+
+  // the butterfly that comes to a finished garden
+  function cdButterfly() {
+    const wing = (k) => s('g', { class: 'bw' },
+      s('path', { class: 'bw-up', d: 'M0 -0.1C' + 0.6 * k + ' -1.7 ' + 2.35 * k + ' -2.2 ' + 2.45 * k + ' -1.05C' + 2.5 * k + ' -0.2 ' + 1.2 * k + ' 0.3 0 0.15Z' }),
+      s('path', { class: 'bw-lo', d: 'M0 0.1C' + 1.15 * k + ' 0.3 ' + 1.95 * k + ' 0.95 ' + 1.55 * k + ' 1.65C' + 1.15 * k + ' 2.15 ' + 0.3 * k + ' 1.25 0 0.35Z' }),
+      s('circle', { class: 'bw-dot', cx: 1.5 * k, cy: -1.1, r: 0.34 }),
+      s('circle', { class: 'bw-dot', cx: 0.95 * k, cy: 1.05, r: 0.2 }));
+    return s('g', { class: 'butterfly', 'aria-hidden': 'true' },
+      wing(-1), wing(1),
+      s('ellipse', { class: 'bf-torso', cx: 0, cy: 0.15, rx: 0.27, ry: 1.05 }),
+      s('path', { class: 'bf-feel', d: 'M-0.1 -0.8Q-0.35 -1.65 -0.8 -1.95M0.1 -0.8Q0.35 -1.65 0.8 -1.95' }));
+  }
+
   class ConduitCard extends Card {
     hasHistory() { return this.run.hist.length > 0; }
+    // flies in from the top right and settles on the highest flower
+    flyButterfly() {
+      if (this.bfly || reducedMotion()) return;
+      const p = this.p;
+      let best = null;
+      for (const k in this.plants) {
+        const i = +k, x = i % p.w, y = (i / p.w) | 0;
+        if (!best || y < best[1] || (y === best[1] && x > best[0])) best = [x, y];
+      }
+      if (!best) return;
+      const tx = best[0] * 10 + 5.3, ty = best[1] * 10 + 5.5 - 3.65 * 0.78 - 0.7;
+      const sx = p.w * 10 + 7, sy = -9;
+      const bf = cdButterfly();
+      this.svg.append(bf);
+      this.bfly = bf;
+      const pts = [[sx, sy, -24], [sx + (tx - sx) * 0.3, sy + (ty - sy) * 0.42 - 2.4, -8], [sx + (tx - sx) * 0.62, sy + (ty - sy) * 0.62 + 1.6, -20], [tx + 2.4, ty - 3.4, 10], [tx, ty, 0]];
+      const a = bf.animate(pts.map((q) => ({ transform: 'translate(' + q[0].toFixed(2) + 'px, ' + q[1].toFixed(2) + 'px) rotate(' + q[2] + 'deg) scale(0.7)' })), { duration: 1800, easing: 'cubic-bezier(.35,.1,.3,1)', fill: 'forwards' });
+      a.onfinish = () => bf.classList.add('perched');
+    }
     buildBoard() {
       const p = this.p, U = 10, pad = 1.4;
-      const svgEl = s('svg', { class: 'board', viewBox: [-pad, -pad, p.w * U + pad * 2, p.h * U + pad * 2].join(' '), role: 'group', 'aria-label': 'Garden, ' + p.w + ' by ' + p.h + ' tiles' });
+      const svgEl = s('svg', { class: 'board conduit', viewBox: [-pad, -pad, p.w * U + pad * 2, p.h * U + pad * 2].join(' '), role: 'group', 'aria-label': 'Garden, ' + p.w + ' by ' + p.h + ' tiles' });
       svgEl.append(s('rect', { class: 'soil', x: -pad, y: -pad, width: p.w * U + pad * 2, height: p.h * U + pad * 2, rx: 4.5 }));
+      const layer = (cls) => { const g = s('g', { class: cls }); svgEl.append(g); return g; };
+      const beds = layer('beds');
+      this.puddles = layer('puddles');
+      const shadows = layer('shadows'), pipes = layer('pipes'), things = layer('things');
+      this.leaks = layer('leaks');
+      const hits = layer('hits');
       this.angle = this.run.rot.map((r) => r * 90);
-      this.cells = []; this.tiles = []; this.arms = []; this.plants = {};
+      this.cells = []; this.tiles = []; this.shades = []; this.arms = []; this.hubs = []; this.plants = {};
       this.plantCount = 0;
+      this.leakEls = new Map();
+      let flower = (p.seed >>> 0) % CD_FLOWERS.length;
       for (let i = 0; i < p.w * p.h; i++) {
         const x = i % p.w, y = (i / p.w) | 0;
         const cx = x * U + U / 2, cy = y * U + U / 2;
@@ -3869,76 +4026,109 @@ PuzzleEnginesFactory(window);
         let deg = 0;
         for (const sd of [1, 2, 4, 8]) if (m & sd) deg++;
         const isPlant = deg === 1 && i !== p.src;
-        const cell = s('g', { class: 'cell', tabindex: '0', role: 'button', 'aria-label': (i === p.src ? 'Water source' : isPlant ? 'Plant' : 'Pipe') + ', row ' + (y + 1) + ', column ' + (x + 1) });
-        cell.append(s('rect', { class: 'bed', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }));
-        cell.append(s('rect', { class: 'bed-shade', x: x * U + 0.45, y: y * U + 8.3, width: U - 0.9, height: 1.25, rx: 0.6 }));
-        // each pipe arm: a dark outline under a pale pipe, water on top; an arm that
-        // meets nothing shrinks to a capped stub, so a gap shows at a glance
-        const tile = s('g', { class: 'tile' });
-        tile.style.transformOrigin = cx + 'px ' + cy + 'px';
+        beds.append(s('rect', { class: 'bed', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }),
+          s('rect', { class: 'bed-shade', x: x * U + 0.45, y: y * U + 8.3, width: U - 0.9, height: 1.25, rx: 0.6 }));
+        if (!isPlant && i !== p.src) { const t = cdTuft(i * 31 + (p.seed >>> 0), cx, cy); if (t) beds.append(t); }
+        // a pipe: its shadow on the bed, the cream pipe, the water that fills it,
+        // a light line down the middle, and glints that run with the water
+        const shade = s('g', { class: 'tshade' }), tile = s('g', { class: 'tile' });
+        shade.style.transformOrigin = tile.style.transformOrigin = cx + 'px ' + cy + 'px';
+        const line = (cls, sd, b) => s('line', { class: cls, x1: cx, y1: cy, x2: cx + SIDEV[sd][0] * b, y2: cy + SIDEV[sd][1] * b });
         const arms = [];
         for (const sd of [1, 2, 4, 8]) {
           if (!(m & sd)) continue;
-          const ex = cx + SIDEV[sd][0] * 5, ey = cy + SIDEV[sd][1] * 5;
-          const mk = (cls) => s('line', { class: cls, x1: cx, y1: cy, x2: ex, y2: ey });
-          arms.push({ side: sd, cx, cy, edge: mk('edge'), pipe: mk('case'), flow: mk('flow'), open: null });
+          shade.append(line(null, sd, 5));
+          arms.push({ side: sd, pipe: line('case', sd, 5), water: line('water', sd, 5), core: line('core', sd, 4.45), flow: line('flow', sd, 5) });
         }
-        arms.forEach((a) => tile.append(a.edge));
-        if (deg >= 2) tile.append(s('circle', { class: 'hub-edge', cx, cy, r: 2.55 }));
-        arms.forEach((a) => tile.append(a.pipe));
-        if (deg >= 2) tile.append(s('circle', { class: 'hub', cx, cy, r: 1.85 }));
-        arms.forEach((a) => tile.append(a.flow));
-        cell.append(tile);
-        if (i === p.src) {
-          cell.append(s('circle', { class: 'well', cx, cy, r: 3.4 }), s('circle', { class: 'well-rim', cx, cy, r: 2.5 }),
-            s('path', { class: 'well-drop', d: 'M' + cx + ' ' + (cy - 1.9) + 'C' + (cx + 1.5) + ' ' + (cy - 0.2) + ' ' + (cx + 1.4) + ' ' + (cy + 1.7) + ' ' + cx + ' ' + (cy + 1.7) + 'C' + (cx - 1.4) + ' ' + (cy + 1.7) + ' ' + (cx - 1.5) + ' ' + (cy - 0.2) + ' ' + cx + ' ' + (cy - 1.9) + 'Z' }));
+        for (const k of ['pipe', 'water', 'core', 'flow']) arms.forEach((a) => tile.append(a[k]));
+        let hub = null;
+        if (deg >= 2) {
+          shade.append(s('circle', { cx, cy, r: 1.95 }));
+          hub = s('circle', { class: 'whub', cx, cy, r: 1.95 });
+          tile.append(s('circle', { class: 'hub', cx, cy, r: 1.95 }), hub);
         }
+        shadows.append(shade);
+        pipes.append(tile);
+        if (i === p.src) things.append(cdWell(cx, cy));
         if (isPlant) {
-          const plant = this.drawPlant(cx, cy);
-          cell.append(plant);
+          const plant = this.drawPlant(cx, cy, flower++ % CD_FLOWERS.length, i);
+          things.append(plant);
           this.plants[i] = plant;
           this.plantCount++;
         }
-        cell.append(s('rect', { class: 'ring', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }));
+        const cell = s('g', { class: 'cell', tabindex: '0', role: 'button', 'aria-label': (i === p.src ? 'Water source' : isPlant ? 'Plant' : 'Pipe') + ', row ' + (y + 1) + ', column ' + (x + 1) });
+        cell.append(s('rect', { class: 'hit', x: x * U, y: y * U, width: U, height: U }),
+          s('rect', { class: 'ring', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }));
         cell.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); this.press(i); });
         cell.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.press(i); } });
-        svgEl.append(cell);
+        hits.append(cell);
         this.cells.push(cell);
         this.tiles.push(tile);
+        this.shades.push(shade);
         this.arms.push(arms);
+        this.hubs.push(hub);
       }
-      this.leaks = s('g', { class: 'leaks', 'aria-hidden': 'true' });
-      svgEl.append(this.leaks);
       this.svg = svgEl;
       this.wetSet = new Set();
       this.area.append(svgEl);
     }
-    drawPlant(cx, cy) {
-      const g = s('g', { class: 'plant', transform: 'translate(' + cx * 0.22 + ' ' + (cy * 0.22 + 0.5) + ') scale(0.78)' });
-      g.append(
-        s('path', { class: 'leaf l', d: 'M' + (cx - 0.2) + ' ' + (cy - 0.9) + 'C' + (cx - 3.2) + ' ' + (cy - 1.3) + ' ' + (cx - 3.8) + ' ' + (cy - 3.4) + ' ' + (cx - 3.6) + ' ' + (cy - 4.3) + 'C' + (cx - 1.5) + ' ' + (cy - 4.2) + ' ' + (cx - 0.4) + ' ' + (cy - 2.7) + ' ' + (cx - 0.2) + ' ' + (cy - 0.9) + 'Z' }),
-        s('path', { class: 'leaf r', d: 'M' + (cx + 0.2) + ' ' + (cy - 0.9) + 'C' + (cx + 3.2) + ' ' + (cy - 1.3) + ' ' + (cx + 3.8) + ' ' + (cy - 3.4) + ' ' + (cx + 3.6) + ' ' + (cy - 4.3) + 'C' + (cx + 1.5) + ' ' + (cy - 4.2) + ' ' + (cx + 0.4) + ' ' + (cy - 2.7) + ' ' + (cx + 0.2) + ' ' + (cy - 0.9) + 'Z' }));
+    // a terracotta pot with a little soil; two leaves that fold up while dry and open
+    // when the water comes; then the flower pops out on its stem and sways a little
+    drawPlant(cx, cy, kind, i) {
+      const F = CD_FLOWERS[kind];
+      const g = s('g', { class: 'plant', transform: 'translate(' + cx + ' ' + (cy + 0.5) + ') scale(0.78)' });
+      g.style.setProperty('--sw', (-((i * 0.53) % 3.6)).toFixed(2) + 's');
+      g.style.setProperty('--hop', ((i % 6) * 70) + 'ms');
+      const leaf = (k) => s('g', { class: 'leaf ' + (k < 0 ? 'l' : 'r') },
+        s('path', { class: 'blade', d: 'M' + 0.2 * k + ' -0.9C' + 3.2 * k + ' -1.3 ' + 3.8 * k + ' -3.4 ' + 3.6 * k + ' -4.3C' + 1.5 * k + ' -4.2 ' + 0.4 * k + ' -2.7 ' + 0.2 * k + ' -0.9Z' }),
+        s('path', { class: 'rib', d: 'M' + 0.55 * k + ' -1.4Q' + 2.25 * k + ' -2.75 ' + 3.2 * k + ' -3.95' }),
+        (i + (k < 0 ? 0 : 1)) % 2 ? s('circle', { class: 'dew', cx: 2.4 * k, cy: -2.45, r: 0.34 }) : s('circle', { class: 'dew', cx: 2.95 * k, cy: -3.75, r: 0.24 }));
+      const by = -3.65;
       const bloom = s('g', { class: 'bloom' });
-      for (let k = 0; k < 5; k++) {
-        const a = (Math.PI * 2 * k) / 5 - Math.PI / 2;
-        bloom.append(s('circle', { cx: cx + Math.cos(a) * 1.15, cy: cy - 3.2 + Math.sin(a) * 1.15, r: 1.0, fill: '#FF6FA7' }));
+      const dir = (k) => { const a = (Math.PI * 2 * k) / F.n - Math.PI / 2; return [Math.cos(a), Math.sin(a), (360 * k) / F.n]; };
+      if (!F.daisy) bloom.append(s('circle', { cx: 0, cy: by, r: F.at + 0.15, fill: F.deep }));
+      for (let k = 0; k < F.n; k++) {
+        const [dx, dy, deg] = dir(k);
+        if (F.daisy) bloom.append(s('ellipse', { cx: 0, cy: by - F.at, rx: F.r, ry: 1.02, fill: k % 2 ? F.deep : F.petal, transform: 'rotate(' + deg + ' 0 ' + by + ')' }));
+        else bloom.append(s('circle', { cx: dx * F.at, cy: by + dy * F.at, r: F.r, fill: F.petal }));
       }
-      bloom.append(s('circle', { cx, cy: cy - 3.2, r: 0.75, fill: '#FFD23F' }));
-      g.append(bloom,
-        s('path', { class: 'pot', d: 'M' + (cx - 2.3) + ' ' + (cy - 0.3) + 'h4.6l-0.65 3.4h-3.3z' }),
-        s('rect', { class: 'rim', x: cx - 2.65, y: cy - 0.95, width: 5.3, height: 1.05, rx: 0.45 }));
+      if (!F.daisy) bloom.append(s('circle', { cx: 0, cy: by, r: 0.98, fill: F.deep }));
+      bloom.append(s('circle', { cx: 0, cy: by, r: F.daisy ? 0.82 : 0.74, fill: F.eye }),
+        s('circle', { cx: -0.25, cy: by - 0.08, r: 0.12, fill: F.seed }),
+        s('circle', { cx: 0.19, cy: by - 0.24, r: 0.12, fill: F.seed }),
+        s('circle', { cx: 0.07, cy: by + 0.25, r: 0.12, fill: F.seed }));
+      const sparks = s('g', { class: 'sparks' });
+      for (let k = 0; k < 6; k++) {
+        const a = (Math.PI * 2 * k) / 6 + 0.35;
+        const sp = s('circle', { class: 'spark', cx: 0, cy: by, r: 0.34, fill: k % 2 ? F.eye : F.daisy ? '#FFFFFF' : F.petal });
+        sp.style.setProperty('--sx', (Math.cos(a) * 3.3).toFixed(2) + 'px');
+        sp.style.setProperty('--sy', (Math.sin(a) * 3.3).toFixed(2) + 'px');
+        sparks.append(sp);
+      }
+      g.append(s('ellipse', { class: 'ground', cx: 0.3, cy: 3.15, rx: 2.15, ry: 0.5 }),
+        s('g', { class: 'hopper' },
+          leaf(-1), leaf(1),
+          s('g', { class: 'sway' }, s('path', { class: 'stem', d: 'M0 -0.9V' + (by + 0.9) }), bloom),
+          s('path', { class: 'pot', d: 'M-2.3 -0.3h4.6l-0.65 3.4h-3.3z' }),
+          (i * 5 + kind) % 3 === 1 ? s('path', { class: 'pot-paint', d: 'M-2.02 1.15H2.02L1.95 1.52H-1.95Z' }) : null,
+          s('path', { class: 'pot-side', d: 'M1.05 -0.3H2.3L1.65 3.1H0.62Z' }),
+          s('path', { class: 'pot-band', d: 'M-2.3 0.1H2.3L2.22 0.52H-2.22Z' }),
+          s('rect', { class: 'rim', x: -2.65, y: -0.95, width: 5.3, height: 1.05, rx: 0.45 }),
+          s('rect', { class: 'rim-top', x: -2.5, y: -0.95, width: 5.0, height: 0.32, rx: 0.16 }),
+          s('ellipse', { class: 'soil-top', cx: 0, cy: -0.93, rx: 2.0, ry: 0.27 }),
+          sparks));
       return g;
     }
     setAngle(i, instant) {
-      const t = this.tiles[i];
-      if (instant) t.style.transition = 'none';
+      const t = this.tiles[i], sh = this.shades[i];
+      if (instant) t.style.transition = sh.style.transition = 'none';
       t.style.transform = 'rotate(' + this.angle[i] + 'deg)';
-      if (instant) { void t.getBoundingClientRect(); t.style.transition = ''; }
+      sh.style.transform = 'translate(0px, 0.55px) rotate(' + this.angle[i] + 'deg)';
+      if (instant) { void t.getBoundingClientRect(); t.style.transition = sh.style.transition = ''; }
     }
-    // water: spreads from the source in waves, flows away from it, leaks at open ends.
-    // Arms reach out or pull in once a turn has finished (instant on first draw).
+    // water: runs from the source tile by tile, in through the arm it comes from and
+    // out of the others, opens the plants it reaches, and drips from open ends
     update(instant) {
-      const stubs = [];
       const p = this.p, n = p.w * p.h;
       const mask = (i) => this.G.maskAt(p, this.run, i);
       const depth = new Int16Array(n).fill(-1), parent = new Int8Array(n);
@@ -3958,68 +4148,90 @@ PuzzleEnginesFactory(window);
           queue.push(j);
         }
       }
-      let newlyWet = 0, minNew = Infinity;
-      for (let i = 0; i < n; i++) if (depth[i] >= 0 && !this.wetSet.has(i)) minNew = Math.min(minNew, depth[i]);
+      let minNew = Infinity, maxNew = -1;
+      for (let i = 0; i < n; i++) if (depth[i] >= 0 && !this.wetSet.has(i)) { minNew = Math.min(minNew, depth[i]); maxNew = Math.max(maxNew, depth[i]); }
+      const still = !!instant || reducedMotion();
+      // T: the water's time through half a tile (a long run goes a little faster);
+      // it sets off once the turned pipe has nearly settled
+      const T = still || maxNew < 0 ? 0 : Math.max(26, Math.min(62, Math.round(760 / (maxNew - minNew + 1) / 2)));
+      const lead = T ? 170 : 0;
+      const reach = new Float64Array(n);
+      let newlyWet = 0, last = 0, wateredCount = 0;
       const watered = [];
-      let wateredCount = 0;
       for (let i = 0; i < n; i++) {
-        const wet = depth[i] >= 0;
-        const was = this.wetSet.has(i);
-        const delay = wet && !was ? Math.min(600, (depth[i] - minNew) * 55) : 0;
-        this.tiles[i].style.setProperty('--d', delay + 'ms');
-        this.tiles[i].classList.toggle('wet', wet);
-        const r = this.run.rot[i], x = i % p.w, y = (i / p.w) | 0;
+        const wet = depth[i] >= 0, fresh = wet && !this.wetSet.has(i);
+        const at = fresh ? lead + (depth[i] - minNew) * 2 * T : 0;
+        reach[i] = at + 2 * T * (fresh ? 1 : 0);
+        const tile = this.tiles[i];
+        tile.style.setProperty('--d', (fresh ? at + 2 * T : 0) + 'ms');
+        tile.classList.toggle('wet', wet);
+        const r = this.run.rot[i];
         for (const arm of this.arms[i]) {
-          const ws = E.internals.rotCW(arm.side, r);
-          arm.flow.classList.toggle('in', wet && i !== p.src && ws === parent[i]);
-          const nx = x + SIDEV[ws][0], ny = y + SIDEV[ws][1];
-          const open = nx < 0 || ny < 0 || nx >= p.w || ny >= p.h || !(mask(ny * p.w + nx) & OPP[ws]);
-          if (arm.open !== open) { arm.open = open; stubs.push(arm); }
+          const isIn = wet && i !== p.src && E.internals.rotCW(arm.side, r) === parent[i];
+          arm.flow.classList.toggle('in', isIn);
+          if (fresh && T) {
+            arm.water.getAnimations().forEach((a) => a.cancel());
+            arm.water.animate([{ strokeDashoffset: (isIn ? -5.6 : 5.6) + 'px' }, { strokeDashoffset: '0px' }], { duration: T, delay: at + (isIn ? 0 : T), easing: 'linear', fill: 'backwards' });
+          }
+        }
+        const hub = this.hubs[i];
+        if (hub && fresh && T) {
+          hub.getAnimations().forEach((a) => a.cancel());
+          hub.animate([{ transform: 'scale(0.4)' }, { transform: 'scale(1)' }], { duration: Math.round(T * 0.6), delay: Math.round(at + T * 0.75), easing: 'ease-out', fill: 'backwards' });
+          hub.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1, delay: Math.round(at + T * 0.75), fill: 'backwards' });
         }
         const plant = this.plants[i];
         if (plant) {
-          plant.style.setProperty('--d', delay + 'ms');
+          plant.style.setProperty('--d', (fresh ? at + T : 0) + 'ms');
           plant.classList.toggle('wet', wet);
           if (wet) wateredCount++;
-          if (wet && !was) watered.push(i);
+          if (fresh) {
+            watered.push(at + T);
+            if (!still) {
+              plant.classList.remove('burst');
+              void plant.getBBox();
+              plant.classList.add('burst');
+              this.later(() => plant.classList.remove('burst'), at + T + 1200);
+            }
+          }
         }
-        if (wet && !was) newlyWet++;
+        if (fresh) { newlyWet++; last = Math.max(last, at + 2 * T); }
         if (wet) this.wetSet.add(i); else this.wetSet.delete(i);
       }
-      // leaks: a wet pipe end that opens onto nothing
-      this.leaks.textContent = '';
+      this.flowEnd = now() + last;
+      // leaks: a wet pipe end that opens onto nothing drips, and a puddle spreads
+      const keep = new Set();
       for (let i = 0; i < n; i++) {
         if (depth[i] < 0) continue;
         const m = mask(i), x = i % p.w, y = (i / p.w) | 0;
         for (const sd of [1, 2, 4, 8]) {
           if (!(m & sd)) continue;
           const nx = x + SIDEV[sd][0], ny = y + SIDEV[sd][1];
-          const open = nx < 0 || ny < 0 || nx >= p.w || ny >= p.h || !(mask(ny * p.w + nx) & OPP[sd]);
-          if (!open) continue;
-          const ex = x * 10 + 5 + SIDEV[sd][0] * 4.2, ey = y * 10 + 5 + SIDEV[sd][1] * 4.2;
-          const g = s('g', null);
+          if (!(nx < 0 || ny < 0 || nx >= p.w || ny >= p.h || !(mask(ny * p.w + nx) & OPP[sd]))) continue;
+          const key = i * 16 + sd;
+          keep.add(key);
+          if (this.leakEls.has(key)) continue;
+          const vx = SIDEV[sd][0], vy = SIDEV[sd][1];
+          const ex = x * 10 + 5 + vx * 4.6, ey = y * 10 + 5 + vy * 4.6;
+          const px = Math.max(-0.6, Math.min(p.w * 10 + 0.6, ex + vx * 2.6)), py = Math.max(-0.4, Math.min(p.h * 10 + 0.2, ey + vy * 2.6 + 1.7));
+          const ld = (still ? 0 : reach[i]) + 'ms';
+          const pud = s('g', { class: 'puddle' }, s('ellipse', { cx: px, cy: py, rx: 1.5, ry: 0.6 }), s('ellipse', { class: 'glint', cx: px - 0.45, cy: py - 0.2, rx: 0.48, ry: 0.13 }));
+          const drops = s('g', { class: 'drops' });
+          pud.style.setProperty('--ld', ld);
+          drops.style.setProperty('--ld', ld);
           for (let k = 0; k < 3; k++) {
-            const dot = s('circle', { class: 'drip', cx: ex, cy: ey, r: 0.75 });
-            dot.style.setProperty('--dx', (SIDEV[sd][0] * 2.4 + (k - 1) * 0.9) + 'px');
-            dot.style.setProperty('--dy', (SIDEV[sd][1] * 2.4 + 1.6 + k * 0.4) + 'px');
-            g.append(dot);
+            const dot = s('circle', { class: 'drip', cx: ex, cy: ey, r: 0.62 });
+            dot.style.setProperty('--dx', (vx * 2.4 + (k - 1) * 0.8) + 'px');
+            dot.style.setProperty('--dy', (vy * 2.4 + 1.5 + k * 0.35) + 'px');
+            drops.append(dot);
           }
-          this.leaks.append(g);
+          this.puddles.append(pud);
+          this.leaks.append(drops);
+          this.leakEls.set(key, [pud, drops]);
         }
       }
+      for (const [key, els] of this.leakEls) if (!keep.has(key)) { els.forEach((e) => e.remove()); this.leakEls.delete(key); }
       this.watered = wateredCount;
-      // a joined pipe reaches a little past the edge, under its neighbour's, so no seam shows
-      const reach = () => {
-        for (const arm of stubs) {
-          for (const el of [arm.edge, arm.pipe, arm.flow]) {
-            const len = arm.open ? 2.6 : el === arm.edge ? 5 : 5.3;
-            el.setAttribute('x2', arm.cx + SIDEV[arm.side][0] * len);
-            el.setAttribute('y2', arm.cy + SIDEV[arm.side][1] * len);
-            el.classList.toggle('open', arm.open);
-          }
-        }
-      };
-      if (instant || !stubs.length) reach(); else this.later(reach, 190);
       return { newlyWet, watered };
     }
     refresh(animated) {
@@ -4053,10 +4265,17 @@ PuzzleEnginesFactory(window);
       const before = this.watered || 0;
       const ch = this.update();
       if (ch.newlyWet) Sound.play('flow');
-      ch.watered.forEach((k, idx) => this.later(() => Sound.play('bloom', idx), 160 + idx * 110));
+      ch.watered.forEach((at, idx) => this.later(() => Sound.play('bloom', idx), at + 150));
       if ((this.watered || 0) !== before) { this.goalEl.classList.remove('bump'); void this.goalEl.offsetWidth; this.goalEl.classList.add('bump'); }
       if (this.o.feedback && !this.practice) this.flash(i, rec.cls);
       this.commit(rec);
+    }
+    // the garden celebrates once the water has reached the last flower
+    celebrate(sm) {
+      const wait = sm.outcome === 'solved' ? Math.max(0, Math.round((this.flowEnd || 0) - now()) + 120) : 0;
+      if (wait < 160) return super.celebrate(sm);
+      this.later(() => super.celebrate(sm), wait);
+      return wait + 650;
     }
     flash(i, cls) {
       const k = 'q-' + cls;
@@ -4080,7 +4299,11 @@ PuzzleEnginesFactory(window);
       const hnt = this.G.hint(this.p, this.run);
       return hnt.kind === 'target' ? this.cells[hnt.index] : null;
     }
-    onResolved(outcome) { if (outcome === 'solved') this.svg.classList.add('solved'); }
+    onResolved(outcome) {
+      if (outcome !== 'solved') return;
+      const wait = Math.max(0, Math.round((this.flowEnd || 0) - now()));
+      this.later(() => { this.svg.classList.add('solved'); this.flyButterfly(); }, wait);
+    }
   }
 
   // ------------------------------------------------------------- Tumbler
@@ -4479,11 +4702,9 @@ PuzzleEnginesFactory(window);
       });
       this.lens.addEventListener('pointerdown', (e) => this.lensDown(e));
       this.dotsEl = h('div', { class: 'gl-dots', 'aria-hidden': 'true' });
-      // where-was-it: the outline of what to find, in the middle, while the places are up
-      this.ghostEl = h('div', { class: 'gl-ghost', 'aria-hidden': 'true', hidden: true });
       // a point for the practice hand to rest on during the first flash
       this.anchorEl = h('i', { class: 'gl-anchor', 'aria-hidden': 'true' });
-      this.lens.append(this.canvas, this.ghostEl, this.anchorEl, this.spotsEl, this.choiceEl, this.goBtn);
+      this.lens.append(this.canvas, this.anchorEl, this.spotsEl, this.choiceEl, this.goBtn);
       this.area.classList.add('gl-area');
       this.area.append(h('div', { class: 'gl-wrap' }, this.lens, this.dotsEl));
       if (this.phase === 'done') this.goBtn.hidden = true;
@@ -4681,11 +4902,6 @@ PuzzleEnginesFactory(window);
     askWhere() {
       this.phase = 'where';
       this.choiceEl.classList.add('gone');
-      const t = this.p.trials[this.run.i];
-      this.ghostEl.textContent = '';
-      this.ghostEl.append(glSvg(t.tg || 'bird'));
-      this.ghostEl.classList.toggle('flip', !!t.flip);
-      this.ghostEl.hidden = false;
       this.placeSpots();
       this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; });
       this.spotsEl.hidden = false;
@@ -4715,7 +4931,6 @@ PuzzleEnginesFactory(window);
     }
     finishLook() {
       this.phase = 'fb';
-      this.ghostEl.hidden = true;
       const p = this.p, t = p.trials[this.run.i], st = this.st, a = this.ans;
       const cOk = a.c === t.c, dOk = p.periph ? a.d === t.dir : true;
       const correct = cOk && dOk;
@@ -4839,7 +5054,6 @@ PuzzleEnginesFactory(window);
       this.goBtn.hidden = true;
       this.choiceEl.hidden = true;
       this.spotsEl.hidden = true;
-      this.ghostEl.hidden = true;
       this.clearReveal();
     }
     makeSummary(outcome, dur) {
@@ -5519,8 +5733,8 @@ PuzzleEnginesFactory(window);
     return (x ^ (x >>> 16)) >>> 0;
   }
   // a tree or a bush standing on (x, y); s is pixels per world unit at its distance
-  function sbTree(ctx, x, y, s, kind) {
-    const L = SB_COL.leaf;
+  function sbTree(ctx, x, y, s, kind, leaves) {
+    const L = leaves || SB_COL.leaf;
     const disc = (cx, cy, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); };
     if (kind === 3) {
       disc(x - 0.09 * s, y - 0.07 * s, 0.1 * s, L[2]);
@@ -5588,6 +5802,390 @@ PuzzleEnginesFactory(window);
     sbRR(ctx, -48 * u, -18 * u, 96 * u, 6 * u, 3 * u); ctx.fill();
     ctx.restore();
   }
+  // ---- the five places
+  // One for each level: the day goes from morning to dusk, and every drive heads for
+  // a landmark that stands on the horizon from the start and is where the car stops.
+  // The road, its lines and the signs look the same in every place.
+  const SB_PLACES = [null,
+    { // a farm in the morning
+      sky: ['#86BFF0', '#CDE6F8', '#FFF1D4'], sun: [0.24, 0.25, 0.034, '#FFF8E6', '255, 241, 205'], far: '#B1C7DF', hill: '#9DCC84',
+      ground: '#8CC876', verge: '#C6DE9A', road: '#777C88', haze: '238, 245, 240', cloud: '#FFFFFF', clouds: 3, birds: '#4A5868', dust: '190, 172, 128',
+      things: ['tree', 'tree', 'bush', 'flowers', 'sheep', 'tall', 'flowers', 'tree', 'sheep'], small: 'flowers', fence: 0.45, dest: 'barn', flag: '#E5564D' },
+    { // fields at noon, to the windmill
+      sky: ['#58A4EE', '#A9D3F7', '#EAF5FB'], sun: [0.8, 0.09, 0.03, '#FFFFF6', '255, 255, 236'], far: '#A8C0DB', hill: '#BCD173',
+      ground: '#A6CC66', verge: '#D4DE97', road: '#777C88', haze: '234, 243, 248', cloud: '#FFFFFF', clouds: 4, birds: '#4A5868', dust: '196, 176, 120',
+      things: ['hay', 'hay', 'sunflower', 'tall', 'tree', 'flowers', 'sunflower'], small: 'tuft', fence: 0.35, dest: 'windmill', flag: '#3D8BFD' },
+    { // a forest in the afternoon, to the cabin
+      sky: ['#76ACE5', '#C0DCF2', '#FBE2B6'], sun: [0.7, 0.22, 0.034, '#FFF4D8', '255, 226, 178'], far: '#8EA7C7', hill: '#5B9963',
+      ground: '#6FAE5F', verge: '#AACA86', road: '#757A86', haze: '242, 236, 222', cloud: '#FFFFFF', clouds: 2, birds: null, dust: '150, 128, 98',
+      things: ['pine', 'pine', 'birch', 'pine', 'tree', 'rock', 'fern', 'birch'], small: 'fern', fence: 0, dest: 'cabin', flag: '#2FB36E' },
+    { // the coast at sunset, to the lighthouse
+      sky: ['#5B66B2', '#E28EA6', '#FFC386'], sun: [0.3, 0.338, 0.058, '#FFE6AE', '255, 186, 120'], far: 'sea', hill: '#E2C68F',
+      ground: '#C4C982', verge: '#EEDCAA', road: '#7A7C88', haze: '255, 212, 182', cloud: '#FFD9D2', clouds: 2, birds: '#FFFFFF', dust: '226, 206, 160',
+      things: ['grass', 'grass', 'rock', 'dune', 'grass', 'bush', 'dune'], small: 'grass', fence: 0.3, wood: '#B89B74', dest: 'lighthouse', flag: '#FF7A59' },
+    { // hills at dusk, to the village
+      sky: ['#25336A', '#785CA0', '#F2A27C'], moon: [0.76, 0.12, 0.03], far: '#4E5B88', hill: '#4C6E58',
+      ground: '#5A8B59', verge: '#88A878', road: '#686D7C', haze: '150, 120, 160', cloud: null, clouds: 0, birds: null, stars: 34, dust: '140, 128, 116',
+      trees: ['#2F6B4A', '#3B7B56', '#285E40'], things: ['lamp', 'tree', 'house', 'tree', 'bush', 'lamp', 'house'], small: 'tuft', fence: 0.2, dest: 'village', flag: '#FFC83A' },
+  ];
+  // a soft round glow, made once per colour and drawn scaled
+  const SB_GLOWS = {};
+  function sbGlow(rgb) {
+    if (SB_GLOWS[rgb]) return SB_GLOWS[rgb];
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    if (g) {
+      const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(' + rgb + ', 0.9)'); gr.addColorStop(0.4, 'rgba(' + rgb + ', 0.32)'); gr.addColorStop(1, 'rgba(' + rgb + ', 0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    }
+    return (SB_GLOWS[rgb] = c);
+  }
+  // the moon at dusk: a crescent, cut once
+  let SB_MOON = null;
+  function sbMoon() {
+    if (SB_MOON) return SB_MOON;
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    if (g) {
+      g.fillStyle = '#FFF4D6';
+      g.beginPath(); g.arc(32, 32, 28, 0, Math.PI * 2); g.fill();
+      g.globalCompositeOperation = 'destination-out';
+      g.beginPath(); g.arc(44, 24, 25, 0, Math.PI * 2); g.fill();
+    }
+    return (SB_MOON = c);
+  }
+  // a flat-bottomed cloud w pixels wide, its base on y
+  function sbCloud(ctx, x, y, w) {
+    ctx.beginPath();
+    const c = (cx, cy, r) => { ctx.moveTo(cx + r, cy); ctx.arc(cx, cy, r, 0, Math.PI * 2); };
+    c(x - w * 0.27, y - w * 0.02, w * 0.15);
+    c(x - w * 0.07, y - w * 0.1, w * 0.21);
+    c(x + w * 0.16, y - w * 0.06, w * 0.17);
+    c(x + w * 0.33, y + w * 0.0, w * 0.11);
+    ctx.rect(x - w * 0.27, y - w * 0.04, w * 0.6, w * 0.15);
+    ctx.fill();
+  }
+  // roadside things standing on (x, y); s is pixels per world unit at their distance
+  function sbThing(ctx, kind, x, y, s, r, t, PL) {
+    const disc = (cx, cy, rr, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fill(); };
+    const shadow = (w) => { ctx.fillStyle = 'rgba(30, 60, 30, 0.16)'; ctx.beginPath(); ctx.ellipse(x, y, w * s, 0.03 * s, 0, 0, Math.PI * 2); ctx.fill(); };
+    switch (kind) {
+      case 'tree': sbTree(ctx, x, y, s, (r >>> 12) % 3, PL.trees); return;
+      case 'bush': sbTree(ctx, x, y, s, 3, PL.trees); return;
+      case 'tall': sbTree(ctx, x, y, s, 4, PL.trees); return;
+      case 'flowers': {
+        if (s < 18) return;
+        const cols = ['#FFFFFF', '#FFD23F', '#FF7FB0', '#B98CFF'], pts = [];
+        ctx.fillStyle = '#5E9E4E';
+        for (let k = 0; k < 6; k++) {
+          const q = sbHash(r + k * 17), fx = x + ((q % 100) / 100 - 0.5) * 0.4 * s, fy = y - (((q >>> 8) % 100) / 100) * 0.07 * s - 0.05 * s;
+          ctx.fillRect(fx - 0.004 * s, fy, Math.max(1, 0.008 * s), 0.05 * s);
+          pts.push([fx, fy, (q >>> 16) % cols.length]);
+        }
+        const rr = Math.max(1.1, 0.02 * s);
+        for (let c = 0; c < cols.length; c++) {
+          ctx.fillStyle = cols[c];
+          ctx.beginPath();
+          for (const [fx, fy, cc] of pts) if (cc === c) { ctx.moveTo(fx + rr, fy); ctx.arc(fx, fy, rr, 0, Math.PI * 2); }
+          ctx.fill();
+        }
+        return;
+      }
+      case 'tuft': case 'fern': case 'grass': {
+        if (s < 16) return;
+        ctx.strokeStyle = kind === 'grass' ? '#B5B068' : kind === 'fern' ? '#4C9147' : 'rgba(60, 110, 50, 0.55)';
+        ctx.lineWidth = Math.max(1, 0.009 * s);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        const n = kind === 'grass' ? 3 : 2, ht = kind === 'grass' ? 0.13 : kind === 'fern' ? 0.09 : 0.06;
+        for (let k = -n; k <= n; k++) {
+          ctx.moveTo(x + k * 0.012 * s, y);
+          ctx.quadraticCurveTo(x + k * 0.022 * s, y - ht * 0.6 * s, x + k * 0.045 * s, y - (ht - Math.abs(k) * 0.012) * s);
+        }
+        ctx.stroke();
+        return;
+      }
+      case 'sheep': {
+        if (s < 12) return;
+        shadow(0.13);
+        const hd = r & 1 ? 1 : -1;
+        ctx.fillStyle = '#3A3533';
+        ctx.fillRect(x - 0.07 * s, y - 0.055 * s, Math.max(1, 0.018 * s), 0.055 * s);
+        ctx.fillRect(x + 0.05 * s, y - 0.055 * s, Math.max(1, 0.018 * s), 0.055 * s);
+        ctx.fillStyle = '#F7F4EE';
+        ctx.beginPath();
+        for (const [dx, dy, rr] of [[-0.075, -0.095, 0.045], [-0.025, -0.118, 0.05], [0.035, -0.11, 0.048], [0.08, -0.088, 0.04], [0, -0.08, 0.06]]) {
+          ctx.moveTo(x + (dx + rr) * s, y + dy * s);
+          ctx.arc(x + dx * s, y + dy * s, rr * s, 0, Math.PI * 2);
+        }
+        ctx.fill();
+        ctx.fillStyle = '#3A3533';
+        ctx.beginPath(); ctx.ellipse(x + hd * 0.115 * s, y - 0.1 * s, 0.032 * s, 0.042 * s, hd * 0.5, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      case 'hay': {
+        if (s < 6) return;
+        shadow(0.15);
+        const rr = 0.11 * s;
+        disc(x, y - rr, rr, '#E3B65E');
+        ctx.strokeStyle = '#C8953F';
+        ctx.lineWidth = Math.max(1, 0.012 * s);
+        ctx.beginPath(); ctx.arc(x, y - rr, rr * 0.62, 0.2, Math.PI * 1.7); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, y - rr, rr * 0.28, Math.PI, Math.PI * 2.5); ctx.stroke();
+        return;
+      }
+      case 'sunflower': {
+        if (s < 10) return;
+        const hgt = 0.34 * s;
+        ctx.fillStyle = '#4E8F3E';
+        ctx.fillRect(x - Math.max(0.5, 0.008 * s), y - hgt, Math.max(1, 0.016 * s), hgt);
+        ctx.beginPath(); ctx.ellipse(x + 0.032 * s, y - hgt * 0.45, 0.036 * s, 0.014 * s, -0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x - 0.032 * s, y - hgt * 0.64, 0.036 * s, 0.014 * s, 0.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFC531';
+        ctx.beginPath();
+        for (let k = 0; k < 10; k++) { const a = (Math.PI * 2 * k) / 10; ctx.moveTo(x + Math.cos(a) * 0.08 * s, y - hgt + Math.sin(a) * 0.08 * s); ctx.arc(x + Math.cos(a) * 0.045 * s, y - hgt + Math.sin(a) * 0.045 * s, 0.032 * s, 0, Math.PI * 2); }
+        ctx.fill();
+        disc(x, y - hgt, 0.034 * s, '#7A4A22');
+        return;
+      }
+      case 'pine': {
+        shadow(0.14);
+        const th = 0.08 * s;
+        ctx.fillStyle = SB_COL.trunk;
+        ctx.fillRect(x - 0.02 * s, y - th, 0.04 * s, th);
+        for (let k = 0; k < 3; k++) {
+          const yb = y - th - k * 0.15 * s, hw = (0.2 - k * 0.05) * s;
+          ctx.fillStyle = k % 2 ? '#3A7D55' : '#2E6B47';
+          ctx.beginPath(); ctx.moveTo(x - hw, yb); ctx.lineTo(x + hw, yb); ctx.lineTo(x, yb - 0.3 * s); ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.beginPath(); ctx.moveTo(x, y - th - 0.6 * s); ctx.lineTo(x - 0.2 * s, y - th); ctx.lineTo(x - 0.06 * s, y - th); ctx.closePath(); ctx.fill();
+        return;
+      }
+      case 'birch': {
+        shadow(0.12);
+        const th = 0.42 * s;
+        ctx.fillStyle = '#F2EFE8';
+        ctx.fillRect(x - 0.02 * s, y - th, 0.04 * s, th);
+        ctx.fillStyle = '#3F3B38';
+        for (let k = 0; k < 4; k++) ctx.fillRect(x - 0.02 * s + (k % 2) * 0.02 * s, y - th * (0.2 + k * 0.2), 0.02 * s, Math.max(1, 0.009 * s));
+        disc(x - 0.07 * s, y - th - 0.02 * s, 0.11 * s, '#7AB65B');
+        disc(x + 0.07 * s, y - th + 0.01 * s, 0.1 * s, '#8CC56A');
+        disc(x, y - th - 0.1 * s, 0.12 * s, '#9ED27A');
+        return;
+      }
+      case 'rock': {
+        if (s < 6) return;
+        const w = 0.12 * s;
+        ctx.fillStyle = '#9A968D';
+        ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.62, 0, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#B9B5AB';
+        ctx.beginPath(); ctx.ellipse(x - w * 0.22, y - w * 0.38, w * 0.46, w * 0.2, -0.15, 0, Math.PI * 2); ctx.fill();
+        return;
+      }
+      case 'dune': {
+        if (s < 6) return;
+        const w = 0.3 * s;
+        ctx.fillStyle = '#E6CF98';
+        ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.32, 0, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
+        if (s > 14) sbThing(ctx, 'grass', x - w * 0.15, y - w * 0.25, s, r, t, PL);
+        return;
+      }
+      case 'lamp': {
+        if (s < 6) return;
+        const hgt = 0.62 * s, side = r & 2 ? 1 : -1;
+        ctx.fillStyle = '#2F3340';
+        ctx.fillRect(x - Math.max(0.5, 0.012 * s), y - hgt, Math.max(1, 0.024 * s), hgt);
+        ctx.fillRect(Math.min(x, x - side * 0.08 * s), y - hgt, 0.08 * s, Math.max(1, 0.018 * s));
+        const gx = x - side * 0.075 * s, gy = y - hgt + 0.035 * s, R = 0.26 * s;
+        ctx.drawImage(sbGlow('255, 214, 140'), gx - R, gy - R, R * 2, R * 2);
+        disc(gx, gy, 0.026 * s, '#FFE6A6');
+        return;
+      }
+      case 'house': {
+        if (s < 6) return;
+        shadow(0.2);
+        const w = 0.32 * s, hh = 0.2 * s;
+        ctx.fillStyle = ['#E3D3BA', '#DEC8A2', '#D3BDC2'][r % 3];
+        ctx.fillRect(x - w / 2, y - hh, w, hh);
+        ctx.fillStyle = '#8B4A3D';
+        ctx.beginPath(); ctx.moveTo(x - w * 0.6, y - hh); ctx.lineTo(x, y - hh - 0.16 * s); ctx.lineTo(x + w * 0.6, y - hh); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#FFD877';
+        ctx.fillRect(x - w * 0.34, y - hh * 0.72, w * 0.18, hh * 0.3);
+        ctx.fillRect(x + w * 0.16, y - hh * 0.72, w * 0.18, hh * 0.3);
+        ctx.fillStyle = '#6B4A36';
+        ctx.fillRect(x - w * 0.07, y - hh * 0.55, w * 0.14, hh * 0.55);
+        return;
+      }
+    }
+  }
+  // the landmark a drive heads for, standing on (x, y); s is pixels per world unit
+  function sbDest(ctx, kind, x, y, s, t) {
+    const disc = (cx, cy, rr, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.fill(); };
+    const poly = (pts, c) => { ctx.fillStyle = c; ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.closePath(); ctx.fill(); };
+    ctx.fillStyle = 'rgba(30, 50, 30, 0.18)';
+    ctx.beginPath(); ctx.ellipse(x, y, 0.75 * s, 0.06 * s, 0, 0, Math.PI * 2); ctx.fill();
+    if (kind === 'barn') {
+      const sx = x + 0.52 * s;
+      ctx.fillStyle = '#C8D2DC'; ctx.fillRect(sx - 0.13 * s, y - 0.86 * s, 0.26 * s, 0.86 * s);
+      ctx.fillStyle = '#AFBAC6'; ctx.fillRect(sx + 0.03 * s, y - 0.86 * s, 0.1 * s, 0.86 * s);
+      ctx.fillStyle = '#8E9AA9'; ctx.beginPath(); ctx.ellipse(sx, y - 0.86 * s, 0.13 * s, 0.1 * s, 0, Math.PI, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(120, 132, 146, 0.6)'; ctx.lineWidth = Math.max(0.6, 0.01 * s);
+      ctx.beginPath(); for (let q = 1; q < 5; q++) { ctx.moveTo(sx - 0.13 * s, y - q * 0.17 * s); ctx.lineTo(sx + 0.13 * s, y - q * 0.17 * s); } ctx.stroke();
+      const bw = 0.92 * s, bh = 0.5 * s, bl = x - 0.66 * s;
+      ctx.fillStyle = '#CC463C'; ctx.fillRect(bl, y - bh, bw, bh);
+      ctx.fillStyle = 'rgba(80, 10, 10, 0.14)'; ctx.fillRect(bl + bw * 0.62, y - bh, bw * 0.38, bh);
+      poly([[bl - 0.05 * s, y - bh], [bl + 0.07 * s, y - bh - 0.24 * s], [bl + bw / 2, y - bh - 0.38 * s], [bl + bw - 0.07 * s, y - bh - 0.24 * s], [bl + bw + 0.05 * s, y - bh]], '#7C2F29');
+      const dx0 = bl + bw / 2 - 0.15 * s, dw = 0.3 * s, dh = 0.34 * s;
+      ctx.fillStyle = '#A8352E'; ctx.fillRect(dx0, y - dh, dw, dh);
+      ctx.strokeStyle = '#FFF6EA'; ctx.lineWidth = Math.max(1, 0.024 * s);
+      ctx.strokeRect(dx0, y - dh, dw, dh);
+      ctx.beginPath(); ctx.moveTo(dx0, y - dh); ctx.lineTo(dx0 + dw, y); ctx.moveTo(dx0 + dw, y - dh); ctx.lineTo(dx0, y); ctx.stroke();
+      ctx.fillStyle = '#FFF6EA'; ctx.fillRect(bl + bw / 2 - 0.07 * s, y - bh - 0.22 * s, 0.14 * s, 0.11 * s);
+      ctx.fillStyle = '#7C2F29'; ctx.fillRect(bl + bw / 2 - 0.045 * s, y - bh - 0.2 * s, 0.09 * s, 0.07 * s);
+      return;
+    }
+    if (kind === 'windmill') {
+      const hgt = 1.15 * s, wb = 0.27 * s, wt = 0.15 * s, top = y - hgt;
+      poly([[x - wb, y], [x - wt, top], [x + wt, top], [x + wb, y]], '#F4EFE4');
+      poly([[x + wb * 0.3, y], [x + wt * 0.3, top], [x + wt, top], [x + wb, y]], '#DFD6C5');
+      ctx.fillStyle = '#7A4E36';
+      ctx.fillRect(x - 0.055 * s, y - 0.2 * s, 0.11 * s, 0.2 * s);
+      ctx.fillRect(x - 0.035 * s, y - 0.66 * s, 0.07 * s, 0.09 * s);
+      poly([[x - wt * 1.3, top + 0.03 * s], [x - wt * 0.7, top - 0.14 * s], [x + wt * 0.7, top - 0.14 * s], [x + wt * 1.3, top + 0.03 * s]], '#7A4E36');
+      const hx = x, hy = top - 0.04 * s, L = 0.74 * s, a0 = t * 0.85;
+      for (let k = 0; k < 4; k++) {
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(a0 + (k * Math.PI) / 2);
+        ctx.fillStyle = '#8B6A4E'; ctx.fillRect(-0.012 * s, 0, 0.024 * s, L);
+        ctx.fillStyle = '#FBF8F1'; ctx.fillRect(0.016 * s, 0.13 * s, 0.13 * s, L - 0.13 * s);
+        ctx.strokeStyle = '#CDBB9F'; ctx.lineWidth = Math.max(0.6, 0.008 * s);
+        ctx.beginPath();
+        for (let q = 1; q < 5; q++) { const yy = 0.13 * s + (q * (L - 0.13 * s)) / 5; ctx.moveTo(0.016 * s, yy); ctx.lineTo(0.146 * s, yy); }
+        ctx.stroke();
+        ctx.restore();
+      }
+      disc(hx, hy, 0.04 * s, '#5B3B28');
+      return;
+    }
+    if (kind === 'cabin') {
+      sbThing(ctx, 'pine', x - 0.6 * s, y - 0.03 * s, s * 1.35, 1, t, {});
+      sbThing(ctx, 'pine', x + 0.66 * s, y - 0.02 * s, s * 1.15, 2, t, {});
+      const w = 0.8 * s, hh = 0.38 * s, l = x - w / 2;
+      for (let q = 0; q < 4; q++) {
+        const u = (t * 0.32 + q / 4) % 1;
+        ctx.fillStyle = 'rgba(244, 244, 248, ' + (0.6 * (1 - u)).toFixed(3) + ')';
+        ctx.beginPath(); ctx.arc(x + 0.23 * s + u * 0.2 * s, y - hh - 0.38 * s - u * 0.55 * s, (0.04 + u * 0.09) * s, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#8B8279'; ctx.fillRect(x + 0.18 * s, y - hh - 0.36 * s, 0.1 * s, 0.26 * s);
+      ctx.fillStyle = '#9C6A44'; ctx.fillRect(l, y - hh, w, hh);
+      ctx.strokeStyle = '#7F5334'; ctx.lineWidth = Math.max(0.8, 0.013 * s);
+      ctx.beginPath(); for (let q = 1; q < 5; q++) { const yy = y - (hh * q) / 5; ctx.moveTo(l, yy); ctx.lineTo(l + w, yy); } ctx.stroke();
+      poly([[l - 0.09 * s, y - hh + 0.01 * s], [x, y - hh - 0.33 * s], [l + w + 0.09 * s, y - hh + 0.01 * s]], '#5A3A2A');
+      ctx.drawImage(sbGlow('255, 214, 140'), l + 0.06 * s, y - hh * 0.9, 0.26 * s, 0.26 * s);
+      ctx.fillStyle = '#FFD877'; ctx.fillRect(l + 0.11 * s, y - hh * 0.74, 0.16 * s, 0.13 * s);
+      ctx.fillStyle = '#6B4128'; ctx.fillRect(x + 0.06 * s, y - 0.27 * s, 0.14 * s, 0.27 * s);
+      return;
+    }
+    if (kind === 'lighthouse') {
+      const hgt = 1.6 * s, wb = 0.2 * s, wt = 0.13 * s, top = y - hgt;
+      const wAt = (yy) => wb + ((wt - wb) * (y - yy)) / hgt;
+      ctx.fillStyle = '#8F8D95'; ctx.beginPath(); ctx.ellipse(x, y, 0.46 * s, 0.17 * s, 0, Math.PI, Math.PI * 2); ctx.fill();
+      for (let k = 0; k < 5; k++) {
+        const y0 = y - (hgt * k) / 5, y1 = y - (hgt * (k + 1)) / 5;
+        poly([[x - wAt(y0), y0], [x - wAt(y1), y1], [x + wAt(y1), y1], [x + wAt(y0), y0]], k % 2 ? '#FBF6EE' : '#E0483E');
+      }
+      poly([[x + wb * 0.35, y], [x + wt * 0.35, top], [x + wt, top], [x + wb, y]], 'rgba(60, 30, 50, 0.13)');
+      ctx.fillStyle = '#3A3F4B'; ctx.fillRect(x - wt * 1.55, top - 0.035 * s, wt * 3.1, 0.045 * s);
+      const ly = top - 0.12 * s;
+      ctx.drawImage(sbGlow('255, 230, 160'), x - 0.5 * s, ly - 0.5 * s, s, s);
+      ctx.fillStyle = '#FFE9A6'; ctx.fillRect(x - wt * 0.8, top - 0.21 * s, wt * 1.6, 0.18 * s);
+      poly([[x - wt * 1.1, top - 0.21 * s], [x, top - 0.36 * s], [x + wt * 1.1, top - 0.21 * s]], '#3A3F4B');
+      const sw = Math.sin(t * 1.2), bl = 2.4 * s * sw, spread = 0.05 * s + 0.16 * s * Math.abs(sw);
+      ctx.fillStyle = 'rgba(255, 238, 176, 0.26)';
+      ctx.beginPath(); ctx.moveTo(x, ly); ctx.lineTo(x + bl, ly - spread); ctx.lineTo(x + bl, ly + spread); ctx.closePath(); ctx.fill();
+      return;
+    }
+    if (kind === 'village') {
+      const cx = x + 0.12 * s;
+      ctx.fillStyle = '#DDD6CA'; ctx.fillRect(cx - 0.2 * s, y - 0.4 * s, 0.34 * s, 0.4 * s);
+      poly([[cx - 0.24 * s, y - 0.4 * s], [cx - 0.03 * s, y - 0.6 * s], [cx + 0.18 * s, y - 0.4 * s]], '#7E4337');
+      ctx.fillStyle = '#E8E1D5'; ctx.fillRect(cx + 0.12 * s, y - 0.9 * s, 0.16 * s, 0.9 * s);
+      poly([[cx + 0.1 * s, y - 0.9 * s], [cx + 0.2 * s, y - 1.25 * s], [cx + 0.3 * s, y - 0.9 * s]], '#4E405E');
+      disc(cx + 0.2 * s, y - 0.77 * s, 0.04 * s, '#FFF1C4');
+      ctx.fillStyle = '#FFD877';
+      ctx.fillRect(cx - 0.12 * s, y - 0.3 * s, 0.05 * s, 0.1 * s);
+      ctx.fillRect(cx - 0.02 * s, y - 0.3 * s, 0.05 * s, 0.1 * s);
+      ctx.fillRect(cx + 0.175 * s, y - 0.55 * s, 0.05 * s, 0.09 * s);
+      for (const [dx, w, hh, c, rf] of [[-0.62, 0.36, 0.26, '#E6D6BD', '#8B4A3D'], [-0.3, 0.26, 0.2, '#E0C9A0', '#7E4337'], [0.62, 0.32, 0.24, '#D6C0C6', '#8B4A3D']]) {
+        const hx = x + dx * s;
+        ctx.fillStyle = c; ctx.fillRect(hx - (w / 2) * s, y - hh * s, w * s, hh * s);
+        poly([[hx - w * 0.62 * s, y - hh * s], [hx, y - (hh + 0.17) * s], [hx + w * 0.62 * s, y - hh * s]], rf);
+        ctx.fillStyle = '#FFD877';
+        ctx.fillRect(hx - w * 0.32 * s, y - hh * 0.7 * s, w * 0.2 * s, hh * 0.3 * s);
+        ctx.fillRect(hx + w * 0.12 * s, y - hh * 0.7 * s, w * 0.2 * s, hh * 0.3 * s);
+      }
+      return;
+    }
+  }
+  // the animal from the sign, side on and facing right with its feet on (x, y),
+  // L pixels long; hp runs 0 to 1 through one hop or stride
+  function sbCritter(ctx, kind, x, y, L, hp) {
+    const u = L / 100, air = Math.sin(hp * Math.PI);
+    const E = (cx, cy, rx, ry, rot, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x + cx * u, y + cy * u, rx * u, ry * u, rot || 0, 0, Math.PI * 2); ctx.fill(); };
+    const T = (pts, c) => { ctx.fillStyle = c; ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(x + px * u, y + py * u) : ctx.moveTo(x + px * u, y + py * u))); ctx.closePath(); ctx.fill(); };
+    const leg = (lx, len, c) => { ctx.fillStyle = c; ctx.fillRect(x + lx * u, y - len * u, 5 * u, len * u); };
+    if (kind === 'rabbit') {
+      E(-20 - air * 6, -12 + air * 2, 17, 8.5, 0.4 * air, '#9C7C62');
+      E(-4, -27, 29, 18.5, -0.14 * air, '#B8977B');
+      E(-35, -33, 7.5, 7.5, 0, '#FFFFFF');
+      E(17 + air * 5, -6 - air * 3, 7, 4, -0.5 * air, '#A88A70');
+      E(16, -66, 5.5, 16.5, -0.42 - air * 0.3, '#B8977B');
+      E(23, -68, 5, 16, -0.2 - air * 0.3, '#AE8D72');
+      E(23, -68, 2.2, 10.5, -0.2 - air * 0.3, '#F1B5AE');
+      E(27, -44, 14.5, 12.5, 0, '#B8977B');
+      E(33, -47, 2.4, 2.4, 0, '#2B2320');
+      E(41, -41, 2.2, 1.8, 0, '#E68F94');
+      return;
+    }
+    const sw = Math.sin(hp * Math.PI * 2) * 6;
+    if (kind === 'fox') {
+      leg(-24 + sw, 16, '#3E261C'); leg(16 - sw, 16, '#3E261C');
+      E(-44, -34, 22, 8.5, -0.35, '#E8743A');
+      E(-62, -42, 7, 5.5, -0.35, '#FFF5EA');
+      E(-2, -28, 30, 13, 0, '#E8743A');
+      E(4, -21, 19, 6, 0, '#FCEBD8');
+      leg(-18 - sw, 16, '#4A2E22'); leg(22 + sw, 16, '#4A2E22');
+      T([[24, -50], [29, -66], [35, -50]], '#D9662E');
+      T([[31, -50], [38, -64], [42, -48]], '#E8743A');
+      E(33, -40, 13, 11, 0, '#E8743A');
+      T([[38, -45], [58, -36], [38, -30]], '#E8743A');
+      T([[40, -36.5], [58, -36], [40, -30]], '#FCEBD8');
+      E(58, -36, 2.3, 2.3, 0, '#2B2320');
+      E(38, -43, 2.1, 2.1, 0, '#2B2320');
+      return;
+    }
+    if (kind === 'cat') {
+      const c = '#F0A24E', cd = '#D9863A';
+      leg(-20 + sw, 15, cd); leg(14 - sw, 15, cd);
+      ctx.strokeStyle = c; ctx.lineWidth = 6 * u; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x - 26 * u, y - 30 * u); ctx.quadraticCurveTo(x - 46 * u, y - 34 * u, x - 42 * u, y - 58 * u); ctx.stroke();
+      E(-2, -28, 27, 12.5, 0, c);
+      ctx.strokeStyle = cd; ctx.lineWidth = 3 * u;
+      ctx.beginPath(); for (const q of [-14, -4, 6]) { ctx.moveTo(x + q * u, y - 39 * u); ctx.lineTo(x + (q + 3) * u, y - 31 * u); } ctx.stroke();
+      leg(-14 - sw, 15, c); leg(20 + sw, 15, c);
+      T([[20, -48], [22, -64], [30, -52]], c);
+      T([[30, -52], [37, -64], [40, -46]], c);
+      T([[23, -51], [24, -59], [28, -53]], '#F7C7B6');
+      E(30, -42, 12.5, 11.5, 0, c);
+      E(36, -44, 2, 2.4, 0, '#2B2320');
+      E(42, -38, 1.8, 1.4, 0, '#E68F94');
+    }
+  }
   function sbWheelSvg() {
     return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' },
       s('circle', { cx: 50, cy: 50, r: 41, fill: 'rgba(255,255,255,.16)', stroke: '#2B2F3A', 'stroke-width': 11 }),
@@ -5611,6 +6209,8 @@ PuzzleEnginesFactory(window);
       this.kmh = 0; this.carX = 0; this.tilt = 0; this.steer = 0; this.keySteer = 0; this.ptr = null; this.ptrSteer = 0;
       this.bgX = 0; this.sign = null; this.spdT = 0; this.spdOn = 0; this.wasOn = true; this.W = 0; this.H = 0;
       this.salt = Math.imul((p.seed | 0) + 7, 2654435761) | 0;
+      this.place = SB_PLACES[Math.max(1, Math.min(5, p.level || 1))];
+      this.puffs = []; this.critter = null;
       this.wrap = h('div', { class: 'sb-wrap' });
       this.canvas = h('canvas', { class: 'sb-canvas', 'aria-hidden': 'true' });
       this.goBtn = h('button', { class: 'sb-go', type: 'button', 'aria-label': this.phase === 'paused' ? 'Drive on' : 'Drive' }, icon('play'));
@@ -5647,6 +6247,7 @@ PuzzleEnginesFactory(window);
       super.destroy();
       caf(this.rafId);
       this.rafId = null;
+      if (this.phase === 'drive' || this.phase === 'finish') Sound.engine(0);
       if (this.ro) this.ro.disconnect();
       if (this.onWinResize) window.removeEventListener('resize', this.onWinResize);
       document.removeEventListener('keyup', this.onKeyUp);
@@ -5660,10 +6261,22 @@ PuzzleEnginesFactory(window);
       this.canvas.width = Math.round(W * this.dpr);
       this.canvas.height = Math.round(H * this.dpr);
       this.ctx = this.canvas.getContext('2d');
-      const hy = Math.round(H * SB_HORIZON);
-      const g = this.ctx.createLinearGradient(0, 0, 0, hy);
-      g.addColorStop(0, SB_COL.sky[0]); g.addColorStop(0.6, SB_COL.sky[1]); g.addColorStop(1, SB_COL.sky[2]);
+      const hy = Math.round(H * SB_HORIZON), PL = this.place, cx = this.ctx;
+      const g = cx.createLinearGradient(0, 0, 0, hy);
+      g.addColorStop(0, PL.sky[0]); g.addColorStop(0.6, PL.sky[1]); g.addColorStop(1, PL.sky[2]);
       this.skyGrad = g;
+      const hz = cx.createLinearGradient(0, hy - H * 0.05, 0, hy + H * 0.17);
+      hz.addColorStop(0, 'rgba(' + PL.haze + ', 0)'); hz.addColorStop(0.24, 'rgba(' + PL.haze + ', 0.42)'); hz.addColorStop(1, 'rgba(' + PL.haze + ', 0)');
+      this.hazeGrad = hz;
+      if (PL.far === 'sea') {
+        const sg = cx.createLinearGradient(0, hy - H * 0.03, 0, hy);
+        sg.addColorStop(0, '#7F82C0'); sg.addColorStop(1, '#D59DB0');
+        this.seaGrad = sg;
+      }
+      this.stars = PL.stars ? Array.from({ length: PL.stars }, (_, i) => {
+        const q = sbHash(i * 97 + 13);
+        return [((q % 1000) / 1000) * W, (((q >>> 10) % 1000) / 1000) * hy * 0.62, 1 + ((q >>> 20) % 2), 0.8 + ((q >>> 22) % 100) / 50, (q % 628) / 100];
+      }) : null;
       this.steerRange = Math.max(56, Math.min(110, W * 0.2));
       this.plateP = Math.max(60, Math.min(92, W * 0.2));
       const b = this.signBtn.clientWidth || 84, k = this.dpr;
@@ -5748,6 +6361,7 @@ PuzzleEnginesFactory(window);
       this.ptr = null; this.ptrSteer = 0; this.keySteer = 0;
       this.kmh = 0;
       this.phase = 'paused';
+      Sound.engine(0);
       this.goBtn.disabled = false;
       this.goBtn.classList.remove('away');
       this.goBtn.setAttribute('aria-label', 'Drive on');
@@ -5764,6 +6378,7 @@ PuzzleEnginesFactory(window);
       this.lastTs = ts;
       this.step(dt, ts);
       if (this.phase === 'done') return;
+      if (ts - (this.engAt || 0) > 140) { this.engAt = ts; Sound.engine(this.kmh > 2 ? this.kmh : 0); }
       this.draw(ts);
       if (this.phase === 'drive' || this.phase === 'finish') this.rafId = raf((t) => this.loop(t));
     }
@@ -5848,6 +6463,7 @@ PuzzleEnginesFactory(window);
             const L = relPos(this, this.wrap);
             sparks(this, L.x - L.w / 2 + this.signXY[0], L.y - L.h / 2 + this.signXY[1], ['#FFC83A', '#FFFFFF', '#7CE3B0'], 12);
           }
+          if (!reducedMotion()) { this.critter = { kind: p.target, t0: ts + 120 }; Sound.play('hop'); }
         } else if (rec.cls === 'false_alarm') {
           Sound.play('no');
           buzz([20, 40, 20]);
@@ -5859,25 +6475,75 @@ PuzzleEnginesFactory(window);
       this.app.touch();
     }
     // ---- drawing
+    // where the landmark stands: it comes closer as the drive goes on (its size grows
+    // evenly), and from the finish it is a real place 2 units past the line
+    destZ() {
+      if (this.finishAt != null) return this.finishAt + 2 - this.pos;
+      const pr = Math.max(0, Math.min(1, this.tt / this.p.duration));
+      return 1 / (1 / 58 + (1 / 9.5 - 1 / 58) * Math.pow(pr, 1.25));
+    }
     draw(ts) {
       const ctx = this.ctx;
       if (!ctx || !this.W) return;
-      const W = this.W, H = this.H, p = this.p, G = this.G, k = this.dpr;
-      const hy = Math.round(H * SB_HORIZON), F = H, half = p.half;
+      const W = this.W, H = this.H, p = this.p, G = this.G, k = this.dpr, PL = this.place;
+      const hy = Math.round(H * SB_HORIZON), F = H, half = p.half, t = ts / 1000;
       ctx.setTransform(k, 0, 0, k, 0, 0);
-      // sky, sun, far hills
+      // sky: stars at dusk, the sun or the moon drifting with the bends, clouds, birds
       ctx.fillStyle = this.skyGrad;
       ctx.fillRect(0, 0, W, hy + 2);
-      const span = W * 1.6, sx = ((W * 0.24 - this.bgX * 0.12) % span + span) % span - W * 0.3, sy = hy - H * 0.09;
-      const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, H * 0.16);
-      glow.addColorStop(0, 'rgba(255, 236, 200, 0.9)'); glow.addColorStop(1, 'rgba(255, 236, 200, 0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(sx - H * 0.16, sy - H * 0.16, H * 0.32, H * 0.32);
-      ctx.fillStyle = '#FFF6E2';
-      ctx.beginPath(); ctx.arc(sx, sy, H * 0.035, 0, Math.PI * 2); ctx.fill();
-      sbHills(ctx, W, hy, H * 0.11, this.bgX * 0.25 + 40, 2, 5, 0.7, SB_COL.far);
-      sbHills(ctx, W, hy, H * 0.05, this.bgX * 0.55, 3, 7, 2.1, SB_COL.hill[0]);
-      ctx.fillStyle = SB_COL.grass[1];
+      if (this.stars) {
+        ctx.fillStyle = '#FFF6E2';
+        for (const st of this.stars) { ctx.globalAlpha = 0.5 + 0.4 * Math.sin(t * st[3] + st[4]); ctx.fillRect(st[0], st[1], st[2], st[2]); }
+        ctx.globalAlpha = 1;
+      }
+      const body = PL.sun || PL.moon, span = W * 1.6;
+      const sx = ((W * (body[0] + 0.3) - this.bgX * 0.12) % span + span) % span - W * 0.3, sy = H * body[1], sr = H * body[2];
+      if (PL.sun) {
+        const R = sr * 4.8;
+        ctx.drawImage(sbGlow(PL.sun[4]), sx - R, sy - R, R * 2, R * 2);
+        ctx.fillStyle = PL.sun[3];
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+      } else {
+        const R = sr * 4;
+        ctx.drawImage(sbGlow('255, 240, 210'), sx - R, sy - R, R * 2, R * 2);
+        ctx.drawImage(sbMoon(), sx - sr * 1.15, sy - sr * 1.15, sr * 2.3, sr * 2.3);
+      }
+      if (PL.clouds) {
+        ctx.fillStyle = PL.cloud;
+        ctx.globalAlpha = 0.92;
+        for (let c = 0; c < PL.clouds; c++) {
+          const q = sbHash(c * 131 + 7), cw = W * (0.2 + ((q % 100) / 100) * 0.14), cy = H * (0.07 + (((q >>> 8) % 100) / 100) * 0.15);
+          const lane = W + cw * 1.4, x0 = (((q >>> 16) % 1000) / 1000) * lane - this.bgX * 0.05 - t * 3;
+          sbCloud(ctx, ((x0 % lane) + lane) % lane - cw * 0.7, cy, cw);
+        }
+        ctx.globalAlpha = 1;
+      }
+      if (PL.birds) {
+        ctx.strokeStyle = PL.birds; ctx.lineWidth = 1.4; ctx.lineCap = 'round'; ctx.globalAlpha = 0.75;
+        ctx.beginPath();
+        for (let b = 0; b < 3; b++) {
+          const bx = ((t * 16 + b * 21 + 40) % (W + 140)) - 60, byy = H * 0.12 + b * 7 + Math.sin(t * 0.9 + b) * 3, wy = Math.sin(t * 9 + b * 2) * 2.4;
+          ctx.moveTo(bx - 5, byy + wy); ctx.quadraticCurveTo(bx - 2.5, byy - 1, bx, byy); ctx.quadraticCurveTo(bx + 2.5, byy - 1, bx + 5, byy + wy);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      // far away: hills, or the sea with the sun's path on it
+      if (PL.far === 'sea') {
+        const top = hy - H * 0.03;
+        ctx.fillStyle = this.seaGrad;
+        ctx.fillRect(0, top, W, hy - top + 2);
+        ctx.fillStyle = 'rgba(255, 228, 176, 0.8)';
+        for (let q = 0; q < 6; q++) {
+          const yy = top + 2 + (q * (hy - top - 3)) / 6, ww = (6 + q * 5) * (0.55 + 0.45 * Math.sin(t * 2.2 + q * 1.7));
+          ctx.fillRect(sx - ww / 2, yy, ww, 1.4);
+        }
+        sbHills(ctx, W, hy, H * 0.016, this.bgX * 0.55, 3, 7, 2.1, PL.hill);
+      } else {
+        sbHills(ctx, W, hy, H * 0.11, this.bgX * 0.25 + 40, 2, 5, 0.7, PL.far);
+        sbHills(ctx, W, hy, H * 0.05, this.bgX * 0.55, 3, 7, 2.1, PL.hill);
+      }
+      ctx.fillStyle = PL.ground;
       ctx.fillRect(0, hy, W, H - hy);
       // the road, far to near
       const seg = G.seg, road = p.road, sc = this.pos;
@@ -5893,7 +6559,9 @@ PuzzleEnginesFactory(window);
       }
       const at = (z) => { const f = (z + sc) / seg - i0, n = Math.max(0, Math.min(N - 1, Math.floor(f))); return xs[n] + (xs[n + 1] - xs[n]) * (f - n); };
       const camX = at(SB_CAR_Z) + this.carX;
-      const quad = (ax, ay, bx, by, cx, cy, ex, ey) => { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); ctx.closePath(); ctx.fill(); };
+      const quad = (ax, ay, bx, by, cx, cy, ex, ey) => { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); ctx.closePath(); };
+      const zD = this.destZ(), latD = half * 1.16 + 0.8, wood = PL.wood || '#A97D52';
+      let destDrawn = false, fprev = null;
       for (let n = N - 1; n >= 0; n--) {
         const zB = zs[n + 1];
         if (zB <= 0.4) break;
@@ -5901,41 +6569,93 @@ PuzzleEnginesFactory(window);
         const yA = hy + F / zA + 0.8, yB = hy + F / zB;
         const xA = W / 2 + ((xs[n] - camX) * F) / zA, xB = W / 2 + ((xs[n + 1] - camX) * F) / zB;
         const wA = (half * F) / zA, wB = (half * F) / zB;
-        const i = i0 + n, stripe = Math.floor(i / 3) & 1;
-        ctx.fillStyle = SB_COL.grass[stripe];
-        ctx.fillRect(0, yB, W, yA - yB + 1);
-        ctx.fillStyle = SB_COL.rumble[stripe];
-        quad(xA - wA * 1.13, yA, xA - wA, yA, xB - wB, yB, xB - wB * 1.13, yB);
-        quad(xA + wA, yA, xA + wA * 1.13, yA, xB + wB * 1.13, yB, xB + wB, yB);
-        ctx.fillStyle = SB_COL.road[stripe];
-        quad(xA - wA, yA, xA + wA, yA, xB + wB, yB, xB - wB, yB);
-        if (!stripe) {
-          ctx.fillStyle = SB_COL.lane;
-          const lA = wA * 0.028, lB = wB * 0.028;
-          quad(xA - lA, yA, xA + lA, yA, xB + lB, yB, xB - lB, yB);
+        const i = i0 + n, stripe = Math.floor(i / 3) & 1, s = F / zB;
+        // the verge, the road, its edge lines and the dashes down the middle
+        const yT = yB - 0.7;
+        ctx.fillStyle = PL.verge;
+        ctx.beginPath(); quad(xA - wA * 1.16, yA, xA + wA * 1.16, yA, xB + wB * 1.16, yB, xB - wB * 1.16, yB); ctx.fill();
+        ctx.fillStyle = PL.road;
+        ctx.beginPath(); quad(xA - wA, yA, xA + wA, yA, xB + wB, yT, xB - wB, yT); ctx.fill();
+        if (zB < 42) {
+          ctx.fillStyle = '#F6F2E8';
+          ctx.beginPath();
+          quad(xA - wA * 0.965, yA, xA - wA * 0.91, yA, xB - wB * 0.91, yB, xB - wB * 0.965, yB);
+          quad(xA + wA * 0.91, yA, xA + wA * 0.965, yA, xB + wB * 0.965, yB, xB + wB * 0.91, yB);
+          if (!stripe) { const lA = wA * 0.028, lB = wB * 0.028; quad(xA - lA, yA, xA + lA, yA, xB + lB, yB, xB - lB, yB); }
+          ctx.fill();
         }
-        // trees and bushes standing on the far edge of this segment
+        // a fence along one side now and then
+        if (PL.fence && i % 2 === 0) {
+          const b = Math.floor(i / 24), fr = sbHash((b * 7919) ^ this.salt);
+          if ((fr % 100) < PL.fence * 100 && i % 24 > 1 && s > 2.2) {
+            const sd = fr & 16 ? 1 : -1, fx = W / 2 + (xs[n + 1] + sd * (half * 1.16 + 0.34) - camX) * s, fh = 0.13 * s;
+            ctx.strokeStyle = wood; ctx.fillStyle = wood;
+            if (fprev && fprev.b === b) {
+              ctx.lineWidth = Math.max(1, 0.016 * s);
+              ctx.beginPath();
+              ctx.moveTo(fprev.x, fprev.y - fprev.h * 0.42); ctx.lineTo(fx, yB - fh * 0.42);
+              ctx.moveTo(fprev.x, fprev.y - fprev.h * 0.84); ctx.lineTo(fx, yB - fh * 0.84);
+              ctx.stroke();
+            }
+            const fw = Math.max(1.5, 0.024 * s);
+            ctx.fillRect(fx - fw / 2, yB - fh, fw, fh);
+            fprev = { b, x: fx, y: yB, h: fh };
+          } else fprev = null;
+        }
+        // white posts with a reflector beside the road
+        if (i % 5 === 0 && s > 6) {
+          const pw = Math.max(1, 0.02 * s), ph = 0.14 * s, lat = half * 1.16 + 0.07;
+          for (const sd of [-1, 1]) {
+            const px = W / 2 + (xs[n + 1] + sd * lat - camX) * s;
+            if (px < -pw || px > W + pw) continue;
+            ctx.fillStyle = '#F7F4EC'; ctx.fillRect(px - pw / 2, yB - ph, pw, ph);
+            ctx.fillStyle = '#2E313B'; ctx.fillRect(px - pw / 2, yB - ph, pw, ph * 0.24);
+            ctx.fillStyle = '#F0663F'; ctx.fillRect(px - pw * 0.32, yB - ph * 0.7, pw * 0.64, ph * 0.13);
+          }
+        }
+        // trees and the rest of the place
         const r = sbHash((i + 1) ^ this.salt);
-        if (r % 3 === 0 && zB > 1.2) {
-          const s = F / zB, side = r & 8 ? 1 : -1;
-          const lat = half + 0.32 + (((r >>> 5) % 97) / 97) * 1.5;
+        if (r % 3 === 0 && zB > 1.2 && s > 3) {
+          const side = r & 8 ? 1 : -1, kind = PL.things[(r >>> 9) % PL.things.length];
+          const small = kind === 'flowers' || kind === 'fern' || kind === 'grass';
+          const lat = half * 1.16 + (small ? 0.1 + (((r >>> 5) % 97) / 97) * 0.35 : 0.3 + (((r >>> 5) % 97) / 97) * 1.4);
           const tx = W / 2 + (xs[n + 1] + side * lat - camX) * s;
-          if (s > 3 && tx > -0.5 * s && tx < W + 0.5 * s) sbTree(ctx, tx, yB, s * (0.85 + ((r >>> 16) % 30) / 100), (r >>> 12) % 5);
+          if (tx > -0.7 * s && tx < W + 0.7 * s) sbThing(ctx, kind, tx, yB, s * (0.85 + ((r >>> 16) % 30) / 100), r, t, PL);
+        }
+        if (r % 5 === 2 && s > 16) {
+          const side = r & 64 ? 1 : -1, lat = half * 1.16 + 0.05 + (((r >>> 7) % 89) / 89) * 0.5;
+          const tx = W / 2 + (xs[n + 1] + side * lat - camX) * s;
+          if (tx > -20 && tx < W + 20) sbThing(ctx, PL.small, tx, yB, s, r, t, PL);
+        }
+        // the landmark, at its depth
+        if (!destDrawn && zD <= zB && zD > zA) {
+          const sD = F / zD;
+          let dx0 = W / 2 + (at(zD) + latD - camX) * sD;
+          const keep = Math.max(0, Math.min(1, (zD - 14) / 12));
+          dx0 += (Math.max(W * 0.16, Math.min(W * 0.84, dx0)) - dx0) * keep;
+          sbDest(ctx, PL.dest, dx0, hy + F / zD, sD * (1 + 0.7 * Math.max(0, Math.min(1, (zD - 9.5) / 40))), t);
+          destDrawn = true;
         }
       }
-      // the finish: two posts and a chequered band across the road
+      // haze toward the horizon
+      ctx.fillStyle = this.hazeGrad;
+      ctx.fillRect(0, hy - H * 0.05, W, H * 0.22);
+      // the finish: bunting on two posts across the road
       if (this.finishAt != null) {
         const z = this.finishAt - sc;
         if (z > 0.6) {
           const s = F / z, xc = W / 2 + (at(z) - camX) * s, yG = hy + F / z;
-          const xL = xc - half * 1.2 * s, xR = xc + half * 1.2 * s, top = yG - 0.95 * s, bh = 0.16 * s;
-          ctx.fillStyle = '#F8F3EA';
-          ctx.fillRect(xL - 0.03 * s, top, 0.06 * s, yG - top);
-          ctx.fillRect(xR - 0.03 * s, top, 0.06 * s, yG - top);
-          const cols = 12, cw = (xR - xL) / cols;
-          for (let a = 0; a < cols; a++) for (let b = 0; b < 2; b++) {
-            ctx.fillStyle = (a + b) % 2 ? '#1F2230' : '#FFFFFF';
-            ctx.fillRect(xL + a * cw, top + (b * bh) / 2, cw + 0.6, bh / 2 + 0.6);
+          const xL = xc - half * 1.3 * s, xR = xc + half * 1.3 * s, top = yG - 0.72 * s, sag = 0.11 * s;
+          ctx.fillStyle = '#9A6B44';
+          ctx.fillRect(xL - 0.025 * s, top, 0.05 * s, yG - top);
+          ctx.fillRect(xR - 0.025 * s, top, 0.05 * s, yG - top);
+          ctx.strokeStyle = 'rgba(70, 56, 44, 0.75)'; ctx.lineWidth = Math.max(1, 0.01 * s);
+          ctx.beginPath(); ctx.moveTo(xL, top); ctx.quadraticCurveTo(xc, top + sag * 2, xR, top); ctx.stroke();
+          const cols = ['#E5564D', '#FFC83A', '#3D8BFD', '#2FB36E', '#FFFFFF', '#FF7FB0'], nF = 13, fw = ((xR - xL) / nF) * 0.38;
+          for (let q = 0; q < nF; q++) {
+            const u = (q + 0.5) / nF, fx = (1 - u) * (1 - u) * xL + 2 * u * (1 - u) * xc + u * u * xR, fy = top + 2 * u * (1 - u) * sag * 2;
+            ctx.fillStyle = cols[q % cols.length];
+            ctx.beginPath(); ctx.moveTo(fx - fw, fy); ctx.lineTo(fx + fw, fy); ctx.lineTo(fx, fy + fw * 2.1); ctx.closePath(); ctx.fill();
           }
         }
       }
@@ -5949,11 +6669,11 @@ PuzzleEnginesFactory(window);
         let scale = age < 160 ? 1.1 * (1 - Math.pow(1 - Math.max(0, age) / 160, 3)) : 1;
         let dxs = 0, ring = null;
         if (S.res) {
-          const t = Math.max(0, ts - S.done);
-          if (S.show && S.res === 'hit') { scale *= 1 + 0.18 * Math.min(1, t / 140); ring = '#1FB36E'; if (t > 160) scale *= Math.max(0, 1 - (t - 160) / 160); }
-          else if (S.show && S.res === 'false_alarm') { dxs = Math.sin(t / 22) * 7 * Math.max(0, 1 - t / 320); ring = '#EF4F4A'; if (t > 300) scale *= Math.max(0, 1 - (t - 300) / 150); }
-          else if (S.show && S.res === 'miss') { ring = '#EF4F4A'; scale *= Math.max(0, 1 - t / 300); }
-          else scale *= Math.max(0, 1 - t / 140);
+          const tt = Math.max(0, ts - S.done);
+          if (S.show && S.res === 'hit') { scale *= 1 + 0.18 * Math.min(1, tt / 140); ring = '#1FB36E'; if (tt > 160) scale *= Math.max(0, 1 - (tt - 160) / 160); }
+          else if (S.show && S.res === 'false_alarm') { dxs = Math.sin(tt / 22) * 7 * Math.max(0, 1 - tt / 320); ring = '#EF4F4A'; if (tt > 300) scale *= Math.max(0, 1 - (tt - 300) / 150); }
+          else if (S.show && S.res === 'miss') { ring = '#EF4F4A'; scale *= Math.max(0, 1 - tt / 300); }
+          else scale *= Math.max(0, 1 - tt / 140);
         } else if (age > S.ms) scale *= Math.max(0, 1 - (age - S.ms) / 140);
         if (scale > 0.02) {
           ctx.fillStyle = SB_COL.post;
@@ -5970,15 +6690,53 @@ PuzzleEnginesFactory(window);
           this.signXY = [gx, cy];
         }
       }
-      // the car
+      // a caught sign's animal hops off into the field
+      const C = this.critter;
+      if (C) {
+        const age = ts - C.t0, dur = 1000;
+        if (age > dur) this.critter = null;
+        else if (age >= 0) {
+          const z = SB_SIGN_Z, s = F / z, gy = hy + F / z, f = age / dur;
+          const hp = Math.min(0.999, (f * 3) % 1), L = 0.62 * s;
+          const cx0 = W / 2 + (at(z) + half + 0.16 - camX) * s + (0.12 + f * 1.25) * s;
+          const lift = (C.kind === 'rabbit' ? 0.2 : 0.06) * s * Math.sin(hp * Math.PI);
+          ctx.globalAlpha = Math.max(0, Math.min(1, (1 - f) * 4));
+          ctx.fillStyle = 'rgba(30, 50, 30, 0.2)';
+          ctx.beginPath(); ctx.ellipse(cx0, gy, L * 0.32 * (1 - 0.3 * Math.sin(hp * Math.PI)), L * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+          sbCritter(ctx, C.kind, cx0, gy - lift, L, hp);
+          ctx.globalAlpha = 1;
+        }
+      }
+      // the car, with a puff from the exhaust now and then and dust off the road
+      const carY = hy + F / SB_CAR_Z, carW = (SB_CAR * 2 * F) / SB_CAR_Z, u = carW / 100;
       const bob = this.offEdge && this.kmh > 4 ? Math.sin(this.tt * 70) * 1.6 : 0;
-      sbCar(ctx, W / 2, hy + F / SB_CAR_Z, (SB_CAR * 2 * F) / SB_CAR_Z, this.tilt, bob, this.braking || this.phase === 'finish');
-      // how far along the drive
-      const pr = Math.max(0, Math.min(1, this.tt / p.duration)), bx = 18, bw = W - 36, by = 16;
+      sbCar(ctx, W / 2, carY, carW, this.tilt, bob, this.braking || this.phase === 'finish');
+      if (PL.moon) for (const sd of [-1, 1]) ctx.drawImage(sbGlow('255, 90, 70'), W / 2 + sd * 36.5 * u - 22 * u, carY - 38.5 * u + bob - 22 * u, 44 * u, 44 * u);
+      if (this.phase === 'drive' || this.phase === 'finish') {
+        if (this.kmh > 4 && ts - (this.exAt || 0) > 230) { this.exAt = ts; this.puffs.push({ t0: ts, x: -20, y: -4, vx: -16, vy: 10, r0: 3, r1: 15, life: 700, c: '240, 240, 244', a: 0.22 }); }
+        if (this.offEdge && this.kmh > 6 && ts - (this.duAt || 0) > 70) {
+          this.duAt = ts;
+          const sd = this.carX > 0 ? 1 : -1;
+          this.puffs.push({ t0: ts, x: sd * (38 + Math.random() * 8), y: -3, vx: sd * (18 + Math.random() * 22), vy: -16 - Math.random() * 12, r0: 5, r1: 17, life: 560, c: PL.dust, a: 0.5 });
+        }
+      }
+      if (this.puffs.length) {
+        this.puffs = this.puffs.filter((q) => ts - q.t0 < q.life);
+        for (const q of this.puffs) {
+          const f = (ts - q.t0) / q.life, sec = (ts - q.t0) / 1000;
+          ctx.fillStyle = 'rgba(' + q.c + ', ' + (q.a * (1 - f)).toFixed(3) + ')';
+          ctx.beginPath(); ctx.arc(W / 2 + (q.x + q.vx * sec) * u, carY + (q.y + q.vy * sec) * u, (q.r0 + (q.r1 - q.r0) * f) * u, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      // how far along the drive, with the landmark's flag at the end
+      const pr = Math.max(0, Math.min(1, this.tt / p.duration)), bx = 18, bw = W - 50, by = 16;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
       sbRR(ctx, bx, by - 3, bw, 6, 3); ctx.fill();
       ctx.fillStyle = '#FFFFFF';
       sbRR(ctx, bx, by - 3, Math.max(6, bw * pr), 6, 3); ctx.fill();
+      ctx.fillRect(bx + bw + 6, by - 12, 2, 16);
+      ctx.fillStyle = PL.flag;
+      ctx.beginPath(); ctx.moveTo(bx + bw + 8, by - 12); ctx.lineTo(bx + bw + 19, by - 8); ctx.lineTo(bx + bw + 8, by - 4); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#E5564D';
       ctx.beginPath(); ctx.arc(bx + bw * pr, by, 5.5, 0, Math.PI * 2); ctx.fill();
       // the wheel follows the steering
@@ -6020,6 +6778,7 @@ PuzzleEnginesFactory(window);
     beforeResolve() {
       caf(this.rafId);
       this.rafId = null;
+      Sound.engine(0);
       this.phase = 'done';
       this.goBtn.hidden = true;
       this.signBtn.classList.remove('cue');
@@ -6081,7 +6840,7 @@ PuzzleEnginesFactory(window);
   // (to y 150). The stones sit beside the path and by the landmarks (house,
   // pond, big tree, well, flower bed, bench). Things ride on round white
   // tokens so they read on grass, sand and water alike.
-  const KS_TRAY_Y = 133.5;
+  const KS_TRAY_Y = 134, KS_LIFT = 2.4;   // the basket row; how far a thing rides above its stone's middle
   const KS_ART = {
     apple: '<path d="M0 -5.2C3.6 -7.8 8 -5.2 8 -0.3C8 5 4.2 8.4 0 7.4C-4.2 8.4 -8 5 -8 -0.3C-8 -5.2 -3.6 -7.8 0 -5.2Z" fill="#E8463D"/><path d="M-4.8 -2.2C-4.4 -4.2 -2.8 -5 -1.6 -4.8" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M0 -5.2Q0.4 -8 1.8 -9.2" stroke="#6B4423" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.6 -7.6Q5.4 -9.8 7.2 -7.2Q4 -5.6 1.6 -7.6Z" fill="#3FA34D"/>',
     key: '<circle cx="-4.4" cy="0" r="4.4" fill="#F2B632"/><circle cx="-4.4" cy="0" r="1.8" fill="#FFFFFF"/><rect x="-1.2" y="-1.4" width="10.2" height="2.8" rx="1.4" fill="#F2B632"/><rect x="5.8" y="0.4" width="2" height="3.8" rx=".7" fill="#F2B632"/><rect x="2.6" y="0.4" width="2" height="2.8" rx=".7" fill="#F2B632"/><path d="M-7 -1.6Q-6.4 -3.2 -4.6 -3.4" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="1.1" fill="none" stroke-linecap="round"/>',
@@ -6148,17 +6907,17 @@ PuzzleEnginesFactory(window);
   }
   function ksStone(x, y) {
     const g = s('g', { class: 'ks-stone', transform: 'translate(' + x + ' ' + y + ')' });
-    g.innerHTML = '<ellipse class="ks-glow" cx="0" cy="0.4" rx="7.6" ry="5.4"/>' +
-      '<ellipse cx="0" cy="1" rx="6" ry="3.9" fill="#A79F8E"/><ellipse cx="0" cy="0" rx="6" ry="3.7" fill="#EEE9DE"/>' +
-      '<ellipse cx="-1.6" cy="-1" rx="2.6" ry="1.1" fill="#FFFFFF" fill-opacity=".55"/>';
+    g.innerHTML = '<ellipse class="ks-glow" cx="0" cy="0.5" rx="9.6" ry="6.6"/>' +
+      '<ellipse cx="0" cy="1.2" rx="7.6" ry="4.8" fill="#A79F8E"/><ellipse cx="0" cy="0" rx="7.6" ry="4.6" fill="#EEE9DE"/>' +
+      '<ellipse cx="-2" cy="-1.3" rx="3.3" ry="1.4" fill="#FFFFFF" fill-opacity=".55"/>';
     return g;
   }
   function ksToken(name) {
     const g = s('g', { class: 'ks-token' });
     const body = s('g', { class: 'ks-body' });
-    body.innerHTML = '<ellipse cx="0" cy="5.6" rx="4.8" ry="1.3" fill="#1F2230" fill-opacity=".22"/>' +
-      '<circle class="ks-ring" r="6.7"/><circle r="5.9" fill="#FFFFFF"/><circle r="5.9" fill="none" stroke="#1F2230" stroke-opacity=".1" stroke-width=".5"/>' +
-      '<g transform="scale(0.5)">' + (KS_ART[name] || '') + '</g>';
+    body.innerHTML = '<ellipse cx="0" cy="7" rx="6" ry="1.6" fill="#1F2230" fill-opacity=".22"/>' +
+      '<circle class="ks-ring" r="8.3"/><circle r="7.4" fill="#FFFFFF"/><circle r="7.4" fill="none" stroke="#1F2230" stroke-opacity=".1" stroke-width=".5"/>' +
+      '<g transform="scale(0.64)">' + (KS_ART[name] || '') + '</g>';
     g.append(body);
     return g;
   }
@@ -6171,7 +6930,7 @@ PuzzleEnginesFactory(window);
       '<rect x="4.6" y="126.2" width="90.8" height="3.6" rx="1.8" fill="#B5763E"/>';
     return g;
   }
-  function ksSlot(i, n) { return [50 + (i - (n - 1) / 2) * 12.6, KS_TRAY_Y]; }
+  function ksSlot(i, n) { return [50 + (i - (n - 1) / 2) * 14.8, KS_TRAY_Y]; }
 
   class KeepsakeCard extends Card {
     usesClock() { return false; }
@@ -6227,8 +6986,8 @@ PuzzleEnginesFactory(window);
         el.classList.toggle('gone', this.phase === 'ready');
         let x, y;
         const at = run.at[k];
-        if (this.phase === 'ready' || this.phase === 'study') { x = ST[t.stone][0]; y = ST[t.stone][1] - 1.6; }
-        else if (at != null) { x = ST[at][0]; y = ST[at][1] - 1.6; }
+        if (this.phase === 'ready' || this.phase === 'study') { x = ST[t.stone][0]; y = ST[t.stone][1] - KS_LIFT; }
+        else if (at != null) { x = ST[at][0]; y = ST[at][1] - KS_LIFT; }
         else { const q = ksSlot(left.indexOf(k), left.length); x = q[0]; y = q[1]; }
         this.setPos(k, x, y, instant);
       });
@@ -6281,7 +7040,7 @@ PuzzleEnginesFactory(window);
       // into the basket, one after another, with a little hop
       const order = this.p.tray, n = order.length, ST = this.G.stones;
       order.forEach((k, i) => {
-        const t = this.p.things[k], from = [ST[t.stone][0], ST[t.stone][1] - 1.6], to = ksSlot(i, n);
+        const t = this.p.things[k], from = [ST[t.stone][0], ST[t.stone][1] - KS_LIFT], to = ksSlot(i, n);
         const el = this.tokens[k];
         const mid = [(from[0] + to[0]) / 2, Math.min(from[1], to[1]) - 14];
         this.later(() => {
@@ -6329,7 +7088,7 @@ PuzzleEnginesFactory(window);
       return pt.matrixTransform(m.inverse());
     }
     tokenAt(q) {
-      let best = null, bd = 7.6;
+      let best = null, bd = 9.4;
       this.p.things.forEach((t, k) => {
         if (this.run.placed[k] != null) return;
         const pos = this.tokens[k].pos, d = Math.hypot(pos[0] - q.x, pos[1] - q.y);
@@ -6338,7 +7097,7 @@ PuzzleEnginesFactory(window);
       return best;
     }
     stoneAt(q, reach) {
-      let best = null, bd = reach || 8.5;
+      let best = null, bd = reach || 10.5;
       for (const k of this.p.out) {
         const st = this.G.stones[k], d = Math.hypot(st[0] - q.x, st[1] - 1 - q.y);
         if (d < bd) { bd = d; best = k; }
@@ -6380,8 +7139,8 @@ PuzzleEnginesFactory(window);
       if (!g.moved && Math.hypot(q.x - g.x, q.y - g.y) < 2) return;
       g.moved = true;
       // carried just above the finger, so it stays in sight
-      this.setPos(g.k, q.x, q.y - 6, true);
-      const s2 = this.stoneAt({ x: q.x, y: q.y - 6 }, 9);
+      this.setPos(g.k, q.x, q.y - 7, true);
+      const s2 = this.stoneAt({ x: q.x, y: q.y - 7 }, 11);
       for (const k of this.p.out) this.stoneEls[k].classList.toggle('over', k === s2 && !this.taken(k));
     }
     up(e) {
@@ -6391,7 +7150,7 @@ PuzzleEnginesFactory(window);
       for (const k of this.p.out) this.stoneEls[k].classList.remove('over');
       if (g.moved) {
         const pos = this.tokens[g.k].pos;
-        const s2 = this.stoneAt({ x: pos[0], y: pos[1] }, 9);
+        const s2 = this.stoneAt({ x: pos[0], y: pos[1] }, 11);
         if (s2 != null && this.put(g.k, s2)) return;
         this.back(g.k);
         return;
@@ -6426,7 +7185,7 @@ PuzzleEnginesFactory(window);
       this.tokens[k].classList.remove('held');
       for (const x of this.p.out) this.stoneEls[x].classList.remove('free', 'over');
       const ST = this.G.stones;
-      this.setPos(k, ST[s2][0], ST[s2][1] - 1.6, false);
+      this.setPos(k, ST[s2][0], ST[s2][1] - KS_LIFT, false);
       this.c.moves++;
       if (this.firstPut == null) this.firstPut = Math.round(t - this.recallAt);
       this.log('place', {
@@ -6441,13 +7200,13 @@ PuzzleEnginesFactory(window);
           buzz(8);
           el.classList.add('ok');
           const r = this.svg.getBoundingClientRect(), L = relPos(this, this.svg), sc = r.width / 100;
-          sparks(this, L.x - r.width / 2 + ST[s2][0] * sc, L.y - r.height / 2 + (ST[s2][1] - 1.6) * sc, ['#FFC83A', '#FFFFFF', '#7CE3B0'], 10);
+          sparks(this, L.x - r.width / 2 + ST[s2][0] * sc, L.y - r.height / 2 + (ST[s2][1] - KS_LIFT) * sc, ['#FFC83A', '#FFFFFF', '#7CE3B0'], 10);
         } else {
           Sound.play('no');
           buzz([20, 40, 20]);
           el.classList.add('bad');
           // then it moves to where it was
-          this.later(() => { this.setPos(k, ST[rec.truth][0], ST[rec.truth][1] - 1.6, false); this.stoneEls[rec.truth].classList.add('truth'); }, 520);
+          this.later(() => { this.setPos(k, ST[rec.truth][0], ST[rec.truth][1] - KS_LIFT, false); this.stoneEls[rec.truth].classList.add('truth'); }, 520);
         }
       } else {
         Sound.play('set', 1);
@@ -6697,12 +7456,13 @@ PuzzleEnginesFactory(window);
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 800 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 48, 43, 39, 35, 31, 28, 26, 23, 21, 19, 17, 15, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.6 the ladder started at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 500 ms (until app 2.6: 300 ms), so a strong player needs about 15 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first one a hand points at the bird. While the places are up, a dashed outline of what to find sits in the middle. After an answer with feedback on, the next look follows 1.1 s later.',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first one a hand points at the bird. After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the sign button only when the sign shown on it comes up; let every other sign pass. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys. The sign button: tap it, or Space.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
+        'Each level is set in its own place and time of day (L1 a farm in the morning, L2 fields at noon, L3 a forest in the afternoon, L4 the coast at sunset, L5 hills at dusk; practice on the farm), heading for a landmark that grows on the horizon over the drive and is where the car stops. The road, its lines, the signs and the car look the same everywhere, so scenery and light are a covariate of level, not of the task. With feedback on, a caught target\'s animal hops off the sign into the field for about 1 s after the tap; with feedback off a tap only gives a soft click.',
         'Levels:', lv('switchback'),
         '## Keepsake', '', 'Object-location memory (the Memory Path format of the concept paper). One park map, always the same, so its landmarks can be learned: a house, a pond, a big tree, a well, a flower bed and a bench along a winding path, with twelve stones placed by hand beside them (at least 20 map units apart on a 100 x 120 map). Each card brings some stones out and puts things on a few of them (the things: ' + E.games.keepsake.items.join(', ') + '). A tap on the eye starts the look; the things pop up on their stones and a timer runs on the basket below; a tap on the basket ends the look early (logged). Then the things hop into the basket, in tray order, which takes about a second, and the player puts each back: drag it onto a stone, or tap it and then a stone. Each thing gets one try and a stone holds one thing. With feedback on, a thing put on the right stone turns green; one put on a wrong stone turns red and then moves to its own stone, which frees the stone it was put on. With feedback off, every thing stays where it was put and nothing is shown. The card ends when every thing is back.',
         'Levels:', lv('keepsake'), '',

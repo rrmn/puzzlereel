@@ -1811,13 +1811,15 @@
     noun: 'thing',
     stones: KS_STONES,
     items: KS_ITEMS,
+    // about two seconds of look for each thing; two empty stones on top
     levels: {
-      1: { items: 3, stones: 6, studyMs: 6000 },
-      2: { items: 4, stones: 7, studyMs: 7000 },
-      3: { items: 5, stones: 8, studyMs: 8000 },
-      4: { items: 6, stones: 10, studyMs: 9000 },
-      5: { items: 7, stones: 12, studyMs: 10000 },
+      1: { items: 2, stones: 4, studyMs: 5000 },
+      2: { items: 3, stones: 5, studyMs: 7000 },
+      3: { items: 4, stones: 6, studyMs: 9000 },
+      4: { items: 5, stones: 7, studyMs: 10000 },
+      5: { items: 6, stones: 8, studyMs: 11000 },
     },
+    spread: 26,             // stones out on one card stay at least this far apart where the map allows
     describe(p) {
       const n = p.things ? p.things.length : p.items, k = p.out ? p.out.length : p.stones;
       return n + ' things on ' + k + ' stones, ' + (p.studyMs / 1000) + ' s to look';
@@ -1835,7 +1837,11 @@
     generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const out = rng.shuffle(KS_STONES.map((_, i) => i)).slice(0, L.stones).sort((a, b) => a - b);
+      // spread out: take stones in seeded order, skipping any too close to one already out
+      const order = rng.shuffle(KS_STONES.map((_, i) => i)), out = [];
+      for (const k of order) if (out.length < L.stones && out.every((o) => ksDist(o, k) >= this.spread)) out.push(k);
+      for (const k of order) if (out.length < L.stones && out.indexOf(k) < 0) out.push(k);
+      out.sort((a, b) => a - b);
       const held = rng.shuffle(out.slice()).slice(0, L.items);
       const names = rng.shuffle(KS_ITEMS.slice()).slice(0, L.items);
       const things = held.map((stone, k) => ({ name: names[k], stone }));
@@ -1881,7 +1887,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.10.0',
+    version: '1.11.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
