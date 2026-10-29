@@ -108,10 +108,10 @@
       for (let i = 0; i < n; i++) if (st[i] !== EXIT) left++;
       let res;
       if (left === 0) {
-        res = { d: 0, p: 1, m: 0 };
+        res = { d: 0, p: 1, m: 0, s: 0 };
       } else {
         const occ = obOccupancy(p, st);
-        let best = Infinity, ps = 0, m = 0;
+        let best = Infinity, ps = 0, m = 0, sl = Infinity;
         for (let i = 0; i < n; i++) {
           if (st[i] === EXIT) continue;
           const na = obSlide(p, st, occ, i);
@@ -121,9 +121,11 @@
           ns[i] = na;
           const r = solve(ns);
           if (r.d + 1 < best) best = r.d + 1;
+          const rs = r.s + (na === EXIT ? 0 : 1);
+          if (rs < sl) sl = rs;
           ps += r.p;
         }
-        res = { d: best, p: m ? ps / m : 0, m };
+        res = { d: best, p: m ? ps / m : 0, m, s: sl };
         if (best === Infinity) deadStates++;
       }
       memo.set(key, res);
@@ -147,6 +149,7 @@
       memo, B,
       optimal: r0.d,
       pRandom: r0.p,
+      minSlides: r0.s,     // 0: tapping only cars with a clear way out always works
       states: memo.size,
       deadStates,
       firstMoves, safeFirst, optimalFirst,
@@ -238,6 +241,88 @@
     return false;
   }
 
+  // Plants a pinwheel: four cars that each block the next (X <- Y <- Z <- W <- X),
+  // so none of them can leave until one slides part of the way. In the base
+  // layout X (east) and Z (west) have room to slide past the car they block;
+  // W and Y do not. g: columns between X's front and Y; q: rows between W and X.
+  // Any of 8 rotations and mirror images, at a random place where it fits.
+  function obPlantLoop(L, rng, occ, cars) {
+    const w = L.w, h = L.h;
+    for (let attempt = 0; attempt < 400; attempt++) {
+      const g = 3 + (rng() < 0.3 ? 1 : 0), q = 1 + (rng() < 0.35 ? 1 : 0);
+      // cars as [rear..front] cells and a direction, in base coordinates
+      const base = [
+        { cells: [[0, 1 + q], [1, 1 + q]], d: [1, 0] },              // X, east
+        { cells: [[g + 1, 2 + q], [g + 1, 1 + q]], d: [0, -1] },     // Y, north
+        { cells: [[g + 2, 1], [g + 1, 1]], d: [-1, 0] },             // Z, west
+        { cells: [[1, 0], [1, 1]], d: [0, 1] },                      // W, south
+      ];
+      const sym = rng.int(8);
+      const tf = (v) => { let x = v[0], y = v[1]; for (let k = 0; k < (sym & 3); k++) { const t = x; x = -y; y = t; } return sym & 4 ? [-x, y] : [x, y]; };
+      let cs = base.map((c) => ({ cells: c.cells.map(tf), d: tf(c.d) }));
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const c of cs) for (const [x, y] of c.cells) { minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y); }
+      if (maxX - minX >= w || maxY - minY >= h) continue;
+      const ox = rng.int(w - (maxX - minX)) - minX, oy = rng.int(h - (maxY - minY)) - minY;
+      cs = cs.map((c) => ({ cells: c.cells.map(([x, y]) => [x + ox, y + oy]), d: c.d }));
+      const mine = new Set();
+      for (const c of cs) for (const [x, y] of c.cells) mine.add(y * w + x);
+      let ok = true;
+      for (const id of mine) if (occ[id] !== -1) ok = false;
+      // every lane, from each front to the edge, is clear of earlier cars
+      for (const c of cs) {
+        if (!ok) break;
+        let [x, y] = c.cells[c.cells.length - 1];
+        for (x += c.d[0], y += c.d[1]; x >= 0 && y >= 0 && x < w && y < h; x += c.d[0], y += c.d[1]) {
+          if (occ[y * w + x] !== -1) { ok = false; break; }
+        }
+      }
+      if (!ok) continue;
+      for (const c of cs) {
+        const id = cars.length;
+        const [rx, ry] = c.cells[0];
+        cars.push({ x: rx, y: ry, dir: dirOf(c.d), len: c.cells.length });
+        for (const [x, y] of c.cells) occ[y * w + x] = id;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // Lots that need planning: traps first (cleared last), then pinwheels, then
+  // ordinary cars with a clear way out (cleared first). Every pinwheel needs one
+  // slide, so the lot cannot be cleared by tapping only cars with a clear way out.
+  function obBuild(L, rng) {
+    const w = L.w, h = L.h;
+    const occ = new Int16Array(w * h).fill(-1);
+    const cars = [];
+    let planted = 0;
+    for (let g = 0; g < (L.traps || 0); g++) {
+      if (cars.length + 4 > L.cars) break;
+      if (obPlantTrap(L, rng, occ, cars)) planted++;
+    }
+    if (L.traps && planted < 1) return null;
+    for (let g = 0; g < (L.loops || 0); g++) if (!obPlantLoop(L, rng, occ, cars)) return null;
+    let tries = 0;
+    while (cars.length < L.cars && tries < 900) {
+      tries++;
+      const len = rng() < L.truck ? 3 : 2;
+      const dir = DIRS[rng.int(4)];
+      const d = DIR[dir];
+      const x = rng.int(w), y = rng.int(h);
+      const fx = x + (len - 1) * d[0], fy = y + (len - 1) * d[1];
+      if (fx < 0 || fy < 0 || fx >= w || fy >= h) continue;
+      let ok = true;
+      for (let k = 0; k < len && ok; k++) if (occ[(y + k * d[1]) * w + (x + k * d[0])] !== -1) ok = false;
+      for (let lx = fx + d[0], ly = fy + d[1]; ok && lx >= 0 && ly >= 0 && lx < w && ly < h; lx += d[0], ly += d[1]) if (occ[ly * w + lx] !== -1) ok = false;
+      if (!ok) continue;
+      const id = cars.length;
+      cars.push({ x, y, dir, len });
+      for (let k = 0; k < len; k++) occ[(y + k * d[1]) * w + (x + k * d[0])] = id;
+    }
+    return cars.length === L.cars ? cars : null;
+  }
+
   // Constructive placement: each new car must have a clear lane to the edge
   // past the cars already placed, so clearing them in reverse order always works.
   function obPlace(L, rng) {
@@ -281,14 +366,15 @@
     noun: 'car',
     rule: 'Tap a car to drive it forward. It leaves the lot if the way is clear, or stops when it bumps into something.',
     goal: 'Clear the lot.',
-    freeUp: 1,           // free play moves up a level after every good solve (research blocks keep two)
+    // loops: pinwheels, each needing one slide part of the way (so tapping only
+    // cars with a clear way out stops working); traps: tempting dead ends;
     // band: target range for the chance that random tapping clears the lot
     levels: {
-      1: { w: 5, h: 5, cars: 5, truck: 0, traps: 0, band: [0.99, 1], attempts: 40 },
-      2: { w: 6, h: 6, cars: 7, truck: 0.1, traps: 0, band: [0.99, 1], attempts: 40 },
-      3: { w: 6, h: 6, cars: 9, truck: 0.15, traps: 1, band: [0.15, 0.6], attempts: 120 },
-      4: { w: 7, h: 7, cars: 11, truck: 0.2, traps: 2, band: [0.04, 0.3], attempts: 160 },
-      5: { w: 7, h: 7, cars: 12, truck: 0.25, traps: 3, band: [0, 0.12], attempts: 200 },
+      1: { w: 5, h: 5, cars: 5, truck: 0, loops: 0, traps: 0, band: [0.99, 1], attempts: 40 },
+      2: { w: 6, h: 6, cars: 7, truck: 0.1, loops: 0, traps: 0, band: [0.99, 1], attempts: 40 },
+      3: { w: 6, h: 6, cars: 8, truck: 0.1, loops: 1, traps: 0, band: [0, 1], attempts: 40 },
+      4: { w: 7, h: 7, cars: 10, truck: 0.15, loops: 1, traps: 1, band: [0.1, 0.55], attempts: 200 },
+      5: { w: 7, h: 7, cars: 11, truck: 0.15, loops: 2, traps: 0, band: [0, 0.3], attempts: 200 },
     },
     describe(p) { return p.w + '×' + p.h + ' lot, ' + p.cars.length + ' cars'; },
     generate(level, seed) {
@@ -296,7 +382,7 @@
       const rng = makeRng(seed);
       let best = null, bestGap = Infinity;
       for (let attempt = 0; attempt < L.attempts; attempt++) {
-        const placed = obPlace(L, rng);
+        const placed = L.loops ? obBuild(L, rng) : obPlace(L, rng);
         if (!placed) continue;
         rng.shuffle(placed); // car ids must not reveal the solution order
         const p = { w: L.w, h: L.h, cars: placed };
@@ -309,9 +395,9 @@
       }
       if (!best) {
         // extremely rare: fall back to a lot without planted traps
-        const fallback = Object.assign({}, L, { traps: 0 });
+        const fallback = Object.assign({}, L, { traps: 0, loops: Math.min(1, L.loops || 0) });
         for (let attempt = 0; !best && attempt < 200; attempt++) {
-          const placed = obPlace(fallback, rng);
+          const placed = fallback.loops ? obBuild(fallback, rng) : obPlace(fallback, rng);
           if (!placed) continue;
           rng.shuffle(placed);
           const p = { w: L.w, h: L.h, cars: placed };
@@ -334,6 +420,7 @@
           cars: cars.length,
           trucks: cars.filter((c) => c.len === 3).length,
           optimal_moves: an.optimal,
+          slides_needed: an.minSlides,
           p_random_solve: round(an.pRandom, 4),
           reachable_states: an.states,
           dead_end_states: an.deadStates,
@@ -508,15 +595,23 @@
   // Constraint solver: counts solutions (up to `limit`) for a set of tiles
   // whose rotations are unknown. Edges must agree, borders stay closed,
   // and the network must be one tree.
-  function cdSolve(w, h, tiles, limit) {
+  // With `dry` set to the source tile, two-arm pipes other than the source may
+  // also stay out of the network (dry). Those solutions are counted in
+  // `bypass`: every plant watered, no open end, some pipe left out. Counting
+  // arms shows no other tile can be left out: the network keeps 2(n-1) minus
+  // the arms of the dry tiles, and a connected network needs at least two per
+  // tile it keeps, so every dry tile has exactly two arms.
+  function cdSolve(w, h, tiles, limit, dry) {
     const n = w * h;
-    const cand = [];
+    const canDry = dry != null;
+    const cand = [], dryBit = new Uint8Array(n);
     for (let i = 0; i < n; i++) {
       const seen = [];
       for (let r = 0; r < 4; r++) {
         const m = rotCW(tiles[i], r);
         if (seen.indexOf(m) < 0) seen.push(m);
       }
+      if (canDry && i !== dry && bits(tiles[i]) === 2) { dryBit[i] = 1 << seen.length; seen.push(0); }
       cand.push(seen);
     }
     const dom0 = new Uint8Array(n);
@@ -588,17 +683,26 @@
           parent[a] = b;
         }
       }
-      const loose = new Uint8Array(n), size = new Int32Array(n);
+      const loose = new Uint8Array(n), size = new Int32Array(n), wet = new Int32Array(n);
+      let mustWet = 0;
       for (let i = 0; i < n; i++) {
         const r = find(i);
         size[r]++;
+        if (!(dom[i] & dryBit[i])) { wet[r]++; mustWet++; }
         if (!loose[r]) for (const s of SIDES) if (sideState(dom, i, s) === 2) { loose[r] = 1; break; }
       }
-      for (let i = 0; i < n; i++) if (find(i) === i && !loose[i] && size[i] < n) return false;
+      for (let i = 0; i < n; i++) {
+        if (find(i) !== i || loose[i] || size[i] === n) continue;
+        if (!canDry) return false;
+        if (size[i] === 1 && dom[i] === dryBit[i]) continue; // a pipe left dry
+        if (find(dry) === i && wet[i] === mustWet) continue; // the source's network holds every tile that must be wet
+        return false;
+      }
       return true;
     };
-    let solutions = 0, nodes = 0;
+    let solutions = 0, nodes = 0, bypass = 0;
     let first = null;
+    const done = () => solutions >= limit || bypass > 0;
     const dfs = (dom) => {
       nodes++;
       if (nodes > 200000) return;
@@ -610,10 +714,13 @@
       }
       if (bi === -1) {
         solutions++;
-        if (!first) first = Array.from(dom, (d, i) => cand[i][Math.log2(d) | 0]);
+        let left = 0;
+        for (let i = 0; i < n; i++) if (dryBit[i] && dom[i] === dryBit[i]) left++;
+        if (left) bypass++;
+        else if (!first) first = Array.from(dom, (d, i) => cand[i][Math.log2(d) | 0]);
         return;
       }
-      for (let k = 0; k < cand[bi].length && solutions < limit; k++) {
+      for (let k = 0; k < cand[bi].length && !done(); k++) {
         if (!(dom[bi] & (1 << k))) continue;
         const d2 = dom.slice();
         d2[bi] = 1 << k;
@@ -627,7 +734,7 @@
     let forced = 0;
     for (let i = 0; i < n; i++) if (bits(dom[i]) === 1) forced++;
     dfs(dom);
-    return { solutions, nodes, forced, first, exhausted: nodes > 200000 };
+    return { solutions, bypass, nodes, forced, first, exhausted: nodes > 200000 };
   }
 
   const Conduit = {
@@ -637,18 +744,23 @@
     rule: 'Tap a tile to turn it a quarter turn. Water flows from the square source along connected pipes.',
     goal: 'Connect every pipe to the source with no open ends.',
     keepRight: 0.25,     // share of tiles that start in their solved turn
-    minTurns: 0.45,      // turns to solve per tile, at least
-    maxTurns: 0.7,       // and at most, so no board turns into a long tapping job
+    minTurns: 0.42,      // turns to solve per tile, at least
+    maxTurns: 0.5,       // and at most, so taps per board follow the shared ladder (about 6, 8, 10, 12, 14)
     // pick: how many unique boards to compare; the one that needs the most
     // search beyond local edge rules is kept, so higher levels need more reasoning
     levels: {
-      1: { w: 4, h: 4, pick: 1, attempts: 80 },
-      2: { w: 4, h: 5, pick: 1, attempts: 80 },
-      3: { w: 5, h: 5, pick: 1, attempts: 100 },
-      4: { w: 5, h: 6, pick: 8, attempts: 160 },
-      5: { w: 6, h: 6, pick: 8, attempts: 200 },
+      1: { w: 3, h: 4, pick: 1, attempts: 160 },
+      2: { w: 4, h: 4, pick: 1, attempts: 160 },
+      3: { w: 4, h: 5, pick: 1, attempts: 160 },
+      4: { w: 5, h: 5, pick: 8, attempts: 240 },
+      5: { w: 5, h: 6, pick: 8, attempts: 300 },
     },
     describe(p) { return p.w + '×' + p.h + ' grid'; },
+    // turns a board of this many tiles needs: at least two values to aim for
+    turnRange(tiles) {
+      const lo = Math.ceil(tiles * this.minTurns);
+      return [lo, Math.max(lo + 1, Math.floor(tiles * this.maxTurns))];
+    },
     generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
@@ -660,6 +772,10 @@
         if (!sol) continue;
         const res = cdSolve(w, h, sol, 2);
         if (res.solutions !== 1 || res.exhausted) continue;
+        // every pipe must be needed: no way to water every plant without a
+        // leak while some pipe stays dry, so a garden in bloom is a solved board
+        const dry = cdSolve(w, h, sol, 2, src);
+        if (dry.bypass || dry.exhausted) continue;
         found++;
         if (!chosen || res.nodes > chosen.res.nodes || (res.nodes === chosen.res.nodes && res.forced < chosen.res.forced)) {
           chosen = { sol, res };
@@ -679,19 +795,25 @@
         }
         return out;
       });
-      const start = valid.map((vs) => (rng() < this.keepRight ? 0 : vs[rng.int(vs.length)]));
-      const needOf = () => { let d = 0; for (let k = 0; k < sol.length; k++) d += (per[k] - (start[k] % per[k])) % per[k]; return d; };
-      // never close to solved, never a long tapping job
-      let need = needOf();
-      const minNeed = Math.ceil(sol.length * this.minTurns), maxNeed = Math.floor(sol.length * this.maxTurns);
-      for (let guard = 0; need < minNeed && guard < 500; guard++) {
-        const i = rng.int(sol.length);
-        const wrong = valid[i].filter((r) => r % per[i] !== 0);
-        if (start[i] % per[i] === 0 && wrong.length) { start[i] = wrong[rng.int(wrong.length)]; need = needOf(); }
-      }
-      for (let guard = 0; need > maxNeed && guard < 500; guard++) {
-        const i = rng.int(sol.length);
-        if (start[i] % per[i] !== 0) { start[i] = 0; need = needOf(); }
+      const turnsAt = (i, r) => (per[i] - (r % per[i])) % per[i];
+      const needOf = (st) => { let d = 0; for (let k = 0; k < sol.length; k++) d += turnsAt(k, st[k]); return d; };
+      const [minNeed, maxNeed] = this.turnRange(sol.length);
+      let start, need;
+      for (let draw = 0; draw < 20; draw++) {
+        start = valid.map((vs) => (rng() < this.keepRight ? 0 : vs[rng.int(vs.length)]));
+        need = needOf(start);
+        // never close to solved, never a long tapping job: turn single tiles to
+        // another allowed position that brings the total toward the range
+        // without overshooting it
+        for (let guard = 0; (need < minNeed || need > maxNeed) && guard < 2000; guard++) {
+          const i = rng.int(sol.length);
+          const k = turnsAt(i, start[i]);
+          const opts = valid[i].filter((r) => { const t = need - k + turnsAt(i, r); return need < minNeed ? t > need && t <= maxNeed : t < need && t >= minNeed; });
+          if (!opts.length) continue;
+          start[i] = opts[rng.int(opts.length)];
+          need = needOf(start);
+        }
+        if (need >= minNeed && need <= maxNeed) break;
       }
       const tally = { end: 0, straight: 0, elbow: 0, tee: 0 };
       for (const m of sol) {
@@ -992,13 +1114,14 @@
     id: 'tumbler',
     name: 'Tumbler',
     noun: 'try',
-    // pin clues say more per try, so their ladder uses longer codes
+    // pin clues say more per try, so their ladder uses longer codes; both
+    // ladders keep taps per code near the shared ladder (about 6, 8, 10, 12, 14)
     levels: {
-      1: { pin: { P: 3, C: 4, max: 6 }, count: { P: 3, C: 4, max: 8 } },
-      2: { pin: { P: 3, C: 5, max: 6 }, count: { P: 3, C: 5, max: 9 } },
-      3: { pin: { P: 4, C: 5, max: 7 }, count: { P: 4, C: 5, max: 10 } },
-      4: { pin: { P: 4, C: 6, max: 7 }, count: { P: 4, C: 6, max: 10 } },
-      5: { pin: { P: 4, C: 7, max: 8 }, count: { P: 4, C: 7, max: 12 } },
+      1: { pin: { P: 2, C: 4, max: 6 }, count: { P: 2, C: 4, max: 6 } },
+      2: { pin: { P: 3, C: 4, max: 6 }, count: { P: 2, C: 5, max: 7 } },
+      3: { pin: { P: 3, C: 5, max: 6 }, count: { P: 3, C: 3, max: 7 } },
+      4: { pin: { P: 4, C: 5, max: 7 }, count: { P: 3, C: 4, max: 7 } },
+      5: { pin: { P: 4, C: 6, max: 7 }, count: { P: 3, C: 5, max: 8 } },
     },
     letters: 'ABCDEFG',
     describe(p) { return p.P + ' pins, ' + p.C + ' colors, ' + (p.clue === 'count' ? 'count clues' : 'pin clues'); },
@@ -1185,7 +1308,7 @@
     noun: 'look',
     kind: 'trials',
     levelDown: false,      // the display time already adapts; levels only add load
-    trials: 6,             // looks per round; the staircase carries over between rounds
+    trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
     startMs: 300,          // a fresh staircase starts here and comes down one step per correct look
     maxMs: 500,            // top of the ladder
     warmUp: 1,             // a carried-over round starts this many steps slower, so it opens with a likely hit
@@ -1196,11 +1319,11 @@
     themeOrder: GL_THEME_ORDER,
     // advanceMs: a round at or under this display time counts as a success (two in a row: next level)
     levels: {
-      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 60 },
-      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 90 },
-      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 120 },
-      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 180 },
-      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 240 },
+      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 60, looks: 4 },
+      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 90, looks: 4 },
+      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 120, looks: 5 },
+      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 180, looks: 6 },
+      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 240, looks: 6 },
     },
     slots: GL_SLOTS,
     ringR: GL_RING_R,
@@ -1234,8 +1357,8 @@
     generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const n = this.trials;
       const classic = variant === 'classic';
+      const n = classic ? this.trials : L.looks || this.trials;
       const themeName = classic ? 'meadow' : GL_THEME_ORDER[rng.int(GL_THEME_ORDER.length)];
       const targetSet = classic ? ['bird'] : GL_THEMES[themeName].targets;
       const tgs = rng.shuffle(Array.from({ length: n }, (_, i) => targetSet[i % targetSet.length]));
@@ -1337,12 +1460,12 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.5.0',
+    version: '1.7.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse'],
     EXIT,
-    internals: { obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf },
+    internals: { obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;

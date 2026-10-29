@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.3.0';
+  const APP_VERSION = '2.4.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -2175,7 +2175,7 @@
       ['params', 'board description'],
       ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered'],
       ['success', '1 if solved with moves <= par (drives adaptive levels); Glimpse: a complete round with threshold_ms at or under the level\'s target'],
-      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round\'s 6 looks, 2 = two misses, 1 = more; every finished round earns at least 1'],
+      ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round, 2 = two misses, 1 = more; every finished round earns at least 1'],
       ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move, time the page was hidden'],
       ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries'],
       ['reference', 'Outbound: fewest moves. Conduit: fewest turns. Tumbler: tries used by the most-informative-try solver for this code'],
@@ -2203,7 +2203,7 @@
     const lv = (g) => Object.keys(E.games[g].levels).map((k) => {
       const L = E.games[g].levels[k];
       if (g === 'tumbler') return '- L' + k + ': per-pin clues ' + L.pin.P + ' pins x ' + L.pin.C + ' colors, ' + L.pin.max + ' tries; count clues ' + L.count.P + ' pins x ' + L.count.C + ' colors, ' + L.count.max + ' tries';
-      if (g === 'glimpse') return '- L' + k + ': ' + E.games.glimpse.describe(L) + '; success at threshold_ms <= ' + L.advanceMs;
+      if (g === 'glimpse') return '- L' + k + ': ' + E.games.glimpse.describe(L) + '; ' + L.looks + ' looks a round; success at threshold_ms <= ' + L.advanceMs;
       const desc = E.games[g].describe(Object.assign({}, L, { cars: { length: L.cars } }));
       return '- L' + k + ': ' + desc + (g === 'outbound' ? ', ' + (L.traps || 0) + ' planted trap' + (L.traps === 1 ? '' : 's') : '');
     }).join('\n');
@@ -2214,17 +2214,18 @@
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them.', '',
-        '## Levels', '', '### Outbound', lv('outbound'), 'L3 to L5 contain planted traps; difficulty is set by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.45 and 0.7 turns per tile.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', '### Outbound', lv('outbound'), 'L1 and L2 can be cleared by tapping only cars with a clear way out. L3 to L5 contain pinwheels, four cars that each block the next, so one car must first slide part of the way (feature `slides_needed`: 1 at L3 and L4, 2 at L5); L4 adds a planted trap, and L4 and L5 are chosen by the chance that random tapping clears the lot (feature `p_random_solve`).', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.42 and 0.5 turns per tile. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse scenes', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
         'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play draw the scene from the puzzle seed and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
-        'A round is 6 looks. The first starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 400 to 699 ms (seeded) with a ring closing in over the first 260 ms, the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
+        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 400 to 699 ms (seeded) with a ring closing in over the first 260 ms, the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 500 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 30, 27, 24, 22, 20, 18, 16, 14, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames). After a correct look the next is one step shorter, after a miss four steps longer (weighted up/down, settles at 80% correct). A fresh staircase starts at 300 ms, so a strong player needs about 10 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts one step slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 1000, 600 and 350 ms.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. In free play Outbound moves up after every success instead of two.', '']);
+        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5. Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
+        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse never moves down a level: its display time already adapts on every look. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row.', '']);
     return lines.join('\n');
   }
 
@@ -2515,7 +2516,12 @@
       }
     },
     prefetchSpec(spec) { Gen.get(spec.game, spec.level, spec.seed, spec.variant).catch(() => {}); },
-    upAfter(game) { return this.session && this.session.kind === 'free' ? E.games[game].freeUp || 2 : 2; },
+    // Free play, every game alike: one level up per success until the first miss
+    // in that game, then two successes in a row per level. Research blocks: always two.
+    upAfter(game) {
+      if (!this.session || this.session.kind !== 'free') return 2;
+      return store.get('pr1.settled', {})[game] ? 2 : 1;
+    },
     prefetch(spec) {
       const S = this.session;
       const outcomes = spec.adaptive ? [true, false] : [true];
@@ -2566,6 +2572,10 @@
         S.practiced[sp.game] = true;
         if (S.kind === 'free') store.set('pr1.practiced', S.practiced);
       } else if (S.kind === 'free') {
+        if (!sm.success && sm.outcome !== 'abandoned') {
+          const settled = store.get('pr1.settled', {});
+          if (!settled[sp.game]) { settled[sp.game] = true; store.set('pr1.settled', settled); }
+        }
         // free play keeps stars, a streak and per-game levels between visits
         if (sm.outcome !== 'abandoned') {
           const won = sm.outcome === 'solved' || (sm.outcome === 'complete' && sm.stars > 0);
@@ -2848,7 +2858,7 @@
             h('div', { class: 'inline' }, seed, h('button', { class: 'btn', type: 'button', onclick: () => { seed.value = String(randomSeed()); } }, 'New seed')),
             h('span', { class: 'help', text: 'Same seed and plan, same puzzles for everyone.' })),
           h('div', { class: 'field' }, h('span', { class: 'lbl', text: 'Plan' }), plan, sumLine,
-            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler and Glimpse. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 6 looks; its display time adapts on every look and its level never goes down.' }))),
+            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler and Glimpse. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks (6 in fixed blocks); its display time adapts on every look and its level never goes down.' }))),
         h('fieldset', null, h('legend', { text: 'What participants see' }),
           h('div', { class: 'checks' },
             opt('practice', 'o-practice', 'Practice board before each new game'),

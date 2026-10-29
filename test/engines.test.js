@@ -105,7 +105,7 @@ test('outbound: random play labels dead ends correctly and undo restores state',
   assert.ok(checked > 100);
 });
 
-test('outbound: levels 3-5 contain traps and get harder', () => {
+test('outbound: levels 3-5 need slides, levels 4-5 have dead ends, and they get harder', () => {
   const avg = {};
   for (const lv of [1, 2, 3, 4, 5]) {
     let sum = 0, trapped = 0;
@@ -113,11 +113,28 @@ test('outbound: levels 3-5 contain traps and get harder', () => {
       const p = O.generate(lv, 2000 + s);
       sum += p.an.pRandom;
       if (p.an.deadStates > 0) trapped++;
+      // levels 1-2 clear by tapping only cars with a clear way out; each pinwheel adds a needed slide
+      assert.equal(p.an.minSlides, O.levels[lv].loops, 'L' + lv + ' slides');
     }
     avg[lv] = sum / 20;
-    if (lv >= 3) assert.ok(trapped >= 18, 'L' + lv + ' trapped ' + trapped);
+    if (lv >= 4) assert.ok(trapped >= 18, 'L' + lv + ' trapped ' + trapped);
   }
-  assert.ok(avg[1] > avg[3] && avg[3] > avg[4] && avg[4] > avg[5], JSON.stringify(avg));
+  assert.ok(avg[1] >= avg[3] && avg[3] > avg[4] && avg[4] > avg[5], JSON.stringify(avg));
+});
+
+test('outbound: a pinwheel cannot be cleared without a slide, and one slide frees it', () => {
+  const { obPlantLoop } = E.internals;
+  for (let s = 0; s < 30; s++) {
+    const rng = E.makeRng(40 + s);
+    const occ = new Int16Array(36).fill(-1);
+    const cars = [];
+    assert.ok(obPlantLoop({ w: 6, h: 6 }, rng, occ, cars));
+    const p = { w: 6, h: 6, cars };
+    const an = obAnalyze(p);
+    assert.equal(an.minSlides, 1);
+    assert.equal(an.optimal, 5, 'one slide and four exits');
+    assert.deepEqual(O.movable({ w: 6, h: 6, cars }, { st: [0, 0, 0, 0] }).length > 0, true);
+  }
 });
 
 test('conduit: unique solution, scrambled start, labels match distance', () => {
@@ -350,8 +367,8 @@ test('glimpse: rounds are balanced and the bird never shares a spot with a leaf'
     const L = G.levels[lv];
     for (let s = 0; s < 20; s++) {
       const p = G.generate(lv, 900 + s);
-      assert.equal(p.n, G.trials);
-      assert.equal(p.trials.filter((t) => t.c === 0).length, G.trials / 2, 'animals in equal shares');
+      assert.equal(p.n, L.looks);
+      assert.equal(p.trials.filter((t) => t.c === 0).length, Math.ceil(p.n / 2), 'animals in equal shares');
       for (const t of p.trials) {
         assert.ok(t.fix >= G.fixMs[0] && t.fix < G.fixMs[1]);
         if (!L.periph) { assert.equal(t.dir, undefined); continue; }
@@ -362,7 +379,7 @@ test('glimpse: rounds are balanced and the bird never shares a spot with a leaf'
         assert.equal(new Set(t.d.map(([k]) => k)).size, t.d.length, 'one leaf per spot');
       }
       if (L.periph) {
-        assert.equal(new Set(p.trials.map((t) => t.dir)).size, Math.min(8, G.trials), 'directions spread evenly');
+        assert.equal(new Set(p.trials.map((t) => t.dir)).size, Math.min(8, p.n), 'directions spread evenly');
         const per = L.rings.map((r) => p.trials.filter((t) => t.ring === r).length);
         assert.ok(Math.max(...per) - Math.min(...per) <= 1, 'rings in equal shares');
       }
@@ -476,6 +493,7 @@ test('glimpse: fixed blocks use the classic set; others get a seeded scene and t
     const L = G.levels[lv];
     for (let s = 0; s < 12; s++) {
       const c = G.generate(lv, 300 + s, 'classic');
+      assert.equal(c.n, G.trials, 'fixed blocks always have the full round');
       assert.equal(c.theme, 'meadow');
       assert.ok(c.trials.every((t) => t.tg === 'bird'));
       assert.deepEqual(c.pair, G.themes.meadow.pairs[L.pair]);
@@ -484,7 +502,9 @@ test('glimpse: fixed blocks use the classic set; others get a seeded scene and t
       const th = G.themes[m.theme];
       assert.deepEqual(m.pair, th.pairs[L.pair]);
       assert.equal(m.distractor, th.distractor);
-      for (const tg of th.targets) assert.equal(m.trials.filter((t) => t.tg === tg).length, G.trials / th.targets.length, tg + ' in equal shares');
+      const shares = th.targets.map((tg) => m.trials.filter((t) => t.tg === tg).length);
+      assert.ok(Math.max(...shares) - Math.min(...shares) <= 1, 'targets take turns: ' + shares.join(' '));
+      assert.equal(m.n, L.looks);
       assert.ok(!th.targets.includes(th.distractor), 'a target is never the distractor');
     }
   }
@@ -503,7 +523,8 @@ test('conduit: no pipe starts pointing off the board, and every board needs a bo
         assert.ok(!((m & 1) && y === 0) && !((m & 4) && y === p.h - 1) && !((m & 8) && x === 0) && !((m & 2) && x === p.w - 1), 'tile ' + i + ' points off the board');
       }
       const n = p.w * p.h;
-      assert.ok(p.reference >= Math.ceil(n * C.minTurns) && p.reference <= Math.floor(n * C.maxTurns), 'L' + lv + ' turns ' + p.reference + ' of ' + n + ' tiles');
+      const [lo, hi] = C.turnRange(n);
+      assert.ok(p.reference >= lo && p.reference <= hi, 'L' + lv + ' turns ' + p.reference + ' of ' + n + ' tiles');
       assert.equal(p.reference, C.dist(p, p.start));
     }
   }
@@ -511,4 +532,59 @@ test('conduit: no pipe starts pointing off the board, and every board needs a bo
 
 test('tumbler: per-pin codes stay at four pins or fewer', () => {
   for (const lv of [1, 2, 3, 4, 5]) assert.ok(T.levels[lv].pin.P <= 4);
+});
+
+test('conduit: every pipe is needed, so watering every plant without a leak solves the board', () => {
+  // a board from play: the source could send water straight down to a plant,
+  // leaving two elbows in the corner dry while all seven plants bloomed
+  const sol = [4, 6, 14, 8, 5, 1, 7, 8, 7, 14, 11, 12, 1, 1, 2, 9];
+  assert.equal(cdSolve(4, 4, sol, 2).solutions, 1, 'one way to connect every pipe');
+  assert.equal(cdSolve(4, 4, sol, 2, 10).bypass, 1, 'but the plants can be watered around two pipes');
+  const pr = C.practice();
+  assert.equal(cdSolve(pr.w, pr.h, pr.sol, 2, pr.src).bypass, 0, 'practice board');
+  for (const lv of [1, 2, 3, 4, 5]) {
+    for (let s = 0; s < 40; s++) {
+      const p = C.generate(lv, 1500 + s);
+      const r = cdSolve(p.w, p.h, p.sol, 2, p.src);
+      assert.equal(r.bypass, 0, 'L' + lv + ' seed ' + (1500 + s));
+      assert.equal(r.solutions, 1);
+    }
+  }
+});
+
+test('friction: at every level the four games take about the same number of taps', () => {
+  // the fewest taps that finish a card: Outbound and Conduit from their solvers,
+  // Tumbler along the most informative tries (right-spot pins carry over with
+  // per-pin clues), Glimpse one tap to start and one per answer
+  const band = { 1: [4, 9], 2: [6, 11], 3: [8, 13], 4: [10, 15], 5: [12, 17] };
+  const tumblerTaps = (p) => {
+    const sp = tbSpace(p.P, p.C);
+    let taps = 0, keep = new Array(p.P).fill(false);
+    for (const g of E.internals.tbSolverPath(sp, p.secret, p.clue)) {
+      taps += keep.filter((k) => !k).length + 1;
+      if (p.clue === 'pin') keep = E.internals.tbMarks(sp, E.internals.tbPin(sp, g, p.secret)).map((m) => m === 2);
+    }
+    return taps;
+  };
+  const games = {
+    outbound: (lv, s) => O.generate(lv, s).reference,
+    conduit: (lv, s) => C.generate(lv, s).reference,
+    tumbler: (lv, s) => tumblerTaps(T.generate(lv, s, 'pin')),
+    'tumbler (count clues)': (lv, s) => tumblerTaps(T.generate(lv, s, 'count')),
+    glimpse: (lv, s) => { const p = G.generate(lv, s, 'mix'); return 1 + p.n * (p.periph ? 2 : 1); },
+  };
+  const table = {};
+  for (const [name, taps] of Object.entries(games)) {
+    let prev = 0;
+    for (const lv of [1, 2, 3, 4, 5]) {
+      let sum = 0;
+      for (let s = 0; s < 24; s++) sum += taps(lv, 6000 + s);
+      const m = sum / 24;
+      (table[name] = table[name] || []).push(m.toFixed(1));
+      assert.ok(m >= band[lv][0] && m <= band[lv][1], name + ' L' + lv + ': ' + m.toFixed(1) + ' taps, ladder ' + band[lv].join('-'));
+      assert.ok(m >= prev - 0.25, name + ' gets no shorter from L' + (lv - 1) + ' to L' + lv);
+      prev = m;
+    }
+  }
+  console.log('# taps per card by level: ' + JSON.stringify(table));
 });
