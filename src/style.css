@@ -474,12 +474,7 @@ button { cursor: pointer; }
 .gl-ask.what { width: calc(var(--R, 150px) * 0.44); height: calc(var(--R, 150px) * 0.44); margin: calc(var(--R, 150px) * -0.36) 0 0 calc(var(--R, 150px) * -0.22);
   border-radius: 50%; border: 3px dashed color-mix(in srgb, var(--gl-ink, #1D3C8A) 40%, transparent); }
 .gl-ask.what b { font-size: calc(var(--R, 150px) * 0.26); }
-.gl-ask.where { width: calc(var(--R, 150px) * 0.34); height: calc(var(--R, 150px) * 0.34); margin: calc(var(--R, 150px) * -0.17) 0 0 calc(var(--R, 150px) * -0.17);
-  border-radius: 50%; background: #FFFFFF; box-shadow: 0 4px 14px rgba(22, 34, 74, 0.18); }
-.gl-ask-thing { display: grid; place-items: center; width: 70%; height: 70%; }
-.gl-ask-thing svg { width: 100%; height: 100%; fill: currentColor; }
-.gl-ask.where b { position: absolute; right: -14%; top: -14%; width: 46%; height: 46%; border-radius: 50%; display: grid; place-items: center;
-  background: var(--gl-ink, #1D3C8A); color: #FFFFFF; font-size: calc(var(--R, 150px) * 0.12); box-shadow: 0 0 0 3px #FFFFFF; }
+
 .gl-choices.gone { opacity: 0; transform: translate(-50%, -50%) scale(0.9); pointer-events: none; }
 .gl-choice {
   width: clamp(64px, calc(var(--R, 150px) * 0.5), 128px); height: clamp(64px, calc(var(--R, 150px) * 0.5), 128px);
@@ -503,7 +498,7 @@ button { cursor: pointer; }
 @keyframes markpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 .gl-spot {
   position: absolute; border-radius: 50%; border: 0; padding: 0;
-  background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, transparent); box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--gl-ink, #1D3C8A) 42%, transparent);
+  background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, var(--gl-field, #F7FBF2)); box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--gl-ink, #1D3C8A) 42%, var(--gl-field, #F7FBF2));
   animation: pop 0.24s cubic-bezier(.3,1.7,.5,1) both;
   transition: background 0.15s, box-shadow 0.15s;
 }
@@ -515,7 +510,13 @@ button { cursor: pointer; }
 .gl-spots.asking .gl-spot:nth-child(4) { animation-delay: 0.06s, 1s; } .gl-spots.asking .gl-spot:nth-child(5) { animation-delay: 0.08s, 1.2s; }
 .gl-spots.asking .gl-spot:nth-child(6) { animation-delay: 0.1s, 1.4s; } .gl-spots.asking .gl-spot:nth-child(7) { animation-delay: 0.12s, 1.6s; }
 .gl-spots.asking .gl-spot:nth-child(8) { animation-delay: 0.14s, 1.8s; }
-@keyframes spotcall { 0%, 55%, 100% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, transparent); } 25% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 30%, transparent); } }
+@keyframes spotcall { 0%, 55%, 100% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, var(--gl-field, #F7FBF2)); } 25% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 30%, var(--gl-field, #F7FBF2)); } }
+.gl-spot { display: grid; place-items: center; color: var(--gl-ink, #1D3C8A); }
+.gl-spot svg { width: 72%; height: 72%; fill: currentColor; opacity: 0.28; pointer-events: none; }
+/* where: a small "?" in the middle; the answers are the spots round it, each with the thing's outline */
+.gl-ask.where { width: calc(var(--R, 150px) * 0.22); height: calc(var(--R, 150px) * 0.22); margin: calc(var(--R, 150px) * -0.11) 0 0 calc(var(--R, 150px) * -0.11);
+  border-radius: 50%; background: var(--gl-ink, #1D3C8A); color: #FFFFFF; box-shadow: 0 4px 12px rgba(22, 34, 74, 0.22); }
+.gl-ask.where b { font-size: calc(var(--R, 150px) * 0.14); }
 .gl-spot:focus { outline: none; }
 .gl-spot:focus-visible { box-shadow: inset 0 0 0 3px var(--gl-ink, #1D3C8A), 0 0 0 3px rgba(29, 60, 138, 0.3); }
 .gl-spot.picked { background: var(--gl-ink, #1D3C8A); box-shadow: none; }

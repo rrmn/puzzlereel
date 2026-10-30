@@ -485,12 +485,7 @@ button { cursor: pointer; }
 .gl-ask.what { width: calc(var(--R, 150px) * 0.44); height: calc(var(--R, 150px) * 0.44); margin: calc(var(--R, 150px) * -0.36) 0 0 calc(var(--R, 150px) * -0.22);
   border-radius: 50%; border: 3px dashed color-mix(in srgb, var(--gl-ink, #1D3C8A) 40%, transparent); }
 .gl-ask.what b { font-size: calc(var(--R, 150px) * 0.26); }
-.gl-ask.where { width: calc(var(--R, 150px) * 0.34); height: calc(var(--R, 150px) * 0.34); margin: calc(var(--R, 150px) * -0.17) 0 0 calc(var(--R, 150px) * -0.17);
-  border-radius: 50%; background: #FFFFFF; box-shadow: 0 4px 14px rgba(22, 34, 74, 0.18); }
-.gl-ask-thing { display: grid; place-items: center; width: 70%; height: 70%; }
-.gl-ask-thing svg { width: 100%; height: 100%; fill: currentColor; }
-.gl-ask.where b { position: absolute; right: -14%; top: -14%; width: 46%; height: 46%; border-radius: 50%; display: grid; place-items: center;
-  background: var(--gl-ink, #1D3C8A); color: #FFFFFF; font-size: calc(var(--R, 150px) * 0.12); box-shadow: 0 0 0 3px #FFFFFF; }
+
 .gl-choices.gone { opacity: 0; transform: translate(-50%, -50%) scale(0.9); pointer-events: none; }
 .gl-choice {
   width: clamp(64px, calc(var(--R, 150px) * 0.5), 128px); height: clamp(64px, calc(var(--R, 150px) * 0.5), 128px);
@@ -514,7 +509,7 @@ button { cursor: pointer; }
 @keyframes markpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 .gl-spot {
   position: absolute; border-radius: 50%; border: 0; padding: 0;
-  background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, transparent); box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--gl-ink, #1D3C8A) 42%, transparent);
+  background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, var(--gl-field, #F7FBF2)); box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--gl-ink, #1D3C8A) 42%, var(--gl-field, #F7FBF2));
   animation: pop 0.24s cubic-bezier(.3,1.7,.5,1) both;
   transition: background 0.15s, box-shadow 0.15s;
 }
@@ -526,7 +521,13 @@ button { cursor: pointer; }
 .gl-spots.asking .gl-spot:nth-child(4) { animation-delay: 0.06s, 1s; } .gl-spots.asking .gl-spot:nth-child(5) { animation-delay: 0.08s, 1.2s; }
 .gl-spots.asking .gl-spot:nth-child(6) { animation-delay: 0.1s, 1.4s; } .gl-spots.asking .gl-spot:nth-child(7) { animation-delay: 0.12s, 1.6s; }
 .gl-spots.asking .gl-spot:nth-child(8) { animation-delay: 0.14s, 1.8s; }
-@keyframes spotcall { 0%, 55%, 100% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, transparent); } 25% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 30%, transparent); } }
+@keyframes spotcall { 0%, 55%, 100% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, var(--gl-field, #F7FBF2)); } 25% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 30%, var(--gl-field, #F7FBF2)); } }
+.gl-spot { display: grid; place-items: center; color: var(--gl-ink, #1D3C8A); }
+.gl-spot svg { width: 72%; height: 72%; fill: currentColor; opacity: 0.28; pointer-events: none; }
+/* where: a small "?" in the middle; the answers are the spots round it, each with the thing's outline */
+.gl-ask.where { width: calc(var(--R, 150px) * 0.22); height: calc(var(--R, 150px) * 0.22); margin: calc(var(--R, 150px) * -0.11) 0 0 calc(var(--R, 150px) * -0.11);
+  border-radius: 50%; background: var(--gl-ink, #1D3C8A); color: #FFFFFF; box-shadow: 0 4px 12px rgba(22, 34, 74, 0.22); }
+.gl-ask.where b { font-size: calc(var(--R, 150px) * 0.14); }
 .gl-spot:focus { outline: none; }
 .gl-spot:focus-visible { box-shadow: inset 0 0 0 3px var(--gl-ink, #1D3C8A), 0 0 0 3px rgba(29, 60, 138, 0.3); }
 .gl-spot.picked { background: var(--gl-ink, #1D3C8A); box-shadow: none; }
@@ -2344,7 +2345,7 @@ function PuzzleEnginesFactory(root) {
     maxMs: GL_TOP,         // top of the ladder
     warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
     minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
-    maskMs: 300,
+    maskMs: 600,           // the crowd after the flash: what matters for masking is that it comes at once; 0.6 s lets the eye take it in
     fixMs: [400, 700],
     up: 6, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 6/7, about 86%
     themes: GL_THEMES,
@@ -2974,7 +2975,7 @@ function PuzzleEnginesFactory(root) {
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.14.0',
+    version: '1.15.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
@@ -2989,7 +2990,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.15.0';
+  const APP_VERSION = '2.17.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -4993,6 +4994,7 @@ PuzzleEnginesFactory(window);
     destroy() {
       super.destroy();
       caf(this.rafId);
+      caf(this.fadeId);
       this.st = null;
       if (this.ro) this.ro.disconnect();
       if (this.onWinResize) window.removeEventListener('resize', this.onWinResize);
@@ -5038,12 +5040,24 @@ PuzzleEnginesFactory(window);
       });
     }
     // ---- drawing
-    blit(src) {
+    blit(src, alpha) {
       const c = this.ctx;
       if (!c) return;
       c.setTransform(1, 0, 0, 1, 0, 0);
       c.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      if (src) c.drawImage(src, 0, 0);
+      if (src) { c.globalAlpha = alpha == null ? 1 : alpha; c.drawImage(src, 0, 0); c.globalAlpha = 1; }
+    }
+    // after the mask, the crowd fades but stays faintly behind the questions: the thing was in there
+    fadeMask() {
+      caf(this.fadeId);
+      const t0 = now(), ms = 280, floor = 0.14;
+      const step = () => {
+        if (this.phase !== 'what' && this.phase !== 'where' && this.phase !== 'fb') return;
+        const k = Math.min(1, (now() - t0) / ms);
+        this.blit(this.maskC, 1 - (1 - floor) * k);
+        if (k < 1) this.fadeId = raf(step);
+      };
+      this.fadeId = raf(step);
     }
     drawFix(k) {
       this.blit(null);
@@ -5118,10 +5132,10 @@ PuzzleEnginesFactory(window);
           }
         } else if (this.phase === 'mask') {
           if (ts - st.offset >= p.maskMs - st.T / 2) {
-            this.blit(null);
             st.end = ts;
             this.app.steady(false);
             this.askWhat();
+            this.fadeMask();
             return;
           }
         } else return;
@@ -5144,10 +5158,9 @@ PuzzleEnginesFactory(window);
       this.goBtn.classList.remove('away');
     }
     onHidden() { this.abort('page hidden'); }
-    ask(kind, name) {
+    ask(kind) {
       this.askEl.textContent = '';
       this.askEl.className = 'gl-ask ' + kind;
-      if (name) this.askEl.append(h('span', { class: 'gl-ask-thing' }, glSvg(name)));
       this.askEl.append(h('b', { text: '?' }));
       this.askEl.hidden = false;
     }
@@ -5170,7 +5183,10 @@ PuzzleEnginesFactory(window);
       buzz(6);
       this.choiceBtns[k].classList.add('picked');
       this.hideHand();
-      if (this.p.periph) this.askWhere(); else this.finishLook();
+      // with feedback on (free play, practice) a wrong animal ends the look at once: the second
+      // question could no longer save it. Without feedback (research) both answers are kept.
+      const t = this.p.trials[this.run.i];
+      if (this.p.periph && !(k !== t.c && (this.o.feedback || this.practice))) this.askWhere(); else this.finishLook();
     }
     // during the first practice flash, soft rings round the two things to remember
     // (a hand would say "tap", and this is the moment to look)
@@ -5191,10 +5207,11 @@ PuzzleEnginesFactory(window);
       this.phase = 'where';
       this.choiceEl.classList.add('gone');
       const t = this.p.trials[this.run.i], tg = t.tg || 'bird';
-      this.ask('where', tg);
+      // the thing was out there, in one of these places: a faint outline of it in each spot
+      this.ask('where');
       this.spotsEl.setAttribute('aria-label', 'Where the ' + tg + ' was');
       this.placeSpots();
-      this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; });
+      this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; b.textContent = ''; b.append(glSvg(tg)); });
       this.spotsEl.classList.add('asking');
       this.spotsEl.hidden = false;
       this.whereAt = now();
@@ -5226,6 +5243,7 @@ PuzzleEnginesFactory(window);
       this.askEl.hidden = true;
       this.spotsEl.classList.remove('asking');
       const p = this.p, t = p.trials[this.run.i], st = this.st, a = this.ans;
+      const asked = p.periph && a.d != null;
       const cOk = a.c === t.c, dOk = p.periph ? a.d === t.dir : true;
       const correct = cOk && dOk;
       const measured = st.offset - st.onset;
@@ -5237,12 +5255,12 @@ PuzzleEnginesFactory(window);
       this.app.session.hasMoves = true;
       this.log('trial', {
         move_no: rec.i,
-        cls: correct ? 'correct' : !cOk && !dOk ? 'both_wrong' : !cOk ? 'center_wrong' : 'where_wrong',
+        cls: correct ? 'correct' : !cOk && asked && !dOk ? 'both_wrong' : !cOk ? 'center_wrong' : 'where_wrong',
         refresh_ms: r4(st.T), frames: st.plan.frames, flash_ms: r4(planned), flash_measured_ms: r4(measured), frame_drop: drop ? 1 : 0,
         fix_ms: Math.round(st.onset - st.start), mask_ms: Math.round(st.end - st.offset),
         target: p.periph ? t.tg || 'bird' : '', shown: p.pair[t.c], chosen: p.pair[a.c],
-        ring: p.periph ? t.ring : '', dir: p.periph ? t.dir : '', dir_chosen: p.periph ? a.d : '', n_distract: p.periph ? t.d.length : '',
-        rt_center_ms: a.rtC, rt_where_ms: p.periph ? a.rtW : '',
+        ring: p.periph ? t.ring : '', dir: p.periph ? t.dir : '', dir_chosen: asked ? a.d : '', n_distract: p.periph ? t.d.length : '',
+        rt_center_ms: a.rtC, rt_where_ms: asked ? a.rtW : '',
         stair_next_ms: rec.next == null ? '' : rec.next, reversal: p.fixedMs ? '' : rec.rev,
         field_px: Math.round(this.R),
       });
@@ -5262,9 +5280,11 @@ PuzzleEnginesFactory(window);
       this.lens.append(ans);
       this.answerEl = ans;
       if (this.p.periph) {
-        this.spotBtns.forEach((b, d) => { b.disabled = true; b.classList.toggle('fade', d !== t.dir && d !== a.d); });
-        this.spotBtns[t.dir].classList.add('ok');
-        if (!dOk) this.spotBtns[a.d].classList.add('bad');
+        this.spotBtns.forEach((b, d) => { b.disabled = true; b.textContent = ''; b.classList.toggle('fade', d !== t.dir && d !== a.d); });
+        if (a.d != null) {
+          this.spotBtns[t.dir].classList.add('ok');
+          if (!dOk) this.spotBtns[a.d].classList.add('bad');
+        }
         const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
         const size = Math.round(0.24 * this.R);
         const tg = t.tg || 'bird';
@@ -9243,7 +9263,7 @@ PuzzleEnginesFactory(window);
       ['frames / flash_ms', 'Glimpse: planned display time in whole frames, and frames x refresh_ms'],
       ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
       ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
-      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 1200 to 1499: 400 to 699 seeded, plus an 800 ms lead-in) and mask time (planned 300)'],
+      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 1200 to 1499: 400 to 699 seeded, plus an 800 ms lead-in) and mask time (planned 600; 300 until app 2.17). After the mask the crowd stays faintly behind the questions, which is not part of mask_ms'],
       ['shown / chosen', 'Glimpse: the item in the middle, and the one picked. Switchback (shown): the sign\'s shape: tri (red-bordered warning triangle, the target\'s shape), round_red, round_blue, square_blue'],
       ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
       ['n_distract', 'Glimpse: distractors around the target (leaves, shells or clouds, by scene)'],
@@ -9291,7 +9311,7 @@ PuzzleEnginesFactory(window);
       outbound: 'optimal (one step closer), wasted (no closer, still solvable), dead_end (the lot can no longer be cleared), in_dead_end (a move made while already in a dead end), blocked (the car could not move; its own event)',
       conduit: 'optimal (the tile needed that turn), wasted (the tile was already right)',
       tumbler: 'optimal (as informative as the best possible try), suboptimal (less informative), zero_info (could not narrow the codes), solved (the winning try); consistency is its own column',
-      glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong',
+      glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong. With feedback on (free play), a wrong animal ends the look at once: it is logged as center_wrong with dir_chosen and rt_where_ms empty (from app 2.16)',
       stacks: 'optimal (one move closer to the goal), wasted (no closer), blocked (the post was full; its own event, not a move)',
       switchback: 'sign events: hit (the target, tapped in time), miss (the target, not tapped), false_alarm (another sign, tapped), correct_rejection (another sign, let pass); beast events: shooed (the animal tapped away before the car got close), braked (the car braked for it)',
       keepsake: 'place events: correct (its own stone), wrong (another stone)',

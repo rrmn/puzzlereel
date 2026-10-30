@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.15.0';
+  const APP_VERSION = '2.17.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -2005,6 +2005,7 @@
     destroy() {
       super.destroy();
       caf(this.rafId);
+      caf(this.fadeId);
       this.st = null;
       if (this.ro) this.ro.disconnect();
       if (this.onWinResize) window.removeEventListener('resize', this.onWinResize);
@@ -2050,12 +2051,24 @@
       });
     }
     // ---- drawing
-    blit(src) {
+    blit(src, alpha) {
       const c = this.ctx;
       if (!c) return;
       c.setTransform(1, 0, 0, 1, 0, 0);
       c.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      if (src) c.drawImage(src, 0, 0);
+      if (src) { c.globalAlpha = alpha == null ? 1 : alpha; c.drawImage(src, 0, 0); c.globalAlpha = 1; }
+    }
+    // after the mask, the crowd fades but stays faintly behind the questions: the thing was in there
+    fadeMask() {
+      caf(this.fadeId);
+      const t0 = now(), ms = 280, floor = 0.14;
+      const step = () => {
+        if (this.phase !== 'what' && this.phase !== 'where' && this.phase !== 'fb') return;
+        const k = Math.min(1, (now() - t0) / ms);
+        this.blit(this.maskC, 1 - (1 - floor) * k);
+        if (k < 1) this.fadeId = raf(step);
+      };
+      this.fadeId = raf(step);
     }
     drawFix(k) {
       this.blit(null);
@@ -2130,10 +2143,10 @@
           }
         } else if (this.phase === 'mask') {
           if (ts - st.offset >= p.maskMs - st.T / 2) {
-            this.blit(null);
             st.end = ts;
             this.app.steady(false);
             this.askWhat();
+            this.fadeMask();
             return;
           }
         } else return;
@@ -2156,10 +2169,9 @@
       this.goBtn.classList.remove('away');
     }
     onHidden() { this.abort('page hidden'); }
-    ask(kind, name) {
+    ask(kind) {
       this.askEl.textContent = '';
       this.askEl.className = 'gl-ask ' + kind;
-      if (name) this.askEl.append(h('span', { class: 'gl-ask-thing' }, glSvg(name)));
       this.askEl.append(h('b', { text: '?' }));
       this.askEl.hidden = false;
     }
@@ -2182,7 +2194,10 @@
       buzz(6);
       this.choiceBtns[k].classList.add('picked');
       this.hideHand();
-      if (this.p.periph) this.askWhere(); else this.finishLook();
+      // with feedback on (free play, practice) a wrong animal ends the look at once: the second
+      // question could no longer save it. Without feedback (research) both answers are kept.
+      const t = this.p.trials[this.run.i];
+      if (this.p.periph && !(k !== t.c && (this.o.feedback || this.practice))) this.askWhere(); else this.finishLook();
     }
     // during the first practice flash, soft rings round the two things to remember
     // (a hand would say "tap", and this is the moment to look)
@@ -2203,10 +2218,11 @@
       this.phase = 'where';
       this.choiceEl.classList.add('gone');
       const t = this.p.trials[this.run.i], tg = t.tg || 'bird';
-      this.ask('where', tg);
+      // the thing was out there, in one of these places: a faint outline of it in each spot
+      this.ask('where');
       this.spotsEl.setAttribute('aria-label', 'Where the ' + tg + ' was');
       this.placeSpots();
-      this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; });
+      this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; b.textContent = ''; b.append(glSvg(tg)); });
       this.spotsEl.classList.add('asking');
       this.spotsEl.hidden = false;
       this.whereAt = now();
@@ -2238,6 +2254,7 @@
       this.askEl.hidden = true;
       this.spotsEl.classList.remove('asking');
       const p = this.p, t = p.trials[this.run.i], st = this.st, a = this.ans;
+      const asked = p.periph && a.d != null;
       const cOk = a.c === t.c, dOk = p.periph ? a.d === t.dir : true;
       const correct = cOk && dOk;
       const measured = st.offset - st.onset;
@@ -2249,12 +2266,12 @@
       this.app.session.hasMoves = true;
       this.log('trial', {
         move_no: rec.i,
-        cls: correct ? 'correct' : !cOk && !dOk ? 'both_wrong' : !cOk ? 'center_wrong' : 'where_wrong',
+        cls: correct ? 'correct' : !cOk && asked && !dOk ? 'both_wrong' : !cOk ? 'center_wrong' : 'where_wrong',
         refresh_ms: r4(st.T), frames: st.plan.frames, flash_ms: r4(planned), flash_measured_ms: r4(measured), frame_drop: drop ? 1 : 0,
         fix_ms: Math.round(st.onset - st.start), mask_ms: Math.round(st.end - st.offset),
         target: p.periph ? t.tg || 'bird' : '', shown: p.pair[t.c], chosen: p.pair[a.c],
-        ring: p.periph ? t.ring : '', dir: p.periph ? t.dir : '', dir_chosen: p.periph ? a.d : '', n_distract: p.periph ? t.d.length : '',
-        rt_center_ms: a.rtC, rt_where_ms: p.periph ? a.rtW : '',
+        ring: p.periph ? t.ring : '', dir: p.periph ? t.dir : '', dir_chosen: asked ? a.d : '', n_distract: p.periph ? t.d.length : '',
+        rt_center_ms: a.rtC, rt_where_ms: asked ? a.rtW : '',
         stair_next_ms: rec.next == null ? '' : rec.next, reversal: p.fixedMs ? '' : rec.rev,
         field_px: Math.round(this.R),
       });
@@ -2274,9 +2291,11 @@
       this.lens.append(ans);
       this.answerEl = ans;
       if (this.p.periph) {
-        this.spotBtns.forEach((b, d) => { b.disabled = true; b.classList.toggle('fade', d !== t.dir && d !== a.d); });
-        this.spotBtns[t.dir].classList.add('ok');
-        if (!dOk) this.spotBtns[a.d].classList.add('bad');
+        this.spotBtns.forEach((b, d) => { b.disabled = true; b.textContent = ''; b.classList.toggle('fade', d !== t.dir && d !== a.d); });
+        if (a.d != null) {
+          this.spotBtns[t.dir].classList.add('ok');
+          if (!dOk) this.spotBtns[a.d].classList.add('bad');
+        }
         const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
         const size = Math.round(0.24 * this.R);
         const tg = t.tg || 'bird';
@@ -6255,7 +6274,7 @@
       ['frames / flash_ms', 'Glimpse: planned display time in whole frames, and frames x refresh_ms'],
       ['flash_measured_ms', 'Glimpse: time between the animation frame that drew the flash and the one that drew the mask'],
       ['frame_drop', 'Glimpse: 1 if flash_measured_ms missed the plan by more than half a frame, or a frame interval during the flash exceeded 1.5 periods; consider excluding these looks'],
-      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 1200 to 1499: 400 to 699 seeded, plus an 800 ms lead-in) and mask time (planned 300)'],
+      ['fix_ms / mask_ms', 'Glimpse: measured fixation time before the flash (planned 1200 to 1499: 400 to 699 seeded, plus an 800 ms lead-in) and mask time (planned 600; 300 until app 2.17). After the mask the crowd stays faintly behind the questions, which is not part of mask_ms'],
       ['shown / chosen', 'Glimpse: the item in the middle, and the one picked. Switchback (shown): the sign\'s shape: tri (red-bordered warning triangle, the target\'s shape), round_red, round_blue, square_blue'],
       ['ring / dir / dir_chosen', 'Glimpse: the bird\'s ring (1 inner to 3 outer) and direction (0 = up, clockwise in 45 degree steps), and the direction tapped'],
       ['n_distract', 'Glimpse: distractors around the target (leaves, shells or clouds, by scene)'],
@@ -6303,7 +6322,7 @@
       outbound: 'optimal (one step closer), wasted (no closer, still solvable), dead_end (the lot can no longer be cleared), in_dead_end (a move made while already in a dead end), blocked (the car could not move; its own event)',
       conduit: 'optimal (the tile needed that turn), wasted (the tile was already right)',
       tumbler: 'optimal (as informative as the best possible try), suboptimal (less informative), zero_info (could not narrow the codes), solved (the winning try); consistency is its own column',
-      glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong',
+      glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong. With feedback on (free play), a wrong animal ends the look at once: it is logged as center_wrong with dir_chosen and rt_where_ms empty (from app 2.16)',
       stacks: 'optimal (one move closer to the goal), wasted (no closer), blocked (the post was full; its own event, not a move)',
       switchback: 'sign events: hit (the target, tapped in time), miss (the target, not tapped), false_alarm (another sign, tapped), correct_rejection (another sign, let pass); beast events: shooed (the animal tapped away before the car got close), braked (the car braked for it)',
       keepsake: 'place events: correct (its own stone), wrong (another stone)',

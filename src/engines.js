@@ -1315,7 +1315,7 @@
     maxMs: GL_TOP,         // top of the ladder
     warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
     minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
-    maskMs: 300,
+    maskMs: 600,           // the crowd after the flash: what matters for masking is that it comes at once; 0.6 s lets the eye take it in
     fixMs: [400, 700],
     up: 6, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 6/7, about 86%
     themes: GL_THEMES,
@@ -1945,7 +1945,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.14.0',
+    version: '1.15.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
