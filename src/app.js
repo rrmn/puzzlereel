@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.22.0';
+  const APP_VERSION = '2.23.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -300,7 +300,7 @@
     tumbler: ['the bike lock', 'the school locker', 'the front door', 'the safe', 'the vault'],
     keepsake: ['the park in spring', 'the park in summer', 'the park in autumn', 'the park in winter', 'the park at night'],
     glimpse: ['the meadow', 'the meadow at dusk', 'the sea', 'the sea at night', 'the sunset sky'],
-    stacks: ['the river stones', 'the river at sunset', 'the harbor', 'the harbor at night', 'the bakery'],
+    stacks: ['the river stones', 'the station', 'the harbor', 'the ice cream parlor', 'the bakery'],
   };
   const lookName = (g, lv) => (LOOK_NAMES[g] ? LOOK_NAMES[g][lv - 1] || '' : '');
   // a seeded scatter: n points in a box, the same every time
@@ -817,7 +817,8 @@
     const spec = {
       seq: S.n + 1, block: S.b + 1, inBlock: S.k + 1, game, level, adaptive: !!B.adaptive, j,
       seed: E.puzzleSeed(S.seed, S.b, game, level, j),
-      variant: game === 'tumbler' ? (S.clue || 'pin') : game === 'glimpse' || game === 'stacks' ? (B.adaptive ? 'mix' : 'classic') : '',
+      // Stacks in free play (the endless block): each level its own place and rules
+      variant: game === 'tumbler' ? (S.clue || 'pin') : game === 'stacks' && B.count >= FREE_COUNT ? 'free' : game === 'glimpse' || game === 'stacks' ? (B.adaptive ? 'mix' : 'classic') : '',
     };
     spec.id = 'B' + spec.block + '-' + game + '-L' + level + '-' + (j + 1);
     S.k++;
@@ -1200,6 +1201,19 @@
     }
     guideTarget() { return null; }
     hideHand() { if (this.hand) this.hand.hide(); }
+    // a speech bubble over (or under) an element, gone after a moment
+    say(el, text, kind, ms, below) {
+      if (!el || !this.el.isConnected) return;
+      const pt = relPos(this, el);
+      const b = h('div', { class: 'tb-say ' + (kind || '') + (below ? ' below' : ''), role: 'status' }, text);
+      b.style.top = Math.round(below ? pt.y + pt.h / 2 + 10 : pt.y - pt.h / 2 - 8) + 'px';
+      this.fx.append(b);
+      const bw = b.offsetWidth, W = this.el.clientWidth, x = Math.max(bw / 2 + 8, Math.min(W - bw / 2 - 8, pt.x));
+      b.style.left = Math.round(x) + 'px';
+      b.style.setProperty('--point', Math.round(bw / 2 + pt.x - x) + 'px');
+      setTimeout(() => { b.classList.add('out'); setTimeout(() => b.remove(), 300); }, ms || 1700);
+      return b;
+    }
     pointAt(el, ms) {
       if (!this.hand) this.hand = new Hand(this);
       this.hand.point(el);
@@ -2150,16 +2164,6 @@
       return { color, at, notAt };
     }
     // a word over something on the board, for a moment
-    say(el, text, kind, ms, below) {
-      if (!el || !this.el.isConnected) return;
-      const pt = relPos(this, el);
-      const b = h('div', { class: 'tb-say ' + (kind || '') + (below ? ' below' : ''), role: 'status' }, text);
-      b.style.left = Math.round(pt.x) + 'px';
-      b.style.top = Math.round(below ? pt.y + pt.h / 2 + 10 : pt.y - pt.h / 2 - 8) + 'px';
-      this.fx.append(b);
-      setTimeout(() => { b.classList.add('out'); setTimeout(() => b.remove(), 300); }, ms || 1700);
-      return b;
-    }
     nope(el, text) {
       Sound.play('lose');
       buzz([20, 40, 20]);
@@ -3079,37 +3083,45 @@
   }
 
   // -------------------------------------------------------------- Stacks
-  // One illustrated scene per setting on a 100 x 136 board: the goal on a
-  // sign, clipboard or ticket at the top, three posts below. Pieces are drawn
-  // in three-quarter view around their middle and stack SK_STEP apart; the
-  // stack is redrawn bottom to top so the upper piece always covers the lower.
+  // One illustrated scene per place on a 100 x 136 board: the goal at the
+  // top, three posts below. Pieces are drawn in three-quarter view around
+  // their middle and stack SK_STEP apart; each stack is redrawn bottom to top
+  // so the upper piece always covers the lower.
   const SK_X = [20, 50, 80], SK_BASE = 122, SK_STEP = 10.4, SK_HOVER = 66, SK_MINI = 0.46;
   const skSlotY = (k) => SK_BASE - SK_STEP / 2 - k * SK_STEP;
-  const skPostTop = (k) => SK_BASE - E.games.stacks.caps[k] * SK_STEP - 4;
+  const skPostTop = (cap) => SK_BASE - cap * SK_STEP - 4;
   const SK_GLYPH = [
     'M0 -2.3a2.3 2.3 0 1 1 0 4.6a2.3 2.3 0 1 1 0-4.6z',
     'M0 -2.7L2.7 2.1H-2.7z',
     'M-2.1 -2.1h4.2v4.2h-4.2z',
   ];
+  // the cake's layers, biggest first: the width tells them apart
+  const SK_CAKE_W = [26, 21, 16, 11];
   const SK_LOOKS = {
-    stones: { names: ['blue stone', 'red stone', 'green stone'], fill: ['#6F90C2', '#C9654C', '#6E9F5D'], rod: '#8A5C3B', puff: ['#E9D3A6', '#D5C091', '#FFFFFF'] },
-    harbor: { names: ['red container', 'blue container', 'yellow container'], fill: ['#D24B3E', '#2F6DB0', '#E7B12F'], ink: ['#FFFFFF', '#FFFFFF', '#3A2A00'], rod: '#38506A', puff: ['#FFFFFF', '#C9D2DB', '#F0B23A'] },
-    bakery: { names: ['strawberry layer', 'chocolate layer', 'lemon layer'], fill: ['#EE8AA3', '#8A5537', '#F0CF63'], ink: ['#FFFFFF', '#FFE6C2', '#7A5A00'], rod: '#D9B98C', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'] },
+    stones: { names: ['blue stone', 'red stone', 'green stone'], fill: ['#6F90C2', '#C9654C', '#6E9F5D'], rod: '#8A5C3B', puff: ['#E9D3A6', '#D5C091', '#FFFFFF'], post: 'post' },
+    station: { names: ['blue suitcase', 'red suitcase', 'yellow suitcase'], fill: ['#4C78BE', '#D9493E', '#EDB43A'], rod: '#8E9AAA', puff: ['#FFFFFF', '#D9DEE5', '#F2C14E'], post: 'trolley' },
+    harbor: { names: ['red container', 'blue container', 'yellow container'], fill: ['#D24B3E', '#2F6DB0', '#E7B12F'], ink: ['#FFFFFF', '#FFFFFF', '#3A2A00'], rod: '#38506A', puff: ['#FFFFFF', '#C9D2DB', '#F0B23A'], post: 'post' },
+    icecream: { names: ['chocolate scoop', 'strawberry scoop', 'vanilla scoop with the cherry'], fill: ['#7B4A2D', '#F39AB5', '#F8EAC8'], rod: '#E0A35E', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'], post: 'cone', cherry: 2 },
+    bakery: { names: ['strawberry layer', 'chocolate layer', 'lemon layer'], fill: ['#EE8AA3', '#8A5537', '#F0CF63'], ink: ['#FFFFFF', '#FFE6C2', '#7A5A00'], rod: '#D9B98C', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'], post: 'stand' },
+    cake: { names: ['biggest layer', 'big layer', 'small layer', 'smallest layer'], fill: ['#A7D3B4', '#F4A9BF', '#F6D67C', '#BCA8E8'], rod: '#D9B98C', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'], post: 'stand' },
   };
+  // half a piece's width, for its halo and its shadow
+  const skHalf = (look, id) => (look === 'cake' ? SK_CAKE_W[id] / 2 : look === 'icecream' ? 8.8 : 12.2);
   function skMix(hex, t) {
     const n = parseInt(hex.slice(1), 16), to = t > 0 ? 255 : 0, k = Math.abs(t);
     const f = (c) => Math.round(c + (to - c) * k).toString(16).padStart(2, '0');
     return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255);
   }
   const skLin = (id, stops, x2, y2) => s('linearGradient', { id, x1: 0, y1: 0, x2: x2 == null ? 1 : x2, y2: y2 || 0 }, stops.map(([o, c, a]) => s('stop', { offset: o, 'stop-color': c, 'stop-opacity': a == null ? 1 : a })));
-  // gradients for one card: per piece a side and a top, plus wood and steel
+  // gradients for one card: per piece a side and a top, plus wood, steel and the rest
   function skDefs(uid, look) {
     const L = SK_LOOKS[look], d = s('defs');
     L.fill.forEach((c, i) => {
-      if (look === 'harbor') {
-        d.append(skLin(uid + 'p' + i, [[0, skMix(c, 0.12)], [0.55, c], [1, skMix(c, -0.22)]], 0, 1));
-      } else if (look === 'stones') {
-        d.append(s('radialGradient', { id: uid + 'p' + i, cx: 0.36, cy: 0.18, r: 0.86 }, s('stop', { offset: 0, 'stop-color': skMix(c, 0.42) }), s('stop', { offset: 0.45, 'stop-color': skMix(c, 0.06) }), s('stop', { offset: 0.8, 'stop-color': skMix(c, -0.16) }), s('stop', { offset: 1, 'stop-color': skMix(c, -0.36) })));
+      if (look === 'harbor' || look === 'station') {
+        d.append(skLin(uid + 'p' + i, [[0, skMix(c, 0.14)], [0.55, c], [1, skMix(c, -0.24)]], 0, 1));
+      } else if (look === 'stones' || look === 'icecream') {
+        const ice = look === 'icecream';
+        d.append(s('radialGradient', { id: uid + 'p' + i, cx: 0.36, cy: ice ? 0.26 : 0.18, r: 0.86 }, s('stop', { offset: 0, 'stop-color': skMix(c, ice ? 0.36 : 0.42) }), s('stop', { offset: 0.45, 'stop-color': skMix(c, 0.06) }), s('stop', { offset: 0.8, 'stop-color': skMix(c, ice ? -0.1 : -0.16) }), s('stop', { offset: 1, 'stop-color': skMix(c, ice ? -0.26 : -0.36) })));
       } else {
         d.append(skLin(uid + 'p' + i, [[0, skMix(c, -0.28)], [0.22, skMix(c, 0.1)], [0.5, c], [0.86, skMix(c, -0.18)], [1, skMix(c, -0.36)]]));
         d.append(s('radialGradient', { id: uid + 't' + i, cx: 0.38, cy: 0.3, r: 0.75 }, s('stop', { offset: 0, 'stop-color': skMix(c, 0.38) }), s('stop', { offset: 1, 'stop-color': skMix(c, 0.06) })));
@@ -3118,6 +3130,10 @@
     d.append(skLin(uid + 'wood', [[0, '#6A4225'], [0.35, '#A26E45'], [0.7, '#8A5C3B'], [1, '#5B381E']]));
     d.append(skLin(uid + 'steel', [[0, '#4E6984'], [0.5, '#6E8AA6'], [1, '#34495E']]));
     d.append(skLin(uid + 'dowel', [[0, '#C7A06C'], [0.45, '#F1DDB8'], [1, '#B98F5C']]));
+    d.append(skLin(uid + 'chrome', [[0, '#76818D'], [0.4, '#E4E9EE'], [0.72, '#B4BEC8'], [1, '#6E7985']]));
+    d.append(skLin(uid + 'cone', [[0, '#C98A45'], [0.4, '#EDBB78'], [1, '#B9773A']]));
+    d.append(s('pattern', { id: uid + 'waf', width: 2.4, height: 2.4, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' },
+      s('path', { d: 'M1.2 0V2.4M0 1.2H2.4', stroke: 'rgba(125,72,24,.5)', 'stroke-width': 0.42 })));
     d.append(s('filter', { id: uid + 'blur', x: '-50%', y: '-50%', width: '200%', height: '200%' }, s('feGaussianBlur', { stdDeviation: '0.9' })));
     d.append(s('clipPath', { id: uid + 'clip' }, s('rect', { x: 0, y: 0, width: 100, height: 136, rx: 7 })));
     return d;
@@ -3140,6 +3156,74 @@
       for (const [x, y] of [[-12, -4.2], [10.5, -4.2], [-12, 3.7], [10.5, 3.7]]) g.append(s('rect', { x, y, width: 1.5, height: 1.5, rx: 0.2, fill: '#262B33', opacity: 0.85 }));
       g.append(s('rect', { x: -4, y: -2.6, width: 8, height: 6.4, rx: 0.8, fill: 'rgba(0,0,0,.14)' }),
         s('path', { d: SK_GLYPH[id], fill: L.ink[id], transform: 'translate(0 0.6)' }));
+    } else if (look === 'station') {
+      // a suitcase lying flat: its long side faces us, with the handle in the middle
+      const dk = skMix(c, -0.45);
+      g.append(
+        s('rect', { x: -12, y: -4.7, width: 24, height: 9.4, rx: 2.2, fill: 'url(#' + uid + 'p' + id + ')' }),
+        s('rect', { x: -10.4, y: -4.15, width: 20.8, height: 0.9, rx: 0.45, fill: '#FFFFFF', opacity: 0.26 }),
+        s('path', { d: 'M-11.2 3.4H11.2', stroke: dk, 'stroke-width': 0.5, opacity: 0.4 }));
+      if (id === 0) {
+        // the old leather one: two straps with buckles
+        for (const x of [-7.6, 6]) g.append(s('rect', { x, y: -4.7, width: 1.6, height: 9.4, fill: '#9C6439' }), s('rect', { x: x - 0.35, y: 0.6, width: 2.3, height: 1.9, rx: 0.3, fill: 'none', stroke: '#E8CB86', 'stroke-width': 0.42 }));
+      } else if (id === 1) {
+        // the hard case: a seam round the middle and ribs along it
+        g.append(s('path', { d: 'M-11.6 -0.2H11.6', stroke: dk, 'stroke-width': 0.6, opacity: 0.55 }),
+          s('path', { d: 'M-10.4 1.8H10.4M-10.4 -2.2H10.4', stroke: '#FFFFFF', 'stroke-width': 0.42, opacity: 0.3 }));
+      } else {
+        // stitched all round
+        g.append(s('rect', { x: -10.7, y: -3.4, width: 21.4, height: 6.8, rx: 1.4, fill: 'none', stroke: skMix(c, -0.32), 'stroke-width': 0.4, 'stroke-dasharray': '0.9 0.7' }));
+      }
+      // leather corners
+      const cap = 'M-12 -1.7V-2.5A2.2 2.2 0 0 1 -9.8 -4.7H-9V-3.6H-9.6Q-10.9 -3.6 -10.9 -2.3V-1.7Z';
+      for (const t of ['', 'scale(-1 1)', 'scale(1 -1)', 'scale(-1 -1)']) g.append(s('path', { d: cap, fill: '#5A3A24', opacity: 0.8, transform: t }));
+      // the handle on top, on two brass mounts, and the latches
+      g.append(
+        s('path', { d: 'M-3.4 -4.6V-5.9Q-3.4 -7.4 -1.9 -7.4H1.9Q3.4 -7.4 3.4 -5.9V-4.6', stroke: '#3B2A22', 'stroke-width': 1.25, fill: 'none' }),
+        s('rect', { x: -4.4, y: -5.3, width: 2, height: 1.2, rx: 0.4, fill: '#D9B76A' }),
+        s('rect', { x: 2.4, y: -5.3, width: 2, height: 1.2, rx: 0.4, fill: '#D9B76A' }));
+      if (id) for (const x of [-6.6, 4.8]) g.append(s('rect', { x, y: -4.4, width: 1.8, height: 2.2, rx: 0.4, fill: '#D9B76A' }), s('rect', { x: x + 0.5, y: -3.4, width: 0.8, height: 0.6, fill: '#8A6A2A' }));
+    } else if (look === 'icecream') {
+      // a round scoop with a frilly edge where it sits; the vanilla one carries the cherry
+      let d = 'M-8.6 2.6C-9.8 -3.6 -5.2 -8.8 0 -8.8C5.2 -8.8 9.8 -3.6 8.6 2.6';
+      for (let i = 0; i < 5; i++) { const x0 = 8.6 - i * 3.44, x1 = x0 - 3.44; d += 'Q' + ((x0 + x1) / 2).toFixed(2) + ' 6.4 ' + x1.toFixed(2) + ' 2.6'; }
+      g.append(s('path', { d: d + 'Z', fill: 'url(#' + uid + 'p' + id + ')' }),
+        s('path', { d: 'M-7.8 2.2C-4.6 3.8 4.6 3.8 7.8 2.2', stroke: skMix(c, -0.3), 'stroke-width': 0.8, fill: 'none', opacity: 0.45 }),
+        s('ellipse', { cx: -3.3, cy: -5.2, rx: 2.9, ry: 1.3, fill: '#FFFFFF', opacity: 0.42, transform: 'rotate(-24 -3.3 -5.2)' }));
+      const dots = id === 1 ? [[-4.8, -1.4, 0.5], [2.4, -4.6, 0.45], [5.2, -0.8, 0.5], [-1.2, 0.6, 0.45], [3.2, 1.6, 0.4], [-5.8, 1.4, 0.4]]
+        : id === 2 ? [[-4.2, -0.8, 0.26], [1.8, -3.6, 0.24], [4.8, 0.4, 0.26], [-1.4, 1.4, 0.22], [3.4, -6, 0.22]] : [];
+      dots.forEach(([x, y, r]) => g.append(s('circle', { cx: x, cy: y, r, fill: id === 1 ? '#D9476E' : '#6B4A2A', opacity: id === 1 ? 0.75 : 0.55 })));
+      if (id === L.cherry) {
+        g.append(
+          s('path', { d: 'M0.9 -11.4Q1.4 -14.8 4.6 -16', stroke: '#6E7B2E', 'stroke-width': 0.65, fill: 'none', 'stroke-linecap': 'round' }),
+          s('circle', { cx: 0.5, cy: -9.9, r: 2.7, fill: '#D61F3A' }),
+          s('path', { d: 'M-1.9 -8.6A2.7 2.7 0 0 0 3.1 -9.2A3.4 3.4 0 0 1 -1.9 -8.6Z', fill: '#9E1028', opacity: 0.6 }),
+          s('circle', { cx: -0.5, cy: -10.9, r: 0.8, fill: '#FFFFFF', opacity: 0.8 }));
+      }
+    } else if (look === 'cake') {
+      // a round layer: icing on the side, piped swags under the top, pearls along the bottom
+      const rx = SK_CAKE_W[id] / 2, ry = rx * 0.2;
+      const front = (x, y0) => y0 + ry * Math.sqrt(Math.max(0, 1 - (x / rx) * (x / rx)));
+      g.append(
+        s('path', { d: 'M' + -rx + ' -5.2V5.2A' + rx + ' ' + ry + ' 0 0 0 ' + rx + ' 5.2V-5.2Z', fill: 'url(#' + uid + 'p' + id + ')' }),
+        s('ellipse', { cx: 0, cy: -5.2, rx, ry, fill: 'url(#' + uid + 't' + id + ')' }));
+      const nS = Math.max(2, Math.round(rx / 3)), sw = (2 * rx - 1.6) / nS;
+      let sd = '';
+      for (let i = 0; i < nS; i++) {
+        const xa = -rx + 0.8 + i * sw, xb = xa + sw, ya = front(xa, -5.2) + 0.5, yb = front(xb, -5.2) + 0.5;
+        sd += 'M' + xa.toFixed(2) + ' ' + ya.toFixed(2) + 'Q' + ((xa + xb) / 2).toFixed(2) + ' ' + (Math.max(ya, yb) + 2.8).toFixed(2) + ' ' + xb.toFixed(2) + ' ' + yb.toFixed(2);
+      }
+      g.append(s('path', { d: sd, stroke: '#FFFFFF', 'stroke-width': 0.6, fill: 'none', opacity: 0.9, 'stroke-linecap': 'round' }));
+      const m = Math.max(4, Math.round(rx / 1.15));
+      for (let i = 0; i <= m; i++) {
+        const x = -rx + 0.7 + (i * (2 * rx - 1.4)) / m;
+        g.append(s('circle', { cx: x.toFixed(2), cy: (front(x, 5.2) - 0.45).toFixed(2), r: 0.62, fill: '#FFFDF8' }));
+      }
+      // the smallest layer is always on top, so it gets the sugar flowers
+      if (id === SK_CAKE_W.length - 1) {
+        g.append(s('path', { d: 'M1.6 -6.4q2 -1.2 3 .2q-1.8 .9 -3 -.2z', fill: '#7DB46C' }), s('path', { d: 'M-1.8 -6.2q-2 -1.1 -3 .3q1.9 .8 3 -.3z', fill: '#7DB46C' }));
+        for (const [x, y, f] of [[-1.7, -6.4, '#FFFFFF'], [1.6, -6.7, '#F7A8C0'], [0, -7.9, '#FFFFFF']]) g.append(s('circle', { cx: x, cy: y, r: 1.2, fill: f }), s('circle', { cx: x, cy: y, r: 0.42, fill: '#F2C14E' }));
+      }
     } else if (look === 'bakery') {
       g.append(
         s('path', { d: 'M-12 -5.2V5.2A12 2.8 0 0 0 12 5.2V-5.2Z', fill: 'url(#' + uid + 'p' + id + ')' }),
@@ -3171,8 +3255,8 @@
     }
     return g;
   }
-  function skPost(uid, look, k) {
-    const x = SK_X[k], top = skPostTop(k);
+  function skPost(uid, look, k, cap) {
+    const x = SK_X[k], top = skPostTop(cap);
     const g = s('g', { class: 'sk-post' });
     if (look === 'harbor') {
       g.append(
@@ -3183,14 +3267,41 @@
       }
       g.append(s('rect', { x: x - 14.4, y: top - 0.8, width: 28.8, height: 1.6, rx: 0.5, fill: 'url(#' + uid + 'steel)' }),
         s('path', { d: 'M' + (x - 14.4) + ' ' + (top + 3.4) + 'l1.6 -1.6M' + (x + 12.8) + ' ' + (top + 1.8) + 'l1.6 1.6', stroke: '#F2C14E', 'stroke-width': 0.9 }));
-    } else if (look === 'bakery') {
+    } else if (look === 'station') {
+      // a luggage trolley: a low deck on two wheels, its handle frame as high as it can carry
+      g.append(
+        s('ellipse', { cx: x, cy: SK_BASE + 7.4, rx: 14.5, ry: 1.3, fill: 'rgba(40,30,20,.16)' }),
+        s('rect', { x: x - 13.5, y: top + 0.6, width: 1.5, height: SK_BASE - top, rx: 0.6, fill: 'url(#' + uid + 'chrome)' }),
+        s('rect', { x: x + 12, y: top + 0.6, width: 1.5, height: SK_BASE - top, rx: 0.6, fill: 'url(#' + uid + 'chrome)' }),
+        s('rect', { x: x - 14.2, y: top - 0.9, width: 28.4, height: 2.6, rx: 1.3, fill: '#2F3A48' }),
+        s('rect', { x: x - 13.4, y: top - 0.5, width: 26.8, height: 0.7, rx: 0.35, fill: '#5C6A7C' }),
+        s('path', { d: 'M' + (x - 10) + ' ' + (SK_BASE + 1.2) + 'v2.8M' + (x + 10) + ' ' + (SK_BASE + 1.2) + 'v2.8', stroke: '#6E7884', 'stroke-width': 1.3 }));
+      for (const wx of [x - 10, x + 10]) g.append(s('circle', { cx: wx, cy: SK_BASE + 4.6, r: 2.5, fill: '#23272E' }), s('circle', { cx: wx, cy: SK_BASE + 4.6, r: 0.9, fill: '#C3CBD4' }));
+      g.append(
+        s('rect', { x: x - 14, y: SK_BASE - 0.8, width: 28, height: 2.4, rx: 0.8, fill: '#566270' }),
+        s('rect', { x: x - 14, y: SK_BASE - 0.8, width: 28, height: 0.7, rx: 0.35, fill: '#8D99A6' }));
+    } else if (look === 'icecream') {
+      // a waffle cone standing in a little cup
+      const cone = 'M' + (x - 6.4) + ' 120.6L' + x + ' 133.2L' + (x + 6.4) + ' 120.6Z';
+      g.append(
+        s('ellipse', { cx: x, cy: 134.7, rx: 6.4, ry: 1, fill: 'rgba(120,60,80,.16)' }),
+        s('ellipse', { cx: x, cy: 127.6, rx: 4.7, ry: 1, fill: '#E6BFCC' }),
+        s('path', { d: cone, fill: 'url(#' + uid + 'cone)' }), s('path', { d: cone, fill: 'url(#' + uid + 'waf)' }),
+        s('rect', { x: x - 7, y: 118.9, width: 14, height: 2.9, rx: 1.4, fill: '#E9B36D' }),
+        s('rect', { x: x - 7, y: 118.9, width: 14, height: 2.9, rx: 1.4, fill: 'url(#' + uid + 'waf)' }),
+        s('path', { d: 'M' + (x - 4.7) + ' 127.6A4.7 1 0 0 0 ' + (x + 4.7) + ' 127.6Q' + (x + 4.2) + ' 133.6 ' + (x + 1.9) + ' 134H' + (x - 1.9) + 'Q' + (x - 4.2) + ' 133.6 ' + (x - 4.7) + ' 127.6Z', fill: '#FFFFFF' }),
+        s('path', { d: 'M' + (x - 3.4) + ' 129.4Q' + (x - 3.1) + ' 132.4 ' + (x - 1.6) + ' 132.9', stroke: '#F4D9E2', 'stroke-width': 0.6, fill: 'none', 'stroke-linecap': 'round' }));
+    } else if (look === 'bakery' || look === 'cake') {
+      // a white cake stand on a short foot; the bakery's has a dowel as high as it can carry
       g.append(
         s('ellipse', { cx: x, cy: SK_BASE + 8.6, rx: 7.5, ry: 1.6, fill: 'rgba(80,50,40,.14)' }),
         s('path', { d: 'M' + (x - 2.4) + ' ' + (SK_BASE + 2) + 'L' + (x - 1.6) + ' ' + (SK_BASE + 7) + 'H' + (x + 1.6) + 'L' + (x + 2.4) + ' ' + (SK_BASE + 2) + 'Z', fill: '#E9E2DA' }),
         s('ellipse', { cx: x, cy: SK_BASE + 7.6, rx: 6, ry: 1.4, fill: '#F6F1EB' }),
         s('ellipse', { cx: x, cy: SK_BASE + 1.4, rx: 14.6, ry: 2.8, fill: '#E4DCD3' }),
         s('ellipse', { cx: x, cy: SK_BASE + 0.8, rx: 14.6, ry: 2.6, fill: '#FFFFFF' }),
-        s('ellipse', { cx: x, cy: SK_BASE + 0.8, rx: 11.5, ry: 1.8, fill: 'none', stroke: '#EFE7DE', 'stroke-width': 0.4 }),
+        s('ellipse', { cx: x, cy: SK_BASE + 0.8, rx: 11.5, ry: 1.8, fill: 'none', stroke: '#EFE7DE', 'stroke-width': 0.4 }));
+      if (look === 'cake') g.append(s('path', { d: 'M' + (x - 14.6) + ' ' + (SK_BASE + 0.8) + 'A14.6 2.6 0 0 0 ' + (x + 14.6) + ' ' + (SK_BASE + 0.8), stroke: '#E2BC6A', 'stroke-width': 0.5, fill: 'none' }));
+      else g.append(
         s('rect', { x: x - 0.75, y: top + 1, width: 1.5, height: SK_BASE - top - 1, fill: 'url(#' + uid + 'dowel)' }),
         s('circle', { cx: x, cy: top + 1, r: 1.6, fill: '#E9A23B' }),
         s('circle', { cx: x - 0.5, cy: top + 0.5, r: 0.5, fill: '#FFE3A8' }));
@@ -3204,24 +3315,7 @@
     }
     return g;
   }
-  // the scene behind the posts, and the goal on a sign, clipboard or ticket
-  // the time of day over a setting: a warm low sun, or night with lit windows and stars
-  function skLight(uid, kind) {
-    const g = s('g', { 'aria-hidden': 'true', 'pointer-events': 'none' });
-    if (kind === 'sunset') {
-      g.innerHTML = '<defs><linearGradient id="' + uid + 'ss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8A5C"/><stop offset=".45" stop-color="#FFC27A"/><stop offset="1" stop-color="#FF9E6A"/></linearGradient></defs>'
-        + '<rect width="100" height="136" fill="url(#' + uid + 'ss)" opacity=".5" style="mix-blend-mode:color"/>'
-        + '<rect width="100" height="136" fill="#FF8A50" opacity=".14" style="mix-blend-mode:multiply"/>'
-        + '<circle cx="78" cy="30" r="12" fill="#FFE2A0" opacity=".25"/><circle cx="78" cy="30" r="7" fill="#FFF0C8"/>';
-    } else {
-      let win = '';
-      for (const [x, hh] of [[8, 9], [13, 14], [19, 7], [25, 18], [31, 11], [60, 13], [66, 20], [72, 9], [78, 15], [84, 10], [90, 16]]) for (let y = 63 - hh + 2; y < 61; y += 4) win += '<rect x="' + (x + 1.4) + '" y="' + y + '" width="1.1" height="1.6" fill="#FFD86A" opacity="' + (((x + y) % 3) ? 0.85 : 0.3) + '"/>';
-      g.innerHTML = '<rect width="100" height="136" fill="#1B2A6B" opacity=".55" style="mix-blend-mode:multiply"/>' + win
-        + scatter(22, 61, 0, 0, 100, 40).map(([x, y, k]) => '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (0.2 + k * 0.35).toFixed(2) + '" fill="#FFFFFF" opacity="' + (0.5 + k * 0.5).toFixed(2) + '"/>').join('')
-        + '<circle cx="84" cy="12" r="5" fill="#FFF3D0"/><circle cx="84" cy="12" r="9" fill="#FFF3D0" opacity=".15"/>';
-    }
-    return g;
-  }
+  // the scene behind the posts
   function skScene(uid, look) {
     const g = s('g', { 'aria-hidden': 'true' });
     if (look === 'harbor') {
@@ -3248,7 +3342,72 @@
       let z = 'M0 51.8';
       for (let x = 0; x < 100; x += 5) z += 'L' + (x + 2.5) + ' 47.6L' + (x + 5) + ' 51.8';
       g.append(s('path', { d: z, stroke: '#D49624', 'stroke-width': 0.7, fill: 'none' }));
-    } else if (look === 'bakery') {
+    } else if (look === 'station') {
+      // a platform under its canopy, a train waiting behind
+      g.append(s('rect', { x: 0, y: 0, width: 100, height: 52, fill: '#DCE5EC' }));
+      for (const y of [11, 23, 35]) g.append(s('rect', { x: 0, y, width: 100, height: 1, fill: '#C4D1DB' }));
+      // the train: green coach, a cream band of windows, a door
+      g.append(
+        s('rect', { x: 0, y: 49, width: 100, height: 51, fill: '#2F6A58' }),
+        s('rect', { x: 0, y: 49, width: 100, height: 2.6, fill: '#8E9CA6' }),
+        s('rect', { x: 0, y: 56.6, width: 100, height: 15.4, fill: '#EFE3C6' }),
+        s('rect', { x: 0, y: 72, width: 100, height: 0.9, fill: '#D9B45E' }),
+        s('rect', { x: 0, y: 90.5, width: 100, height: 0.9, fill: '#D9B45E' }));
+      for (const x of [2, 15.6, 29.2, 42.8, 56.4, 70]) {
+        g.append(s('rect', { x, y: 58.8, width: 9.6, height: 11, rx: 1.8, fill: '#2C3B45' }),
+          s('path', { d: 'M' + (x + 1.6) + ' 68.4L' + (x + 6.4) + ' 60.4H' + (x + 8.4) + 'L' + (x + 3.6) + ' 68.4Z', fill: '#FFFFFF', opacity: 0.12 }));
+      }
+      g.append(s('rect', { x: 84, y: 55.6, width: 11, height: 43, rx: 1, fill: '#285D4D' }),
+        s('rect', { x: 86.4, y: 59, width: 6.2, height: 10.6, rx: 1.4, fill: '#2C3B45' }),
+        s('rect', { x: 92.2, y: 76, width: 1, height: 6, rx: 0.5, fill: '#D9B45E' }));
+      // the platform: edge stones, the yellow line, paving
+      g.append(
+        s('rect', { x: 0, y: 98, width: 100, height: 38, fill: '#D5CEC1' }),
+        s('rect', { x: 0, y: 98, width: 100, height: 3.2, fill: '#ECE6DA' }),
+        s('rect', { x: 0, y: 101.2, width: 100, height: 0.6, fill: '#BDB5A7' }),
+        s('rect', { x: 0, y: 104.4, width: 100, height: 1.8, fill: '#F2C14E' }),
+        s('path', { d: 'M0 113.5H100M0 126H100M12 106.2V113.5M37 106.2V113.5M62 106.2V113.5M87 106.2V113.5M24 113.5V126M49 113.5V126M74 113.5V126M8 126V136M33 126V136M58 126V136M83 126V136', stroke: '#C4BCAE', 'stroke-width': 0.4 }));
+      // the canopy's wooden edge with its saw-tooth trim, on two iron columns
+      g.append(s('rect', { x: 1.6, y: 44, width: 3.2, height: 64, fill: '#2B4F45' }), s('rect', { x: 95.2, y: 44, width: 3.2, height: 64, fill: '#2B4F45' }),
+        s('rect', { x: 0.6, y: 104.6, width: 5.2, height: 3.4, rx: 0.6, fill: '#24443B' }), s('rect', { x: 94.2, y: 104.6, width: 5.2, height: 3.4, rx: 0.6, fill: '#24443B' }),
+        s('path', { d: 'M4.8 50Q4.8 46.6 9 46.4M95.2 50Q95.2 46.6 91 46.4', stroke: '#2B4F45', 'stroke-width': 1.1, fill: 'none' }));
+      let saw = 'M0 47.4';
+      for (let x = 0; x < 100; x += 3.125) saw += 'L' + (x + 1.5625).toFixed(3) + ' 50.6L' + (x + 3.125).toFixed(3) + ' 47.4';
+      g.append(s('rect', { x: 0, y: 43.4, width: 100, height: 4.2, fill: '#F1E7D0' }), s('path', { d: saw + 'V47Z', fill: '#F1E7D0' }),
+        s('rect', { x: 0, y: 43.4, width: 100, height: 0.9, fill: '#D8C8A6' }));
+      // a hanging lamp and the station clock
+      g.append(s('rect', { x: 10.5, y: 0, width: 1, height: 17, fill: '#5B6672' }),
+        s('circle', { cx: 11, cy: 20.4, r: 6, fill: '#FFE7A6', opacity: 0.28 }),
+        s('path', { d: 'M6.8 20L9.2 16.4H12.8L15.2 20Z', fill: '#2B4F45' }),
+        s('circle', { cx: 11, cy: 20.8, r: 1.6, fill: '#FFF2C8' }));
+      let ticks = '';
+      for (let i = 0; i < 12; i++) { const a = (i * Math.PI) / 6, r0 = i % 3 ? 4.6 : 3.9; ticks += 'M' + (89 + Math.cos(a) * r0).toFixed(2) + ' ' + (20 + Math.sin(a) * r0).toFixed(2) + 'L' + (89 + Math.cos(a) * 5.3).toFixed(2) + ' ' + (20 + Math.sin(a) * 5.3).toFixed(2); }
+      g.append(s('rect', { x: 88.5, y: 0, width: 1, height: 13.4, fill: '#5B6672' }),
+        s('circle', { cx: 89, cy: 20, r: 6.8, fill: '#26323D' }),
+        s('circle', { cx: 89, cy: 20, r: 5.9, fill: '#FFFFFF' }),
+        s('path', { d: ticks, stroke: '#26323D', 'stroke-width': 0.45 }),
+        s('path', { d: 'M89 20L86.6 18.4M89 20L91.6 16.2', stroke: '#1C252E', 'stroke-width': 0.75, 'stroke-linecap': 'round' }),
+        s('circle', { cx: 89, cy: 20, r: 0.6, fill: '#D6403A' }));
+    } else if (look === 'icecream') {
+      // mint walls with white stripes, a striped awning, pink lamps and a pink counter
+      g.append(s('rect', { x: 0, y: 0, width: 100, height: 113, fill: '#D2F0E4' }));
+      for (let x = 2.5; x < 100; x += 9) g.append(s('rect', { x, y: 0, width: 4.5, height: 113, fill: '#FFFFFF', opacity: 0.42 }));
+      g.append(s('rect', { x: 0, y: 112, width: 100, height: 24, fill: '#FCEEF2' }),
+        s('rect', { x: 0, y: 112, width: 100, height: 1.6, fill: '#F2C3D1' }),
+        s('path', { d: 'M6 121C18 117 24 127 38 122S62 118 72 125M56 131C68 127 80 133 96 128M10 132C16 129 22 131 30 129', stroke: '#F1D4DD', 'stroke-width': 0.45, fill: 'none' }));
+      [[9, 116.4, 30, '#FF6FA7'], [31, 128.6, -40, '#FFD23F'], [44, 116, 70, '#58C4F0'], [67, 117.6, -15, '#6FD38C'], [92, 124, 50, '#FF6FA7'], [58, 133.4, 15, '#58C4F0']].forEach(([x, y, a, f]) => g.append(s('rect', { x: x - 1, y: y - 0.3, width: 2, height: 0.6, rx: 0.3, fill: f, transform: 'rotate(' + a + ' ' + x + ' ' + y + ')' })));
+      let sc = '';
+      for (let x = 100; x > 0.1; x -= 6.25) sc += 'A3.125 3.125 0 0 1 ' + (x - 6.25).toFixed(3) + ' 7.6';
+      g.append(s('path', { d: 'M0 1.2H100V8.8' + sc.replace(/ 7\.6/g, ' 8.8') + 'Z', fill: 'rgba(60,90,80,.12)' }),
+        s('path', { d: 'M0 0H100V7.6' + sc + 'Z', fill: '#FFF6F9' }));
+      for (let i = 0; i < 16; i += 2) { const x = i * 6.25; g.append(s('path', { d: 'M' + x + ' 0H' + (x + 6.25) + 'V7.6A3.125 3.125 0 0 1 ' + x + ' 7.6Z', fill: '#F48FB1' })); }
+      for (const x of [10.5, 89.5]) {
+        g.append(s('rect', { x: x - 0.4, y: 7, width: 0.8, height: 11.4, fill: '#B07A8C' }),
+          s('circle', { cx: x, cy: 22.4, r: 6, fill: '#FFF3C4', opacity: 0.32 }),
+          s('path', { d: 'M' + (x - 4.4) + ' 22.2L' + (x - 1.7) + ' 17.6H' + (x + 1.7) + 'L' + (x + 4.4) + ' 22.2Z', fill: '#F48FB1' }),
+          s('circle', { cx: x, cy: 22.8, r: 1.5, fill: '#FFF6D8' }));
+      }
+    } else if (look === 'bakery' || look === 'cake') {
       g.append(s('rect', { x: 0, y: 0, width: 100, height: 113, fill: '#FBE6EB' }));
       for (let x = 2; x < 100; x += 8) g.append(s('rect', { x, y: 0, width: 3, height: 113, fill: '#F5D5DD', opacity: 0.55 }));
       g.append(s('rect', { x: 0, y: 70, width: 100, height: 43, fill: '#F6D9DF', opacity: 0.6 }),
@@ -3286,7 +3445,8 @@
     }
     return g;
   }
-  function skCard(uid, look, goal) {
+  // the goal: on a sign, a clipboard, the departure board, the menu board or a ticket
+  function skCard(uid, look, goal, caps) {
     const L = SK_LOOKS[look];
     const g = s('g', { class: 'sk-card' });
     if (look === 'harbor') {
@@ -3294,12 +3454,25 @@
         s('rect', { x: 26.6, y: 8.4, width: 46.8, height: 32.6, rx: 0.8, fill: '#FFFFFF' }),
         s('rect', { x: 30, y: 11.4, width: 20, height: 1.3, rx: 0.6, fill: '#C9D3DD' }), s('rect', { x: 30, y: 14, width: 12, height: 1, rx: 0.5, fill: '#DCE3EA' }),
         s('rect', { x: 43, y: 2.8, width: 14, height: 5.2, rx: 1.2, fill: '#AEB8C2' }), s('rect', { x: 46.5, y: 4.4, width: 7, height: 1.6, rx: 0.8, fill: '#7F8A96' }));
-    } else if (look === 'bakery') {
+    } else if (look === 'bakery' || look === 'cake') {
       let zig = 'M25 7.5Q25 6 26.5 6H73.5Q75 6 75 7.5V40';
       for (let x = 75; x > 25.1; x -= 3.125) zig += 'L' + (x - 1.5625).toFixed(3) + ' 42.4L' + (x - 3.125).toFixed(3) + ' 40';
       g.append(s('path', { d: zig + 'Z', fill: '#FFFFFF' }), s('rect', { x: 25, y: 6, width: 50, height: 3.6, rx: 1.4, fill: '#F0879F' }),
         s('rect', { x: 46.5, y: 2.4, width: 7, height: 5.4, rx: 1, fill: '#9EA7B1' }),
         s('rect', { x: 30, y: 12.4, width: 16, height: 1.1, rx: 0.55, fill: '#F2C9D3' }));
+    } else if (look === 'station') {
+      g.append(s('path', { d: 'M32 0V6M68 0V6', stroke: '#5B6672', 'stroke-width': 1 }),
+        s('rect', { x: 23, y: 5, width: 54, height: 38.5, rx: 2.2, fill: '#1E2732' }),
+        s('rect', { x: 25.2, y: 7.2, width: 49.6, height: 34.1, rx: 1.2, fill: '#29343F' }),
+        s('rect', { x: 29, y: 10.6, width: 18, height: 1.3, rx: 0.65, fill: '#F2B33D', opacity: 0.9 }),
+        s('rect', { x: 29, y: 13.2, width: 11, height: 1, rx: 0.5, fill: '#F2B33D', opacity: 0.45 }));
+    } else if (look === 'icecream') {
+      g.append(s('path', { d: 'M32 7V12M68 7V12', stroke: '#B98A5C', 'stroke-width': 0.8 }),
+        s('rect', { x: 23.2, y: 10.4, width: 53.6, height: 34.6, rx: 2, fill: '#C8955C' }),
+        s('rect', { x: 23.2, y: 10.4, width: 53.6, height: 1.2, rx: 0.6, fill: '#DDAE78' }),
+        s('rect', { x: 25.2, y: 12.4, width: 49.6, height: 30.6, rx: 1, fill: '#2F3B39' }),
+        s('rect', { x: 29, y: 15.2, width: 15, height: 1.1, rx: 0.55, fill: '#FFFFFF', opacity: 0.5 }),
+        s('rect', { x: 29, y: 17.6, width: 9, height: 0.9, rx: 0.45, fill: '#FFFFFF', opacity: 0.28 }));
     } else {
       g.append(s('path', { d: 'M31 42V58M69 42V58', stroke: '#7E5332', 'stroke-width': 2.2 }),
         s('rect', { x: 23.5, y: 5, width: 53, height: 38, rx: 2.6, fill: '#97643C' }),
@@ -3307,31 +3480,40 @@
         s('rect', { x: 26.4, y: 8, width: 47.2, height: 32, rx: 1.6, fill: '#F7ECD5' }));
       for (const [x, y] of [[25.3, 6.8], [74.7, 6.8], [25.3, 41.2], [74.7, 41.2]]) g.append(s('circle', { cx: x, cy: y, r: 0.65, fill: '#5B3B22' }));
     }
-    const base = 37.2;
+    const base = look === 'icecream' ? 36.4 : 37.2;
     for (let k = 0; k < 3; k++) {
-      const mx = 50 + (SK_X[k] - 50) * SK_MINI, cap = E.games.stacks.caps[k], ph = (cap * SK_STEP + 4) * SK_MINI;
-      g.append(s('rect', { x: mx - 0.6, y: base - ph, width: 1.2, height: ph, rx: 0.5, fill: L.rod }));
+      const mx = 50 + (SK_X[k] - 50) * SK_MINI;
+      if (look === 'icecream') {
+        g.append(s('path', { d: 'M' + (mx - 2.9) + ' ' + (base - 0.4) + 'L' + mx + ' ' + (base + 5.4) + 'L' + (mx + 2.9) + ' ' + (base - 0.4) + 'Z', fill: '#DDA25C' }),
+          s('rect', { x: mx - 3.2, y: base - 1.3, width: 6.4, height: 1.4, rx: 0.65, fill: '#ECB772' }));
+      } else if (look === 'cake') {
+        g.append(s('path', { d: 'M' + (mx - 1.1) + ' ' + (base + 0.9) + 'L' + (mx - 0.7) + ' ' + (base + 3.1) + 'H' + (mx + 0.7) + 'L' + (mx + 1.1) + ' ' + (base + 0.9) + 'Z', fill: '#E4DCD3' }),
+          s('ellipse', { cx: mx, cy: base + 0.45, rx: 6.6, ry: 1.25, fill: '#FFFFFF', stroke: '#E6D9CC', 'stroke-width': 0.3 }));
+      } else {
+        const ph = (caps[k] * SK_STEP + 4) * SK_MINI;
+        g.append(s('rect', { x: mx - 0.6, y: base - ph, width: 1.2, height: ph, rx: 0.5, fill: L.rod }));
+      }
       goal[k].forEach((id, i) => g.append(s('g', { transform: 'translate(' + mx + ' ' + (base - (SK_STEP / 2 + i * SK_STEP) * SK_MINI).toFixed(2) + ') scale(' + SK_MINI + ')' }, skPiece(uid, look, id, true))));
     }
-    g.append(s('rect', { x: 29, y: base, width: 42, height: 0.9, rx: 0.45, fill: L.rod, opacity: 0.55 }));
+    if (look !== 'icecream' && look !== 'cake') g.append(s('rect', { x: 29, y: base, width: 42, height: 0.9, rx: 0.45, fill: L.rod, opacity: 0.55 }));
     return g;
   }
   class StacksCard extends Card {
     hasHistory() { return this.run.hist.length > 0; }
     buildBoard() {
       const p = this.p, look = SK_LOOKS[p.theme] ? p.theme : 'stones', L = SK_LOOKS[look];
+      const n = p.n || 3, caps = this.caps = p.caps || E.games.stacks.caps;
       this.look = look;
       this.el.dataset.look = look;
       this.held = null;
       this.gest = null;
       const uid = this.uid = 'sk' + Math.random().toString(36).slice(2, 8);
-      const svgEl = s('svg', { class: 'board stacks', viewBox: '0 0 100 136', role: 'group', 'aria-label': 'Three posts holding 3, 2 and 1 ' + L.names[0].split(' ').pop() + 's' });
+      const holds = caps.some((c) => c < n) ? ' that hold ' + caps.slice(0, -1).join(', ') + ' and ' + caps[caps.length - 1] : '';
+      const svgEl = s('svg', { class: 'board stacks', viewBox: '0 0 100 136', role: 'group', 'aria-label': n + ' ' + L.names[0].split(' ').pop() + 's on three ' + L.post + 's' + holds });
       svgEl.append(skDefs(uid, look));
       const world = s('g', { 'clip-path': 'url(#' + uid + 'clip)' });
       world.append(skScene(uid, look));
-      if (this.lookLv === 2 && look === 'stones') world.append(skLight(uid, 'sunset'));
-      if (this.lookLv === 4 && look === 'harbor') world.append(skLight(uid, 'night'));
-      const cardEl = skCard(uid, look, p.goal);
+      const cardEl = skCard(uid, look, p.goal, caps);
       cardEl.setAttribute('role', 'img');
       cardEl.setAttribute('aria-label', 'Goal: ' + p.goal.map((a, k) => 'post ' + (k + 1) + (a.length ? ' ' + a.map((id) => L.names[id]).join(', ') : ' empty')).join('; '));
       world.append(cardEl);
@@ -3342,15 +3524,16 @@
         world.append(this.cable, this.trolley);
       }
       this.shadow = s('ellipse', { class: 'sk-shadow', cx: 0, cy: 0, rx: 10.5, ry: 2, fill: 'rgba(30,25,20,.3)', filter: 'url(#' + uid + 'blur)' });
-      this.posts = [0, 1, 2].map((k) => { const g = skPost(uid, look, k); world.append(g); return g; });
+      this.posts = [0, 1, 2].map((k) => { const g = skPost(uid, look, k, caps[k]); world.append(g); return g; });
       world.append(this.shadow);
       this.layer = s('g', null);
       world.append(this.layer);
-      this.pieces = [0, 1, 2].map((id) => {
+      this.pieces = Array.from({ length: n }, (_, id) => {
         const el = s('g', { class: 'sk-piece', 'aria-hidden': 'true' });
         const inner = s('g', { class: 'sk-inner' });
         if (look === 'harbor') inner.append(s('g', { class: 'sk-cable' }, s('rect', { x: -9, y: -9.6, width: 18, height: 1.5, rx: 0.5, fill: '#2B333D' }), s('path', { d: 'M-8.2 -8.1L-10.8 -6.9M8.2 -8.1L10.8 -6.9', stroke: '#2B333D', 'stroke-width': 0.6 })));
-        inner.append(skPiece(uid, look, id, false), s('rect', { class: 'halo', x: -13.8, y: -9, width: 27.6, height: 17.6, rx: 3.6 }));
+        const hw = skHalf(look, id) + 1.6, y0 = look === 'icecream' ? (id === L.cherry ? -14 : -10.4) : -9, y1 = look === 'icecream' ? 6.4 : look === 'cake' ? 7.4 : 8.6;
+        inner.append(skPiece(uid, look, id, false), s('rect', { class: 'halo', x: -hw, y: y0, width: 2 * hw, height: y1 - y0, rx: 3.6 }));
         el.append(inner);
         this.layer.append(el);
         return el;
@@ -3434,10 +3617,10 @@
       this.goal();
     }
     label() {
-      const L = SK_LOOKS[this.look];
+      const L = SK_LOOKS[this.look], n = this.pieces.length, P = L.post[0].toUpperCase() + L.post.slice(1);
       this.cols.forEach((col, k) => {
         const a = this.run.st[k];
-        col.setAttribute('aria-label', 'Post ' + (k + 1) + ', holds ' + E.games.stacks.caps[k] + ': ' + (a.length ? a.map((id) => L.names[id]).join(', ') + ', top ' + L.names[a[a.length - 1]] : 'empty'));
+        col.setAttribute('aria-label', P + ' ' + (k + 1) + (this.caps[k] < n ? ', holds ' + this.caps[k] : '') + ': ' + (a.length ? a.map((id) => L.names[id]).join(', ') + ', top ' + L.names[a[a.length - 1]] : 'empty'));
       });
     }
     goal() {
@@ -3490,6 +3673,8 @@
     }
     lift(k) {
       const id = this.top(k);
+      if (this.ruleSay) { this.ruleSay.remove(); this.ruleSay = null; }
+      this.shadow.setAttribute('rx', (skHalf(this.look, id) * 0.86).toFixed(1));
       this.held = k;
       this.layer.append(this.pieces[id]);
       this.pieces[id].classList.add('held');
@@ -3522,12 +3707,23 @@
       const rec = this.G.move(this.p, this.run, a, b);
       if (!rec) return;
       if (rec.kind === 'blocked') {
-        // the post is full: it shakes and the piece stays up
+        // the piece stays up. A full post shakes; on the cherry or a smaller layer, that piece shakes and says the rule
         this.setPos(this.top(a), SK_X[a], SK_HOVER, false);
-        this.nudge(b);
         Sound.play('no');
         buzz(12);
-        rec.detail = 'post ' + (b + 1) + ' is full';
+        if (rec.why === 'cherry' || rec.why === 'size') {
+          const t = this.pieces[this.top(b)];
+          t.classList.remove('nope');
+          void t.getBoundingClientRect();
+          t.classList.add('nope');
+          this.later(() => t.classList.remove('nope'), 420);
+          if (this.ruleSay) this.ruleSay.remove();
+          this.ruleSay = this.say(t, this.rule(), 'no');
+          rec.detail = rec.why === 'cherry' ? 'nothing goes on the cherry' : 'a layer only goes on a bigger one';
+        } else {
+          this.nudge(b);
+          rec.detail = 'post ' + (b + 1) + ' is full';
+        }
         this.commit(rec);
         return;
       }
@@ -3560,6 +3756,15 @@
       this.label();
       if (this.o.feedback && !this.practice) this.flash(id, rec.cls);
       this.commit(rec);
+    }
+    // the level's own rule, in words, if it has one
+    rule() { return this.p.cherry != null ? 'The cherry stays on top' : this.p.size ? 'Small goes on big' : ''; }
+    start() {
+      super.start();
+      const rule = this.rule();
+      if (!rule) return;
+      const at = this.p.cherry != null ? this.pieces[this.p.cherry] : this.pieces[this.pieces.length - 1];
+      this.later(() => { if (this.held == null && !this.run.hist.length && !this.summary) this.ruleSay = this.say(at, rule, '', 3600); }, 800);
     }
     flash(id, cls) {
       const el = this.pieces[id], k = 'q-' + cls;
@@ -7025,7 +7230,7 @@
       conduit: 'optimal (the tile needed that turn), wasted (the tile was already right)',
       tumbler: 'optimal (as informative as the best possible try), suboptimal (less informative), zero_info (could not narrow the codes), solved (the winning try); consistency is its own column',
       glimpse: 'correct (animal and place right; only the animal at level 1), center_wrong, where_wrong, both_wrong. With feedback on (free play), a wrong animal ends the look at once: it is logged as center_wrong with dir_chosen and rt_where_ms empty (from app 2.16)',
-      stacks: 'optimal (one move closer to the goal), wasted (no closer), blocked (the post was full; its own event, not a move)',
+      stacks: 'optimal (one move closer to the goal), wasted (no closer), blocked (the post was full, or in free play the piece was not allowed there; its own event, not a move)',
       switchback: 'sign events: hit (the target, tapped in time), miss (the target, not tapped), false_alarm (another sign, tapped), correct_rejection (another sign, let pass); beast events: shooed (the animal tapped away before the car got close), braked (the car braked for it)',
       keepsake: 'place events: correct (its own stone), wrong (another stone)',
     },
@@ -7059,7 +7264,7 @@
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play (where a new level opens at its own starting point instead; the free-play values are kept under a new key from app 2.21, so earlier ones start over). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
+        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). Free play is not this task at every level: each level has its own place, and L4 and L5 their own rules (station at L2; at L4 three cones that hold 3 each, and nothing goes on the piece with the cherry; at L5 four pieces of different sizes on three posts that hold 4, and a piece only goes on a bigger one). `features` gives `pieces`, `caps` and `twist` (`cherry`, `size` or empty); a refused move is `blocked` with `detail` saying why. `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
@@ -7284,7 +7489,10 @@
     if (g === 'outbound') return at(L.cars + ' cars · ' + L.w + '×' + L.h + ' lot');
     if (g === 'conduit') return at(L.w + '×' + L.h + ' beds');
     if (g === 'tumbler') return at(L.pin.P + ' hidden colors out of ' + L.pin.C);
-    if (g === 'stacks') return at(L.moves + ' moves');
+    if (g === 'stacks') {
+      const F = (G.free && G.free[lv]) || {};
+      return at(L.moves + ' moves' + (F.n ? ' · ' + F.n + ' layers' : '') + (F.cherry != null ? ' · the cherry stays on top' : F.size ? ' · small goes on big' : ''));
+    }
     if (g === 'keepsake') return at(L.items + ' things to remember');
     if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
     if (g === 'glimpse') return at(['', 'close to the middle', 'a little further out', 'near or far', 'a few shells in the way', 'more in the way'][lv] || '');

@@ -1496,15 +1496,40 @@
   // =====================================================================
   const SK_CAPS = [3, 2, 1];
   const SK_THEMES = ['stones', 'harbor', 'bakery'];
+  // research blocks: the classic task in three settings (stones at 1 and 2, the harbor at 3 and 4, the bakery at 5)
   const SK_LEVEL_THEME = { 1: 'stones', 2: 'stones', 3: 'harbor', 4: 'harbor', 5: 'bakery' };
+  // free play: every level a place of its own, two with a twist that shows on the pieces.
+  // cherry: nothing can go on that piece (the scoop with the cherry); size: a piece goes only on a
+  // bigger one (piece 0 the biggest), as cake layers do. Ice cream needs three equal cones: on posts
+  // of 3, 2 and 1 the cherry leaves only 12 arrangements, none of them 6 moves apart.
+  const SK_FREE = {
+    1: { theme: 'stones' },
+    2: { theme: 'station' },
+    3: { theme: 'harbor' },
+    4: { theme: 'icecream', caps: [3, 3, 3], cherry: 2 },
+    5: { theme: 'cake', n: 4, caps: [4, 4, 4], size: true },
+  };
+  const SK_CLASSIC = { n: 3, caps: SK_CAPS, cherry: null, size: false };
+  const skRules = (p) => ({ n: p.n || 3, caps: p.caps || SK_CAPS, cherry: p.cherry != null ? p.cherry : null, size: !!p.size });
+  const skRuleKey = (R) => R.n + '/' + R.caps.join('') + '/' + (R.cherry == null ? '-' : R.cherry) + (R.size ? 's' : '');
   const skKey = (st) => st.map((a) => a.join('')).join('|');
   const skCopy = (st) => st.map((a) => a.slice());
-  function skNext(st) {
+  // why a piece cannot be set on post b: 'full', 'cherry', 'size', or '' when it can
+  function skWhyNot(R, st, b, piece) {
+    if (st[b].length >= R.caps[b]) return 'full';
+    const top = st[b][st[b].length - 1];
+    if (top != null && R.cherry === top) return 'cherry';
+    if (top != null && R.size && top > piece) return 'size';
+    return '';
+  }
+  function skNext(st, R) {
+    R = R || SK_CLASSIC;
     const out = [];
     for (let a = 0; a < 3; a++) {
       if (!st[a].length) continue;
+      const pc = st[a][st[a].length - 1];
       for (let b = 0; b < 3; b++) {
-        if (a === b || st[b].length >= SK_CAPS[b]) continue;
+        if (a === b || skWhyNot(R, st, b, pc)) continue;
         const ns = skCopy(st);
         ns[b].push(ns[a].pop());
         out.push([a, b, ns]);
@@ -1513,24 +1538,33 @@
     return out;
   }
   const skDistCache = new Map();
-  // moves left to this goal from every arrangement
-  function skDist(goal) {
-    const k0 = skKey(goal);
-    let d = skDistCache.get(k0);
+  // moves left to this goal from every arrangement, under these rules
+  function skDist(goal, R) {
+    R = R || SK_CLASSIC;
+    const k0 = skKey(goal), ck = skRuleKey(R) + '#' + k0;
+    let d = skDistCache.get(ck);
     if (d) return d;
     d = new Map([[k0, 0]]);
     const q = [goal];
     for (let i = 0; i < q.length; i++) {
       const di = d.get(skKey(q[i]));
-      for (const [, , ns] of skNext(q[i])) {
+      for (const [, , ns] of skNext(q[i], R)) {
         const k = skKey(ns);
         if (!d.has(k)) { d.set(k, di + 1); q.push(ns); }
       }
     }
-    skDistCache.set(k0, d);
+    skDistCache.set(ck, d);
     return d;
   }
-  const SK_ALL = Array.from(skDist([[0, 1, 2], [], []]).keys(), (k) => k.split('|').map((x) => (x ? x.split('').map(Number) : [])));
+  // every arrangement the rules allow (all reachable from the pieces stacked in order on the first post)
+  const skAllCache = new Map();
+  function skAll(R) {
+    R = R || SK_CLASSIC;
+    const rk = skRuleKey(R);
+    if (!skAllCache.has(rk)) skAllCache.set(rk, Array.from(skDist([Array.from({ length: R.n }, (_, i) => i), [], []], R).keys(), (k) => k.split('|').map((x) => (x ? x.split('').map(Number) : []))));
+    return skAllCache.get(rk);
+  }
+  const SK_ALL = skAll(SK_CLASSIC);
 
   const Stacks = {
     id: 'stacks',
@@ -1540,35 +1574,43 @@
     goal: 'Build the arrangement on the card in as few moves as possible.',
     caps: SK_CAPS,
     themes: SK_THEMES,
+    free: SK_FREE,
     // moves: the fewest moves from start to goal
     levels: { 1: { moves: 3 }, 2: { moves: 4 }, 3: { moves: 5 }, 4: { moves: 6 }, 5: { moves: 7 } },
     describe(p) { return p.moves + '-move problem' + (p.theme ? ', ' + p.theme : ''); },
-    build(level, seed, start, goal, theme) {
-      const moves = skDist(goal).get(skKey(start));
+    build(level, seed, start, goal, theme, R) {
+      R = R || SK_CLASSIC;
+      const moves = skDist(goal, R).get(skKey(start));
       return {
         game: 'stacks', level, seed, theme,
-        caps: SK_CAPS.slice(), start: skCopy(start), goal: skCopy(goal), moves,
+        n: R.n, caps: R.caps.slice(), cherry: R.cherry, size: R.size,
+        start: skCopy(start), goal: skCopy(goal), moves,
         reference: moves,
-        features: { moves, start: skKey(start), goal: skKey(goal), theme },
+        features: { moves, start: skKey(start), goal: skKey(goal), theme, pieces: R.n, caps: R.caps.join(''), twist: R.cherry != null ? 'cherry' : R.size ? 'size' : '' },
       };
     },
-    // variant 'classic' (fixed blocks): always the stones; otherwise the setting of its level
-    // (river stones at 1 and 2, the harbor at 3 and 4, the bakery at 5): a new level is a new place
+    // variant 'classic' (fixed blocks): always the stones; 'free' (free play): the place and rules
+    // of its level (SK_FREE); otherwise (adaptive research blocks) the classic task in the setting
+    // of its level (river stones at 1 and 2, the harbor at 3 and 4, the bakery at 5)
     generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      rng.int(SK_THEMES.length); // the draw that used to pick the setting, kept so seeds still give the same boards
-      const theme = variant === 'classic' ? SK_THEMES[0] : SK_LEVEL_THEME[level] || SK_THEMES[0];
+      rng.int(3); // the draw that used to pick the setting, kept so seeds still give the same boards
+      const F = variant === 'free' ? SK_FREE[level] : null;
+      const theme = variant === 'classic' ? 'stones' : F ? F.theme : SK_LEVEL_THEME[level] || 'stones';
+      const R = F ? { n: F.n || 3, caps: F.caps || SK_CAPS, cherry: F.cherry != null ? F.cherry : null, size: !!F.size } : SK_CLASSIC;
+      const ALL = skAll(R);
       for (let attempt = 0; attempt < 100; attempt++) {
-        const goal = SK_ALL[rng.int(SK_ALL.length)];
-        const d = skDist(goal);
-        const starts = SK_ALL.filter((st) => d.get(skKey(st)) === L.moves);
-        if (starts.length) return this.build(level, seed, starts[rng.int(starts.length)], goal, theme);
+        const goal = ALL[rng.int(ALL.length)];
+        const d = skDist(goal, R);
+        const starts = ALL.filter((st) => d.get(skKey(st)) === L.moves);
+        if (starts.length) return this.build(level, seed, starts[rng.int(starts.length)], goal, theme, R);
       }
       throw new Error('Stacks: no ' + L.moves + '-move problem for seed ' + seed);
     },
+    whyNot(p, st, b, piece) { return skWhyNot(skRules(p), st, b, piece); },
     newRun(p) { return { st: skCopy(p.start), hist: [] }; },
-    dist(p, st) { return skDist(p.goal).get(skKey(st)); },
+    dist(p, st) { return skDist(p.goal, skRules(p)).get(skKey(st)); },
     // take the top piece of post a and set it on post b (posts 0 to 2; logged 1 to 3)
     move(p, run, a, b) {
       const st = run.st;
@@ -1576,7 +1618,8 @@
       const dB = this.dist(p, st);
       const target = 'p' + (a + 1) + '>p' + (b + 1);
       const piece = st[a][st[a].length - 1];
-      if (st[b].length >= SK_CAPS[b]) return { kind: 'blocked', target, piece, a, b, from: a + 1, to: b + 1, dBefore: dB, dAfter: dB, cls: 'blocked' };
+      const why = skWhyNot(skRules(p), st, b, piece);
+      if (why) return { kind: 'blocked', target, piece, a, b, from: a + 1, to: b + 1, dBefore: dB, dAfter: dB, cls: 'blocked', why, detail: why };
       st[b].push(st[a].pop());
       run.hist.push([a, b]);
       const dA = this.dist(p, st);
@@ -1591,18 +1634,18 @@
     },
     restart(p, run) { run.st = skCopy(p.start); run.hist = []; },
     hint(p, run) {
-      const d = skDist(p.goal), m = d.get(skKey(run.st));
-      for (const [a, b, ns] of skNext(run.st)) if (d.get(skKey(ns)) === m - 1) return { kind: 'target', a, b, target: 'p' + (a + 1) + '>p' + (b + 1) };
+      const R = skRules(p), d = skDist(p.goal, R), m = d.get(skKey(run.st));
+      for (const [a, b, ns] of skNext(run.st, R)) if (d.get(skKey(ns)) === m - 1) return { kind: 'target', a, b, target: 'p' + (a + 1) + '>p' + (b + 1) };
       return { kind: 'none' };
     },
     // pieces in their final place: right post, right height, on a finished base
     progress(p, run) {
       let done = 0;
       for (let k = 0; k < 3; k++) for (let i = 0; i < run.st[k].length && run.st[k][i] === p.goal[k][i]; i++) done++;
-      return { done, total: 3 };
+      return { done, total: p.n || 3 };
     },
     // two moves: the top piece steps aside, the lone piece goes on top
-    practice() { return this.build(0, 0, [[0, 1], [2], []], [[0, 2], [], [1]], SK_THEMES[0]); },
+    practice() { return this.build(0, 0, [[0, 1], [2], []], [[0, 2], [], [1]], 'stones'); },
     serialize(run) { return { st: skCopy(run.st), hist: run.hist.map((m) => m.slice()) }; },
     restore(p, data) { return { st: skCopy(data.st), hist: data.hist.map((m) => m.slice()) }; },
   };
@@ -1976,12 +2019,12 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.18.0',
+    version: '1.19.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
     EXIT,
-    internals: { ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, SK_ALL },
+    internals: { ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, skAll, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;

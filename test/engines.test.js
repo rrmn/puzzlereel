@@ -726,6 +726,64 @@ test('stacks: a full post refuses a piece, practice takes two moves, runs surviv
   assert.deepEqual(K.restore(q, JSON.parse(JSON.stringify(K.serialize(rq)))), rq);
 });
 
+test('stacks free play: each level its own place; the cherry stays on top, a layer only goes on a bigger one', () => {
+  const K = E.games.stacks;
+  const place = { 1: 'stones', 2: 'station', 3: 'harbor', 4: 'icecream', 5: 'cake' };
+  for (const lv of [1, 2, 3, 4, 5]) {
+    for (let s = 0; s < 20; s++) {
+      const p = K.generate(lv, 300 + s, 'free');
+      assert.equal(p.theme, place[lv]);
+      assert.equal(p.reference, K.levels[lv].moves);
+      assert.equal(K.dist(p, p.start), p.reference);
+      // the hints solve it, and every hinted move is one the level allows
+      const run = K.newRun(p);
+      let last = null;
+      for (let k = 0; k < p.reference; k++) {
+        const hnt = K.hint(p, run);
+        last = K.move(p, run, hnt.a, hnt.b);
+        assert.equal(last.cls, 'optimal');
+      }
+      assert.ok(last.solved);
+      assert.deepEqual(K.progress(p, run), { done: p.n, total: p.n });
+    }
+  }
+  // ice cream: three cones that hold three each; nothing goes on the scoop with the cherry
+  const ice = K.generate(4, 1, 'free');
+  assert.deepEqual(ice.caps, [3, 3, 3]);
+  assert.equal(ice.cherry, 2);
+  const iceRules = { n: 3, caps: [3, 3, 3], cherry: 2, size: false };
+  const q = K.build(4, 1, [[0, 2], [1], []], [[0], [1, 2], []], 'icecream', iceRules);
+  const rq = K.newRun(q);
+  const r1 = K.move(q, rq, 1, 0);
+  assert.equal(r1.kind, 'blocked');
+  assert.equal(r1.why, 'cherry');
+  assert.deepEqual(rq.st, [[0, 2], [1], []]);
+  assert.notEqual(K.move(q, rq, 0, 1).kind, 'blocked', 'the scoop with the cherry can still move');
+  for (const st of E.internals.skAll(iceRules)) for (const a of st) { const i = a.indexOf(2); assert.ok(i < 0 || i === a.length - 1, 'the cherry is always on top'); }
+  // the cake: four layers on three stands; a bigger layer never goes on a smaller one
+  const cake = K.generate(5, 1, 'free');
+  assert.equal(cake.n, 4);
+  assert.equal(cake.size, true);
+  const cakeRules = { n: 4, caps: [4, 4, 4], cherry: null, size: true };
+  const c = K.build(5, 1, [[0, 3], [1], [2]], [[0, 1, 2, 3], [], []], 'cake', cakeRules);
+  const rc = K.newRun(c);
+  const r2 = K.move(c, rc, 1, 0);
+  assert.equal(r2.kind, 'blocked');
+  assert.equal(r2.why, 'size');
+  assert.notEqual(K.move(c, rc, 0, 1).kind, 'blocked', 'the smallest goes on a bigger one');
+  assert.equal(E.internals.skAll(cakeRules).length, 81, 'four sized layers on three stands: 3 to the power 4 arrangements');
+  // research blocks keep the classic task
+  for (const v of ['mix', 'classic']) {
+    for (const lv of [1, 2, 3, 4, 5]) {
+      const p = K.generate(lv, 7, v);
+      assert.equal(p.n, 3);
+      assert.deepEqual(p.caps, [3, 2, 1]);
+      assert.equal(p.cherry, null);
+      assert.equal(p.size, false);
+    }
+  }
+});
+
 test('switchback: place, animal, signs, things and road follow the level', () => {
   const B = E.games.switchback;
   const seen = {};
