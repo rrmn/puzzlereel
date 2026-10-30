@@ -5111,21 +5111,17 @@
       this.app.touch();
     }
     // ---- drawing
-    // the finish line: bunting on two tall posts across the road at depth z, high
-    // enough that the car and the camera both pass under it
+    // the finish line: two white posts and a chequered band across the road at depth z
     drawLine(ctx, z, xr, camX, W, hy, F, half) {
       const s = F / z, xc = W / 2 + (xr - camX) * s, yG = hy + F / z;
-      const xL = xc - half * 1.3 * s, xR = xc + half * 1.3 * s, top = yG - 1.32 * s, sag = 0.1 * s;
-      ctx.fillStyle = '#9A6B44';
-      ctx.fillRect(xL - 0.025 * s, top, 0.05 * s, yG - top);
-      ctx.fillRect(xR - 0.025 * s, top, 0.05 * s, yG - top);
-      ctx.strokeStyle = 'rgba(70, 56, 44, 0.75)'; ctx.lineWidth = Math.max(1, 0.01 * s);
-      ctx.beginPath(); ctx.moveTo(xL, top); ctx.quadraticCurveTo(xc, top + sag * 2, xR, top); ctx.stroke();
-      const cols = ['#E5564D', '#FFC83A', '#3D8BFD', '#2FB36E', '#FFFFFF', '#FF7FB0'], nF = 13, fw = ((xR - xL) / nF) * 0.38;
-      for (let q = 0; q < nF; q++) {
-        const u = (q + 0.5) / nF, fx = (1 - u) * (1 - u) * xL + 2 * u * (1 - u) * xc + u * u * xR, fy = top + 2 * u * (1 - u) * sag * 2;
-        ctx.fillStyle = cols[q % cols.length];
-        ctx.beginPath(); ctx.moveTo(fx - fw, fy); ctx.lineTo(fx + fw, fy); ctx.lineTo(fx, fy + fw * 2.1); ctx.closePath(); ctx.fill();
+      const xL = xc - half * 1.2 * s, xR = xc + half * 1.2 * s, top = yG - 0.95 * s, bh = 0.16 * s;
+      ctx.fillStyle = '#F8F3EA';
+      ctx.fillRect(xL - 0.03 * s, top, 0.06 * s, yG - top);
+      ctx.fillRect(xR - 0.03 * s, top, 0.06 * s, yG - top);
+      const cols = 12, cw = (xR - xL) / cols;
+      for (let a = 0; a < cols; a++) for (let b = 0; b < 2; b++) {
+        ctx.fillStyle = (a + b) % 2 ? '#1F2230' : '#FFFFFF';
+        ctx.fillRect(xL + a * cw, top + (b * bh) / 2, cw + 0.6, bh / 2 + 0.6);
       }
     }
     draw(ts) {
@@ -6298,7 +6294,7 @@
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
-        'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign for the whole drive and on its road (see `place`). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives under the finish banner 8 units before it and brakes evenly to a stop 4.5 units past the banner. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
+        'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign for the whole drive and on its road (see `place`). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives through the chequered finish line 8 units before it and brakes evenly to a stop 4.5 units past the line. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
         'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (once a drive at L1 and L2, twice from L3; never before the third sign or after the last but one), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
         'With feedback on, a caught target\'s animal comes off the sign and runs or hops into the field for about 1 s after the tap; with feedback off a tap only gives a soft click. The horn toots when an animal is tapped away whatever the feedback setting, and things collected fly to a counter shown when counters are on.',
         'Levels:', lv('switchback'),
