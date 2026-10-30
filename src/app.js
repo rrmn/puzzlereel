@@ -2229,7 +2229,6 @@
               const show = () => {
                 g.classList.add('m' + marks[k]);
                 cell.classList.add('c' + marks[k]);
-                cell.append(h('span', { class: 'badge' }, icon(marks[k] === 2 ? 'check' : marks[k] === 1 ? 'move' : 'x')));
                 if (marks[k] === 1 && r === tries.length - 1 && !this.summary) g.classList.add('wiggle');
               };
               if (r === this.flipRow) {
@@ -2245,12 +2244,6 @@
             for (let k = 0; k < p.P; k++) cnt.append(h('i', { class: k < t.exact ? 'x' : k < t.exact + t.partial ? 'p' : '' }));
             if (r === this.flipRow) { cnt.style.opacity = '0'; this.later(() => { cnt.style.opacity = '1'; Sound.play('flip', t.exact ? 2 : t.partial ? 1 : 0); }, 260); }
             row.append(cnt);
-          }
-          const sig = this.signals[r];
-          if (sig && this.o.feedback && !this.practice) {
-            const meter = h('span', { class: 'signal s' + sig.level, 'aria-hidden': 'true' }, h('i'), h('i'), h('i'));
-            if (sig.off) meter.append(h('span', { class: 'warn' }));
-            row.append(meter);
           }
           row.setAttribute('aria-label', 'Try ' + (r + 1) + ': ' + t.digits.map((d) => PEGS[d].name).join(', ') + '. ' + t.exact + ' right spot, ' + t.partial + ' right color elsewhere.');
           if (r === tries.length - 1) focusRow = row;
@@ -2268,7 +2261,8 @@
           });
           focusRow = row;
         } else {
-          for (let k = 0; k < p.P; k++) row.append(gem(null));
+          row.classList.add('later');
+          row.setAttribute('aria-label', 'A try still to come');
         }
         this.rowsEl.append(row);
       }

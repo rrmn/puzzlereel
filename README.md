@@ -40,7 +40,7 @@ Tumbler has to be obvious to someone who has never played a game, is anxious or 
 
 With feedback off (research blocks) none of this applies, so tries are the player's own.
 
-Tumbler's per-pin clues are meant to be read at a glance, by older players too: each pin of a scored try sits on a tile of the clue's color, green for the right place, gold for a color that is in the code in another place (with a big two-way arrow, and the pins of the latest try wiggle), dark with a cross for a color not in the code; the marks are 25 px, not small corner badges. With feedback on, a try identical to an earlier one is not taken: the row shakes and the earlier row lights up (`repeat_blocked` in the log), since playing it again says nothing new.
+Tumbler's per-pin clues are meant to be read at a glance, by older players too: the clue is the tile, as in Wordle: a pin in the right place sits on a green tile, a hidden color in another place on a gold one (the pins of the latest try wiggle), and a color that is not hidden turns plain gray; balls on tiles get a white rim so green on green still shows. No corner marks, no meters on the rows, and the tries still to come are slim bars, so the board fits on a phone. With feedback on, a try identical to an earlier one is not taken: the row shakes and the earlier row lights up (`repeat_blocked` in the log), since playing it again says nothing new.
 
 ## Glimpse
 
