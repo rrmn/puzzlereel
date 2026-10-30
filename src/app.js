@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.10.0';
+  const APP_VERSION = '2.11.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -113,6 +113,8 @@
     sign: '<path d="M12 3.6 21 19.4H3z"/><path d="M12 9.6v4.2"/><path d="M12 16.6v.1"/>',
     road: '<path d="M8.4 3.5 4.8 20.5M15.6 3.5l3.6 17"/><path d="M12 4.5v2.6M12 10.6v2.8M12 17v3"/>',
     basket: '<path d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M7.6 10.4 11 4.6M16.4 10.4 13 4.6"/><path d="M9.4 14v3.4M14.6 14v3.4"/>',
+    day: '<rect x="3.8" y="5.2" width="16.4" height="15.4" rx="3.2"/><path d="M3.8 10h16.4M8.4 3.2v4M15.6 3.2v4"/><path d="M8 14.2h.1M12 14.2h.1M16 14.2h.1M8 17.4h.1M12 17.4h.1"/>',
+    rise: '<path d="M3.5 17.5 9.5 11.5l4 4 7-7.5"/><path d="M15 8h5.5v5.5"/>',
   };
   const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', stacks: 'stack', switchback: 'wheel', keepsake: 'basket', mixed: 'grid' };
   function icon(name, cls) {
@@ -129,9 +131,10 @@
     return el;
   }
   const HAND_SVG = '<svg viewBox="0 0 48 56" aria-hidden="true"><path d="M18 4c2.2 0 4 1.8 4 4v14.5l2.2-.6c1.9-.5 3.9.6 4.4 2.5l.1.4 1.9-.4c1.9-.4 3.8.7 4.3 2.6l.1.5 1.4-.3c2-.4 4 .9 4.4 2.9l.1.6V40c0 7.7-6.3 14-14 14h-2.5c-4.4 0-8.5-2.2-10.9-5.9L6.4 39.5c-1.2-1.9-.7-4.4 1.2-5.6 1.7-1.1 3.9-.8 5.2.7L14 36V8c0-2.2 1.8-4 4-4z" fill="#FFFFFF" stroke="#1F2230" stroke-width="2.6" stroke-linejoin="round"/><path d="M22 29v7M28.7 30v6M34.9 32v5" stroke="#1F2230" stroke-width="2" stroke-linecap="round" opacity="0.35"/></svg>';
-  function pips(level, label) {
+  // half: the next level is half earned (one good card of the two it takes)
+  function pips(level, label, half) {
     const el = h('span', { class: 'pips', 'aria-label': label || 'Level ' + level, role: 'img' });
-    for (let i = 1; i <= 5; i++) el.append(h('i', { class: i <= level ? 'on' : '' }));
+    for (let i = 1; i <= 5; i++) el.append(h('i', { class: i <= level ? 'on' : half && i === level + 1 ? 'half' : '' }));
     return el;
   }
 
@@ -617,12 +620,19 @@
       this.timers.clear();
     }
     elapsed() { return this.frozen != null ? this.frozen : now() - this.t0; }
+    // free play: one good card of the two already counts toward the next level
+    halfway() {
+      const S = this.app.session, sp = this.spec;
+      if (!S || S.kind !== 'free' || !sp.adaptive || sp.level >= 5) return false;
+      const a = S.seq.adapt['0:' + sp.game];
+      return !!(a && a.level === sp.level && a.streak > 0);
+    }
     build() {
       const sp = this.spec;
       const title = h('div', { class: 'title' },
         h('span', { class: 'game-ico' }, icon(GAME_ICON[sp.game])),
         h('span', { class: 'game-name', text: this.G.name }),
-        this.practice ? h('span', { class: 'tag', text: 'Practice' }) : pips(sp.level));
+        this.practice ? h('span', { class: 'tag', text: 'Practice' }) : pips(sp.level, null, this.halfway()));
       this.goalEl = h('span', { class: 'goal', role: 'status' });
       this.meterEl = h('span', { class: 'meter', role: 'img' });
       this.meterStars = [0, 1, 2].map(() => icon('star'));
@@ -831,6 +841,7 @@
       const res = this.app.onPuzzleEnd(this, sm);
       sm.level_next = res.level_next;
       sm.level_change = res.change && res.change.changed ? res.change : null;
+      sm.toward = res.toward || null;
       this.updateStatus();
       if (this.onResolved) this.onResolved(outcome);
       if (quiet) return;
@@ -928,10 +939,21 @@
         panel.append(h('div', { class: 'res-level best' }, icon('bolt'), 'New best · ' + Math.round(sm.newBest) + ' ms'));
         if (!instant) this.later(() => Sound.play('level'), 700);
       }
+      if (sm.newBestKmh && this.o.counter && !this.practice) {
+        panel.append(h('div', { class: 'res-level best' }, icon('gauge'), 'New best · ' + sm.newBestKmh + ' km/h on average'));
+        if (!instant) this.later(() => Sound.play('level'), 700);
+      }
       if (sm.level_change && this.o.counter) {
         const up = sm.level_change.to > sm.level_change.from;
-        panel.append(h('div', { class: 'res-level' + (up ? '' : ' down') }, (up ? 'Level up' : 'Level ') + (up ? ' · ' : '') + 'L' + sm.level_change.to, pips(sm.level_change.to)));
+        const pp = pips(sm.level_change.to);
+        if (up) pp.children[sm.level_change.to - 1].classList.add('new');
+        panel.append(h('div', { class: 'res-level' + (up ? ' up' : ' down') }, (up ? 'Level up · ' : 'Level · ') + LEVEL_NAMES[sm.level_change.to - 1], pp));
         if (up && !instant) this.later(() => Sound.play('level'), 900);
+      } else if (sm.toward && this.o.counter) {
+        // halfway to the next level: the slot just earned fills in, the other waits
+        const T = sm.toward, slots = h('span', { class: 'res-slots', 'aria-hidden': 'true' });
+        for (let i = 0; i < T.need; i++) slots.append(h('i', { class: i < T.have ? 'on' : '' }, i < T.have ? icon('check') : null));
+        panel.append(h('div', { class: 'res-level toward', role: 'status' }, slots, 'One more for ' + LEVEL_NAMES[T.to - 1]));
       }
       const last = this.app.isLast(this.spec);
       const again = this.practice && sm.passed === false && !this.app.practiceDone(this.spec.game);
@@ -6303,7 +6325,7 @@
         'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alikes of the place\'s animal (village: goose, swan, hen; north: reindeer, deer, bear). Until app 2.10 the target was a rabbit, fox or cat drawn from the seed in every place; from 2.10 it is the place\'s animal.', '',
         '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs one or two higher from L3, with its animals). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
         '## Practice', '', 'Each game opens with a practice card (puzzle id P-{game}, fixed content, level 0). It has to be played right before the game goes on: a puzzle solved; Glimpse with at most one look wrong; Switchback with every target caught and no other sign tapped; Keepsake with every thing on its own stone. Otherwise the result says Once more and the same practice comes round again, up to three tries; after the third the game goes on regardless. Practice rows log `success` as that pass (1 or 0) and never change a level. A new player\'s first card after practice is level 1. Rounds of the trial games (Glimpse, Switchback, Keepsake) get confetti only at three stars or a passed practice; two stars get the win chime without confetti, and fewer a soft note.', '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse and Switchback never move down a level: their display time, sign time and speed already adapt as you play. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
+        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse and Switchback never move down a level: their display time, sign time and speed already adapt as you play. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. In free play the run of successes toward the next level carries over to the next visit, so the first card of a new free session can move a level up. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
     return lines.join('\n');
   }
 
@@ -6373,7 +6395,14 @@
     conduit: ['Plausible', 'No study of this format'],
     tumbler: ['Plausible', 'No study of this format'],
   };
-  // per-game stats from free play on this device
+  // per-game stats from free play on this device, the last rounds of each game
+  // in its own terms (for the curve in the profile), and the days played
+  const HIST_N = 24;
+  const localDay = (iso) => {
+    const t = new Date(iso);
+    if (isNaN(t.getTime())) return null;
+    return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+  };
   const Stats = {
     blank() { return { cards: 0, solved: 0, perfect: 0, stars: 0, ms: 0, top: 0, tries: 0, plan: 0, planN: 0 }; },
     add(all, r) {
@@ -6386,21 +6415,53 @@
       t.top = Math.max(t.top, r.level || 0, Number(r.level_next) || 0);
       if (r.game === 'tumbler' && r.outcome === 'solved') t.tries += r.moves || 0;
       if (r.game === 'stacks' && r.outcome === 'solved' && r.first_move_ms !== '' && r.first_move_ms != null) { t.plan += Number(r.first_move_ms); t.planN++; }
+      if (r.game === 'switchback' && r.outcome === 'complete' && Number(r.speed_mean_kmh) > 0) t.kmh = Math.max(t.kmh || 0, Math.round(Number(r.speed_mean_kmh)));
     },
-    // the first time, built from the free play already logged on this device
+    // one round as the profile draws it: level, success, stars, and the game's own
+    // figures (Glimpse flash; Switchback sign time and speed; Keepsake things right;
+    // the puzzles' moves against the fewest). A skip says nothing, so it is left out.
+    keep(hist, r) {
+      if (r.outcome === 'skipped') return;
+      const e = { lv: Number(r.level) || 1, ok: Number(r.success) ? 1 : 0, st: Number(r.stars) || 0 };
+      if (r.game === 'glimpse' || r.game === 'switchback') {
+        if (r.threshold_ms === '' || r.threshold_ms == null) return;
+        e.ms = Number(r.threshold_ms);
+        if (r.game === 'switchback') e.kmh = Number(r.speed_mean_kmh) || 0;
+      } else if (r.game === 'keepsake') {
+        e.n = Number(r.reference) || 0;
+        e.c = Number(r.n_correct) || 0;
+      } else {
+        e.m = Number(r.moves) || 0;
+        if (r.reference !== '' && r.reference != null) e.ref = Number(r.reference);
+      }
+      const list = hist[r.game] || (hist[r.game] = []);
+      list.push(e);
+      if (list.length > HIST_N) list.splice(0, list.length - HIST_N);
+    },
+    day(days, r) {
+      const d = localDay(r.ended_at);
+      if (d && days.indexOf(d) < 0) days.push(d);
+    },
+    // the first time, each part is built from the free play still logged on this device
     load(app) {
-      const all = store.get('pr1.gstats', null);
-      if (all) return { all, built: false };
-      const a = {}, cur = app.session;
-      const list = Sessions.all().filter((S) => S.kind === 'free' && (!cur || S.id !== cur.id));
-      if (cur && cur.kind === 'free') list.push(cur);
-      for (const S of list) for (const r of S.puzzles) if (!Number(r.practice) && r.outcome !== 'abandoned') this.add(a, r);
-      store.set('pr1.gstats', a);
-      return { all: a, built: true };
+      let all = store.get('pr1.gstats', null), hist = store.get('pr1.ghist', null), days = store.get('pr1.days', null);
+      const fresh = { all: !all, hist: !hist, days: !days };
+      if (fresh.all || fresh.hist || fresh.days) {
+        const a = {}, hs = {}, ds = [], cur = app.session;
+        const list = Sessions.all().filter((S) => S.kind === 'free' && (!cur || S.id !== cur.id)).sort((x, y) => (x.startedAt < y.startedAt ? -1 : 1));
+        if (cur && cur.kind === 'free') list.push(cur);
+        for (const S of list) for (const r of S.puzzles) if (!Number(r.practice) && r.outcome !== 'abandoned') { this.add(a, r); this.keep(hs, r); this.day(ds, r); }
+        if (fresh.all) store.set('pr1.gstats', (all = a));
+        if (fresh.hist) store.set('pr1.ghist', (hist = hs));
+        if (fresh.days) store.set('pr1.days', (days = ds));
+      }
+      return { all, hist, days, fresh };
     },
     record(app, r) {
       const st = this.load(app);
-      if (!st.built) { this.add(st.all, r); store.set('pr1.gstats', st.all); }
+      if (!st.fresh.all) { this.add(st.all, r); store.set('pr1.gstats', st.all); }
+      if (!st.fresh.hist) { this.keep(st.hist, r); store.set('pr1.ghist', st.hist); }
+      if (!st.fresh.days) { this.day(st.days, r); store.set('pr1.days', st.days); }
     },
   };
   // a small picture of each game's world, 80 x 60
@@ -6470,6 +6531,156 @@
         s('rect', { x: 45, y: 47, width: 3.6, height: 1.9, rx: 0.9, fill: '#FFD98A' }));
     }
     return svg;
+  }
+
+  // Free play: how far a game is toward its next level. Two good cards in a row
+  // move it up (one, until the first miss in that game); the run so far is kept
+  // between visits.
+  function levelProgress(g) {
+    const lv = Math.max(1, Math.min(5, store.get('pr1.levels', {})[g] || 1));
+    const need = store.get('pr1.settled', {})[g] ? 2 : 1;
+    const have = lv >= 5 ? 0 : Math.max(0, Math.min(need - 1, Number(store.get('pr1.lvrun', {})[g]) || 0));
+    return { lv, need, have };
+  }
+  const pfNoun = (g, n) => (g === 'glimpse' ? ['round', 'rounds'] : g === 'switchback' ? ['drive', 'drives'] : ['card', 'cards'])[n === 1 ? 0 : 1];
+  const secs = (ms) => String(Math.round(ms / 10) / 100);
+  const pct = (x) => (Math.max(0, Math.min(1, x)) * 100).toFixed(1) + '%';
+  // what a good card is at this level, in the game's own terms
+  function pfGoal(g, lv) {
+    if (g === 'glimpse') {
+      const ms = E.games.glimpse.levels[lv].advanceMs;
+      return { chips: [['eye', ms + ' ms']], text: 'a flash of ' + ms + '\u00a0ms or less' };
+    }
+    if (g === 'switchback') {
+      const L = E.games.switchback.levels[lv];
+      return { chips: [['sign', secs(L.advanceMs) + ' s'], ['gauge', L.advanceKmh + ' km/h']], text: 'signs up ' + secs(L.advanceMs) + '\u00a0s or less, at ' + L.advanceKmh + '\u00a0km/h or more' };
+    }
+    return { stars: true, text: 'two or three stars' };
+  }
+  // five steps from Beginner to Master: the ones reached, the next one filling
+  // up, and (for games that can step back) how high this player has been
+  function pfLadder(P, best) {
+    const el = h('div', { class: 'pf-ladder', role: 'img', 'aria-label': 'Level ' + P.lv + ' of 5, ' + LEVEL_NAMES[P.lv - 1] + (best > P.lv ? ', best ' + LEVEL_NAMES[best - 1] : '') });
+    for (let i = 1; i <= 5; i++) {
+      const seg = h('i', { class: i <= P.lv ? 'on' : i <= best ? 'been' : '' });
+      if (i === P.lv + 1 && P.have) seg.append(h('b', { style: 'width:' + pct(P.have / P.need) }));
+      el.append(seg);
+    }
+    return el;
+  }
+  // the next level: the good cards it takes as slots that fill, what a good
+  // card is, and a way straight into the game
+  function pfNext(g, P, play) {
+    const go = h('button', { class: 'pf-play', type: 'button', onclick: play }, icon('play'), 'Play');
+    if (P.lv >= 5) return h('div', { class: 'pf-next top' }, h('div', { class: 'pf-next-top' }, icon('star', 'pf-crown'), h('b', { text: 'Master' }), go), h('p', { class: 'pf-next-say', text: 'You reached the top level. From here on, chase your own bests.' }));
+    const goal = pfGoal(g, P.lv);
+    const slots = h('span', { class: 'pf-slots', role: 'img', 'aria-label': P.have + ' of ' + P.need + ' done' });
+    for (let i = 0; i < P.need; i++) slots.append(h('i', { class: i < P.have ? 'on' : '' }, i < P.have ? icon('check') : null));
+    const chips = h('span', { class: 'pf-chips' });
+    if (goal.stars) chips.append(h('span', { class: 'pf-chip stars', 'aria-hidden': 'true' }, icon('star'), icon('star')));
+    else goal.chips.forEach(([ico, t]) => chips.append(h('span', { class: 'pf-chip' }, icon(ico), t)));
+    const left = P.need - P.have;
+    const say = (left === 1 ? (P.have ? 'One more ' : 'One ') + pfNoun(g, 1) : 'Two ' + pfNoun(g, 2) + ' in a row') + ' with ' + goal.text + '.';
+    return h('div', { class: 'pf-next' },
+      h('div', { class: 'pf-next-top' }, h('span', { class: 'pf-next-k', text: 'Next' }), h('b', { text: LEVEL_NAMES[P.lv] }), go),
+      h('div', { class: 'pf-next-row' }, slots, chips),
+      h('p', { class: 'pf-next-say', text: say }));
+  }
+  // first two against last two rounds at this level, said only when it is a real gain
+  function pfRise(H, lv, f, better, min, say) {
+    const at = H.filter((e) => e.lv === lv);
+    if (at.length < 4) return null;
+    const a = (f(at[0]) + f(at[1])) / 2, b = (f(at[at.length - 2]) + f(at[at.length - 1])) / 2;
+    const d = (b - a) * better;
+    if (!(d >= min) || d / Math.abs(a || 1) < 0.06) return null;
+    return say(d, at.length);
+  }
+  // The player's own curve: the last twelve rounds of one game, newest on the
+  // right. Glimpse and Switchback draw each round against the goal its level
+  // had (bars that met it in the game's color); the puzzles show each card's
+  // stars, Keepsake the things put back on the right stone. Tap a round to read it.
+  const PF_COLS = 12;
+  function pfCurve(g, all, lv) {
+    const H = all.slice(-PF_COLS), pad = PF_COLS - H.length;
+    const fig = h('figure', { class: 'pf-curve' }), cols = [], rows = [];
+    const select = (i) => {
+      cols.forEach((list, k) => list.forEach((c) => c.classList.toggle('sel', k === i)));
+      rows.forEach((r) => { r.v.textContent = r.say(H[i]); });
+    };
+    const plot = (cls, build, style) => {
+      const el = h('div', { class: 'pf-plot ' + cls, style: style || null });
+      for (let k = 0; k < pad; k++) el.append(h('i', { class: 'pf-col empty' }));
+      H.forEach((e, i) => {
+        const c = h('i', { class: 'pf-col', style: '--d:' + (i * 35) + 'ms' });
+        build(c, e);
+        c.addEventListener('click', () => select(i));
+        (cols[i] || (cols[i] = [])).push(c);
+        el.append(c);
+      });
+      return el;
+    };
+    // a bar per round and a notch at the goal that round had
+    const bars = (value, goal, good) => {
+      const top = Math.max(...H.map((e) => Math.max(value(e), goal(e)))) * 1.12;
+      return plot('bars', (c, e) => {
+        if (good(e)) c.classList.add('ok');
+        c.append(h('b', { class: 'pf-bar', style: 'height:' + pct(value(e) / top) }), h('u', { class: 'pf-tick', style: 'bottom:' + pct(goal(e) / top) }));
+      });
+    };
+    const row = (ico, title, el, say, label) => {
+      const v = h('b', { class: 'pf-val' });
+      rows.push({ v, say });
+      fig.append(h('div', { class: 'pf-cap' }, icon(ico), h('span', { text: title }), v), el);
+      el.setAttribute('role', 'img');
+      el.setAttribute('aria-label', label);
+    };
+    let rise = null;
+    const list = (f) => H.map(f).join(', ');
+    if (g === 'glimpse') {
+      const goal = (e) => E.games.glimpse.levels[e.lv].advanceMs;
+      row('eye', 'Flash per round', bars((e) => e.ms, goal, (e) => e.ms <= goal(e)), (e) => Math.round(e.ms) + ' ms',
+        'Flash in your last ' + H.length + ' rounds, in ms: ' + list((e) => Math.round(e.ms)));
+      rise = pfRise(all, lv, (e) => e.ms, -1, 8, (d, k) => 'Your flash is ' + Math.round(d) + ' ms shorter over your last ' + k + ' rounds');
+    } else if (g === 'switchback') {
+      const L = (e) => E.games.switchback.levels[e.lv];
+      row('sign', 'Sign time', bars((e) => e.ms, (e) => L(e).advanceMs, (e) => e.ms <= L(e).advanceMs), (e) => secs(e.ms) + ' s',
+        'How long signs stayed up in your last ' + H.length + ' drives, in seconds: ' + list((e) => secs(e.ms)));
+      row('gauge', 'Speed', bars((e) => e.kmh, (e) => L(e).advanceKmh, (e) => e.kmh >= L(e).advanceKmh), (e) => Math.round(e.kmh) + ' km/h',
+        'Speed in your last ' + H.length + ' drives, in km/h: ' + list((e) => Math.round(e.kmh)));
+      rise = pfRise(all, lv, (e) => e.kmh, 1, 3, (d, k) => 'You drive ' + Math.round(d) + ' km/h faster over your last ' + k + ' drives') ||
+        pfRise(all, lv, (e) => e.ms, -1, 60, (d, k) => 'You catch signs ' + secs(d) + ' s quicker over your last ' + k + ' drives');
+    } else if (g === 'keepsake') {
+      const most = Math.max(...H.map((e) => e.n));
+      row('basket', 'Put back right', plot('dots', (c, e) => {
+        if (e.n - e.c <= 1) c.classList.add('ok');
+        for (let k = 0; k < e.n; k++) c.append(h('b', { class: k < e.c ? 'on' : '' }));
+      }, '--rows:' + most), (e) => e.c + ' of ' + e.n,
+      'Things put back on the right stone in your last ' + H.length + ' cards: ' + list((e) => e.c + ' of ' + e.n));
+    } else {
+      const unit = g === 'tumbler' ? ['try', 'tries'] : g === 'conduit' ? ['turn', 'turns'] : ['move', 'moves'];
+      const ref = g === 'tumbler' ? 'solver ' : 'best ';
+      row('star', 'Stars', plot('stars', (c, e) => {
+        if (e.st >= 2) c.classList.add('ok');
+        for (let k = 0; k < 3; k++) c.append(icon('star', k < e.st ? 'on' : ''));
+      }), (e) => (e.st ? e.m + ' ' + unit[e.m === 1 ? 0 : 1] + (e.ref != null ? ' · ' + ref + e.ref : '') : 'not solved'),
+      'Stars in your last ' + H.length + ' cards: ' + list((e) => e.st));
+    }
+    if (rise) fig.append(h('p', { class: 'pf-rise' }, icon('rise'), rise));
+    select(H.length - 1);
+    return fig;
+  }
+  // three numbers: how much, how long, and one figure of the game's own
+  function pfNumbers(g, t, H, lv) {
+    const min = Math.round(t.ms / 60000);
+    const big = (ico, v, label) => h('div', { class: 'pf-num' }, icon(ico), h('b', { text: String(v) }), h('span', { text: label }));
+    let fig = null;
+    if (g === 'glimpse') { const b = store.get('pr1.glbest', {})[lv]; if (b != null) fig = big('bolt', Math.round(b) + ' ms', 'fastest look'); }
+    if (g === 'switchback') { const k = Math.max(t.kmh || 0, ...H.map((e) => Math.round(e.kmh || 0))); if (k) fig = big('gauge', k, 'best km/h'); }
+    if (g === 'keepsake' && t.cards) fig = big('star', t.perfect + '/' + t.cards, 'all right');
+    if ((g === 'outbound' || g === 'conduit') && t.solved) fig = big('bolt', t.perfect + '/' + t.solved, g === 'conduit' ? 'fewest turns' : 'fewest moves');
+    if (g === 'stacks' && t.planN) fig = big('hint', Math.round(t.plan / t.planN / 100) / 10 + ' s', 'to plan');
+    if (g === 'tumbler' && t.solved) fig = big('key', Math.round((t.tries / t.solved) * 10) / 10, 'tries a code');
+    return h('div', { class: 'pf-nums' }, big('tapped', t.cards, pfNoun(g, t.cards)), big('clock', min < 1 ? '<1' : min, 'min'), fig);
   }
 
   // ============================================================ sheets
@@ -6619,7 +6830,9 @@
       if (game !== 'mixed' && ORDER.indexOf(game) < 0) game = 'mixed';
       const levels = store.get('pr1.levels', {});
       const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: FREE_OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 1, adaptive: true }] });
-      ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 1)), streak: 0 }; });
+      // the good cards toward each game's next level carry over from the last visit
+      const runs = store.get('pr1.lvrun', {});
+      ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 1)), streak: Math.max(0, Number(runs[g]) || 0) }; });
       S.practiced = Object.assign({}, store.get('pr1.practiced', {}));
       // the mixed feed opens with a game this player has not tried yet
       if (game === 'mixed') { const k = ORDER.findIndex((g) => !S.practiced[g]); if (k > 0) S.seq.k = k; }
@@ -6762,12 +6975,18 @@
       const neutral = sm.outcome === 'abandoned' || sm.outcome === 'skipped';
       const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game));
       const level_next = sp.adaptive && change ? change.to : '';
+      let toward = null;
       this.logPuzzle(card, 'puzzle_end', { move_no: card.c.moves, cls: sm.outcome, detail: JSON.stringify({ success: sm.success, stars: sm.stars, moves: sm.moves, par: sm.par, reference: sm.reference }) });
       if (change && change.changed) this.logPuzzle(card, 'level_change', { from: change.from, to: change.to });
       const c = card.c, applies = APPLIES[sp.game];
       const n = (k) => (applies.indexOf(k) >= 0 ? c[k] : '');
       const g = sm.gl || null, d = sm.sb || null, m = sm.ks || null;
       if (d && !sp.practice && d.n && sm.outcome === 'complete') this.switchbackKeep(sp, card.run.ms, card.run.kmh);
+      // a drive faster on average than any before it is a new best
+      if (d && !sp.practice && S.kind === 'free' && sm.outcome === 'complete' && d.speed_mean_kmh != null) {
+        const was = (Stats.load(this).all.switchback || {}).kmh || 0;
+        if (was && Math.round(d.speed_mean_kmh) > was) sm.newBestKmh = Math.round(d.speed_mean_kmh);
+      }
       if (g && !sp.practice && g.n) {
         this.glimpseKeep(sp, card.run.ms);
         if (S.kind === 'free' && g.best_ms != null && sm.outcome === 'complete') {
@@ -6823,13 +7042,22 @@
           store.set('pr1.stars', store.get('pr1.stars', 0) + sm.stars);
           store.set('pr1.streak', won ? store.get('pr1.streak', 0) + 1 : 0);
         }
-        if (change) { const lv = store.get('pr1.levels', {}); lv[sp.game] = change.to; store.set('pr1.levels', lv); }
+        if (change) {
+          const lv = store.get('pr1.levels', {});
+          lv[sp.game] = change.to;
+          store.set('pr1.levels', lv);
+          const a = S.seq.adapt['0:' + sp.game], runs = store.get('pr1.lvrun', {});
+          runs[sp.game] = a ? a.streak : 0;
+          store.set('pr1.lvrun', runs);
+          // a good card that does not move the level yet: say how close the next one is
+          if (sm.success && !change.changed && change.to < 5 && a && a.streak > 0) toward = { to: change.to + 1, have: a.streak, need: this.upAfter(sp.game) };
+        }
         if (sm.outcome !== 'abandoned') Stats.record(this, S.puzzles[S.puzzles.length - 1]);
         this.hudBump = sm.stars > 0;
       }
       this.renderHud();
       this.touch(true);
-      return { level_next, change };
+      return { level_next, change, toward };
     },
 
     // ---------- logging & persistence
@@ -7012,12 +7240,35 @@
     // ---------- profile
     openProfile() {
       if (this.card && this.card.abort) this.card.abort('menu opened');
-      const { all } = Stats.load(this);
-      const levels = store.get('pr1.levels', {}), glbest = store.get('pr1.glbest', {}), sbBook = store.get('pr1.switchback', {});
+      const { all, hist, days } = Stats.load(this);
+      const played = (g) => !!(all[g] && all[g].cards);
+      const body = [];
+      // everything so far, in three big numbers; no streak to keep up
+      if (ORDER.some(played)) {
+        const min = Math.round(ORDER.reduce((a, g) => a + (all[g] ? all[g].ms : 0), 0) / 60000), stars = store.get('pr1.stars', 0);
+        const big = (ico, v, label, cls) => h('div', { class: 'pf-big' + (cls ? ' ' + cls : '') }, icon(ico), h('b', { text: String(v) }), h('span', { text: label }));
+        body.push(h('div', { class: 'pf-head' },
+          big('star', stars, stars === 1 ? 'star' : 'stars', 'gold'),
+          big('day', days.length, days.length === 1 ? 'day played' : 'days played'),
+          big('clock', min < 1 ? '<1' : min, min > 1 ? 'minutes' : 'minute')));
+      }
       const wrap = h('div', { class: 'pf-areas' });
       const detail = h('div', { class: 'pf-detail', hidden: true });
+      const tiles = {};
       let open = null;
-      const show = (g, tile, area) => {
+      const fill = (g) => {
+        const t = all[g], P = levelProgress(g), H = hist[g] || [], best = Math.max(t ? t.top : 0, P.lv);
+        detail.dataset.game = g;
+        detail.append(
+          h('div', { class: 'pf-dhead' }, h('b', { text: LABEL[g] }), h('span', { class: 'pf-lv', text: LEVEL_NAMES[P.lv - 1] }), best > P.lv ? h('span', { class: 'pf-best', text: 'best ' + LEVEL_NAMES[best - 1] }) : null),
+          pfLadder(P, best),
+          pfNext(g, P, () => { closeSheet(); this.startFree(false, g); }));
+        if (H.length) detail.append(pfCurve(g, H, P.lv));
+        if (played(g)) detail.append(pfNumbers(g, t, H, P.lv));
+        detail.append(h('p', { class: 'pf-ev' }, h('b', { text: EVIDENCE[g][0] }), EVIDENCE[g][1]));
+      };
+      const show = (g, quiet) => {
+        const { tile, area } = tiles[g];
         wrap.querySelectorAll('.pf-tile').forEach((x) => { x.classList.remove('on'); x.setAttribute('aria-expanded', 'false'); });
         detail.textContent = '';
         if (open === g) { open = null; detail.hidden = true; return; }
@@ -7026,23 +7277,16 @@
         tile.setAttribute('aria-expanded', 'true');
         area.after(detail);
         detail.hidden = false;
-        const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 1));
-        const num = (ico, v, l) => h('div', { class: 'pf-num' }, icon(ico), h('b', { text: String(v) }), h('span', { text: l }));
-        if (played) {
-          const min = Math.round(t.ms / 60000), top = Math.max(t.top, lv);
-          let fig = null;
-          if ((g === 'outbound' || g === 'conduit') && t.solved) fig = num('bolt', t.perfect + '/' + t.solved, 'fewest ' + (g === 'conduit' ? 'turns' : 'moves'));
-          if (g === 'tumbler' && t.solved) fig = num('key', Math.round((t.tries / t.solved) * 10) / 10, 'tries a code');
-          if (g === 'stacks' && t.planN) fig = num('hint', (Math.round(t.plan / t.planN / 100) / 10) + ' s', 'to plan');
-          if (g === 'glimpse' && glbest[lv] != null) fig = num('eye', Math.round(glbest[lv]) + ' ms', 'best flash');
-          if (g === 'switchback' && sbBook[lv] && sbBook[lv].kmh) fig = num('gauge', sbBook[lv].kmh, 'km/h');
-          if (g === 'keepsake' && t.cards) fig = num('star', t.perfect + '/' + t.cards, 'all right');
-          detail.append(h('div', { class: 'pf-level' }, h('b', { text: LABEL[g] + ' · ' + LEVEL_NAMES[lv - 1] }), top > lv ? h('span', { text: 'best ' + LEVEL_NAMES[top - 1] }) : null),
-            h('div', { class: 'pf-nums' }, num('tapped', t.cards, g === 'glimpse' ? 'rounds' : g === 'switchback' ? 'drives' : 'cards'), num('check', t.solved, g === 'glimpse' || g === 'switchback' ? 'finished' : 'solved'), num('clock', min < 1 ? '<1' : min, 'min'), fig));
-        } else {
-          detail.append(h('div', { class: 'pf-level' }, h('b', { text: LABEL[g] }), h('span', { text: 'not played yet' })));
-        }
-        detail.append(h('p', { class: 'pf-ev' }, h('b', { text: EVIDENCE[g][0] }), EVIDENCE[g][1]));
+        fill(g);
+        if (quiet) return;
+        // bring the panel up into view, but keep the tapped tile on screen above it
+        requestAnimationFrame(() => {
+          const sc = detail.closest('.sheet-body');
+          if (!sc) return;
+          const r = detail.getBoundingClientRect(), b = sc.getBoundingClientRect(), tr = tile.getBoundingClientRect();
+          const by = Math.min(r.bottom - b.bottom + 16, tr.top - b.top - 8);
+          if (by > 0) sc.scrollBy({ top: by, behavior: 'smooth' });
+        });
       };
       for (const A of AREAS) {
         const n = Math.max(1, A.games.length);
@@ -7050,16 +7294,27 @@
         const area = h('section', { class: 'pf-area', style: 'grid-column:span ' + n }, h('h3', { text: A.name }), grid);
         if (!A.games.length) grid.append(h('div', { class: 'pf-tile ghost', role: 'img', 'aria-label': 'No game yet' }, icon('lock')));
         for (const g of A.games) {
-          const t = all[g], played = !!(t && t.cards), lv = Math.max(1, Math.min(5, levels[g] || 1));
-          const tile = h('button', { class: 'pf-tile' + (played ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-expanded': 'false', 'aria-label': LABEL[g] + (played ? ', level ' + lv + ', ' + t.stars + ' stars' : ', not played yet') },
+          const t = all[g], on = played(g), P = levelProgress(g);
+          const tile = h('button', { class: 'pf-tile' + (on ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-expanded': 'false', 'aria-label': LABEL[g] + (on ? ', ' + LEVEL_NAMES[P.lv - 1] + ', ' + t.stars + ' stars' : ', not played yet') },
             miniWorld(g),
-            h('span', { class: 'pf-tile-foot' }, h('b', { text: LABEL[g] }), played ? pips(lv) : null, played ? h('span', { class: 'pf-stars' }, icon('star'), String(t.stars)) : null));
-          tile.addEventListener('click', () => show(g, tile, area));
+            h('span', { class: 'pf-tile-foot' }, h('b', { text: LABEL[g] }), on ? pips(P.lv, null, P.have > 0) : null, on ? h('span', { class: 'pf-stars' }, icon('star'), String(t.stars)) : null));
+          tile.addEventListener('click', () => show(g));
+          tiles[g] = { tile, area };
           grid.append(tile);
         }
         wrap.append(area);
       }
-      openSheet('Profile', [wrap]).classList.add('profile');
+      body.push(wrap);
+      openSheet('Profile', body).classList.add('profile');
+      // open on the game played last, so the way to its next level is in view at once
+      const g0 = this.lastPlayed();
+      if (g0 && tiles[g0]) show(g0, true);
+    },
+    lastPlayed() {
+      const S = this.session;
+      const lists = [S && S.kind === 'free' ? S.puzzles : []].concat(Sessions.all().filter((x) => x.kind === 'free' && (!S || x.id !== S.id)).map((x) => x.puzzles));
+      for (const rows of lists) for (let i = rows.length - 1; i >= 0; i--) if (!Number(rows[i].practice) && rows[i].outcome !== 'abandoned' && rows[i].outcome !== 'skipped') return rows[i].game;
+      return null;
     },
 
     // ---------- menu
