@@ -404,18 +404,18 @@ test('glimpse: direction spots sit on the ring at the right angle, and items can
   assert.ok(Math.max(...xy.map(([x, y]) => Math.hypot(x, y))) + 0.1 < 1, 'inside the field');
 });
 
-test('glimpse: the frame ladder runs from about 800 ms to one frame at any refresh rate', () => {
+test('glimpse: the frame ladder runs from about 2000 ms to one frame at any refresh rate', () => {
   for (const hz of [30, 50, 60, 90, 120, 144]) {
     const T = 1000 / hz;
     const lad = glLadder(T);
     assert.equal(lad[lad.length - 1], 1);
-    assert.ok(Math.abs(lad[0] * T - 800) <= T / 2 + 1e-9, hz + ' Hz starts at 800 ms');
+    assert.ok(Math.abs(lad[0] * T - 2000) <= T / 2 + 1e-9, hz + ' Hz starts at 2000 ms');
     for (let i = 1; i < lad.length; i++) assert.ok(lad[i] < lad[i - 1], 'strictly shorter');
   }
-  assert.deepEqual(glLadder(1000 / 60), [48, 43, 39, 35, 31, 28, 26, 23, 21, 19, 17, 15, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+  assert.deepEqual(glLadder(1000 / 60), [120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 });
 
-test('glimpse: a fresh staircase starts at 500 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
+test('glimpse: a fresh staircase starts at 1500 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
   const p = G.generate(2, 77);
   const run = G.newRun(p, null);
   const T = 1000 / 60;
@@ -425,11 +425,12 @@ test('glimpse: a fresh staircase starts at 500 ms, one step shorter after a hit,
     steps.push(plan.idx);
     G.record(p, run, { correct: !!ok, plan });
   }
-  assert.deepEqual(steps, [4, 5, 6, 0, 1, 2]);
+  assert.equal(G.startMs, 1500);
+  assert.deepEqual(steps, [3, 4, 5, 0, 1, 2]);
   const sm = G.summary(p, run);
   assert.equal(sm.correct, 4);
   assert.equal(sm.reversals, 3);
-  assert.equal(Math.round(run.ms), 800, 'six steps up after the last miss, capped at the top');
+  assert.equal(Math.round(run.ms), 2000, 'six steps up after the last miss, capped at the top');
   // carried staircases start two steps slower than where they left off
   const run2 = G.newRun(p, { ms: run.ms });
   assert.equal(G.plan(p, run2, T).idx, 0, 'capped at the top of the ladder');

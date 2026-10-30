@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.13.0';
+  const APP_VERSION = '2.14.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -938,7 +938,7 @@
         if (stats) panel.append(stats);
       }
       if (sm.newBest && this.o.counter && !this.practice) {
-        panel.append(h('div', { class: 'res-level best' }, icon('bolt'), 'New best · ' + Math.round(sm.newBest) + ' ms'));
+        panel.append(h('div', { class: 'res-level best' }, icon('bolt'), 'New best · ' + secs(sm.newBest) + ' s'));
         if (!instant) this.later(() => Sound.play('level'), 700);
       }
       if (sm.newBestKmh && this.o.counter && !this.practice) {
@@ -2293,7 +2293,7 @@
     }
     goal() {
       const ms = this.nextMs();
-      const txt = Math.round(ms) + ' ms';
+      const txt = secs(ms) + ' s';
       if (this.goalTxt !== txt) {
         const faster = this.goalMs != null && ms < this.goalMs;
         this.goalTxt = txt;
@@ -2371,7 +2371,7 @@
       const g = sm.gl;
       if (!g || !g.n) return null;
       return h('div', { class: 'res-stats' },
-        h('span', { 'aria-label': 'Fastest correct look' }, icon('bolt'), h('b', { text: g.best_ms != null ? Math.round(g.best_ms) + ' ms' : '–' })),
+        h('span', { 'aria-label': 'Fastest correct look' }, icon('bolt'), h('b', { text: g.best_ms != null ? secs(g.best_ms) + ' s' : '–' })),
         h('span', { 'aria-label': 'Looks right' }, icon('eye'), h('b', { text: g.correct + '/' + g.n })));
     }
     onKey(e) {
@@ -6311,8 +6311,8 @@
         'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play draw the scene from the puzzle seed and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
-        'Display times come from a ladder that starts at 800 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 48, 43, 39, 35, 31, 28, 26, 23, 21, 19, 17, 15, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.6 the ladder started at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 500 ms (until app 2.6: 300 ms), so a strong player needs about 15 correct looks to reach their own level; use at least 4 rounds per measurement block, or carried values. At level 2 and up a look is correct only when the animal and the place are both right.',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts 83 ms above the level below it when that one has a value), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first one a hand points at the bird. After an answer with feedback on, the next look follows 1.1 s later.',
+        'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 1500 ms, a slow and easy look for older players and non-gamers (until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. At level 2 and up a look is correct only when the animal and the place are both right.',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first one a hand points at the bird. After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
@@ -6543,7 +6543,7 @@
   function pfGoal(g, lv) {
     if (g === 'glimpse') {
       const ms = E.games.glimpse.levels[lv].advanceMs;
-      return { chips: [['eye', ms + ' ms']], text: 'a flash of ' + ms + ' ms or less' };
+      return { chips: [['eye', secs(ms) + ' s']], text: 'a flash of ' + secs(ms) + ' s or less' };
     }
     if (g === 'switchback') {
       const L = E.games.switchback.levels[lv];
@@ -6633,9 +6633,9 @@
     if (g === 'glimpse') {
       const goal = (e) => E.games.glimpse.levels[e.lv].advanceMs;
       const r = pfRise(all, lv, (e) => e.ms, -1, 8);
-      row('eye', 'Flash', bars((e) => e.ms, goal, (e) => e.ms <= goal(e)), (e) => Math.round(e.ms) + ' ms',
-        'Flash in your last ' + H.length + ' rounds, in ms: ' + list((e) => Math.round(e.ms)),
-        r && [Math.round(r.d) + ' ms', 'Flash ' + Math.round(r.d) + ' ms shorter over your last ' + r.k + ' rounds']);
+      row('eye', 'Flash', bars((e) => e.ms, goal, (e) => e.ms <= goal(e)), (e) => secs(e.ms) + ' s',
+        'Flash in your last ' + H.length + ' rounds, in seconds: ' + list((e) => secs(e.ms)),
+        r && [secs(r.d) + ' s', 'Flash ' + secs(r.d) + ' s shorter over your last ' + r.k + ' rounds']);
     } else if (g === 'switchback') {
       const L = (e) => E.games.switchback.levels[e.lv];
       const rs = pfRise(all, lv, (e) => e.ms, -1, 60), rk = pfRise(all, lv, (e) => e.kmh, 1, 3);
@@ -6669,7 +6669,7 @@
     const min = Math.round(t.ms / 60000);
     const big = (ico, v, label) => h('div', { class: 'pf-num' }, icon(ico), h('b', { text: String(v) }), h('span', { text: label }));
     let fig = null;
-    if (g === 'glimpse') { const b = store.get('pr1.glbest', {})[lv]; if (b != null) fig = big('bolt', Math.round(b) + ' ms', 'fastest look'); }
+    if (g === 'glimpse') { const b = store.get('pr1.glbest', {})[lv]; if (b != null) fig = big('bolt', secs(b) + ' s', 'fastest look'); }
     if (g === 'switchback') { const k = Math.max(t.kmh || 0, ...H.map((e) => Math.round(e.kmh || 0))); if (k) fig = big('gauge', k, 'best km/h'); }
     if (g === 'keepsake' && t.cards) fig = big('star', t.perfect + '/' + t.cards, 'all right');
     if ((g === 'outbound' || g === 'conduit') && t.solved) fig = big('bolt', t.perfect + '/' + t.solved, g === 'conduit' ? 'fewest turns' : 'fewest moves');
@@ -6751,7 +6751,8 @@
       if (spec.practice) return null;
       const { book } = this.glimpseBook(spec);
       if (book[spec.level] > 0) return { ms: book[spec.level] };
-      for (let k = spec.level - 1; k >= 1; k--) if (book[k] > 0) return { ms: Math.min(E.games.glimpse.startMs, book[k] + 83) };
+      // a new level opens three steps slower than the level below ended: it asks more
+      for (let k = spec.level - 1; k >= 1; k--) if (book[k] > 0) return { ms: Math.min(E.games.glimpse.startMs, book[k] / Math.pow(0.9, 3)) };
       return null;
     },
     glimpseKeep(spec, ms) {

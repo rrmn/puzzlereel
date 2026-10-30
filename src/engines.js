@@ -1268,9 +1268,9 @@
     for (let i = 0; i < ring - 1; i++) base += GL_RING_N[i];
     return base + (dir * GL_RING_N[ring - 1]) / 8;
   }
-  // Display times from 800 ms down in steps of x0.9, as whole frames of the
+  // Display times from 2 s down in steps of x0.9, as whole frames of the
   // measured frame period T; repeats are dropped, the last step is one frame.
-  const GL_STEP = 0.9, GL_TOP = 800;
+  const GL_STEP = 0.9, GL_TOP = 2000;
   // floorMs: the shortest display time allowed (the ladder stops at the last step at or above it)
   function glLadder(T, floorMs) {
     const out = [];
@@ -1311,7 +1311,7 @@
     kind: 'trials',
     levelDown: false,      // the display time already adapts; levels only add load
     trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
-    startMs: 500,          // a fresh staircase starts here and comes down one step per correct look
+    startMs: 1500,         // a fresh staircase starts here: a slow, easy look for anyone (practice ends at 700 ms)
     maxMs: GL_TOP,         // top of the ladder
     warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
     minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
@@ -1321,15 +1321,15 @@
     themes: GL_THEMES,
     themeOrder: GL_THEME_ORDER,
     // advanceMs: a round at or under this display time counts as a success (two in a row: next level).
-    // Set for older players and non-gamers: in simulation with slow observers every player moves up
-    // from level 1 within about 4 rounds, and level 5 stays a goal that takes practice; the flash
-    // itself keeps adapting at every level, so fast players are still pushed.
+    // Human speeds for older players and non-gamers: a one-second look moves you up, and the levels
+    // add more to see rather than asking for a faster eye. The flash itself keeps adapting at every
+    // level, so quick players still see it get shorter.
     levels: {
-      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 300, looks: 4 },
-      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 350, looks: 4 },
-      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 400, looks: 5 },
-      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 500, looks: 6 },
-      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 600, looks: 6 },
+      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
+      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
+      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 1000, looks: 5 },
+      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 1200, looks: 6 },
+      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 1200, looks: 6 },
     },
     slots: GL_SLOTS,
     ringR: GL_RING_R,
@@ -1945,7 +1945,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.13.0',
+    version: '1.14.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
