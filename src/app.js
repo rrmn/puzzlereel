@@ -2174,7 +2174,7 @@
       let k = empty[0];
       if (this.helps() && this.run.tries.length) {
         const K = this.knowledge();
-        if (K.color[c] === 0) { this.nope(this.palEl.children[c], 'Not in the code'); return; }
+        if (K.color[c] === 0) { this.nope(this.palEl.children[c], 'Wrong color'); return; }
         const fits = (j) => (K.at[j] == null || K.at[j] === c) && !K.notAt[j].has(c);
         if (!fits(k)) {
           const ok = empty.find(fits);
@@ -2272,7 +2272,7 @@
       }
       this.popAt = -1;
       if (this.summary && this.summary.outcome !== 'solved') {
-        const row = h('div', { class: 'row code', 'aria-label': 'The code' });
+        const row = h('div', { class: 'row code', 'aria-label': 'The hidden colors' });
         p.secretDigits.forEach((d) => row.append(gem(d)));
         this.rowsEl.append(row);
         focusRow = row;
@@ -2293,7 +2293,7 @@
       const nowFound = K.at.filter((c) => c != null).length, before = was.filter((c) => c != null).length;
       if (this.lockKnown && nowFound > before && !this.summary) Sound.play('bloom', nowFound);
       this.lockKnown = K.at.slice();
-      this.lockEl.setAttribute('aria-label', 'The lock: ' + nowFound + ' of ' + p.P + ' pins found');
+      this.lockEl.setAttribute('aria-label', nowFound + ' of ' + p.P + ' hidden colors found');
       // the palette remembers: found, in the code, or not in it
       if (this.helps()) {
         [...this.palEl.children].forEach((b, c) => {
@@ -2363,14 +2363,15 @@
       if (!this.helps() || !(this.practice || (store.get('pr1.tbsolved', 0) || 0) < 6)) return;
       const t = this.run.tries[this.run.tries.length - 1], row = this.rowsEl.children[this.run.tries.length - 1];
       if (!t || !t.marks || !row) return;
-      const WORDS = { 2: ['Right!', 'yes'], 1: ['Right color, other place', 'move'], 0: ['Not in the code', 'no'] };
-      let delay = 0;
+      const WORDS = { 2: ['Right color, right place', 'yes'], 1: ['Right color, wrong place', 'move'], 0: ['Wrong color', 'no'] };
+      // one at a time: each word takes the place of the one before
+      let delay = 0, last = null;
       for (const m of [2, 1, 0]) {
         const k = t.marks.indexOf(m);
         if (k < 0) continue;
         const cell = row.children[k];
-        this.later(() => this.say(cell, WORDS[m][0], WORDS[m][1], 1900, true), delay);
-        delay += 1500;
+        this.later(() => { if (last) last.remove(); last = this.say(cell, WORDS[m][0], WORDS[m][1], 1900, true); }, delay);
+        delay += 1700;
       }
     }
     moveFields(rec) {
@@ -7286,7 +7287,7 @@
     const at = (t) => t + ' · ' + lookName(g, lv);
     if (g === 'outbound') return at(L.cars + ' cars · ' + L.w + '×' + L.h + ' lot');
     if (g === 'conduit') return at(L.w + '×' + L.h + ' beds');
-    if (g === 'tumbler') return at(L.pin.P + ' pins · ' + L.pin.C + ' colors');
+    if (g === 'tumbler') return at(L.pin.P + ' hidden colors out of ' + L.pin.C);
     if (g === 'stacks') return at(L.moves + ' moves');
     if (g === 'keepsake') return at(L.items + ' things to remember');
     if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
@@ -7450,7 +7451,7 @@
     if (g === 'keepsake' && t.cards) fig = big('star', t.perfect + '/' + t.cards, 'all right');
     if ((g === 'outbound' || g === 'conduit') && t.solved) fig = big('bolt', t.perfect + '/' + t.solved, g === 'conduit' ? 'fewest turns' : 'fewest moves');
     if (g === 'stacks' && t.planN) fig = big('hint', Math.round(t.plan / t.planN / 100) / 10 + ' s', 'to plan');
-    if (g === 'tumbler' && t.solved) fig = big('key', Math.round((t.tries / t.solved) * 10) / 10, 'tries a code');
+    if (g === 'tumbler' && t.solved) fig = big('key', Math.round((t.tries / t.solved) * 10) / 10, 'tries each');
     // your record at this level, when there is one, says the most
     const rec = Records.get(g, lv);
     if (rec != null && RECORD[g]) fig = big('trophy', RECORD[g].fmt(rec), 'record, ' + LEVEL_NAMES[lv - 1]);
