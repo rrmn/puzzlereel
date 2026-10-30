@@ -3278,7 +3278,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.24.0';
+  const APP_VERSION = '2.25.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -4110,9 +4110,9 @@ PuzzleEnginesFactory(window);
     S.n++;
     return spec;
   }
-  // 2-up / 1-down staircase per game within a block (upAfter can make it
-  // 1-up in free play). Glimpse never steps down: its display time already
-  // adapts on every look.
+  // 2-up / 1-down staircase per game within a block (upAfter makes it 1-up until
+  // the first miss in that game). Glimpse steps down only after a round with
+  // under half right (down): its display time already adapts on every look.
   function seqRecord(S, spec, success, upAfter, down) {
     if (!spec.adaptive) return null;
     const a = S.adapt[(spec.block - 1) + ':' + spec.game];
@@ -4336,11 +4336,11 @@ PuzzleEnginesFactory(window);
       this.timers.clear();
     }
     elapsed() { return this.frozen != null ? this.frozen : now() - this.t0; }
-    // free play: one good card of the two already counts toward the next level
+    // one good card of the two already counts toward the next level
     halfway() {
       const S = this.app.session, sp = this.spec;
-      if (!S || S.kind !== 'free' || !sp.adaptive || sp.level >= 5) return false;
-      const a = S.seq.adapt['0:' + sp.game];
+      if (!S || !sp.adaptive || sp.level >= 5) return false;
+      const a = S.seq.adapt[(sp.block - 1) + ':' + sp.game];
       return !!(a && a.level === sp.level && a.streak > 0);
     }
     build() {
@@ -10547,12 +10547,12 @@ PuzzleEnginesFactory(window);
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play (where a new level opens at its own starting point instead; the free-play values are kept under a new key from app 2.21, so earlier ones start over). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
+        'The staircase carries over between rounds of the same level for the same player: through the whole of a research session, and between visits in free play. A level without a value opens at its own starting point, three steps above its target (the free-play values are kept under a new key from app 2.21, so earlier ones start over; until app 2.25 research sessions started each block fresh and opened a new level three steps slower than the level below it ended). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: pieces on three posts; a move takes the top piece of one post to another post where it is allowed. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from all arrangements with that distance. Every level is a place of its own, the same in free play and research sessions (practice: stones). L1 river stones, L2 suitcases at the station, L3 containers at the harbor: three pieces on posts that hold 3, 2 and 1 (36 arrangements). L4 the bakery: four layers of different sizes on three stands that hold 4, and a layer only goes on a bigger one (81 arrangements). L5 ice cream: three scoops on three cones that hold 3 each, and nothing goes on the scoop with the cherry (36 arrangements). The cake comes before the ice cream because its rule leaves fewer wrong moves: played through by the computer, every level is passed less often than the one before. `features` gives the place (`theme`), `pieces`, `caps` and `twist` (`size`, `cherry` or empty); a refused move is `blocked` with `detail` saying why. Until app 2.24 research sessions kept the three-piece task at every level (6 moves at L4). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
-        'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
+        'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (through a research session, between visits in free play; until app 2.25 each research block started fresh), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
         'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign for the whole drive and on its road (see `place`). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives through the chequered finish line 8 units before it and brakes evenly to a stop 4.5 units past the line. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
         'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (once a drive at L1 and L2, twice from L3; never before the third sign or after the last but one), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
         'With feedback on, a caught target\'s animal comes off the sign and runs or hops into the field for about 1 s after the tap; with feedback off a tap only gives a soft click. The horn toots when an animal is tapped away whatever the feedback setting, and things collected fly to a counter shown when counters are on.',
@@ -10562,7 +10562,7 @@ PuzzleEnginesFactory(window);
         'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alikes of the place\'s animal (village: goose, swan, hen; north: reindeer, deer, bear). Until app 2.10 the target was a rabbit, fox or cat drawn from the seed in every place; from 2.10 it is the place\'s animal.', '',
         '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs one or two higher from L3, with its animals). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
         '## Practice', '', 'Each game opens with a practice card (puzzle id P-{game}, fixed content, level 0). It has to be played right before the game goes on: a puzzle solved; Glimpse with at most one look wrong; Switchback with every target caught and no other sign tapped; Keepsake with every thing on its own stone. Otherwise the result says Once more and the same practice comes round again, up to three tries; after the third the game goes on regardless. Practice rows log `success` as that pass (1 or 0) and never change a level. A new player\'s first card after practice is level 1. Rounds of the trial games (Glimpse, Switchback, Keepsake) get confetti only at three stars or a passed practice; two stars get the win chime without confetti, and fewer a soft note.', '',
-        '## Adaptive blocks', '', 'Per game within a block: two successes in a row move up one level, one miss moves down one level (2-up/1-down staircase, levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Glimpse and Switchback never move down a level: their display time, sign time and speed already adapt as you play. Free play uses the same rule for every game, with a quick start: one level up per success until the first miss in that game, then two in a row. In free play the run of successes toward the next level carries over to the next visit, so the first card of a new free session can move a level up. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
+        '## Adaptive blocks', '', 'Per game within a block, the same in research sessions and free play: one level up per success until the first miss in that game (in the session; in free play, ever on the device), then two successes in a row move up one level; one miss moves down one level (levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Switchback never moves down a level, and Glimpse only after a round with fewer than half the looks right: their display time, sign time and speed already adapt as you play. Until app 2.25 research sessions always needed two in a row and Glimpse never moved down there. In free play the run of successes toward the next level carries over to the next visit, so the first card of a new free session can move a level up. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
     return lines.join('\n');
   }
 
@@ -11004,27 +11004,21 @@ PuzzleEnginesFactory(window);
 
     // decorative animations pause while a Glimpse look is on screen
     steady(on) { const a = $('#app'); if (a) a.classList.toggle('steady', !!on); },
-    // Glimpse staircases carry over per level: within a block in research
-    // sessions, between visits in free play. A level without a value starts
-    // 83 ms (5 frames at 60 Hz) above the level below it, if that one has a value.
+    // Glimpse staircases carry over per level for the same player: between visits in free play,
+    // through the whole of a research session. A level without a value opens slow, at its own start.
     // free play keeps its book under a new key from app 2.21: the levels changed, so old values start over
     glimpseBook(spec) {
       const S = this.session;
       if (S.kind === 'free') return { book: store.get('pr1.glbook', {}), free: true };
-      if (!S.glimpse) S.glimpse = {};
-      const key = 'b' + spec.block;
-      if (!S.glimpse[key]) S.glimpse[key] = {};
-      return { book: S.glimpse[key], free: false };
+      if (!S.glbook) S.glbook = {};
+      return { book: S.glbook, free: false };
     },
     glimpseStart(spec) {
       if (spec.practice) return null;
-      const { book, free } = this.glimpseBook(spec);
+      const { book } = this.glimpseBook(spec);
       if (book[spec.level] > 0) return { ms: book[spec.level] };
-      // free play: a level played for the first time (or again after stepping back) opens slow
-      if (free) return { at: E.games.glimpse.levelStart(spec.level) };
-      // a new level opens three steps slower than the level below ended: it asks more
-      for (let k = spec.level - 1; k >= 1; k--) if (book[k] > 0) return { ms: Math.min(E.games.glimpse.startMs, book[k] / Math.pow(0.9, 3)) };
-      return null;
+      // a level played for the first time (or again after stepping back) opens slow
+      return { at: E.games.glimpse.levelStart(spec.level) };
     },
     glimpseKeep(spec, ms) {
       if (spec.practice || !(ms > 0)) return;
@@ -11044,10 +11038,8 @@ PuzzleEnginesFactory(window);
     switchbackBook(spec) {
       const S = this.session;
       if (S.kind === 'free') return { book: store.get('pr1.switchback', {}), free: true };
-      if (!S.switchback) S.switchback = {};
-      const key = 'b' + spec.block;
-      if (!S.switchback[key]) S.switchback[key] = {};
-      return { book: S.switchback[key], free: false };
+      if (!S.sbbook) S.sbbook = {};
+      return { book: S.sbbook, free: false };
     },
     switchbackStart(spec) {
       if (spec.practice) return null;
@@ -11226,11 +11218,13 @@ PuzzleEnginesFactory(window);
       }
     },
     prefetchSpec(spec) { Gen.get(spec.game, spec.level, spec.seed, spec.variant).catch(() => {}); },
-    // Free play, every game alike: one level up per success until the first miss
-    // in that game, then two successes in a row per level. Research blocks: always two.
+    // Every game and session alike: one level up per success until the first miss in that
+    // game, then two successes in a row per level. Free play remembers the first miss on the
+    // device, a research session for its own player.
     upAfter(game) {
-      if (!this.session || this.session.kind !== 'free') return 2;
-      return store.get('pr1.settled', {})[game] ? 2 : 1;
+      const S = this.session;
+      if (!S) return 2;
+      return (S.kind === 'free' ? store.get('pr1.settled', {}) : S.settled || {})[game] ? 2 : 1;
     },
     prefetch(spec) {
       const S = this.session;
@@ -11247,11 +11241,13 @@ PuzzleEnginesFactory(window);
       // leaving a puzzle by switching games or ending the session is not a miss,
       // and neither is a skip: the level stays where it was
       const neutral = sm.outcome === 'abandoned' || sm.outcome === 'skipped';
-      // free play: a Glimpse round with fewer than half the looks right steps back a level, since
-      // the flash cannot get slower than its top and the level is too much for now
+      // a Glimpse round with fewer than half the looks right steps back a level, since the flash
+      // cannot get slower than its top and the level is too much for now
       const gl0 = sm.gl;
-      const down = S.kind === 'free' && sp.game === 'glimpse' && sm.outcome === 'complete' && !sm.success && gl0 && gl0.n > 0 && gl0.correct < gl0.n / 2;
+      const down = sp.game === 'glimpse' && sm.outcome === 'complete' && !sm.success && gl0 && gl0.n > 0 && gl0.correct < gl0.n / 2;
       const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game), down);
+      // the first miss in a game ends its quick start (free play keeps this on the device, below)
+      if (S.kind !== 'free' && !sp.practice && !neutral && !sm.success) (S.settled = S.settled || {})[sp.game] = true;
       const level_next = sp.adaptive && change ? change.to : '';
       let toward = null, goal = null;
       this.logPuzzle(card, 'puzzle_end', { move_no: card.c.moves, cls: sm.outcome, detail: JSON.stringify({ success: sm.success, stars: sm.stars, moves: sm.moves, par: sm.par, reference: sm.reference }) });
@@ -11711,7 +11707,7 @@ PuzzleEnginesFactory(window);
             h('div', { class: 'inline' }, seed, h('button', { class: 'btn', type: 'button', onclick: () => { seed.value = String(randomSeed()); } }, 'New seed')),
             h('span', { class: 'help', text: 'Same seed and plan, same puzzles for everyone.' })),
           h('div', { class: 'field' }, h('span', { class: 'lbl', text: 'Plan' }), plan, sumLine,
-            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler, Glimpse, Stacks, Switchback and Keepsake. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks; its display time adapts on every look and its level never goes down. Every level plays as in free play.' }))),
+            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler, Glimpse, Stacks, Switchback and Keepsake. Adaptive blocks start at the chosen level and move as in free play: up after each success until the first miss in that game, then after two in a row, and down after a miss. A Glimpse round is 4 to 6 looks; its display time adapts on every look, and it goes down a level only after a round with fewer than half right. Every level plays as in free play.' }))),
         h('fieldset', null, h('legend', { text: 'What participants see' }),
           h('div', { class: 'checks' },
             opt('practice', 'o-practice', 'Practice board before each new game'),
