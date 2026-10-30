@@ -268,7 +268,6 @@ button { cursor: pointer; }
 .tool .lab { text-shadow: 0 0 2px var(--bg2), 0 0 7px var(--bg2), 0 0 12px var(--bg2); }
 .tool:active .disc { transform: scale(0.9); }
 .tool[disabled] { opacity: 0.38; cursor: default; }
-.tool.armed .disc { background: var(--ink); color: var(--bg2); }
 .tool.call .disc { animation: callout 1s ease-in-out infinite; }
 
 /* skip: the board steps back and a stamp pops in before the card is tossed aside */
@@ -3278,7 +3277,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.25.0';
+  const APP_VERSION = '2.26.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -4132,8 +4131,8 @@ PuzzleEnginesFactory(window);
   }
 
   // --------------------------------------------------------- defaults
-  const FREE_OPTIONS = { feedback: true, hints: true, undo: true, skip: true, counter: true, par: 1.5, limit: 0, practice: true, sound: true, clue: 'pin' };
-  const STUDY_OPTIONS = { feedback: false, hints: false, undo: true, skip: false, counter: false, par: 1.5, limit: 0, practice: true, sound: false, clue: 'pin' };
+  // free play and research sessions start with the same options (a research session can switch them in its setup)
+  const OPTIONS = { feedback: true, hints: true, undo: true, skip: true, counter: true, par: 1.5, limit: 0, practice: true, sound: true, clue: 'pin' };
   const PRESETS = [
     { id: 'prepost', name: 'Pre / train / post', blocks: [
       { game: 'mixed', count: 4, level: 2, adaptive: false },
@@ -4175,7 +4174,7 @@ PuzzleEnginesFactory(window);
     },
   };
   function newSession(kind, setup) {
-    const options = Object.assign({}, kind === 'free' ? FREE_OPTIONS : STUDY_OPTIONS, setup.options || {});
+    const options = Object.assign({}, OPTIONS, setup.options || {});
     return {
       id: uid(), kind,
       participant: (setup.participant || '').trim(),
@@ -4279,7 +4278,8 @@ PuzzleEnginesFactory(window);
     }
     freshRun(p) { return this.G.newRun(p); }
     usesClock() { return true; }
-    free() { const S = this.app.session; return !!(S && S.kind === 'free' && this.spec.adaptive && !this.practice && this.o.counter); }
+    // records and the way to the next level show on counted cards where levels move, in free play and research sessions alike
+    progressOn() { return !!(this.app.session && this.spec.adaptive && !this.practice && this.o.counter); }
     // while playing: does this card still count toward the next level?
     canCount() { return this.potentialStars() >= 2; }
     // the record chip: '' (to beat), 'gone' (out of reach this time) or 'live' (on its way to a new one)
@@ -4292,7 +4292,7 @@ PuzzleEnginesFactory(window);
     updateRecord() {
       const el = this.recEl;
       if (!el) return;
-      const rec = this.free() ? Records.get(this.spec.game, this.spec.level) : null;
+      const rec = this.progressOn() ? Records.get(this.spec.game, this.spec.level) : null;
       el.hidden = rec == null || !!this.summary;
       if (el.hidden) { clearInterval(this.recTick); return; }
       const R = RECORD[this.spec.game];
@@ -4309,8 +4309,10 @@ PuzzleEnginesFactory(window);
     }
     // what the next level takes, under the head for a moment: the goal and the good cards so far
     showToward(asked) {
-      if (!this.free() || this.spec.level >= 5 || this.summary) return;
-      const g = this.spec.game, P = levelProgress(g), goal = pfGoal(g, this.spec.level);
+      if (!this.progressOn() || this.spec.level >= 5 || this.summary) return;
+      const g = this.spec.game, goal = pfGoal(g, this.spec.level);
+      const a = this.app.session.seq.adapt[(this.spec.block - 1) + ':' + g], need = this.app.upAfter(g);
+      const P = { need, have: a && a.level === this.spec.level ? Math.max(0, Math.min(need - 1, a.streak)) : 0 };
       if (this.towardEl) this.towardEl.remove();
       const slots = h('span', { class: 'res-slots' });
       for (let i = 0; i < P.need; i++) slots.append(h('i', { class: i < P.have ? 'on' : '' }, i < P.have ? icon('check') : null));
@@ -4347,8 +4349,8 @@ PuzzleEnginesFactory(window);
       const sp = this.spec;
       const lp = this.practice ? null : pips(sp.level, null, this.halfway());
       // the next level's pip: tap the level for what it takes; it glows while this card can count
-      this.nextPip = lp && this.free() && sp.level < 5 ? lp.children[sp.level] : null;
-      if (lp && this.free()) {
+      this.nextPip = lp && this.progressOn() && sp.level < 5 ? lp.children[sp.level] : null;
+      if (lp && this.progressOn()) {
         lp.classList.add('tap');
         lp.setAttribute('role', 'button');
         lp.setAttribute('tabindex', '0');
@@ -4400,11 +4402,11 @@ PuzzleEnginesFactory(window);
     }
     start() {
       this.t0 = now();
-      if (this.free() && Records.get(this.spec.game, this.spec.level) != null && ['outbound', 'conduit', 'stacks'].indexOf(this.spec.game) >= 0) {
+      if (this.progressOn() && Records.get(this.spec.game, this.spec.level) != null && ['outbound', 'conduit', 'stacks'].indexOf(this.spec.game) >= 0) {
         clearInterval(this.recTick);
         this.recTick = setInterval(() => this.updateRecord(), 400);
       }
-      if (this.free()) this.later(() => this.showToward(false), 450);
+      if (this.progressOn()) this.later(() => this.showToward(false), 450);
       this.log('puzzle_start', {
         detail: JSON.stringify({ params: this.G.describe(this.p), reference: this.p.reference, par: this.par, practice: this.practice ? 1 : 0, features: this.p.features }),
       });
@@ -4543,22 +4545,10 @@ PuzzleEnginesFactory(window);
       this.app.touch();
     }
     // Skip goes on to the next card with no result panel: the board steps back,
-    // a stamp pops in, and the card is tossed aside. Research sessions ask once
-    // on the button itself ("Sure?"); free play does not.
+    // a stamp pops in, and the card is tossed aside.
     doSkip() {
       if (this.summary || this.busy) return;
-      if (this.app.session.kind !== 'free' && !this.skipArmed) {
-        this.skipArmed = true;
-        this.skipBtn.classList.add('armed');
-        this.skipBtn.querySelector('.lab').textContent = 'Sure?';
-        this.later(() => {
-          this.skipArmed = false;
-          if (this.skipBtn) { this.skipBtn.classList.remove('armed'); this.skipBtn.querySelector('.lab').textContent = 'Skip'; }
-        }, 2600);
-        return;
-      }
       this.resolve('skipped', true);
-      if (this.skipArmed) { this.skipBtn.classList.remove('armed'); this.skipBtn.querySelector('.lab').textContent = 'Skip'; }
       Sound.play('skip');
       buzz(10);
       this.el.classList.add('skipping');
@@ -10562,7 +10552,7 @@ PuzzleEnginesFactory(window);
         'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alikes of the place\'s animal (village: goose, swan, hen; north: reindeer, deer, bear). Until app 2.10 the target was a rabbit, fox or cat drawn from the seed in every place; from 2.10 it is the place\'s animal.', '',
         '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs one or two higher from L3, with its animals). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
         '## Practice', '', 'Each game opens with a practice card (puzzle id P-{game}, fixed content, level 0). It has to be played right before the game goes on: a puzzle solved; Glimpse with at most one look wrong; Switchback with every target caught and no other sign tapped; Keepsake with every thing on its own stone. Otherwise the result says Once more and the same practice comes round again, up to three tries; after the third the game goes on regardless. Practice rows log `success` as that pass (1 or 0) and never change a level. A new player\'s first card after practice is level 1. Rounds of the trial games (Glimpse, Switchback, Keepsake) get confetti only at three stars or a passed practice; two stars get the win chime without confetti, and fewer a soft note.', '',
-        '## Adaptive blocks', '', 'Per game within a block, the same in research sessions and free play: one level up per success until the first miss in that game (in the session; in free play, ever on the device), then two successes in a row move up one level; one miss moves down one level (levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Switchback never moves down a level, and Glimpse only after a round with fewer than half the looks right: their display time, sign time and speed already adapt as you play. Until app 2.25 research sessions always needed two in a row and Glimpse never moved down there. In free play the run of successes toward the next level carries over to the next visit, so the first card of a new free session can move a level up. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel; free play skips on one tap, research sessions (when Skip is allowed) on a second tap of the same button within 2.6 s.', '']);
+        '## Adaptive blocks', '', 'Per game within a block, the same in research sessions and free play: one level up per success until the first miss in that game (in the session; in free play, ever on the device), then two successes in a row move up one level; one miss moves down one level (levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Switchback never moves down a level, and Glimpse only after a round with fewer than half the looks right: their display time, sign time and speed already adapt as you play. Until app 2.25 research sessions always needed two in a row and Glimpse never moved down there. In free play the run of successes toward the next level carries over to the next visit, so the first card of a new free session can move a level up. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel, on one tap. Research sessions start with the same options as free play (stars, hints, feedback, skip and sound on; until app 2.26 they were off) and show the same records, level-up screen and way to the next level in adaptive blocks; records and the levels reached are kept on the device, shared with free play.', '']);
     return lines.join('\n');
   }
 
@@ -11094,7 +11084,7 @@ PuzzleEnginesFactory(window);
       let game = focus || 'mixed';
       if (game !== 'mixed' && ORDER.indexOf(game) < 0) game = 'mixed';
       const levels = store.get('pr1.levels', {});
-      const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: FREE_OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 1, adaptive: true }] });
+      const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 1, adaptive: true }] });
       // the good cards toward each game's next level carry over from the last visit
       const runs = store.get('pr1.lvrun', {});
       ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 1)), streak: Math.max(0, Number(runs[g]) || 0) }; });
@@ -11260,7 +11250,7 @@ PuzzleEnginesFactory(window);
         this.glimpseKeep(sp, card.run.ms);
         if (change && change.changed && change.to < change.from) this.glimpseForget(sp, change.from);
       }
-      if (S.kind === 'free' && !sp.practice && !neutral) {
+      if (sp.adaptive && !sp.practice && !neutral) {
         // your record at this level, in the game's own measure
         sm.record = Records.note(sp.game, sp.level, sm);
         // Tumbler: cracked in fewer tries than the computer's own way of guessing
@@ -11329,18 +11319,21 @@ PuzzleEnginesFactory(window);
           const a = S.seq.adapt['0:' + sp.game], runs = store.get('pr1.lvrun', {});
           runs[sp.game] = a ? a.streak : 0;
           store.set('pr1.lvrun', runs);
-          // a good card that does not move the level yet: say how close the next one is
-          if (sm.success && !change.changed && change.to < 5 && a && a.streak > 0) toward = { to: change.to + 1, have: a.streak, need: this.upAfter(sp.game) };
-          // a timed round that did not count: what this level asks for the next, and the part it met
-          if (!sm.success && sm.outcome === 'complete' && change.to < 5 && (g || d)) {
-            const P = pfGoal(sp.game, change.to), L = card.p;
-            const met = g ? [g.reach_ms != null && g.reach_ms <= L.advanceMs + 0.5]
-              : [d.reach_ms != null && d.reach_ms <= L.advanceMs, d.speed_mean_kmh != null && d.speed_mean_kmh >= L.advanceKmh];
-            goal = { to: change.to + 1, chips: P.chips.map((c, i) => c.concat([met[i]])), text: P.text };
-          }
         }
         if (sm.outcome !== 'abandoned') Stats.record(this, S.puzzles[S.puzzles.length - 1]);
         this.hudBump = sm.stars > 0;
+      }
+      if (change && !sp.practice) {
+        const a = S.seq.adapt[(sp.block - 1) + ':' + sp.game];
+        // a good card that does not move the level yet: say how close the next one is
+        if (sm.success && !change.changed && change.to < 5 && a && a.streak > 0) toward = { to: change.to + 1, have: a.streak, need: this.upAfter(sp.game) };
+        // a timed round that did not count: what this level asks for the next, and the part it met
+        if (!sm.success && sm.outcome === 'complete' && change.to < 5 && (g || d)) {
+          const P = pfGoal(sp.game, change.to), L = card.p;
+          const met = g ? [g.reach_ms != null && g.reach_ms <= L.advanceMs + 0.5]
+            : [d.reach_ms != null && d.reach_ms <= L.advanceMs, d.speed_mean_kmh != null && d.speed_mean_kmh >= L.advanceKmh];
+          goal = { to: change.to + 1, chips: P.chips.map((c, i) => c.concat([met[i]])), text: P.text };
+        }
       }
       this.renderHud();
       this.touch(true);
@@ -11629,8 +11622,8 @@ PuzzleEnginesFactory(window);
     // ---------- session setup
     openSetup(prefill) {
       const last = prefill || store.get('pr1.setup', null);
-      const st = clone(last || { participant: '', condition: '', seed: randomSeed(), blocks: PRESETS[0].blocks, options: STUDY_OPTIONS });
-      st.options = Object.assign({}, STUDY_OPTIONS, st.options || {});
+      const st = clone(last || { participant: '', condition: '', seed: randomSeed(), blocks: PRESETS[0].blocks, options: OPTIONS });
+      st.options = Object.assign({}, OPTIONS, st.options || {});
       if (!st.blocks || !st.blocks.length) st.blocks = clone(PRESETS[0].blocks);
       const err = h('p', { class: 'error', role: 'alert', hidden: true });
       const sumLine = h('p', { class: 'summary-line' });

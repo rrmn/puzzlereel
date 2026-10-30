@@ -257,7 +257,6 @@ button { cursor: pointer; }
 .tool .lab { text-shadow: 0 0 2px var(--bg2), 0 0 7px var(--bg2), 0 0 12px var(--bg2); }
 .tool:active .disc { transform: scale(0.9); }
 .tool[disabled] { opacity: 0.38; cursor: default; }
-.tool.armed .disc { background: var(--ink); color: var(--bg2); }
 .tool.call .disc { animation: callout 1s ease-in-out infinite; }
 
 /* skip: the board steps back and a stamp pops in before the card is tossed aside */
