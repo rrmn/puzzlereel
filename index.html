@@ -1364,11 +1364,11 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
 .scene { isolation: isolate; }
 .decor { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
 /* Outbound: the beach, the city at night, the ski lodge, the ferry at sunset */
-[data-scene="outbound"][data-lv="2"], .scene[data-game="outbound"][data-lv="2"] { --bg1: #D4F7F4; --bg2: #49BCD9; --ink: #0D3A48; --ink2: rgba(13,58,72,.7); --chip: rgba(255,255,255,.6); --btn: #0D3A48; --btn-ink: #EFFFFF; --halo: rgba(235,255,255,.75); --ob-lot: #5E6470; --ob-road: #6E7480; --ob-dash: #FFFFFF; --ob-curb: #F6E2B0; }
-[data-scene="outbound"][data-lv="3"], .scene[data-game="outbound"][data-lv="3"] { --bg1: #3B3F8E; --bg2: #0B0E2E; --ink: #F1F2FF; --ink2: rgba(241,242,255,.74); --chip: rgba(255,255,255,.14); --btn: #FFD23F; --btn-ink: #0B0E2E; --halo: rgba(110,130,255,.45); --ob-lot: #1F2338; --ob-road: #2B3050; --ob-dash: #4FE3FF; --ob-stall: #4FE3FF; --ob-stall-o: .3; --ob-curb: #4FE3FF; }
+[data-scene="outbound"][data-lv="2"], .scene[data-game="outbound"][data-lv="2"] { --bg1: #FFF3D2; --bg2: #F0D49A; --ink: #2E2A1C; --ink2: rgba(46,42,28,.7); --chip: rgba(255,255,255,.62); --btn: #0D3A48; --btn-ink: #EFFFFF; --halo: rgba(255,250,235,.7); }
+[data-scene="outbound"][data-lv="3"], .scene[data-game="outbound"][data-lv="3"] { --bg1: #262A48; --bg2: #0E1126; --ink: #F1F2FF; --ink2: rgba(241,242,255,.74); --chip: rgba(255,255,255,.14); --btn: #FFD23F; --btn-ink: #0B0E2E; --halo: rgba(110,130,255,.25); --ob-lot: #1F2338; --ob-road: #2B3050; --ob-dash: #4FE3FF; --ob-stall: #4FE3FF; --ob-stall-o: .3; --ob-curb: #4FE3FF; }
 .scene[data-game="outbound"][data-lv="3"] .curb { filter: drop-shadow(0 0 1.2px #4FE3FF); }
-[data-scene="outbound"][data-lv="4"], .scene[data-game="outbound"][data-lv="4"] { --bg1: #F4F9FF; --bg2: #A8C6E8; --ink: #1B2C48; --ink2: rgba(27,44,72,.7); --chip: rgba(255,255,255,.7); --btn: #1B2C48; --btn-ink: #F4F9FF; --halo: rgba(255,255,255,.85); --ob-lot: #586274; --ob-road: #6A7486; --ob-dash: #FFFFFF; --ob-curb: #FFFFFF; --ob-curb-w: 1.7; }
-[data-scene="outbound"][data-lv="5"], .scene[data-game="outbound"][data-lv="5"] { --bg1: #FFC27A; --bg2: #B5427A; --ink: #2E0F22; --ink2: rgba(46,15,34,.72); --chip: rgba(255,255,255,.5); --btn: #2E0F22; --btn-ink: #FFF0E6; --halo: rgba(255,236,220,.7); --ob-lot: #36505E; --ob-road: #45606E; --ob-dash: #FFC83A; --ob-curb: #FFC83A; }
+[data-scene="outbound"][data-lv="4"], .scene[data-game="outbound"][data-lv="4"] { --bg1: #F8FBFF; --bg2: #DCE8F5; --ink: #1B2C48; --ink2: rgba(27,44,72,.7); --chip: rgba(255,255,255,.75); --btn: #1B2C48; --btn-ink: #F4F9FF; --halo: rgba(255,255,255,.85); }
+[data-scene="outbound"][data-lv="5"], .scene[data-game="outbound"][data-lv="5"] { --bg1: #F7A26A; --bg2: #A8457A; --ink: #2E0F22; --ink2: rgba(46,15,34,.72); --chip: rgba(255,255,255,.5); --btn: #2E0F22; --btn-ink: #FFF0E6; --halo: rgba(255,236,220,.5); --ob-lot: #36505E; --ob-road: #45606E; --ob-dash: #FFC83A; --ob-curb: #FFC83A; }
 .scene[data-game="outbound"][data-lv="5"] .curb { stroke-dasharray: 1.6 1.2; }
 /* Conduit: the vegetable patch, the greenhouse, the desert oasis, the palace garden at night */
 [data-scene="conduit"][data-lv="2"], .scene[data-game="conduit"][data-lv="2"] { --bg1: #FFF1C4; --bg2: #D9B25E; --ink: #3A2A10; --ink2: rgba(58,42,16,.7); --chip: rgba(255,255,255,.55); --btn: #3A2A10; --btn-ink: #FFF8E6; --halo: rgba(255,248,225,.75); --cd-soil: #4E3220; --cd-bed: #6E4A2C; --cd-t1: #8DB64A; --cd-t2: #6E9A38; }
@@ -3694,7 +3694,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.33.0';
+  const APP_VERSION = '2.34.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -4031,32 +4031,121 @@ PuzzleEnginesFactory(window);
   const sunSvg = (x, y, r, c) => '<circle cx="' + x + '" cy="' + y + '" r="' + r * 1.9 + '" fill="' + c + '" opacity=".22"/><circle cx="' + x + '" cy="' + y + '" r="' + r * 1.4 + '" fill="' + c + '" opacity=".3"/><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + c + '"/>';
   const pineSvg = (x, y, k, c) => '<path d="M' + x + ' ' + (y - 70 * k) + 'L' + (x + 26 * k) + ' ' + (y - 22 * k) + 'H' + (x + 12 * k) + 'L' + (x + 32 * k) + ' ' + y + 'H' + (x - 32 * k) + 'L' + (x - 12 * k) + ' ' + (y - 22 * k) + 'H' + (x - 26 * k) + 'Z" fill="' + c + '"/>'
     + '<path d="M' + x + ' ' + (y - 70 * k) + 'L' + (x + 12 * k) + ' ' + (y - 48 * k) + 'Q' + x + ' ' + (y - 52 * k) + ' ' + (x - 12 * k) + ' ' + (y - 48 * k) + 'Z" fill="#FFFFFF"/>';
-  const DECOR = {
-    outbound: {
-      2: () => sunSvg(322, 118, 40, '#FFF3B0')
-        + '<path d="M0 676q100-16 200 0t200 0V800H0z" fill="#1497C0"/><path d="M0 690q50-8 100 0t100 0 100 0 100 0" stroke="#7FDCF2" stroke-width="3" fill="none" opacity=".6"/>'
-        + '<path d="M0 742q120-16 230 0t170-4V800H0z" fill="#F6DDA0"/>'
-        + '<path d="M58 780C52 720 62 660 92 600" stroke="#8A5A36" stroke-width="11" fill="none" stroke-linecap="round"/>'
-        + ['M92 600c-30-20-66-14-86 6 30-6 58 0 86-6z', 'M92 600c-18-34-50-46-80-38 28 8 52 22 80 38z', 'M92 600c10-36 40-52 76-48-30 12-54 26-76 48z', 'M92 600c36-12 70 2 86 26-28-14-56-20-86-26z', 'M92 600c22 10 34 34 32 62-10-26-20-44-32-62z'].map((d) => '<path d="' + d + '" fill="#1F8A5B"/>').join('')
-        + '<path d="M330 790V700" stroke="#7A5A3A" stroke-width="4"/><path d="M276 704q54-46 108 0z" fill="#FF5D5D"/><path d="M294 704q12-30 36-30 24 0 36 30z" fill="#FFFFFF" opacity=".9"/><path d="M312 704q6-30 18-30 12 0 18 30z" fill="#FF5D5D"/>',
-      3: () => starsSvg(46, 3, 360, 0.9) + moonSvg(318, 112, 26)
-        + scatter(16, 9, 0, 0, 1, 1).map(([, , k], i) => {
-          const w = 24 + (i * 7) % 18, x = i * 26 - 6, hh = 90 + Math.round(k * 150);
-          let win = '';
-          for (let r = 0; r < hh / 22 - 1; r++) for (let c = 0; c < w / 10 - 1; c++) if ((i * 7 + r * 3 + c * 5) % 4) win += '<rect x="' + (x + 5 + c * 10) + '" y="' + (800 - hh + 10 + r * 22) + '" width="4.5" height="7" rx="1" fill="#FFD86A" opacity="' + (0.35 + ((i + r + c) % 3) * 0.2).toFixed(2) + '"/>';
-          return '<rect x="' + x + '" y="' + (800 - hh) + '" width="' + w + '" height="' + hh + '" fill="#141836"/>' + win;
-        }).join(''),
-      4: () => flakesSvg(46, 5, 0.85)
-        + '<path d="M-10 690L70 610l40 34 60-76 70 80 46-40 60 52 64-50V800H-10z" fill="#D2E2F5"/>'
-        + '<path d="M130 568l-22 28 22-8 18 14 22-6zM286 604l-18 26 20-6 16 10 16-8z" fill="#FFFFFF"/>'
-        + '<path d="M-10 728q100-38 210-10t210-20V800H-10z" fill="#EEF5FC"/>'
-        + pineSvg(30, 790, 0.7, '#2F5D5A') + pineSvg(70, 800, 0.85, '#264F4C') + pineSvg(344, 796, 0.8, '#2F5D5A') + pineSvg(382, 800, 0.65, '#264F4C'),
-      5: () => sunSvg(200, 640, 74, '#FFD27A')
-        + '<path d="M0 640H400V800H0z" fill="#5E2A64"/><path d="M0 640H400V652H0z" fill="#7A3A72"/>'
-        + [[120, 664, 160], [150, 684, 100], [176, 704, 48]].map(([x, y, w]) => '<rect x="' + (200 - w / 2) + '" y="' + y + '" width="' + w + '" height="5" rx="2.5" fill="#FFC56A" opacity=".55"/>').join('')
-        + '<path d="M60 150q12-10 24 0 12-10 24 0M300 210q9-8 18 0 9-8 18 0M250 120q8-7 16 0 8-7 16 0" stroke="#3A1430" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>'
-        + '<path d="M326 640l8-112h28l8 112z" fill="#FFFFFF"/><path d="M329 600h38l1.4 18h-40.8zM332 556h32l1.2 16h-34.4z" fill="#E23B36"/><rect x="330" y="512" width="36" height="18" rx="3" fill="#FFE27A"/><path d="M324 512h48l-24-16z" fill="#3A1430"/><path d="M300 652q48-22 96 0z" fill="#3A1430"/>',
+  // Outbound's places are seen from straight above, like the lot itself: tree tops, roofs,
+  // umbrellas, rooftops at night, pines in the snow, the ferry's bow and stern on the sea.
+  const topTree = (x, y, r, c1, c2) => '<ellipse cx="' + (x + r * 0.18) + '" cy="' + (y + r * 0.22) + '" rx="' + r + '" ry="' + r * 0.96 + '" fill="#000" opacity=".14"/>'
+    + '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + c1 + '"/>'
+    + [[-0.35, -0.3, 0.55], [0.32, -0.12, 0.5], [-0.05, 0.36, 0.5]].map(([dx, dy, k]) => '<circle cx="' + (x + dx * r).toFixed(1) + '" cy="' + (y + dy * r).toFixed(1) + '" r="' + (k * r).toFixed(1) + '" fill="' + c2 + '"/>').join('')
+    + '<circle cx="' + (x - r * 0.42) + '" cy="' + (y - r * 0.4) + '" r="' + r * 0.22 + '" fill="#FFFFFF" opacity=".22"/>';
+  // a gabled roof from above: two slopes and the ridge, a chimney
+  const topRoof = (x, y, w, h, c1, c2) => '<rect x="' + (x + 5) + '" y="' + (y + 6) + '" width="' + w + '" height="' + h + '" fill="#000" opacity=".12"/>'
+    + '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h / 2 + '" fill="' + c1 + '"/><rect x="' + x + '" y="' + (y + h / 2) + '" width="' + w + '" height="' + h / 2 + '" fill="' + c2 + '"/>'
+    + '<path d="M' + x + ' ' + (y + h / 2) + 'H' + (x + w) + '" stroke="#000" stroke-opacity=".18" stroke-width="2"/>'
+    + Array.from({ length: Math.floor(w / 12) }, (_, k) => '<path d="M' + (x + 6 + k * 12) + ' ' + y + 'V' + (y + h) + '" stroke="#000" stroke-opacity=".06" stroke-width="1.5"/>').join('')
+    + '<rect x="' + (x + w * 0.7) + '" y="' + (y + h * 0.16) + '" width="10" height="10" fill="#8A4A36"/><rect x="' + (x + w * 0.7 + 2) + '" y="' + (y + h * 0.16 + 2) + '" width="6" height="6" fill="#3A2218"/>';
+  // a beach umbrella from above: wedges in two colors round a pole
+  const topUmbrella = (x, y, r, c1, c2) => '<ellipse cx="' + (x + r * 0.35) + '" cy="' + (y + r * 0.4) + '" rx="' + r + '" ry="' + r * 0.92 + '" fill="#8A6A2E" opacity=".18"/>'
+    + Array.from({ length: 8 }, (_, k) => { const a0 = (k * Math.PI) / 4, a1 = ((k + 1) * Math.PI) / 4; return '<path d="M' + x + ' ' + y + 'L' + (x + Math.cos(a0) * r).toFixed(1) + ' ' + (y + Math.sin(a0) * r).toFixed(1) + 'A' + r + ' ' + r + ' 0 0 1 ' + (x + Math.cos(a1) * r).toFixed(1) + ' ' + (y + Math.sin(a1) * r).toFixed(1) + 'Z" fill="' + (k % 2 ? c2 : c1) + '"/>'; }).join('')
+    + '<circle cx="' + x + '" cy="' + y + '" r="3" fill="#FFFFFF"/>';
+  const topTowel = (x, y, w, h, a, c1, c2) => '<g transform="rotate(' + a + ' ' + x + ' ' + y + ')"><rect x="' + (x - w / 2) + '" y="' + (y - h / 2) + '" width="' + w + '" height="' + h + '" rx="3" fill="' + c1 + '"/>'
+    + Array.from({ length: 3 }, (_, k) => '<rect x="' + (x - w / 2) + '" y="' + (y - h / 2 + (k + 0.6) * h / 3.6) + '" width="' + w + '" height="' + h / 9 + '" fill="' + c2 + '"/>').join('') + '</g>';
+  // a palm from above: fronds round the crown
+  const topPalm = (x, y, r) => '<ellipse cx="' + (x + 10) + '" cy="' + (y + 12) + '" rx="' + r + '" ry="' + r * 0.9 + '" fill="#000" opacity=".12"/>'
+    + Array.from({ length: 7 }, (_, k) => { const a = (k * 360) / 7 + 10; return '<path d="M0 0C' + r * 0.3 + ' -' + r * 0.22 + ' ' + r * 0.75 + ' -' + r * 0.2 + ' ' + r + ' 0C' + r * 0.7 + ' ' + r * 0.12 + ' ' + r * 0.3 + ' ' + r * 0.14 + ' 0 0Z" fill="' + (k % 2 ? '#3E9E4C' : '#2F8A40') + '" transform="translate(' + x + ' ' + y + ') rotate(' + a + ')"/>'; }).join('')
+    + '<circle cx="' + (x - 3) + '" cy="' + (y + 2) + '" r="4" fill="#7A4A22"/><circle cx="' + (x + 3) + '" cy="' + (y - 1) + '" r="4" fill="#8A5A2E"/>';
+  // a pine from above: a round, scalloped crown, darker outside, with snow on its branches
+  const topPine = (x, y, r) => {
+    const scallop = (rr, n, c) => '<path d="' + Array.from({ length: n }, (_, k) => { const a0 = (k * Math.PI * 2) / n, a1 = ((k + 1) * Math.PI * 2) / n; return (k ? '' : 'M' + (x + Math.cos(a0) * rr).toFixed(1) + ' ' + (y + Math.sin(a0) * rr).toFixed(1)) + 'A' + (rr * 0.42).toFixed(1) + ' ' + (rr * 0.42).toFixed(1) + ' 0 0 1 ' + (x + Math.cos(a1) * rr).toFixed(1) + ' ' + (y + Math.sin(a1) * rr).toFixed(1); }).join('') + 'Z" fill="' + c + '"/>';
+    return '<ellipse cx="' + (x + r * 0.25) + '" cy="' + (y + r * 0.3) + '" rx="' + r * 1.05 + '" ry="' + r + '" fill="#4A6A8A" opacity=".16"/>'
+      + scallop(r * 0.88, 9, '#2E5A52') + scallop(r * 0.58, 7, '#3C7266') + '<circle cx="' + x + '" cy="' + y + '" r="' + r * 0.22 + '" fill="#4E8A78"/>'
+      + [[-0.5, -0.3, 0.2], [0.42, -0.48, 0.17], [0.55, 0.28, 0.19], [-0.25, 0.55, 0.16], [0.05, -0.12, 0.12]].map(([dx, dy, k]) => '<ellipse cx="' + (x + dx * r).toFixed(1) + '" cy="' + (y + dy * r).toFixed(1) + '" rx="' + (r * k).toFixed(1) + '" ry="' + (r * k * 0.75).toFixed(1) + '" fill="#FFFFFF" opacity=".95"/>').join('');
+  };
+  // a gull seen from above, wings spread
+  const topGull = (x, y, s) => '<path d="M' + (x - 9 * s) + ' ' + (y + 2 * s) + 'Q' + (x - 4 * s) + ' ' + (y - 3 * s) + ' ' + x + ' ' + y + 'Q' + (x + 4 * s) + ' ' + (y - 3 * s) + ' ' + (x + 9 * s) + ' ' + (y + 2 * s) + 'Q' + (x + 4 * s) + ' ' + (y - 0.5 * s) + ' ' + x + ' ' + (y + 2.5 * s) + 'Q' + (x - 4 * s) + ' ' + (y - 0.5 * s) + ' ' + (x - 9 * s) + ' ' + (y + 2 * s) + 'Z" fill="#FFFFFF"/>';
+  const OB_DECOR = {
+    // the town lot: roofs and tree tops round a paved square
+    1: () => {
+      let v = '<g stroke="#FFFFFF" stroke-opacity=".2" stroke-width="2">';
+      for (let y = 132; y < 240; y += 22) v += '<path d="M0 ' + y + 'H400"/>';
+      for (let y = 652; y < 800; y += 22) v += '<path d="M0 ' + y + 'H400"/>';
+      v += '</g>';
+      v += topRoof(-6, 132, 112, 78, '#E8784E', '#CE5C3C') + topRoof(298, 140, 104, 70, '#6C9BD8', '#5482C0')
+        + topTree(162, 206, 26, '#4E9A4A', '#62B05A') + topTree(232, 186, 20, '#4E9A4A', '#62B05A')
+        + topTree(30, 704, 34, '#4E9A4A', '#62B05A') + topTree(372, 722, 30, '#4E9A4A', '#62B05A')
+        + '<g transform="rotate(-8 112 690)"><rect x="86" y="680" width="52" height="18" rx="3" fill="#8A5A36"/><path d="M90 686H134M90 692H134" stroke="#6E4428" stroke-width="2"/></g>'
+        + '<circle cx="292" cy="688" r="20" fill="#7FBF5C"/>' + [[-8, -6, '#FF6FA7'], [6, -9, '#FFFFFF'], [9, 5, '#FFC93C'], [-5, 8, '#FF6FA7'], [0, 0, '#FFFFFF']].map(([dx, dy, c]) => '<circle cx="' + (292 + dx) + '" cy="' + (688 + dy) + '" r="4" fill="' + c + '"/>').join('');
+      return v;
     },
+    // the beach: umbrellas and towels on the sand, the sea along the bottom, a palm and a board
+    2: () => {
+      let v = topUmbrella(40, 196, 34, '#FF5D5D', '#FFFFFF') + topTowel(104, 200, 26, 48, 18, '#FF9EC0', '#FFFFFF')
+        + topUmbrella(360, 178, 30, '#3D8BFD', '#FFD23F') + topTowel(296, 202, 24, 44, -14, '#22BFB0', '#FFFFFF')
+        + '<circle cx="232" cy="214" r="9" fill="#FFFFFF"/><path d="M232 205A9 9 0 0 1 241 214H232Z" fill="#FF5D5D"/><path d="M232 223A9 9 0 0 1 223 214H232Z" fill="#3D8BFD"/>';
+      // footprints across the sand
+      for (let k = 0; k < 6; k++) v += '<ellipse cx="' + (140 + k * 9 + (k % 2) * 6) + '" cy="' + (676 - k * 2) + '" rx="2.6" ry="4.2" fill="#D9B97A" opacity=".7" transform="rotate(70 ' + (140 + k * 9 + (k % 2) * 6) + ' ' + (676 - k * 2) + ')"/>';
+      v += '<g transform="rotate(-24 62 676)"><ellipse cx="62" cy="676" rx="12" ry="40" fill="#FFC93C"/><ellipse cx="62" cy="676" rx="2.5" ry="36" fill="#FFFFFF" opacity=".85"/></g>'
+        + '<path d="M0 726Q60 708 120 720T240 716T400 708V800H0Z" fill="#33B6D8"/><path d="M0 726Q60 708 120 720T240 716T400 708" stroke="#FFFFFF" stroke-width="5" fill="none" opacity=".85"/>'
+        + '<path d="M20 752q30-8 60 0M160 744q30-8 60 0M290 760q30-8 60 0M90 784q30-8 60 0M240 790q30-8 60 0" stroke="#FFFFFF" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>'
+        + topPalm(378, 676, 40);
+      return v;
+    },
+    // the city at night: rooftops round the lot, the streets between them, light trails and lamps
+    3: () => {
+      const roof = (x, y, w, h) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="3" fill="#2A2F4E"/><rect x="' + (x + 5) + '" y="' + (y + 5) + '" width="' + (w - 10) + '" height="' + (h - 10) + '" rx="2" fill="#323858"/>';
+      const unit = (x, y) => '<rect x="' + x + '" y="' + y + '" width="22" height="16" rx="2" fill="#4A5274"/><circle cx="' + (x + 11) + '" cy="' + (y + 8) + '" r="5" fill="#2A2F4E"/><path d="M' + (x + 7) + ' ' + (y + 8) + 'H' + (x + 15) + 'M' + (x + 11) + ' ' + (y + 4) + 'V' + (y + 12) + '" stroke="#5E6890" stroke-width="1.5"/>';
+      const lamp = (x, y) => '<circle cx="' + x + '" cy="' + y + '" r="14" fill="#FFD86A" opacity=".12"/><circle cx="' + x + '" cy="' + y + '" r="6" fill="#FFD86A" opacity=".3"/><circle cx="' + x + '" cy="' + y + '" r="2.5" fill="#FFF2B0"/>';
+      let v = roof(-8, 118, 150, 110) + unit(20, 140) + unit(58, 172) + '<rect x="96" y="134" width="30" height="20" rx="2" fill="#FFD86A" opacity=".55"/>'
+        + roof(256, 110, 152, 118) + '<circle cx="330" cy="168" r="34" fill="#3A4066"/><circle cx="330" cy="168" r="28" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".8"/>'
+        + '<path d="M318 152V184M342 152V184M318 168H342" stroke="#FFFFFF" stroke-width="5" opacity=".85"/>'
+        + roof(-8, 660, 168, 150) + '<rect x="18" y="684" width="76" height="40" rx="4" fill="#3FD0E8" opacity=".75"/><path d="M26 696q10-4 20 0t20 0 20 0" stroke="#FFFFFF" stroke-width="2" fill="none" opacity=".6"/>'
+        + [[110, 690], [130, 690], [110, 710], [130, 710]].map(([x, y]) => '<rect x="' + x + '" y="' + y + '" width="16" height="16" rx="3" fill="#3E7A4A"/>').join('')
+        + roof(240, 668, 168, 142) + unit(262, 690) + unit(300, 690) + '<circle cx="356" cy="720" r="20" fill="#4A5274"/><circle cx="356" cy="720" r="14" fill="#3A4066"/>';
+      // the streets: light trails of cars going by, lamps along the kerbs
+      v += '<path d="M160 150V240M168 150V240M232 150V240M240 150V240" stroke="#FF4D4D" stroke-width="2.5" opacity=".55" stroke-dasharray="40 26"/>'
+        + '<path d="M190 150V240M206 150V240" stroke="#FFF4BE" stroke-width="2.5" opacity=".5" stroke-dasharray="30 40"/>'
+        + '<path d="M186 660V800M196 660V800" stroke="#FFF4BE" stroke-width="2.5" opacity=".45" stroke-dasharray="26 34"/><path d="M212 660V800M222 660V800" stroke="#FF4D4D" stroke-width="2.5" opacity=".5" stroke-dasharray="34 30"/>'
+        + lamp(150, 236) + lamp(250, 236) + lamp(176, 660) + lamp(232, 660);
+      return v;
+    },
+    // the ski lodge: pines in the snow, ski tracks, a chalet roof and a snowman
+    4: () => {
+      const track = (d) => '<path d="' + d + '" stroke="#C3D3E6" stroke-width="2" fill="none" opacity=".9"/><path d="' + d + '" stroke="#C3D3E6" stroke-width="2" fill="none" opacity=".9" transform="translate(7 2)"/>';
+      let v = flakesSvg(26, 5, 0.6)
+        + track('M-10 230C60 200 110 220 160 170S260 130 330 150')
+        + track('M60 800C90 760 150 740 190 700S300 660 410 690')
+        + topRoof(272, 118, 108, 76, '#8A5A3A', '#74482C') + '<path d="M272 118H380V128H272ZM272 184H380V194H272Z" fill="#FFFFFF" opacity=".92"/>'
+        + '<circle cx="372" cy="104" r="9" fill="#FFFFFF" opacity=".6"/><circle cx="384" cy="92" r="6" fill="#FFFFFF" opacity=".45"/>'
+        + topPine(28, 168, 30) + topPine(84, 214, 20) + topPine(228, 216, 18)
+        + topPine(30, 690, 32) + topPine(370, 742, 34) + topPine(330, 676, 18)
+        + '<circle cx="118" cy="706" r="17" fill="#FFFFFF" stroke="#C9D6E6" stroke-width="2"/><circle cx="118" cy="706" r="11" fill="#FFFFFF" stroke="#C9D6E6" stroke-width="1.5"/>'
+        + '<circle cx="118" cy="706" r="7" fill="#1F2128"/><circle cx="118" cy="706" r="4.5" fill="#33363F"/><path d="M118 712L114 724L122 712Z" fill="#FF8A1F"/>';
+      return v;
+    },
+    // the ferry at sunset: its bow and its stern on the sea, the wake behind it, gulls and the sun on the water
+    5: () => {
+      let v = '';
+      for (const [x, y, w] of [[30, 70, 26], [70, 110, 18], [330, 60, 30], [300, 120, 16], [350, 100, 20], [40, 770, 30], [340, 780, 26], [20, 740, 16], [380, 750, 14]]) v += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="3" rx="1.5" fill="#FFE2A8" opacity=".55"/>';
+      // the car deck round the lot, and the hull along both sides of it
+      v += '<rect x="-4" y="226" width="408" height="440" fill="#B9C2CC"/><rect x="-4" y="226" width="30" height="440" fill="#F4F0F2"/><rect x="374" y="226" width="30" height="440" fill="#F4F0F2"/>'
+        + '<rect x="-4" y="226" width="8" height="440" fill="#D84A4A"/><rect x="396" y="226" width="8" height="440" fill="#D84A4A"/>';
+      // the bow: the deck narrowing to a point, the winches, the bridge with its radar
+      v += '<path d="M-4 238L-4 226C40 190 140 140 200 120C260 140 360 190 404 226L404 238Z" fill="#F4F0F2"/>'
+        + '<path d="M-4 226C40 190 140 140 200 120C260 140 360 190 404 226" stroke="#D84A4A" stroke-width="7" fill="none"/>'
+        + '<circle cx="168" cy="164" r="8" fill="#9AA3B0"/><circle cx="232" cy="164" r="8" fill="#9AA3B0"/><path d="M168 164Q200 150 232 164" stroke="#5E6676" stroke-width="2" fill="none"/>'
+        + '<rect x="128" y="190" width="144" height="40" rx="6" fill="#FFFFFF"/><rect x="128" y="190" width="144" height="8" rx="3" fill="#2A3A55"/><circle cx="246" cy="212" r="9" fill="#C9D4E0"/><path d="M238 212H254" stroke="#5E6676" stroke-width="3"/>';
+      // the stern: the deck with its lifebuoys and the car ramp, and the wake on the water
+      v += '<rect x="-4" y="660" width="408" height="58" fill="#F4F0F2"/><path d="M-4 718H404" stroke="#D84A4A" stroke-width="7"/>'
+        + [[40, 690], [360, 690]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="11" fill="none" stroke="#FF7A2E" stroke-width="6"/><path d="M' + (x - 11) + ' ' + y + 'h4M' + (x + 7) + ' ' + y + 'h4M' + x + ' ' + (y - 11) + 'v4M' + x + ' ' + (y + 7) + 'v4" stroke="#FFFFFF" stroke-width="6"/>').join('')
+        + '<rect x="130" y="666" width="140" height="46" rx="3" fill="#6E7884"/>' + Array.from({ length: 7 }, (_, k) => '<path d="M' + (138 + k * 20) + ' 666l12 46" stroke="#FFC83A" stroke-width="5" opacity=".9"/>').join('')
+        + '<path d="M130 722C110 760 60 790 0 800M270 722C290 760 340 790 400 800" stroke="#FFFFFF" stroke-width="6" fill="none" opacity=".8" stroke-linecap="round"/>'
+        + '<path d="M160 724C150 760 130 790 110 800M240 724C250 760 270 790 290 800" stroke="#FFFFFF" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>'
+        + scatter(18, 31, 120, 726, 280, 800).map(([x, y, k]) => '<circle cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="' + (1.5 + k * 2.5).toFixed(1) + '" fill="#FFFFFF" opacity=".55"/>').join('')
+        + topGull(60, 160, 1.6) + topGull(340, 150, 1.3) + topGull(96, 196, 1.1);
+      return v;
+    },
+  };
+  const DECOR = {
+    outbound: OB_DECOR,
     conduit: {
       // the farmyard: a red barn and round hay bales behind the fence
       2: () => sunSvg(320, 110, 34, '#FFF1A8')
@@ -12151,7 +12240,7 @@ PuzzleEnginesFactory(window);
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them. Words on the board (what the colors of a try mean, Wrong color, Not here) come in practice and at L1 only, until six codes are cracked (from app 2.29; until then at every level); from L2 the board helps without words.', '',
-        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. From app 2.34 the scenes round the Outbound lot are seen from straight above, like the lot (roofs and tree tops, umbrellas on the sand, rooftops at night, pines in the snow, the ferry\'s bow and stern on the sea); until then they were side views. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse trips', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),
