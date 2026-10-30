@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.20.0';
+  const APP_VERSION = '2.21.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -542,7 +542,7 @@
   // 2-up / 1-down staircase per game within a block (upAfter can make it
   // 1-up in free play). Glimpse never steps down: its display time already
   // adapts on every look.
-  function seqRecord(S, spec, success, upAfter) {
+  function seqRecord(S, spec, success, upAfter, down) {
     if (!spec.adaptive) return null;
     const a = S.adapt[(spec.block - 1) + ':' + spec.game];
     if (!a) return null;
@@ -551,7 +551,7 @@
       a.streak++;
       if (a.streak >= (upAfter || 2)) { a.level = Math.min(5, a.level + 1); a.streak = 0; }
     } else {
-      if (E.games[spec.game].levelDown !== false) a.level = Math.max(1, a.level - 1);
+      if (E.games[spec.game].levelDown !== false || down) a.level = Math.max(1, a.level - 1);
       a.streak = 0;
     }
     return { from: before, to: a.level, changed: a.level !== before };
@@ -6526,8 +6526,8 @@
         'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play take the scene of the level (meadow at L1 and L2, sea at L3 and L4, sky at L5) and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
-        'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 1200 ms, a slow and easy look for older players and non-gamers, like the second look of practice (until app 2.20: 1500 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
+        'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play (where a new level opens at its own starting point instead; the free-play values are kept under a new key from app 2.21, so earlier ones start over). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
@@ -6756,7 +6756,7 @@
     if (g === 'stacks') return L.moves + ' moves' + (lv === 3 ? ' · the harbor' : lv === 5 ? ' · the bakery' : '');
     if (g === 'keepsake') return L.items + ' things to remember';
     if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
-    if (g === 'glimpse') return ['', 'close to the middle', 'a little further out', 'near or far, at sea', 'with shells in the way', 'in the sky, with clouds in the way'][lv] || '';
+    if (g === 'glimpse') return ['', 'close to the middle', 'a little further out', 'near or far, at sea', 'a few shells in the way', 'in the sky, more in the way'][lv] || '';
     return '';
   }
   // Free play: how far a game is toward its next level. Two good cards in a row
@@ -6982,9 +6982,10 @@
     // Glimpse staircases carry over per level: within a block in research
     // sessions, between visits in free play. A level without a value starts
     // 83 ms (5 frames at 60 Hz) above the level below it, if that one has a value.
+    // free play keeps its book under a new key from app 2.21: the levels changed, so old values start over
     glimpseBook(spec) {
       const S = this.session;
-      if (S.kind === 'free') return { book: store.get('pr1.glimpse', {}), free: true };
+      if (S.kind === 'free') return { book: store.get('pr1.glbook', {}), free: true };
       if (!S.glimpse) S.glimpse = {};
       const key = 'b' + spec.block;
       if (!S.glimpse[key]) S.glimpse[key] = {};
@@ -6992,8 +6993,10 @@
     },
     glimpseStart(spec) {
       if (spec.practice) return null;
-      const { book } = this.glimpseBook(spec);
+      const { book, free } = this.glimpseBook(spec);
       if (book[spec.level] > 0) return { ms: book[spec.level] };
+      // free play: a level played for the first time (or again after stepping back) opens slow
+      if (free) return { at: E.games.glimpse.levelStart(spec.level) };
       // a new level opens three steps slower than the level below ended: it asks more
       for (let k = spec.level - 1; k >= 1; k--) if (book[k] > 0) return { ms: Math.min(E.games.glimpse.startMs, book[k] / Math.pow(0.9, 3)) };
       return null;
@@ -7002,7 +7005,13 @@
       if (spec.practice || !(ms > 0)) return;
       const { book, free } = this.glimpseBook(spec);
       book[spec.level] = Math.round(ms * 100) / 100;
-      if (free) store.set('pr1.glimpse', book);
+      if (free) store.set('pr1.glbook', book);
+    },
+    // a level stepped back from starts fresh next time, slow again
+    glimpseForget(spec, level) {
+      const { book, free } = this.glimpseBook(spec);
+      delete book[level];
+      if (free) store.set('pr1.glbook', book);
     },
     // Switchback carries its sign time and speed over the same way, per level.
     // A level without values takes the sign time from the level below and
@@ -7212,7 +7221,11 @@
       // leaving a puzzle by switching games or ending the session is not a miss,
       // and neither is a skip: the level stays where it was
       const neutral = sm.outcome === 'abandoned' || sm.outcome === 'skipped';
-      const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game));
+      // free play: a Glimpse round with fewer than half the looks right steps back a level, since
+      // the flash cannot get slower than its top and the level is too much for now
+      const gl0 = sm.gl;
+      const down = S.kind === 'free' && sp.game === 'glimpse' && sm.outcome === 'complete' && !sm.success && gl0 && gl0.n > 0 && gl0.correct < gl0.n / 2;
+      const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game), down);
       const level_next = sp.adaptive && change ? change.to : '';
       let toward = null, goal = null;
       this.logPuzzle(card, 'puzzle_end', { move_no: card.c.moves, cls: sm.outcome, detail: JSON.stringify({ success: sm.success, stars: sm.stars, moves: sm.moves, par: sm.par, reference: sm.reference }) });
@@ -7228,6 +7241,7 @@
       }
       if (g && !sp.practice && g.n) {
         this.glimpseKeep(sp, card.run.ms);
+        if (change && change.changed && change.to < change.from) this.glimpseForget(sp, change.from);
         if (S.kind === 'free' && g.reach_ms != null && sm.outcome === 'complete') {
           const best = store.get('pr1.glreach', {});
           if (best[sp.level] != null && g.reach_ms < best[sp.level] - 0.5) sm.newBest = g.reach_ms;

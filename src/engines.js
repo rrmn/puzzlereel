@@ -1310,9 +1310,9 @@
     name: 'Glimpse',
     noun: 'look',
     kind: 'trials',
-    levelDown: false,      // the display time already adapts; levels only add load
+    levelDown: false,      // the display time already adapts; levels only add load (free play steps back after a round with under half right)
     trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
-    startMs: 1200,         // a fresh staircase starts here: a slow, easy look for anyone, like the second look of practice (which ends at 700 ms)
+    startMs: 1500,         // a fresh staircase in a research block starts here: a slow, easy look for anyone (free play starts each level at levelStart)
     maxMs: GL_TOP,         // top of the ladder
     warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
     minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
@@ -1331,8 +1331,16 @@
       1: { periph: true, rings: [1], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
       2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
       3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 1000, looks: 5 },
-      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 1200, looks: 6 },
-      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 1200, looks: 6 },
+      // things in the way come in small steps: a few shells, then twice as many clouds
+      // (until engines 1.18: 23, then 47 and the harder pair, a cliff for older players)
+      4: { periph: true, rings: [1, 2, 3], distract: 8, pair: 'easy', advanceMs: 1200, looks: 6 },
+      5: { periph: true, rings: [1, 2, 3], distract: 16, pair: 'easy', advanceMs: 1200, looks: 6 },
+    },
+    // where free play starts a level the first time: three steps slower than its target, so a new
+    // level opens slow and easy and three right answers in a row reach the target
+    levelStart(level) {
+      const L = this.levels[level];
+      return L && L.advanceMs ? Math.min(this.maxMs, L.advanceMs / Math.pow(GL_STEP, 3)) : this.startMs;
     },
     slots: GL_SLOTS,
     ringR: GL_RING_R,
@@ -1407,10 +1415,12 @@
       const trials = spec.map((x, i) => ({ c: x[0], fix: 550, mask: 1000 + i, ring: 2, dir: x[1], tg: 'bird', flip: x[1] >= 4 ? 1 : 0, d: [] }));
       return this.build(0, 0, L, trials, [2000, 1200, 700], 'meadow', ['bird']);
     },
-    // start: { ms } carries a staircase on; without it the staircase starts fresh at startMs
+    // start: { ms } carries a staircase on (warmUp steps slower); { at } starts a fresh one exactly
+    // there (free play, a level's first round); without either it starts fresh at startMs
     newRun(p, start) {
-      const carried = start && start.ms > 0;
-      const ms = p.fixedMs ? null : carried ? Math.min(this.maxMs, start.ms / Math.pow(GL_STEP, this.warmUp)) : this.startMs;
+      const at = !p.fixedMs && start && start.at > 0 ? Math.min(this.maxMs, start.at) : null;
+      const carried = !at && start && start.ms > 0;
+      const ms = p.fixedMs ? null : at || (carried ? Math.min(this.maxMs, start.ms / Math.pow(GL_STEP, this.warmUp)) : this.startMs);
       return { i: 0, ms, start: ms, fresh: !p.fixedMs && !carried, last: 0, rev: [], res: [] };
     },
     // the display time for the next look, given the frame period T in ms
@@ -1966,7 +1976,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.17.0',
+    version: '1.18.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],

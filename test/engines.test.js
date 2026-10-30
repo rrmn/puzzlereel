@@ -415,7 +415,7 @@ test('glimpse: the frame ladder runs from about 2000 ms to one frame at any refr
   assert.deepEqual(glLadder(1000 / 60), [120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 });
 
-test('glimpse: a fresh staircase starts at 1200 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
+test('glimpse: a fresh staircase starts at 1500 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
   const p = G.generate(2, 77);
   const run = G.newRun(p, null);
   const T = 1000 / 60;
@@ -425,8 +425,8 @@ test('glimpse: a fresh staircase starts at 1200 ms, one step shorter after a hit
     steps.push(plan.idx);
     G.record(p, run, { correct: !!ok, plan });
   }
-  assert.equal(G.startMs, 1200);
-  assert.deepEqual(steps, [5, 6, 7, 1, 2, 3]);
+  assert.equal(G.startMs, 1500);
+  assert.deepEqual(steps, [3, 4, 5, 0, 1, 2]);
   const sm = G.summary(p, run);
   assert.equal(sm.correct, 4);
   assert.equal(sm.reversals, 3);
@@ -493,11 +493,31 @@ test('glimpse: every level asks for the thing around the middle; level 1 keeps i
   assert.deepEqual(G.levels[2].rings, [2], 'level 2 is the practice task, as fixed blocks use it');
 });
 
+test('glimpse: things in the way come in small steps, and each level opens three steps above its target', () => {
+  const ds = [1, 2, 3, 4, 5].map((lv) => G.levels[lv].distract);
+  assert.deepEqual(ds, [0, 0, 0, 8, 16]);
+  for (let lv = 2; lv <= 5; lv++) assert.ok(ds[lv - 1] - ds[lv - 2] <= 8, 'L' + lv + ' adds at most 8');
+  const T = 1000 / 60;
+  for (let lv = 1; lv <= 5; lv++) {
+    const p = G.generate(lv, 40 + lv, 'mix');
+    const run = G.newRun(p, { at: G.levelStart(lv) });
+    assert.ok(run.fresh, 'a level start is a fresh staircase');
+    assert.ok(Math.abs(run.ms - p.advanceMs / Math.pow(0.9, 3)) < 1e-6);
+    const first = G.plan(p, run, T).ms;
+    assert.ok(first >= 1300 && first <= 1650, 'L' + lv + ' opens slow: ' + Math.round(first) + ' ms');
+    // three right answers in a row reach the target; two do not
+    let ok2 = null;
+    for (let i = 0; i < 3; i++) { G.record(p, run, { correct: true, plan: G.plan(p, run, T) }); if (i === 1) ok2 = G.success(p, G.summary(p, run)); }
+    assert.ok(!ok2, 'L' + lv + ': two right are not yet enough');
+    assert.ok(G.success(p, G.summary(p, run)), 'L' + lv + ': three right reach ' + p.advanceMs + ' ms');
+  }
+});
+
 test('glimpse: a round counts once a right answer brings the flash to the target, as the counter shows it', () => {
   const T = 1000 / 60;
   const play = (lv, answers, start) => {
     const p = G.generate(lv, 31, 'mix');
-    const run = G.newRun(p, start || null);
+    const run = G.newRun(p, start || { at: G.levelStart(lv) });
     for (const ok of answers) G.record(p, run, { correct: !!ok, plan: G.plan(p, run, T) });
     return { p, sm: G.summary(p, run) };
   };
@@ -506,7 +526,7 @@ test('glimpse: a round counts once a right answer brings the flash to the target
   assert.ok(r.sm.threshold_ms > r.p.advanceMs, 'the average of the round is still slow');
   assert.ok(G.success(r.p, r.sm), 'but the flash got to ' + r.sm.reach_ms + ' ms');
   // a slip after the target was reached does not take it back
-  r = play(1, [1, 1, 0, 1]);
+  r = play(1, [1, 1, 1, 0]);
   assert.ok(G.success(r.p, r.sm));
   // a slip before it was reached sends the flash back up
   r = play(1, [1, 0, 1, 1]);
