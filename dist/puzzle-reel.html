@@ -5715,6 +5715,9 @@ PuzzleEnginesFactory(window);
   const SB_IN = 0.9;        // s an animal takes to walk out to the middle of the road
   const SB_RUN = 1.7;       // how fast it runs off (world units a second)
   const SB_EASE = 0.45;     // the car eases off to this share of its speed while an animal is on the road
+  const SB_FAR = 60;        // the landmark stays this far off, on the skyline, until the end of the drive comes near
+  const SB_TO_LINE = 8;     // the finish line stands this far before the landmark
+  const SB_PAST = 4.5;      // the car rolls to a stop this far past the line
   const SB_COL = {
     sky: ['#79B3F0', '#BCDDF7', '#FFE4C4'], far: '#A9BFDB', hill: ['#8CC57C', '#7BB86E'],
     grass: ['#95D17F', '#8AC774'], rumble: ['#E5564D', '#F8F3EA'], road: ['#737886', '#6E7381'], lane: '#F8F3E6',
@@ -5897,7 +5900,7 @@ PuzzleEnginesFactory(window);
   }
   // ---- the places
   // Two for each level: the day goes from morning to dusk, and every drive heads for
-  // a landmark that stands on the horizon from the start and is where the car stops.
+  // a landmark on the skyline, which comes into reach at the end of the drive.
   // The road, its lines and the signs look the same in every place. item: the thing
   // to collect along that road.
   const SB_PLACES = {
@@ -5944,7 +5947,7 @@ PuzzleEnginesFactory(window);
       sky: ['#3B3F7E', '#D9735E', '#FFBE78'], sun: [0.72, 0.335, 0.06, '#FFE3A6', '255, 168, 96'],
       far: 'outback', land: null, ground: '#C0613B', verge: '#D88A56', road: '#6D6970', haze: '255, 186, 140', clouds: 'streak', cloud: '#FFC9A8', birds: '#5A3448', dust: '196, 100, 60',
       things: ['spinifex', 'gum', 'spinifex', 'termite', 'redrock', 'spinifex', 'gum'], small: 'spinifex', fence: 0.3, wood: '#8A6A50', posts: 'white',
-      dest: 'monolith', flag: '#FFC83A', item: 'opal' },
+      dest: 'monolith', destLat: 2.1, flag: '#FFC83A', item: 'opal' },
     north: { // the north at night: snow, spruces, the northern lights, snow poles, a red cottage
       sky: ['#0A1736', '#103653', '#2C6C7A'], moon: [0.22, 0.12, 0.026],
       far: 'north', land: 'snow', ground: '#D3E0EE', verge: '#EBF2F9', road: '#454B5B', haze: '110, 160, 190', clouds: null, cloud: null, birds: null, stars: 70, dust: '230, 238, 248',
@@ -7562,6 +7565,7 @@ PuzzleEnginesFactory(window);
     buildBoard() {
       const p = this.p, ex = this.extra || {};
       this.tt = ex.tt || 0;          // seconds of driving
+      this.endW = ex.endW != null ? ex.endW : null;   // where the landmark stands, once the end is in reach
       this.pos = ex.pos || 0;        // distance along the road (world units)
       this.phase = this.summary ? 'done' : this.tt > 0 ? 'paused' : 'ready';
       this.kmh = 0; this.carX = 0; this.tilt = 0; this.steer = 0; this.keySteer = 0; this.ptr = null; this.ptrSteer = 0;
@@ -7795,6 +7799,12 @@ PuzzleEnginesFactory(window);
       this.braking = this.kmh < before - 0.4 * dt * 60;
       // the speed measure leaves out the time from an animal stepping out until the car is nearly back to speed
       if (this.braked && !hard && !held && this.kmh >= run.kmh * 0.9) this.braked = false;
+      // over the finish line at speed, then braking evenly to a stop a few lengths past it
+      if (this.phase === 'finish') {
+        const r = this.stopW - this.pos - SB_CAR_Z;
+        this.kmh = r > 0.02 ? this.brakeKmh * Math.sqrt(r / this.brakeD) : 0;
+        this.braking = this.kmh > 0;
+      }
       const v = this.kmh * G.kmhToUnits;
       this.pos += v * dt;
       // steering: the wheel sets how fast the car moves sideways; a bend pushes it
@@ -7835,9 +7845,15 @@ PuzzleEnginesFactory(window);
         if (got) this.grab(it, ts);
         this.itemK++;
       }
-      if (driving && this.tt >= p.duration && run.i >= p.signs.length && !this.sign && !(this.beast && !this.beast.res)) {
+      // near the end the landmark comes into reach as a real place SB_FAR ahead, timed so
+      // the car meets the finish line in front of it about when the drive is over
+      if (driving && this.endW == null && this.tt >= p.duration - (SB_FAR - SB_TO_LINE - SB_CAR_Z) / Math.max(1, run.kmh * G.kmhToUnits)) this.endW = this.pos + SB_FAR;
+      const line = this.endW == null ? Infinity : this.endW - SB_TO_LINE;
+      if (driving && this.pos + SB_CAR_Z >= line && run.i >= p.signs.length && !this.sign && !(this.beast && !this.beast.res)) {
         this.phase = 'finish';
-        this.finishAt = this.pos + 7.5;
+        this.stopW = Math.max(line + SB_PAST, this.pos + SB_CAR_Z + 2.5);
+        this.brakeD = this.stopW - this.pos - SB_CAR_Z;
+        this.brakeKmh = Math.max(this.kmh, 8);
       }
       if (this.phase === 'finish' && this.kmh === 0) this.resolve('complete');
     }
@@ -7928,12 +7944,22 @@ PuzzleEnginesFactory(window);
       this.app.touch();
     }
     // ---- drawing
-    // where the landmark stands: it comes closer as the drive goes on (its size grows
-    // evenly), and from the finish it is a real place 2 units past the line
-    destZ() {
-      if (this.finishAt != null) return this.finishAt + 2 - this.pos;
-      const pr = Math.max(0, Math.min(1, this.tt / this.p.duration));
-      return 1 / (1 / 58 + (1 / 9.5 - 1 / 58) * Math.pow(pr, 1.25));
+    // the finish line: bunting on two tall posts across the road at depth z, high
+    // enough that the car and the camera both pass under it
+    drawLine(ctx, z, xr, camX, W, hy, F, half) {
+      const s = F / z, xc = W / 2 + (xr - camX) * s, yG = hy + F / z;
+      const xL = xc - half * 1.3 * s, xR = xc + half * 1.3 * s, top = yG - 1.32 * s, sag = 0.1 * s;
+      ctx.fillStyle = '#9A6B44';
+      ctx.fillRect(xL - 0.025 * s, top, 0.05 * s, yG - top);
+      ctx.fillRect(xR - 0.025 * s, top, 0.05 * s, yG - top);
+      ctx.strokeStyle = 'rgba(70, 56, 44, 0.75)'; ctx.lineWidth = Math.max(1, 0.01 * s);
+      ctx.beginPath(); ctx.moveTo(xL, top); ctx.quadraticCurveTo(xc, top + sag * 2, xR, top); ctx.stroke();
+      const cols = ['#E5564D', '#FFC83A', '#3D8BFD', '#2FB36E', '#FFFFFF', '#FF7FB0'], nF = 13, fw = ((xR - xL) / nF) * 0.38;
+      for (let q = 0; q < nF; q++) {
+        const u = (q + 0.5) / nF, fx = (1 - u) * (1 - u) * xL + 2 * u * (1 - u) * xc + u * u * xR, fy = top + 2 * u * (1 - u) * sag * 2;
+        ctx.fillStyle = cols[q % cols.length];
+        ctx.beginPath(); ctx.moveTo(fx - fw, fy); ctx.lineTo(fx + fw, fy); ctx.lineTo(fx, fy + fw * 2.1); ctx.closePath(); ctx.fill();
+      }
     }
     draw(ts) {
       const ctx = this.ctx;
@@ -8040,8 +8066,13 @@ PuzzleEnginesFactory(window);
       if (PL.land === 'coast') { ctx.fillStyle = PL.water; ctx.fillRect(0, hy, Math.max(0, vx - 4), H * 0.08); }
       // the road, far to near
       const quad = (ax, ay, bx, by, cx, cy, ex, ey) => { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); ctx.closePath(); };
-      const zD = this.destZ(), latD = PL.destLat != null ? PL.destLat : half * 1.16 + 0.8, wood = PL.wood || '#A97D52';
-      let destDrawn = false, fprev = null, pkL = null, pkR = null;
+      // the landmark: a place on the skyline where the road runs out (everything nearer is
+      // drawn over it), until the end of the drive is in reach and it stands at its depth
+      const latD = PL.destLat != null ? PL.destLat : half * 1.16 + 0.8, wood = PL.wood || '#A97D52';
+      const zD = this.endW == null ? SB_FAR : this.endW - sc, zL = this.endW == null ? 0 : this.endW - SB_TO_LINE - sc;
+      const dest = (z) => sbDest(ctx, PL.dest, W / 2 + (at(z) + latD - camX) * (F / z), hy + F / z, F / z, t);
+      let destDrawn = zD <= 0.5, lineDrawn = zL <= SB_CAR_Z, fprev = null, pkL = null, pkR = null;
+      if (!destDrawn && zD >= zs[N]) { dest(zD); destDrawn = true; }
       const e0 = half * 1.16, coast = PL.land === 'coast';
       // the things to collect in sight, and the animal on the road: drawn at their depth
       const items = p.items, iq = [], spr = sbItem(PL.item);
@@ -8177,15 +8208,9 @@ PuzzleEnginesFactory(window);
           const tx = W / 2 + (xs[n + 1] + side * lat - camX) * s;
           if (tx > -20 && tx < W + 20) sbThing(ctx, PL.small, tx, yB, s, r, t, PL);
         }
-        // the landmark, at its depth
-        if (!destDrawn && zD <= zB && zD > zA) {
-          const sD = F / zD;
-          let dx0 = W / 2 + (at(zD) + latD - camX) * sD;
-          const keep = Math.max(0, Math.min(1, (zD - 14) / 12));
-          dx0 += (Math.max(W * 0.16, Math.min(W * 0.84, dx0)) - dx0) * keep;
-          sbDest(ctx, PL.dest, dx0, hy + F / zD, sD * (1 + 0.7 * Math.max(0, Math.min(1, (zD - 9.5) / 40))), t);
-          destDrawn = true;
-        }
+        // the landmark and the finish line, at their depth
+        if (!destDrawn && zD <= zB && zD > zA) { dest(zD); destDrawn = true; }
+        if (!lineDrawn && zL <= zB && zL > zA) { this.drawLine(ctx, zL, at(zL), camX, W, hy, F, half); lineDrawn = true; }
       }
       // shafts of afternoon light between the trees
       if (PL.shafts) {
@@ -8224,25 +8249,6 @@ PuzzleEnginesFactory(window);
         lg.addColorStop(0, 'rgba(255, 244, 214, 0.3)'); lg.addColorStop(1, 'rgba(255, 244, 214, 0)');
         ctx.fillStyle = lg;
         ctx.beginPath(); ctx.moveTo(xN - 0.16 * sN, yN); ctx.lineTo(xN + 0.16 * sN, yN); ctx.lineTo(xF + 0.5 * sF, yF); ctx.lineTo(xF - 0.5 * sF, yF); ctx.closePath(); ctx.fill();
-      }
-      // the finish: bunting on two posts across the road
-      if (this.finishAt != null) {
-        const z = this.finishAt - sc;
-        if (z > 0.6) {
-          const s = F / z, xc = W / 2 + (at(z) - camX) * s, yG = hy + F / z;
-          const xL = xc - half * 1.3 * s, xR = xc + half * 1.3 * s, top = yG - 0.72 * s, sag = 0.11 * s;
-          ctx.fillStyle = '#9A6B44';
-          ctx.fillRect(xL - 0.025 * s, top, 0.05 * s, yG - top);
-          ctx.fillRect(xR - 0.025 * s, top, 0.05 * s, yG - top);
-          ctx.strokeStyle = 'rgba(70, 56, 44, 0.75)'; ctx.lineWidth = Math.max(1, 0.01 * s);
-          ctx.beginPath(); ctx.moveTo(xL, top); ctx.quadraticCurveTo(xc, top + sag * 2, xR, top); ctx.stroke();
-          const cols = ['#E5564D', '#FFC83A', '#3D8BFD', '#2FB36E', '#FFFFFF', '#FF7FB0'], nF = 13, fw = ((xR - xL) / nF) * 0.38;
-          for (let q = 0; q < nF; q++) {
-            const u = (q + 0.5) / nF, fx = (1 - u) * (1 - u) * xL + 2 * u * (1 - u) * xc + u * u * xR, fy = top + 2 * u * (1 - u) * sag * 2;
-            ctx.fillStyle = cols[q % cols.length];
-            ctx.beginPath(); ctx.moveTo(fx - fw, fy); ctx.lineTo(fx + fw, fy); ctx.lineTo(fx, fy + fw * 2.1); ctx.closePath(); ctx.fill();
-          }
-        }
       }
       // the sign, just off the right edge
       const S = this.sign;
@@ -8295,6 +8301,8 @@ PuzzleEnginesFactory(window);
       const bob = this.offEdge && this.kmh > 4 ? Math.sin(this.tt * 70) * 1.6 : 0;
       sbCar(ctx, W / 2, carY, carW, this.tilt, bob, this.braking || this.phase === 'finish');
       if (PL.moon) for (const sd of [-1, 1]) ctx.drawImage(sbGlow('255, 90, 70'), W / 2 + sd * 36.5 * u - 22 * u, carY - 38.5 * u + bob - 22 * u, 44 * u, 44 * u);
+      // the finish line once the car is through it and the camera not yet
+      if (zL > 0.6 && zL <= SB_CAR_Z) this.drawLine(ctx, zL, at(zL), camX, W, hy, F, half);
       if (this.phase === 'drive' || this.phase === 'finish') {
         if (this.kmh > 4 && ts - (this.exAt || 0) > 230) { this.exAt = ts; this.puffs.push({ t0: ts, x: -20, y: -4, vx: -16, vy: 10, r0: 3, r1: 15, life: 700, c: '240, 240, 244', a: 0.22 }); }
         if (ts < this.brakeTo && this.kmh > 3 && ts - (this.skAt || 0) > 60) {
@@ -8460,7 +8468,7 @@ PuzzleEnginesFactory(window);
         h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' })),
         d.items ? h('span', { 'aria-label': 'Collected' }, c, h('b', { text: d.collected + '/' + d.items })) : null);
     }
-    extraSnapshot() { return { tt: this.tt, pos: this.pos }; }
+    extraSnapshot() { return { tt: this.tt, pos: this.pos, endW: this.endW }; }
     onKey(e) {
       if (this.summary) return false;
       const k = e.key;
@@ -9123,7 +9131,7 @@ PuzzleEnginesFactory(window);
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
-        'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign for the whole drive and on its road (see `place`). The drive heads for the place\'s landmark, which grows on the horizon over the drive and is where the car stops. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
+        'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign for the whole drive and on its road (see `place`). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives under the finish banner 8 units before it and brakes evenly to a stop 4.5 units past the banner. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
         'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (once a drive at L1 and L2, twice from L3; never before the third sign or after the last but one), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
         'With feedback on, a caught target\'s animal comes off the sign and runs or hops into the field for about 1 s after the tap; with feedback off a tap only gives a soft click. The horn toots when an animal is tapped away whatever the feedback setting, and things collected fly to a counter shown when counters are on.',
         'Levels:', lv('switchback'),
