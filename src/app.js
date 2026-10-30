@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.27.0';
+  const APP_VERSION = '2.28.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -812,7 +812,8 @@
   // A plan is a list of blocks. Puzzle seeds come from (session seed, block,
   // game, level, occurrence), so fixed blocks give everyone the same puzzles
   // and adaptive blocks give everyone the same puzzle at each level.
-  function seqInit(blocks, seed, clue) { return { seed, clue: clue || 'pin', blocks: clone(blocks), b: 0, k: 0, n: 0, adapt: {}, counts: {} }; }
+  // tour: how many Switchback drives at Master so far (they go round every place in turn)
+  function seqInit(blocks, seed, clue, tour) { return { seed, clue: clue || 'pin', blocks: clone(blocks), b: 0, k: 0, n: 0, adapt: {}, counts: {}, tour: tour || 0 }; }
   function seqTotal(S) { return S.blocks.reduce((a, b) => a + b.count, 0); }
   function seqNext(S) {
     while (S.b < S.blocks.length && S.k >= S.blocks[S.b].count) { S.b++; S.k = 0; }
@@ -825,11 +826,16 @@
     const ckey = S.b + ':' + game + ':' + level;
     const j = S.counts[ckey] || 0;
     S.counts[ckey] = j + 1;
+    // Switchback at Master: the next place of the tour
+    const tour = game === 'switchback' && E.games.switchback.levels[level] && E.games.switchback.levels[level].tour;
+    let variant = game === 'tumbler' ? (S.clue || 'pin') : '', stop = null;
+    if (tour) { stop = S.tour || 0; variant = tour[stop % tour.length]; S.tour = stop + 1; }
     const spec = {
       seq: S.n + 1, block: S.b + 1, inBlock: S.k + 1, game, level, adaptive: !!B.adaptive, j,
       seed: E.puzzleSeed(S.seed, S.b, game, level, j),
-      variant: game === 'tumbler' ? (S.clue || 'pin') : '',
+      variant,
     };
+    if (stop != null) spec.tour = stop;
     spec.id = 'B' + spec.block + '-' + game + '-L' + level + '-' + (j + 1);
     S.k++;
     S.n++;
@@ -917,7 +923,7 @@
       },
       startedAt: new Date().toISOString(), endedAt: null, status: 'active',
       t0wall: Date.now(),
-      seq: seqInit(setup.blocks, setup.seed >>> 0, options.clue),
+      seq: seqInit(setup.blocks, setup.seed >>> 0, options.clue, kind === 'free' ? Number(store.get('pr1.sbtour', 0)) || 0 : 0),
       events: [], puzzles: [],
       practiced: {}, pending: null,
       hasMoves: false,
@@ -7742,7 +7748,7 @@
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (through a research session, between visits in free play; until app 2.25 each research block started fresh), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
         'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign and on its road (see `place`); on L4 and L5 another animal takes over halfway (see below). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives through the chequered finish line 8 units before it and brakes evenly to a stop 4.5 units past the line. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
-        'Each level brings one new thing to learn, and keeps the ones before (from app 2.27; until then every level only added signs, speed and bends). L1: steer and tap the target sign. L2: the animal on the road (below). L3: the road splits. Twice a drive at L3 (once at L4 and L5) a green arrow board comes up in the split ahead with an arrow and the landmark\'s flag; about 3 s later the road has widened to two lanes and splits around a grass island, and the lane on the arrow\'s side runs on to the landmark while the other one bends away. The lane the car\'s middle is in 1 road unit past the split counts (fork event, right_lane or wrong_lane). In the wrong lane the car brakes and is steered back into the right one over about 1 s (no new sign comes up meanwhile, and that time is left out of the speed measures). No sign comes up while the board is close ahead. L4: halfway (after the middle sign) a card shows another animal\'s sign and the sign button changes to it: from then on that sign is the target and the first animal\'s sign no longer counts; 4 in 10 of the other signs after it show the first animal (turn event; coast: crab then swan; outback: kangaroo then camel; village: duck then rabbit; north: moose then goose). The animal on the road is the one whose sign counts at the time. L5: a drive at dusk or night (the village and the north look as they always did, with the headlights on), and each sign shows dark for 0.38 s before it lights up; its time up and the reaction time count from when it lights up, and a tap while it is still dark is a stray (detail: sign still dark), without a sound. The first time a player meets something new (on this device), it comes with a short demo: the first animal on the road stops the car short of it and waits for a tap with a hand and a word (the beast event says so; the drive clock stands still meanwhile), the first fork is driven at three quarters of the speed with a word about the arrow and a word after it, and the first sign at night stays dark for 0.9 s with a word. The halfway card is its own demo. Events between two signs never come before the third sign or after the last but one: the board at halfway has a slot of its own (the next sign 3.2 s after it), a fork 4.6 s, an animal 3 s.',
+        'Each level brings one new thing to learn, and keeps the ones before (from app 2.27; until then every level only added signs, speed and bends). L1: steer and tap the target sign. L2: the animal on the road (below). L3: the road splits. Twice a drive at L3 (once at L4 and L5) a green arrow board comes up in the split ahead with an arrow and the landmark\'s flag; about 3 s later the road has widened to two lanes and splits around a grass island, and the lane on the arrow\'s side runs on to the landmark while the other one bends away. The lane the car\'s middle is in 1 road unit past the split counts (fork event, right_lane or wrong_lane). In the wrong lane the car brakes and is steered back into the right one over about 1 s (no new sign comes up meanwhile, and that time is left out of the speed measures). No sign comes up while the board is close ahead. L4: halfway (after the middle sign) a card shows another animal\'s sign and the sign button changes to it: from then on that sign is the target and the first animal\'s sign no longer counts; 4 in 10 of the other signs after it show the first animal (turn event; coast: crab then swan; outback: kangaroo then camel; at L5 also farm: cow then hen; savanna: elephant then monkey; fields: rabbit then goose; desert: camel then rabbit; forest: deer then bear; jungle: monkey then elephant; village: duck then rabbit; north: moose then reindeer, where the reindeer is also one of the look-alikes before halfway; after halfway a look-alike that is now the animal to tap shows the first animal instead). The animal on the road is the one whose sign counts at the time. L5: Master. Its drives go round all ten places in turn (from app 2.28): first its own two, the village at dusk and the north at night, then the jungle, farm, coast, forest, desert, savanna, outback and fields, and round again, everything learned on the way switched on (`place` says where; the other signs are look-alikes of each place\'s animal: farm moose, deer, camel; savanna cow, bear, camel; fields cat, fox, hedgehog; desert cow, moose, deer; forest reindeer, moose, camel; jungle kangaroo, bear, cat; coast turtle, shell, fish; outback rabbit, deer, monkey; village goose, swan, hen; north reindeer, deer, bear). Where the tour stands is kept on the device in free play (`pr1.sbtour`) and per session in a research session, which starts with the village; the generator gets the place, so a Master drive is its seed and its place (the seed\'s own pick of village or north is still drawn and then set aside, so sign times, the road, the animals and the forks do not depend on the place). Until app 2.28 every Master drive was the village or the north, from the seed. In the village and the north (the drives at dusk and night, with the headlights on) each sign shows dark for 0.38 s before it lights up; its time up and the reaction time count from when it lights up, and a tap while it is still dark is a stray (detail: sign still dark), without a sound. The first time a player meets something new (on this device), it comes with a short demo: the first animal on the road stops the car short of it and waits for a tap with a hand and a word (the beast event says so; the drive clock stands still meanwhile), the first fork is driven at three quarters of the speed with a word about the arrow and a word after it, and the first sign at night stays dark for 0.9 s with a word. The halfway card is its own demo. Events between two signs never come before the third sign or after the last but one: the board at halfway has a slot of its own (the next sign 3.2 s after it), a fork 4.6 s, an animal 3 s.',
         'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (twice a drive from L2; never at L1 or in practice), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
         'With feedback on, a caught target\'s animal comes off the sign and runs or hops into the field for about 1 s after the tap; with feedback off a tap only gives a soft click. The horn toots when an animal is tapped away whatever the feedback setting, and things collected fly to a counter shown when counters are on.',
         'Levels:', lv('switchback'),
@@ -7968,7 +7974,10 @@
       return at(L.moves + ' moves' + (L.n ? ' · ' + L.n + ' layers' : '') + (L.cherry != null ? ' · the cherry stays on top' : L.size ? ' · small goes on big' : ''));
     }
     if (g === 'keepsake') return at(L.items + ' things to remember');
-    if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + (SB_NEW[L.new] || 'tap your animal\'s sign');
+    if (g === 'switchback') {
+      const where = L.places.map((x) => SB_PLACE_NAME[x] || x).join(L.tour ? ' and ' : ' or ');
+      return L.tour ? where + ' at night · then every place in turn' : where + ' · ' + (SB_NEW[L.new] || 'tap your animal\'s sign');
+    }
     if (g === 'glimpse') return at(['', 'the bird, close by', 'the dragonfly, further out', 'the owl, near or far', 'the parrot among leaves', 'the bat among moths'][lv] || '');
     return '';
   }
@@ -8359,6 +8368,8 @@
       const spec = S.pending || seqNext(S.seq);
       S.pending = null;
       if (!spec) { this.finish('complete'); return; }
+      // free play: a Master drive that is left before it is driven comes round again next time
+      if (S.kind === 'free' && spec.tour != null) store.set('pr1.sbtour', spec.tour);
       if (this.needsPractice(spec.game)) {
         S.pending = spec;
         await this.show(practiceSpec(spec.game, spec.variant), null, true, fromDy);
@@ -8436,6 +8447,8 @@
       const gl0 = sm.gl;
       const down = sp.game === 'glimpse' && sm.outcome === 'complete' && !sm.success && gl0 && gl0.n > 0 && gl0.correct < gl0.n / 2;
       const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game), down);
+      // free play: the Master tour moves on once a drive is driven or skipped
+      if (S.kind === 'free' && sp.tour != null && sm.outcome !== 'abandoned') store.set('pr1.sbtour', sp.tour + 1);
       // the first miss in a game ends its quick start (free play keeps this on the device, below)
       if (S.kind !== 'free' && !sp.practice && !neutral && !sm.success) (S.settled = S.settled || {})[sp.game] = true;
       const level_next = sp.adaptive && change ? change.to : '';

@@ -1665,8 +1665,12 @@
   const SB_SLOT = 3.0;     // s from an animal stepping out to the next sign
   const SB_FORK = 4.6;     // s from a fork's arrow sign to the next sign (the lanes come about 3 s after the arrow)
   const SB_TURN = 3.2;     // s from the new animal's board to the next sign
-  // the second animal to watch for, from halfway (levels 4 and 5)
-  const SB_SWITCH = { coast: 'swan', outback: 'camel', village: 'rabbit', north: 'goose' };
+  // the second animal to watch for, from halfway (levels 4 and 5; at 5 in every place)
+  const SB_SWITCH = { farm: 'hen', savanna: 'monkey', fields: 'goose', desert: 'rabbit', forest: 'bear', jungle: 'elephant', coast: 'swan', outback: 'camel', village: 'rabbit', north: 'reindeer' };
+  // Master goes round every place in turn: first its own two, at dusk and night, then the rest
+  const SB_TOUR = ['village', 'north', 'jungle', 'farm', 'coast', 'forest', 'desert', 'savanna', 'outback', 'fields'];
+  // where it is dusk or night: there, at level 5, signs light up late in the headlights
+  const SB_NIGHT = { village: 1, north: 1 };
   // each place's animal: on its target sign and on its road
   const SB_ANIMALS = { farm: 'cow', savanna: 'elephant', fields: 'rabbit', desert: 'camel', forest: 'deer', jungle: 'monkey', coast: 'crab', outback: 'kangaroo', village: 'duck', north: 'moose' };
   // signs that are not the target, from nothing in common (L1) to look-alike animals (L5)
@@ -1675,6 +1679,15 @@
     color: [['round_red', '50'], ['round_red', 'car'], ['square_blue', 'P']],
     symbol: [['tri', 'bang'], ['tri', 'curve'], ['tri', 'bumps']],
     animal: [['tri', 'bird'], ['tri', 'snail'], ['tri', 'turtle']],
+    // L5: look-alikes of each place's animal
+    farm: [['tri', 'moose'], ['tri', 'deer'], ['tri', 'camel']],
+    savanna: [['tri', 'cow'], ['tri', 'bear'], ['tri', 'camel']],
+    fields: [['tri', 'cat'], ['tri', 'fox'], ['tri', 'hedgehog']],
+    desert: [['tri', 'cow'], ['tri', 'moose'], ['tri', 'deer']],
+    forest: [['tri', 'reindeer'], ['tri', 'moose'], ['tri', 'camel']],
+    jungle: [['tri', 'kangaroo'], ['tri', 'bear'], ['tri', 'cat']],
+    coast: [['tri', 'turtle'], ['tri', 'shell'], ['tri', 'fish']],
+    outback: [['tri', 'rabbit'], ['tri', 'deer'], ['tri', 'monkey']],
     village: [['tri', 'goose'], ['tri', 'swan'], ['tri', 'hen']],
     north: [['tri', 'reindeer'], ['tri', 'deer'], ['tri', 'bear']],
   };
@@ -1738,24 +1751,28 @@
     // places: the seed picks one; beasts: times the place's animal steps onto the road;
     // forks: times the road splits in two lanes, an arrow sign showing which one to take;
     // turn: from halfway another animal's sign is the one to tap (and the first animal's no
-    // longer); night: signs light up late in the headlights; new: what the level brings to
-    // learn, each level one more (until engines 1.22 every level only added load);
+    // longer); night: signs light up late in the headlights (in the places at dusk or night);
+    // tour: at Master the drives go round all ten places in turn (the app passes the next one);
+    // new: what the level brings to learn, each level one more (until engines 1.22 every
+    // level only added load);
     // half: road half-width; s: share of bends that run into an S
     levels: {
       1: { places: ['farm', 'savanna'], beasts: 0, forks: 0, targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
       2: { places: ['fields', 'desert'], new: 'animals', beasts: 2, forks: 0, targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
       3: { places: ['forest', 'jungle'], new: 'forks', beasts: 2, forks: 2, targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
       4: { places: ['coast', 'outback'], new: 'turn', beasts: 2, forks: 1, turn: true, targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
-      5: { places: ['village', 'north'], new: 'night', beasts: 2, forks: 1, turn: true, night: true, targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
+      5: { places: ['village', 'north'], tour: SB_TOUR, new: 'night', beasts: 2, forks: 1, turn: true, night: true, targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
     },
     turnTo: SB_SWITCH,
+    alike: SB_FOILS,
+    nightPlaces: SB_NIGHT,
     // p is a puzzle or a level entry
     describe(p) {
       const n = p.signs ? p.signs.filter((x) => x.go).length : p.targets;
       const f = p.signs ? p.signs.length - n : p.foils;
       const nb = Array.isArray(p.beasts) ? p.beasts.length : p.beasts || 0;
       const nf = Array.isArray(p.forks) ? p.forks.length : p.forks || 0;
-      const where = p.place ? p.place + ', ' + p.target + ' sign' + (p.turn ? ' then ' + p.turn.to + ' sign' : '') + ', ' : p.places.map((q) => q + ' (' + SB_ANIMALS[q] + (p.turn ? ' then ' + SB_SWITCH[q] : '') + ')').join(' or ') + ', ';
+      const where = p.place ? p.place + ', ' + p.target + ' sign' + (p.turn ? ' then ' + p.turn.to + ' sign' : '') + ', ' : p.places.map((q) => q + ' (' + SB_ANIMALS[q] + (p.turn ? ' then ' + SB_SWITCH[q] : '') + ')').join(' or ') + (p.tour ? ', then all ' + p.tour.length + ' places in turn' : '') + ', ';
       return where + n + ' targets and ' + f + ' other sign' + (f === 1 ? '' : 's') + ' (' + p.foil + '), the animal on the road ' + nb + ' time' + (nb === 1 ? '' : 's') + ', ' + nf + ' fork' + (nf === 1 ? '' : 's') + (p.night ? ', at night' : '') + ', from ' + p.kmh + ' km/h';
     },
     build(level, seed, L, place, signs, beasts, items, road, duration, fixed, forks, turn) {
@@ -1763,24 +1780,28 @@
       forks = forks || [];
       return {
         game: 'switchback', level, seed, place, target, foil: L.foil,
-        signs, beasts, forks, turn: turn || null, night: !!L.night, items, road, half: L.road.half, duration,
+        signs, beasts, forks, turn: turn || null, night: !!(L.night && SB_NIGHT[place]), items, road, half: L.road.half, duration,
         kmh: L.kmh, minKmh: L.kmh + this.speedRange[0], maxKmh: L.kmh + this.speedRange[1],
         advanceKmh: L.advanceKmh || null, advanceMs: L.advanceMs || null,
         fixedMs: fixed ? fixed.ms : null, fixedKmh: fixed ? fixed.kmh : null,
         reference: null,
         features: {
           place, target, targets: signs.filter((x) => x.go).length, foils: signs.filter((x) => !x.go).length, foil: L.foil,
-          animals: beasts.length, forks: forks.length, turn_to: turn ? turn.to : '', night: L.night ? 1 : 0, items: items.length,
+          animals: beasts.length, forks: forks.length, turn_to: turn ? turn.to : '', night: L.night && SB_NIGHT[place] ? 1 : 0, items: items.length,
           gap_s: L.gap, road_half: L.road.half, bends: L.road.curve ? L.road.curve.join('-') : 'practice', s_bends: L.road.s || 0,
           kmh: L.kmh, advance_kmh: L.advanceKmh || null, advance_ms: L.advanceMs || null,
           target_hits: this.up / (this.up + this.down),
         },
       };
     },
-    generate(level, seed) {
+    // variant: at Master, the place the tour has come to (the seed's own pick is still drawn,
+    // so the rest of the drive is the same in every place)
+    generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const place = L.places[rng.int(L.places.length)], target = SB_ANIMALS[place], target2 = L.turn ? SB_SWITCH[place] : null;
+      const pick = L.places[rng.int(L.places.length)];
+      const place = variant && (L.tour || L.places).indexOf(variant) >= 0 ? variant : pick;
+      const target = SB_ANIMALS[place], target2 = L.turn ? SB_SWITCH[place] : null;
       const foils = SB_FOILS[L.foil === 'similar' ? place : L.foil];
       // the first sign is a target; after it, never more than three of a kind in a row
       let order;
@@ -1810,7 +1831,8 @@
         // show the first animal, which no longer counts
         const later = turn != null;
         let f = go ? ['tri', later ? target2 : target] : fseq[fi++];
-        if (!go && later && rng() < 0.4) f = ['tri', target];
+        // (a look-alike that is now the animal to tap shows the first animal instead)
+        if (!go && later) { const r = rng(); if (r < 0.4 || f[1] === target2) f = ['tri', target]; }
         signs.push({ t: round(t, 2), go, shape: f[0], glyph: f[1] });
         t += L.gap + (rng() - 0.5) * 0.7;
         const e = ev.get(k);
@@ -2046,7 +2068,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.22.0',
+    version: '1.23.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
