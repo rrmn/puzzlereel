@@ -196,6 +196,14 @@ button { cursor: pointer; }
 .pips i.half { opacity: 0.9; background: linear-gradient(90deg, var(--pip) 50%, transparent 50%); box-shadow: inset 0 0 0 1.4px var(--pip); }
 .tag { font-family: var(--display); font-weight: 600; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: var(--bg2); letter-spacing: 0.02em; }
 .status { display: flex; align-items: center; gap: 8px; }
+/* Switchback: this place's sign and one dot per target sign of the drive */
+.sb-tally { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px 0 7px; border-radius: 999px; background: var(--chip); }
+.sb-tally canvas { width: 26px; height: 26px; flex: none; }
+.sb-tally-dots { display: inline-flex; flex-wrap: wrap; gap: 3px; max-width: 150px; }
+.sb-tally-dots i { width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 22%, transparent); transition: background 0.25s, transform 0.25s; }
+.sb-tally-dots i.ok { background: var(--good); transform: scale(1.15); }
+.sb-tally-dots i.bad { background: var(--bad); }
+.sb-tally-dots i.done { background: color-mix(in srgb, var(--ink) 70%, transparent); }
 .goal { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 9px; border-radius: 999px; background: var(--chip); font-family: var(--display); font-weight: 600; font-size: 19px; font-variant-numeric: tabular-nums; }
 .goal svg { width: 21px; height: 21px; }
 .goal.bump { animation: bump 0.45s cubic-bezier(.3,1.6,.5,1); }
@@ -652,17 +660,26 @@ button { cursor: pointer; }
 .res-icon.again { background: #FFF3DC; color: #C77C12; }
 .res-icon svg { width: 32px; height: 32px; }
 .res-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: 0.005em; }
-.res-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; color: var(--paper-soft); font-size: 15px; font-variant-numeric: tabular-nums; }
+.res-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; color: var(--paper-soft); font-size: 17px; font-variant-numeric: tabular-nums; }
 .res-stats span { display: inline-flex; align-items: center; gap: 6px; }
-.res-stats svg { width: 17px; height: 17px; }
+.res-stats svg { width: 19px; height: 19px; }
+/* what counted on top; a bonus (Switchback's things collected) smaller below */
+.res-stack { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.res-bonus { display: inline-flex; align-items: center; gap: 6px; color: var(--paper-soft); font-size: 15px; font-variant-numeric: tabular-nums; }
+.res-bonus canvas { width: 20px; height: 20px; }
+.res-bonus b { font-weight: 600; }
 .res-stats b { color: var(--paper-ink); font-weight: 600; }
 .res-level { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: #FFF3CF; color: #7A5200; font-family: var(--display); font-weight: 600; font-size: 16px; animation: pop 0.5s 0.6s cubic-bezier(.3,1.7,.5,1) both; }
 .res-level.down { background: #EEF0F6; color: var(--paper-soft); }
+.res-level-row { display: inline-flex; align-items: center; gap: 8px; }
+/* a level up says what the new level brings */
+.res-level.up { flex-direction: column; gap: 1px; border-radius: 22px; }
+.res-level.up small { font-family: var(--ui); font-weight: 500; font-size: 14px; line-height: 1.25; opacity: 0.85; }
 .res-level .pips { --pip: currentColor; }
 .res-level.toward { background: #F1EEE6; color: var(--paper-ink); padding-left: 8px; }
 /* a level up: the new pip lands with a bounce and a light sweeps the pill */
 .res-level.up { position: relative; overflow: hidden; font-size: 17px; padding: 7px 16px; box-shadow: 0 0 0 2px #FFE08A; }
-.res-level.up::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.8) 50%, transparent 65%); background-size: 250% 100%; animation: pfshine 1.4s 1.2s ease-in-out 2 both; pointer-events: none; }
+.res-level.up::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.8) 50%, transparent 65%) no-repeat; background-size: 250% 100%; animation: pfshine 1.4s 1.2s ease-in-out 2 both; pointer-events: none; }
 .res-level .pips i.new { animation: pipnew 0.7s 1.05s cubic-bezier(.3,1.9,.5,1) both; }
 @keyframes pipnew { 0% { transform: scale(0); opacity: 0.22; } 60% { transform: scale(1.9); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
 .res-slots { display: inline-flex; gap: 5px; }
@@ -925,11 +942,12 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-ladder i.on { background: var(--pc); }
 .pf-ladder i.been { background: color-mix(in srgb, var(--pc) 32%, transparent); }
 .pf-ladder i b { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--pc); animation: pffill 0.9s 0.25s cubic-bezier(.3,1,.4,1) both; }
-.pf-ladder i b::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%); background-size: 220% 100%; animation: pfshine 2.6s 1.4s ease-in-out infinite; }
+.pf-ladder i b::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%) no-repeat; background-size: 220% 100%; animation: pfshine 2.6s 1.4s ease-in-out infinite; }
 .pf-ladder.pf-small { flex: none; grid-template-columns: repeat(5, clamp(14px, 5vw, 21px)); gap: 3px; }
 .pf-ladder.pf-small i { height: 9px; }
 @keyframes pffill { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); transform-origin: left; } }
-@keyframes pfshine { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+/* no-repeat and a wide range: the band starts and ends fully outside, so it never rests on the text */
+@keyframes pfshine { from { background-position: 140% 0; } to { background-position: -140% 0; } }
 @keyframes pffade { from { opacity: 0; } to { opacity: 1; } }
 
 /* --- one game's own page */
@@ -959,7 +977,20 @@ code { font-family: var(--mono); font-size: 12px; }
   background: var(--pc); color: var(--pc-ink); font-family: var(--display); font-weight: 600; font-size: 17px; transition: transform 0.12s; }
 .pf-play:active { transform: scale(0.95); }
 .pf-play svg { width: 18px; height: 18px; fill: currentColor; }
+.pf-next-adds { margin: -6px 0 0; font-size: 15px; color: var(--sheet-soft); }
 .pf-next-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
+/* all five levels: done, here, ahead */
+.pf-levels { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-levels li { display: grid; grid-template-columns: 22px auto minmax(0, 1fr); align-items: center; gap: 10px; min-height: 34px; padding: 4px 10px 4px 8px; border-radius: 12px; font-size: 15px; color: var(--sheet-soft); }
+.pf-levels li i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--mute) 85%, transparent); }
+.pf-levels li i svg { width: 13px; height: 13px; stroke-width: 3.2; }
+.pf-levels li b { font-family: var(--display); font-weight: 600; font-size: 16px; color: var(--sheet-ink); white-space: nowrap; }
+.pf-levels li span { min-width: 0; }
+.pf-levels li.done i { background: var(--pc); color: var(--pc-ink); box-shadow: none; }
+.pf-levels li.been i { background: color-mix(in srgb, var(--pc) 32%, transparent); box-shadow: none; }
+.pf-levels li.now { background: var(--field); }
+.pf-levels li.now i { box-shadow: inset 0 0 0 6px var(--pc); }
+.pf-levels li.now b { color: var(--sheet-ink); }
 .pf-slots { display: inline-flex; gap: 7px; }
 .pf-slots i { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--mute) 85%, transparent); }
 .pf-slots i:not(.on) { animation: pfwait 1.8s 1.2s ease-in-out infinite; }

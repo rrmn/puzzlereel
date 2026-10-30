@@ -1298,6 +1298,7 @@
     sky: { pairs: { easy: ['plane', 'balloon'], hard: ['plane', 'gull'] }, targets: ['kite', 'rocket', 'star'], distractor: 'cloud' },
   };
   const GL_THEME_ORDER = ['meadow', 'sea', 'sky'];
+  const GL_LEVEL_THEME = { 1: 'meadow', 2: 'meadow', 3: 'sea', 4: 'sea', 5: 'sky' };
   function glMedian(xs) {
     if (!xs.length) return null;
     const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1;
@@ -1359,13 +1360,16 @@
         },
       };
     },
-    // variant 'classic': meadow scene, always the bird (fixed blocks); anything else: a seeded scene, targets in turn
+    // variant 'classic': meadow scene, always the bird (fixed blocks); anything else: the scene
+    // of its level (meadow at 1 and 2, the sea at 3 and 4, the sky at 5), targets in turn, so
+    // moving up a level is also arriving somewhere new
     generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
       const classic = variant === 'classic';
       const n = classic ? this.trials : L.looks || this.trials;
-      const themeName = classic ? 'meadow' : GL_THEME_ORDER[rng.int(GL_THEME_ORDER.length)];
+      rng.int(GL_THEME_ORDER.length); // the draw that used to pick the scene, kept so seeds still give the same looks
+      const themeName = classic ? 'meadow' : GL_LEVEL_THEME[level] || 'meadow';
       const targetSet = classic ? ['bird'] : GL_THEMES[themeName].targets;
       const tgs = rng.shuffle(Array.from({ length: n }, (_, i) => targetSet[i % targetSet.length]));
       const centers = rng.shuffle(Array.from({ length: n }, (_, i) => i % 2));
@@ -1472,6 +1476,7 @@
   // =====================================================================
   const SK_CAPS = [3, 2, 1];
   const SK_THEMES = ['stones', 'harbor', 'bakery'];
+  const SK_LEVEL_THEME = { 1: 'stones', 2: 'stones', 3: 'harbor', 4: 'harbor', 5: 'bakery' };
   const skKey = (st) => st.map((a) => a.join('')).join('|');
   const skCopy = (st) => st.map((a) => a.slice());
   function skNext(st) {
@@ -1527,11 +1532,13 @@
         features: { moves, start: skKey(start), goal: skKey(goal), theme },
       };
     },
-    // variant 'classic' (fixed blocks): always the stones; otherwise a seeded setting
+    // variant 'classic' (fixed blocks): always the stones; otherwise the setting of its level
+    // (river stones at 1 and 2, the harbor at 3 and 4, the bakery at 5): a new level is a new place
     generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const theme = variant === 'classic' ? SK_THEMES[0] : SK_THEMES[rng.int(SK_THEMES.length)];
+      rng.int(SK_THEMES.length); // the draw that used to pick the setting, kept so seeds still give the same boards
+      const theme = variant === 'classic' ? SK_THEMES[0] : SK_LEVEL_THEME[level] || SK_THEMES[0];
       for (let attempt = 0; attempt < 100; attempt++) {
         const goal = SK_ALL[rng.int(SK_ALL.length)];
         const d = skDist(goal);
@@ -1945,7 +1952,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.15.0',
+    version: '1.16.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],

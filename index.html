@@ -207,6 +207,14 @@ button { cursor: pointer; }
 .pips i.half { opacity: 0.9; background: linear-gradient(90deg, var(--pip) 50%, transparent 50%); box-shadow: inset 0 0 0 1.4px var(--pip); }
 .tag { font-family: var(--display); font-weight: 600; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: var(--bg2); letter-spacing: 0.02em; }
 .status { display: flex; align-items: center; gap: 8px; }
+/* Switchback: this place's sign and one dot per target sign of the drive */
+.sb-tally { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px 0 7px; border-radius: 999px; background: var(--chip); }
+.sb-tally canvas { width: 26px; height: 26px; flex: none; }
+.sb-tally-dots { display: inline-flex; flex-wrap: wrap; gap: 3px; max-width: 150px; }
+.sb-tally-dots i { width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 22%, transparent); transition: background 0.25s, transform 0.25s; }
+.sb-tally-dots i.ok { background: var(--good); transform: scale(1.15); }
+.sb-tally-dots i.bad { background: var(--bad); }
+.sb-tally-dots i.done { background: color-mix(in srgb, var(--ink) 70%, transparent); }
 .goal { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 9px; border-radius: 999px; background: var(--chip); font-family: var(--display); font-weight: 600; font-size: 19px; font-variant-numeric: tabular-nums; }
 .goal svg { width: 21px; height: 21px; }
 .goal.bump { animation: bump 0.45s cubic-bezier(.3,1.6,.5,1); }
@@ -663,17 +671,26 @@ button { cursor: pointer; }
 .res-icon.again { background: #FFF3DC; color: #C77C12; }
 .res-icon svg { width: 32px; height: 32px; }
 .res-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1.05; letter-spacing: 0.005em; }
-.res-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; color: var(--paper-soft); font-size: 15px; font-variant-numeric: tabular-nums; }
+.res-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; color: var(--paper-soft); font-size: 17px; font-variant-numeric: tabular-nums; }
 .res-stats span { display: inline-flex; align-items: center; gap: 6px; }
-.res-stats svg { width: 17px; height: 17px; }
+.res-stats svg { width: 19px; height: 19px; }
+/* what counted on top; a bonus (Switchback's things collected) smaller below */
+.res-stack { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.res-bonus { display: inline-flex; align-items: center; gap: 6px; color: var(--paper-soft); font-size: 15px; font-variant-numeric: tabular-nums; }
+.res-bonus canvas { width: 20px; height: 20px; }
+.res-bonus b { font-weight: 600; }
 .res-stats b { color: var(--paper-ink); font-weight: 600; }
 .res-level { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: #FFF3CF; color: #7A5200; font-family: var(--display); font-weight: 600; font-size: 16px; animation: pop 0.5s 0.6s cubic-bezier(.3,1.7,.5,1) both; }
 .res-level.down { background: #EEF0F6; color: var(--paper-soft); }
+.res-level-row { display: inline-flex; align-items: center; gap: 8px; }
+/* a level up says what the new level brings */
+.res-level.up { flex-direction: column; gap: 1px; border-radius: 22px; }
+.res-level.up small { font-family: var(--ui); font-weight: 500; font-size: 14px; line-height: 1.25; opacity: 0.85; }
 .res-level .pips { --pip: currentColor; }
 .res-level.toward { background: #F1EEE6; color: var(--paper-ink); padding-left: 8px; }
 /* a level up: the new pip lands with a bounce and a light sweeps the pill */
 .res-level.up { position: relative; overflow: hidden; font-size: 17px; padding: 7px 16px; box-shadow: 0 0 0 2px #FFE08A; }
-.res-level.up::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.8) 50%, transparent 65%); background-size: 250% 100%; animation: pfshine 1.4s 1.2s ease-in-out 2 both; pointer-events: none; }
+.res-level.up::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.8) 50%, transparent 65%) no-repeat; background-size: 250% 100%; animation: pfshine 1.4s 1.2s ease-in-out 2 both; pointer-events: none; }
 .res-level .pips i.new { animation: pipnew 0.7s 1.05s cubic-bezier(.3,1.9,.5,1) both; }
 @keyframes pipnew { 0% { transform: scale(0); opacity: 0.22; } 60% { transform: scale(1.9); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
 .res-slots { display: inline-flex; gap: 5px; }
@@ -936,11 +953,12 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-ladder i.on { background: var(--pc); }
 .pf-ladder i.been { background: color-mix(in srgb, var(--pc) 32%, transparent); }
 .pf-ladder i b { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--pc); animation: pffill 0.9s 0.25s cubic-bezier(.3,1,.4,1) both; }
-.pf-ladder i b::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%); background-size: 220% 100%; animation: pfshine 2.6s 1.4s ease-in-out infinite; }
+.pf-ladder i b::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%) no-repeat; background-size: 220% 100%; animation: pfshine 2.6s 1.4s ease-in-out infinite; }
 .pf-ladder.pf-small { flex: none; grid-template-columns: repeat(5, clamp(14px, 5vw, 21px)); gap: 3px; }
 .pf-ladder.pf-small i { height: 9px; }
 @keyframes pffill { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); transform-origin: left; } }
-@keyframes pfshine { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+/* no-repeat and a wide range: the band starts and ends fully outside, so it never rests on the text */
+@keyframes pfshine { from { background-position: 140% 0; } to { background-position: -140% 0; } }
 @keyframes pffade { from { opacity: 0; } to { opacity: 1; } }
 
 /* --- one game's own page */
@@ -970,7 +988,20 @@ code { font-family: var(--mono); font-size: 12px; }
   background: var(--pc); color: var(--pc-ink); font-family: var(--display); font-weight: 600; font-size: 17px; transition: transform 0.12s; }
 .pf-play:active { transform: scale(0.95); }
 .pf-play svg { width: 18px; height: 18px; fill: currentColor; }
+.pf-next-adds { margin: -6px 0 0; font-size: 15px; color: var(--sheet-soft); }
 .pf-next-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
+/* all five levels: done, here, ahead */
+.pf-levels { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-levels li { display: grid; grid-template-columns: 22px auto minmax(0, 1fr); align-items: center; gap: 10px; min-height: 34px; padding: 4px 10px 4px 8px; border-radius: 12px; font-size: 15px; color: var(--sheet-soft); }
+.pf-levels li i { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--mute) 85%, transparent); }
+.pf-levels li i svg { width: 13px; height: 13px; stroke-width: 3.2; }
+.pf-levels li b { font-family: var(--display); font-weight: 600; font-size: 16px; color: var(--sheet-ink); white-space: nowrap; }
+.pf-levels li span { min-width: 0; }
+.pf-levels li.done i { background: var(--pc); color: var(--pc-ink); box-shadow: none; }
+.pf-levels li.been i { background: color-mix(in srgb, var(--pc) 32%, transparent); box-shadow: none; }
+.pf-levels li.now { background: var(--field); }
+.pf-levels li.now i { box-shadow: inset 0 0 0 6px var(--pc); }
+.pf-levels li.now b { color: var(--sheet-ink); }
 .pf-slots { display: inline-flex; gap: 7px; }
 .pf-slots i { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--mute) 85%, transparent); }
 .pf-slots i:not(.on) { animation: pfwait 1.8s 1.2s ease-in-out infinite; }
@@ -2336,6 +2367,7 @@ function PuzzleEnginesFactory(root) {
     sky: { pairs: { easy: ['plane', 'balloon'], hard: ['plane', 'gull'] }, targets: ['kite', 'rocket', 'star'], distractor: 'cloud' },
   };
   const GL_THEME_ORDER = ['meadow', 'sea', 'sky'];
+  const GL_LEVEL_THEME = { 1: 'meadow', 2: 'meadow', 3: 'sea', 4: 'sea', 5: 'sky' };
   function glMedian(xs) {
     if (!xs.length) return null;
     const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1;
@@ -2397,13 +2429,16 @@ function PuzzleEnginesFactory(root) {
         },
       };
     },
-    // variant 'classic': meadow scene, always the bird (fixed blocks); anything else: a seeded scene, targets in turn
+    // variant 'classic': meadow scene, always the bird (fixed blocks); anything else: the scene
+    // of its level (meadow at 1 and 2, the sea at 3 and 4, the sky at 5), targets in turn, so
+    // moving up a level is also arriving somewhere new
     generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
       const classic = variant === 'classic';
       const n = classic ? this.trials : L.looks || this.trials;
-      const themeName = classic ? 'meadow' : GL_THEME_ORDER[rng.int(GL_THEME_ORDER.length)];
+      rng.int(GL_THEME_ORDER.length); // the draw that used to pick the scene, kept so seeds still give the same looks
+      const themeName = classic ? 'meadow' : GL_LEVEL_THEME[level] || 'meadow';
       const targetSet = classic ? ['bird'] : GL_THEMES[themeName].targets;
       const tgs = rng.shuffle(Array.from({ length: n }, (_, i) => targetSet[i % targetSet.length]));
       const centers = rng.shuffle(Array.from({ length: n }, (_, i) => i % 2));
@@ -2510,6 +2545,7 @@ function PuzzleEnginesFactory(root) {
   // =====================================================================
   const SK_CAPS = [3, 2, 1];
   const SK_THEMES = ['stones', 'harbor', 'bakery'];
+  const SK_LEVEL_THEME = { 1: 'stones', 2: 'stones', 3: 'harbor', 4: 'harbor', 5: 'bakery' };
   const skKey = (st) => st.map((a) => a.join('')).join('|');
   const skCopy = (st) => st.map((a) => a.slice());
   function skNext(st) {
@@ -2565,11 +2601,13 @@ function PuzzleEnginesFactory(root) {
         features: { moves, start: skKey(start), goal: skKey(goal), theme },
       };
     },
-    // variant 'classic' (fixed blocks): always the stones; otherwise a seeded setting
+    // variant 'classic' (fixed blocks): always the stones; otherwise the setting of its level
+    // (river stones at 1 and 2, the harbor at 3 and 4, the bakery at 5): a new level is a new place
     generate(level, seed, variant) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const theme = variant === 'classic' ? SK_THEMES[0] : SK_THEMES[rng.int(SK_THEMES.length)];
+      rng.int(SK_THEMES.length); // the draw that used to pick the setting, kept so seeds still give the same boards
+      const theme = variant === 'classic' ? SK_THEMES[0] : SK_LEVEL_THEME[level] || SK_THEMES[0];
       for (let attempt = 0; attempt < 100; attempt++) {
         const goal = SK_ALL[rng.int(SK_ALL.length)];
         const d = skDist(goal);
@@ -2983,7 +3021,7 @@ function PuzzleEnginesFactory(root) {
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.15.0',
+    version: '1.16.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
@@ -2998,7 +3036,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.18.0';
+  const APP_VERSION = '2.19.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -3892,7 +3930,8 @@ PuzzleEnginesFactory(window);
     }
     resultStats(sm) {
       const unit = this.spec.game === 'tumbler' ? ['try', 'tries'] : this.spec.game === 'conduit' ? ['turn', 'turns'] : ['move', 'moves'];
-      const refWord = this.spec.game === 'tumbler' ? 'solver ' : 'best ';
+      // Tumbler's reference is a good guesser's tries, not a true fewest: luck can beat it
+      const refWord = this.spec.game === 'tumbler' ? 'aim ' : 'fewest ';
       return h('div', { class: 'res-stats' },
         h('span', null, icon('tapped'), h('b', { text: String(sm.moves) }), ' ' + unit[sm.moves === 1 ? 0 : 1], h('span', { text: ' · ' + refWord + sm.reference })),
         h('span', null, icon('clock'), h('b', { text: clock(sm.duration_ms) })));
@@ -3946,7 +3985,10 @@ PuzzleEnginesFactory(window);
         const up = sm.level_change.to > sm.level_change.from;
         const pp = pips(sm.level_change.to);
         if (up) pp.children[sm.level_change.to - 1].classList.add('new');
-        panel.append(h('div', { class: 'res-level' + (up ? ' up' : ' down') }, (up ? 'Level up · ' : 'Level · ') + LEVEL_NAMES[sm.level_change.to - 1], pp));
+        const adds = up ? levelAdds(this.spec.game, sm.level_change.to) : '';
+        panel.append(h('div', { class: 'res-level' + (up ? ' up' : ' down') },
+          h('span', { class: 'res-level-row' }, (up ? 'Level up · ' : 'Level · ') + LEVEL_NAMES[sm.level_change.to - 1], pp),
+          adds ? h('small', { text: adds }) : null));
         if (up && !instant) this.later(() => Sound.play('level'), 900);
       } else if (sm.toward && this.o.counter) {
         // halfway to the next level: the slot just earned fills in, the other waits
@@ -7854,6 +7896,12 @@ PuzzleEnginesFactory(window);
       this.signBtn = h('button', { class: 'sb-btn cue', type: 'button', 'aria-label': 'Tap when this sign shows: ' + p.target + ' crossing' }, this.btnCanvas);
       this.signBtn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.respond(e, 'button'); });
       this.signBtn.addEventListener('click', (e) => { if (e.detail === 0) this.respond(e, 'key'); });
+      // what counts, on screen for the whole drive: this place's sign and one dot per
+      // target sign, green when caught and red when missed (speed alone said "drive fast")
+      this.tallyCanvas = h('canvas', { 'aria-hidden': 'true' });
+      this.tallyDots = h('span', { class: 'sb-tally-dots' });
+      this.tallyEl = h('span', { class: 'sb-tally', role: 'img' }, this.tallyCanvas, this.tallyDots);
+      this.goalEl.after(this.tallyEl);
       // where the guiding hand points on the road: the sign, or the animal
       this.anchor = h('i', { class: 'sb-anchor', 'aria-hidden': 'true' });
       this.wrap.append(this.canvas, this.anchor, this.wheelEl, this.signBtn, this.goBtn);
@@ -7924,6 +7972,10 @@ PuzzleEnginesFactory(window);
         bc.clearRect(0, 0, b, b);
         sbPlate(bc, 'tri', this.p.target, b * 0.36, b * 0.37, b * 0.62);
       }
+      const ts = 26, tc = this.tallyCanvas.getContext('2d');
+      this.tallyCanvas.width = Math.round(ts * k);
+      this.tallyCanvas.height = Math.round(ts * k);
+      if (tc) { tc.setTransform(k, 0, 0, k, 0, 0); tc.clearRect(0, 0, ts, ts); sbPlate(tc, 'tri', this.p.target, ts / 2, ts * 0.53, ts * 0.9); }
       this.draw(now());
     }
     // ---- input
@@ -8673,6 +8725,21 @@ PuzzleEnginesFactory(window);
     updateStatus() {
       super.updateStatus();
       this.meterEl.hidden = true;
+      this.tally();
+    }
+    tally() {
+      if (!this.tallyEl) return;
+      const p = this.p, res = this.run.res, show = this.o.feedback || this.practice;
+      let n = 0, caught = 0;
+      this.tallyDots.textContent = '';
+      p.signs.forEach((sg, k) => {
+        if (!sg.go) return;
+        n++;
+        const r = res[k];
+        if (r && r.cls === 'hit') caught++;
+        this.tallyDots.append(h('i', { class: r ? (show ? (r.cls === 'hit' ? 'ok' : 'bad') : 'done') : '' }));
+      });
+      this.tallyEl.setAttribute('aria-label', caught + ' of ' + n + ' target signs caught');
     }
     guide() {
       super.guide();
@@ -8728,10 +8795,12 @@ PuzzleEnginesFactory(window);
       if (!d || !d.n) return null;
       const c = h('canvas', { class: 'res-item', width: 44, height: 44, 'aria-hidden': 'true' }), g = c.getContext('2d');
       if (g) g.drawImage(sbItem(this.place.item), 0, 0, 44, 44);
-      return h('div', { class: 'res-stats' },
-        h('span', { 'aria-label': 'Signs right' }, icon('sign'), h('b', { text: d.correct + '/' + d.n })),
-        h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' })),
-        d.items ? h('span', { 'aria-label': 'Collected' }, c, h('b', { text: d.collected + '/' + d.items })) : null);
+      // what counts first (the signs, the road); the things collected are a bonus, below
+      return h('div', { class: 'res-stack' },
+        h('div', { class: 'res-stats' },
+          h('span', { 'aria-label': 'Signs right' }, icon('sign'), h('b', { text: d.correct + '/' + d.n })),
+          h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' }))),
+        d.items ? h('div', { class: 'res-bonus', 'aria-label': 'Collected ' + d.collected + ' of ' + d.items }, c, h('b', { text: d.collected + '/' + d.items })) : null);
     }
     extraSnapshot() { return { tt: this.tt, pos: this.pos, endW: this.endW }; }
     onKey(e) {
@@ -9386,13 +9455,13 @@ PuzzleEnginesFactory(window);
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse scenes', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
-        'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play draw the scene from the puzzle seed and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
+        'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play take the scene of the level (meadow at L1 and L2, sea at L3 and L4, sky at L5) and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 1500 ms, a slow and easy look for older players and non-gamers (until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. At level 2 and up a look is correct only when the animal and the place are both right.',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
+        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
@@ -9605,6 +9674,21 @@ PuzzleEnginesFactory(window);
     return svg;
   }
 
+  // What each level brings, in the game's own terms: for the level-up moment and the profile.
+  // Read from the games' settings, so it says what the game does.
+  const SB_PLACE_NAME = { north: 'far north' };
+  function levelAdds(g, lv) {
+    const G = E.games[g], L = G && G.levels && G.levels[lv];
+    if (!L) return '';
+    if (g === 'outbound') return L.cars + ' cars · ' + L.w + '×' + L.h + ' lot';
+    if (g === 'conduit') return L.w + '×' + L.h + ' garden';
+    if (g === 'tumbler') return L.pin.P + ' pins · ' + L.pin.C + ' colors';
+    if (g === 'stacks') return L.moves + ' moves' + (lv === 3 ? ' · the harbor' : lv === 5 ? ' · the bakery' : '');
+    if (g === 'keepsake') return L.items + ' things to remember';
+    if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
+    if (g === 'glimpse') return ['', 'the middle only', 'the middle and one around it', 'near or far, at sea', 'with shells in the way', 'in the sky, with clouds in the way'][lv] || '';
+    return '';
+  }
   // Free play: how far a game is toward its next level. Two good cards in a row
   // move it up (one, until the first miss in that game); the run so far is kept
   // between visits.
@@ -9655,7 +9739,18 @@ PuzzleEnginesFactory(window);
     const say = (left === 1 ? (P.have ? 'One more ' : 'One ') + pfNoun(g, 1) : 'Two ' + pfNoun(g, 2) + ' in a row') + ' with ' + goal.text;
     return h('div', { class: 'pf-next' },
       h('div', { class: 'pf-next-top' }, h('span', { class: 'pf-next-k', text: 'Next' }), h('b', { text: LEVEL_NAMES[P.lv] }), go),
+      h('p', { class: 'pf-next-adds', text: levelAdds(g, P.lv + 1) }),
       h('div', { class: 'pf-next-row', role: 'img', 'aria-label': say }, slots, chips));
+  }
+  // all five levels and what each brings: done, here, and what lies ahead
+  function pfLevels(g, P, best) {
+    const el = h('ol', { class: 'pf-levels', 'aria-label': 'Levels' });
+    for (let k = 1; k <= 5; k++) {
+      el.append(h('li', { class: k < P.lv ? 'done' : k === P.lv ? 'now' : k <= best ? 'been' : '' },
+        h('i', { 'aria-hidden': 'true' }, k < P.lv ? icon('check') : null),
+        h('b', { text: LEVEL_NAMES[k - 1] }), h('span', { text: levelAdds(g, k) })));
+    }
+    return el;
   }
   // first two against last two rounds at this level, shown only when it is a real gain
   function pfRise(H, lv, f, better, min) {
@@ -9732,7 +9827,7 @@ PuzzleEnginesFactory(window);
       'Things put back on the right stone in your last ' + H.length + ' cards: ' + list((e) => e.c + ' of ' + e.n));
     } else {
       const unit = g === 'tumbler' ? ['try', 'tries'] : g === 'conduit' ? ['turn', 'turns'] : ['move', 'moves'];
-      const ref = g === 'tumbler' ? 'solver ' : 'best ';
+      const ref = g === 'tumbler' ? 'aim ' : 'fewest ';
       row('star', 'Stars', plot('stars', (c, e) => {
         if (e.st >= 2) c.classList.add('ok');
         for (let k = 0; k < 3; k++) c.append(icon('star', k < e.st ? 'on' : ''));
@@ -10372,6 +10467,7 @@ PuzzleEnginesFactory(window);
           pfNext(g, P, () => { closeSheet(); this.startFree(false, g); }));
         if (H.length) page.append(pfCurve(g, H, P.lv));
         if (played(g)) page.append(pfNumbers(g, t, H, P.lv));
+        page.append(pfLevels(g, P, best));
         overview.hidden = true;
         page.hidden = false;
         back.hidden = false;

@@ -496,7 +496,7 @@ test('glimpse: runs survive serialize/restore', () => {
   assert.deepEqual(G.plan(p, back, 1000 / 60), G.plan(p, run, 1000 / 60));
 });
 
-test('glimpse: fixed blocks use the classic set; others get a seeded scene and take turns with its targets', () => {
+test('glimpse: fixed blocks use the classic set; others get the scene of their level and take turns with its targets', () => {
   for (const lv of [2, 3, 4, 5]) {
     const L = G.levels[lv];
     for (let s = 0; s < 12; s++) {
@@ -516,9 +516,9 @@ test('glimpse: fixed blocks use the classic set; others get a seeded scene and t
       assert.ok(!th.targets.includes(th.distractor), 'a target is never the distractor');
     }
   }
-  const seen = new Set();
-  for (let s = 0; s < 30; s++) seen.add(G.generate(3, 50 + s, 'mix').theme);
-  assert.equal(seen.size, G.themeOrder.length, 'every scene comes up');
+  // each level has its own scene, so moving up is arriving somewhere new
+  const scene = { 1: 'meadow', 2: 'meadow', 3: 'sea', 4: 'sea', 5: 'sky' };
+  for (const lv of [1, 2, 3, 4, 5]) for (let s = 0; s < 8; s++) assert.equal(G.generate(lv, 50 + s, 'mix').theme, scene[lv]);
 });
 
 test('conduit: no pipe starts pointing off the board, and every board needs a bounded number of turns', () => {
@@ -635,6 +635,8 @@ test('stacks: each level needs its number of moves, hints follow a shortest path
   }
   assert.equal(E.internals.SK_ALL.length, 36, 'three pieces on posts of 3, 2 and 1 have 36 arrangements');
   for (let s = 0; s < 20; s++) assert.equal(K.generate(3, 50 + s, 'classic').theme, 'stones', 'fixed blocks keep one setting');
+  const setting = { 1: 'stones', 2: 'stones', 3: 'harbor', 4: 'harbor', 5: 'bakery' };
+  for (const lv of [1, 2, 3, 4, 5]) for (let s = 0; s < 6; s++) assert.equal(K.generate(lv, 50 + s).theme, setting[lv], 'each level has its own setting');
 });
 
 test('stacks: a full post refuses a piece, practice takes two moves, runs survive serialize/restore', () => {
