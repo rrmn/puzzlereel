@@ -117,6 +117,7 @@
     day: '<path class="df" d="M7 5.2h10a3.2 3.2 0 0 1 3.2 3.2V10H3.8V8.4A3.2 3.2 0 0 1 7 5.2z"/><rect x="3.8" y="5.2" width="16.4" height="15.4" rx="3.2"/><path d="M3.8 10h16.4M8.4 3.2v4M15.6 3.2v4"/><path d="M8 14.2h.1M12 14.2h.1M16 14.2h.1M8 17.4h.1M12 17.4h.1"/>',
     rise: '<path d="M3.5 17.5 9.5 11.5l4 4 7-7.5"/><path d="M15 8h5.5v5.5"/>',
     back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+    move: '<path d="M4 12h16"/><path d="m8 7.5-4.5 4.5L8 16.5M16 7.5l4.5 4.5-4.5 4.5"/>',
     trophy: '<path class="df" d="M7 3.8h10v5.6a5 5 0 0 1-10 0z"/><path d="M7 3.8h10v5.6a5 5 0 0 1-10 0z"/><path d="M7 6H4.4v1.4A3.6 3.6 0 0 0 8 11M17 6h2.6v1.4A3.6 3.6 0 0 1 16 11"/><path d="M12 14.4v3.4M8.6 20.6h6.8M9.6 17.8h4.8"/>',
     more: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
   };
@@ -287,6 +288,133 @@
       if (prev == null || isNew) { (r[g] = r[g] || {})[lv] = v; store.set('pr1.records', r); }
       return { v, prev, isNew, first: prev == null };
     },
+  };
+
+  // ---------------------------------------------------------------- level looks
+  // Every level of a game has a look of its own, so a new level is also a new place (free play;
+  // practice and research blocks keep the first look). The rules and pieces stay the same: the
+  // colors, the board's materials and the scene around it change.
+  const LOOK_NAMES = {
+    outbound: ['the town lot', 'the beach', 'the city at night', 'the ski lodge', 'the ferry at sunset'],
+    conduit: ['the herb garden', 'the vegetable patch', 'the greenhouse', 'the desert oasis', 'the palace garden at night'],
+    tumbler: ['the bike lock', 'the school locker', 'the front door', 'the safe', 'the vault'],
+    keepsake: ['the park in spring', 'the park in summer', 'the park in autumn', 'the park in winter', 'the park at night'],
+    glimpse: ['the meadow', 'the meadow at dusk', 'the sea', 'the sea at night', 'the sunset sky'],
+    stacks: ['the river stones', 'the river at sunset', 'the harbor', 'the harbor at night', 'the bakery'],
+  };
+  const lookName = (g, lv) => (LOOK_NAMES[g] ? LOOK_NAMES[g][lv - 1] || '' : '');
+  // a seeded scatter: n points in a box, the same every time
+  function scatter(n, seed, x0, y0, x1, y1) {
+    const out = [];
+    let r = seed >>> 0;
+    const rnd = () => { r = (Math.imul(r, 1664525) + 1013904223) >>> 0; return r / 4294967296; };
+    for (let i = 0; i < n; i++) out.push([x0 + rnd() * (x1 - x0), y0 + rnd() * (y1 - y0), rnd()]);
+    return out;
+  }
+  const starsSvg = (n, seed, y1, op) => scatter(n, seed, 0, 0, 400, y1).map(([x, y, k]) =>
+    '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (0.8 + k * 1.6).toFixed(2) + '" fill="#FFFFFF" opacity="' + (op * (0.45 + k * 0.55)).toFixed(2) + '"/>').join('');
+  const flakesSvg = (n, seed, op) => scatter(n, seed, 0, 0, 400, 800).map(([x, y, k]) =>
+    '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (1.4 + k * 2.8).toFixed(2) + '" fill="#FFFFFF" opacity="' + (op * (0.5 + k * 0.5)).toFixed(2) + '"/>').join('');
+  const moonSvg = (x, y, r) => '<circle cx="' + x + '" cy="' + y + '" r="' + r * 2.2 + '" fill="#FFF6D6" opacity=".12"/><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#FFF3D0"/>'
+    + '<circle cx="' + (x - r * 0.3) + '" cy="' + (y - r * 0.15) + '" r="' + r * 0.22 + '" fill="#EADDB6" opacity=".7"/><circle cx="' + (x + r * 0.32) + '" cy="' + (y + r * 0.3) + '" r="' + r * 0.15 + '" fill="#EADDB6" opacity=".7"/>';
+  const sunSvg = (x, y, r, c) => '<circle cx="' + x + '" cy="' + y + '" r="' + r * 1.9 + '" fill="' + c + '" opacity=".22"/><circle cx="' + x + '" cy="' + y + '" r="' + r * 1.4 + '" fill="' + c + '" opacity=".3"/><circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + c + '"/>';
+  const pineSvg = (x, y, k, c) => '<path d="M' + x + ' ' + (y - 70 * k) + 'L' + (x + 26 * k) + ' ' + (y - 22 * k) + 'H' + (x + 12 * k) + 'L' + (x + 32 * k) + ' ' + y + 'H' + (x - 32 * k) + 'L' + (x - 12 * k) + ' ' + (y - 22 * k) + 'H' + (x - 26 * k) + 'Z" fill="' + c + '"/>'
+    + '<path d="M' + x + ' ' + (y - 70 * k) + 'L' + (x + 12 * k) + ' ' + (y - 48 * k) + 'Q' + x + ' ' + (y - 52 * k) + ' ' + (x - 12 * k) + ' ' + (y - 48 * k) + 'Z" fill="#FFFFFF"/>';
+  const DECOR = {
+    outbound: {
+      2: () => sunSvg(322, 118, 40, '#FFF3B0')
+        + '<path d="M0 676q100-16 200 0t200 0V800H0z" fill="#1497C0"/><path d="M0 690q50-8 100 0t100 0 100 0 100 0" stroke="#7FDCF2" stroke-width="3" fill="none" opacity=".6"/>'
+        + '<path d="M0 742q120-16 230 0t170-4V800H0z" fill="#F6DDA0"/>'
+        + '<path d="M58 780C52 720 62 660 92 600" stroke="#8A5A36" stroke-width="11" fill="none" stroke-linecap="round"/>'
+        + ['M92 600c-30-20-66-14-86 6 30-6 58 0 86-6z', 'M92 600c-18-34-50-46-80-38 28 8 52 22 80 38z', 'M92 600c10-36 40-52 76-48-30 12-54 26-76 48z', 'M92 600c36-12 70 2 86 26-28-14-56-20-86-26z', 'M92 600c22 10 34 34 32 62-10-26-20-44-32-62z'].map((d) => '<path d="' + d + '" fill="#1F8A5B"/>').join('')
+        + '<path d="M330 790V700" stroke="#7A5A3A" stroke-width="4"/><path d="M276 704q54-46 108 0z" fill="#FF5D5D"/><path d="M294 704q12-30 36-30 24 0 36 30z" fill="#FFFFFF" opacity=".9"/><path d="M312 704q6-30 18-30 12 0 18 30z" fill="#FF5D5D"/>',
+      3: () => starsSvg(46, 3, 360, 0.9) + moonSvg(318, 112, 26)
+        + scatter(16, 9, 0, 0, 1, 1).map(([, , k], i) => {
+          const w = 24 + (i * 7) % 18, x = i * 26 - 6, hh = 90 + Math.round(k * 150);
+          let win = '';
+          for (let r = 0; r < hh / 22 - 1; r++) for (let c = 0; c < w / 10 - 1; c++) if ((i * 7 + r * 3 + c * 5) % 4) win += '<rect x="' + (x + 5 + c * 10) + '" y="' + (800 - hh + 10 + r * 22) + '" width="4.5" height="7" rx="1" fill="#FFD86A" opacity="' + (0.35 + ((i + r + c) % 3) * 0.2).toFixed(2) + '"/>';
+          return '<rect x="' + x + '" y="' + (800 - hh) + '" width="' + w + '" height="' + hh + '" fill="#141836"/>' + win;
+        }).join(''),
+      4: () => flakesSvg(46, 5, 0.85)
+        + '<path d="M-10 690L70 610l40 34 60-76 70 80 46-40 60 52 64-50V800H-10z" fill="#D2E2F5"/>'
+        + '<path d="M130 568l-22 28 22-8 18 14 22-6zM286 604l-18 26 20-6 16 10 16-8z" fill="#FFFFFF"/>'
+        + '<path d="M-10 728q100-38 210-10t210-20V800H-10z" fill="#EEF5FC"/>'
+        + pineSvg(30, 790, 0.7, '#2F5D5A') + pineSvg(70, 800, 0.85, '#264F4C') + pineSvg(344, 796, 0.8, '#2F5D5A') + pineSvg(382, 800, 0.65, '#264F4C'),
+      5: () => sunSvg(200, 640, 74, '#FFD27A')
+        + '<path d="M0 640H400V800H0z" fill="#5E2A64"/><path d="M0 640H400V652H0z" fill="#7A3A72"/>'
+        + [[120, 664, 160], [150, 684, 100], [176, 704, 48]].map(([x, y, w]) => '<rect x="' + (200 - w / 2) + '" y="' + y + '" width="' + w + '" height="5" rx="2.5" fill="#FFC56A" opacity=".55"/>').join('')
+        + '<path d="M60 150q12-10 24 0 12-10 24 0M300 210q9-8 18 0 9-8 18 0M250 120q8-7 16 0 8-7 16 0" stroke="#3A1430" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>'
+        + '<path d="M326 640l8-112h28l8 112z" fill="#FFFFFF"/><path d="M329 600h38l1.4 18h-40.8zM332 556h32l1.2 16h-34.4z" fill="#E23B36"/><rect x="330" y="512" width="36" height="18" rx="3" fill="#FFE27A"/><path d="M324 512h48l-24-16z" fill="#3A1430"/><path d="M300 652q48-22 96 0z" fill="#3A1430"/>',
+    },
+    conduit: {
+      2: () => sunSvg(320, 110, 34, '#FFF1A8')
+        + '<path d="M0 742H400" stroke="#9A6A3A" stroke-width="7"/><path d="M0 704H400" stroke="#9A6A3A" stroke-width="7"/>'
+        + Array.from({ length: 11 }, (_, i) => '<path d="M' + (i * 40 + 8) + ' 800V690l10-12 10 12V800z" fill="#C08A52"/><path d="M' + (i * 40 + 18) + ' 680V800" stroke="#A57240" stroke-width="2"/>').join('')
+        + '<circle cx="54" cy="790" r="26" fill="#6DB33F"/><circle cx="54" cy="790" r="16" fill="#8FCF5A"/><circle cx="352" cy="794" r="24" fill="#6DB33F"/><circle cx="352" cy="794" r="14" fill="#8FCF5A"/>',
+      3: () => '<g stroke="#FFFFFF" stroke-opacity=".5" stroke-width="3" fill="none"><path d="M0 230L200 40 400 230"/>'
+        + Array.from({ length: 9 }, (_, i) => '<path d="M' + (i * 50) + ' ' + (i * 50 <= 200 ? 230 - i * 50 * 0.95 : 40 + (i * 50 - 200) * 0.95) + 'V800"/>').join('')
+        + '<path d="M0 420H400M0 610H400"/></g>'
+        + [[30, 790], [370, 786]].map(([x, y]) => '<path d="M' + (x - 22) + ' ' + (y - 34) + 'h44l-6 34h-32z" fill="#D9734A"/><path d="M' + x + ' ' + (y - 34) + 'c-14-12-20-30-14-46 8 12 12 26 14 46zM' + x + ' ' + (y - 34) + 'c12-16 26-22 40-20-10 12-22 18-40 20zM' + x + ' ' + (y - 34) + 'c-10-14-26-18-38-14 10 10 22 14 38 14z" fill="#3E9A55"/>').join(''),
+      4: () => sunSvg(300, 150, 52, '#FFE9A0')
+        + '<path d="M-20 700q120-60 240-20t200-10V800H-20z" fill="#F2B66B"/><path d="M-20 750q140-40 260-6t180-14V800H-20z" fill="#E59A50"/>'
+        + [[62, 708, 1], [330, 690, 0.8], [372, 734, 0.6]].map(([x, y, k]) => '<path d="M' + x + ' ' + y + 'v-' + 90 * k + 'a' + 11 * k + ' ' + 11 * k + ' 0 0 1 ' + 22 * k + ' 0v' + 90 * k + 'z" fill="#4E8A4A" transform="translate(' + -11 * k + ' 0)"/>'
+          + '<path d="M' + (x - 11 * k) + ' ' + (y - 40 * k) + 'h-' + 14 * k + 'v-' + 26 * k + 'a' + 7 * k + ' ' + 7 * k + ' 0 0 1 ' + 14 * k + ' 0z" fill="#4E8A4A"/><circle cx="' + x + '" cy="' + (y - 100 * k) + '" r="' + 6 * k + '" fill="#FF6FA7"/>').join(''),
+      5: () => starsSvg(40, 11, 320, 0.85) + moonSvg(352, 192, 15)
+        + '<path d="M0 736q50-36 100 0t100 0 100 0 100 0V800H0z" fill="#12321F"/><path d="M0 772q60-24 120 0t140 0 140 0V800H0z" fill="#0B2416"/>'
+        + [26, 374].map((x) => '<path d="M' + x + ' 800V700" stroke="#2A2A2A" stroke-width="4"/><circle cx="' + x + '" cy="692" r="34" fill="#FFD27A" opacity=".18"/><circle cx="' + x + '" cy="692" r="16" fill="#FFD27A" opacity=".35"/><rect x="' + (x - 8) + '" y="680" width="16" height="22" rx="4" fill="#FFE7A8"/><path d="M' + (x - 11) + ' 680h22l-11-10z" fill="#2A2A2A"/>').join('')
+        + scatter(14, 13, 30, 560, 370, 700).map(([x, y, k]) => '<circle cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="' + (2 + k * 2).toFixed(1) + '" fill="#FFF0A0" opacity="' + (0.4 + k * 0.5).toFixed(2) + '"/>').join(''),
+    },
+    tumbler: {
+      2: () => Array.from({ length: 5 }, (_, i) => '<rect x="40" y="' + (700 + i * 16) + '" width="320" height="7" rx="3.5" fill="#000" opacity=".14"/>').join('')
+        + '<path d="M40 0V800M360 0V800" stroke="#000" stroke-opacity=".14" stroke-width="4"/><circle cx="372" cy="400" r="9" fill="#FFFFFF" opacity=".25"/>',
+      3: () => Array.from({ length: 6 }, (_, i) => '<rect x="' + (i * 68 - 8) + '" y="0" width="64" height="800" fill="' + (i % 2 ? '#000' : '#FFF') + '" opacity=".05"/><path d="M' + (i * 68 + 20) + ' 0q8 200 0 400t0 400" stroke="#000" stroke-opacity=".08" stroke-width="2" fill="none"/>').join('')
+        + '<circle cx="356" cy="420" r="18" fill="#E7B54A"/><circle cx="356" cy="420" r="8" fill="#B8862A"/><rect x="346" y="446" width="20" height="40" rx="6" fill="#E7B54A"/>',
+      4: () => '<g fill="none" stroke="#FFFFFF" stroke-opacity=".1"><circle cx="200" cy="420" r="300" stroke-width="18"/><circle cx="200" cy="420" r="250" stroke-width="3"/></g>'
+        + Array.from({ length: 24 }, (_, i) => { const a = (i * Math.PI) / 12; return '<rect x="-2" y="-14" width="4" height="28" fill="#FFFFFF" opacity=".1" transform="translate(' + (200 + Math.cos(a) * 275).toFixed(1) + ' ' + (420 + Math.sin(a) * 275).toFixed(1) + ') rotate(' + (i * 15 + 90) + ')"/>'; }).join('')
+        + [[24, 24], [376, 24], [24, 776], [376, 776]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="9" fill="#C9CFD8"/><circle cx="' + (x - 2) + '" cy="' + (y - 2) + '" r="3" fill="#FFFFFF" opacity=".7"/>').join(''),
+      5: () => '<g fill="none" stroke="#E7B54A"><circle cx="200" cy="420" r="320" stroke-width="14" stroke-opacity=".28"/><circle cx="200" cy="420" r="280" stroke-width="3" stroke-opacity=".35"/></g>'
+        + Array.from({ length: 16 }, (_, i) => { const a = (i * Math.PI) / 8; return '<circle cx="' + (200 + Math.cos(a) * 320).toFixed(1) + '" cy="' + (420 + Math.sin(a) * 320).toFixed(1) + '" r="10" fill="#E7B54A" opacity=".55"/>'; }).join('')
+        + starsSvg(18, 21, 800, 0.5).replace(/#FFFFFF/g, '#FFE08A'),
+    },
+    keepsake: {
+      2: () => sunSvg(330, 70, 30, '#FFF3B0') + scatter(6, 31, 20, 120, 380, 760).map(([x, y]) => '<path d="M' + x + ' ' + y + 'c-6-8-14-6-12 2 2 6 8 4 12-2zm0 0c6-8 14-6 12 2-2 6-8 4-12-2z" fill="#FF8FB8" opacity=".7"/>').join(''),
+      3: () => scatter(26, 41, 0, 0, 400, 800).map(([x, y, k], i) => '<path d="M0-9C6-5 7 3 0 9-7 3-6-5 0-9z" fill="' + ['#E8833A', '#D4553A', '#F2B13C'][i % 3] + '" opacity=".75" transform="translate(' + x.toFixed(0) + ' ' + y.toFixed(0) + ') rotate(' + Math.round(k * 360) + ') scale(' + (0.7 + k * 0.8).toFixed(2) + ')"/>').join(''),
+      4: () => flakesSvg(60, 43, 0.9),
+      5: () => starsSvg(60, 47, 800, 0.85) + moonSvg(348, 712, 15),
+    },
+    glimpse: {
+      2: () => starsSvg(14, 51, 260, 0.6),
+      4: () => starsSvg(60, 53, 800, 0.85) + moonSvg(70, 690, 16),
+    },
+  };
+  function decor(g, lv) {
+    const art = DECOR[g] && DECOR[g][lv];
+    if (!art) return null;
+    const el = document.createElementNS(SVGNS, 'svg');
+    el.setAttribute('class', 'decor');
+    el.setAttribute('viewBox', '0 0 400 800');
+    el.setAttribute('preserveAspectRatio', 'xMidYMax slice');
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = art();
+    return el;
+  }
+  // Keepsake: the same park through the seasons, so its landmarks can still be learned
+  // [from, to] in order, the most particular first (house windows before the pond's blue)
+  const KS_SEASON = {
+    2: [['#B6E39A', '#A9DE73'], ['#93CD78', '#7CC352'], ['#6DAF5A', '#5EA43F'], ['#86CFF2', '#7BD3F7'], ['#5DB4E0', '#3FB0E6']],
+    3: [['#B6E39A', '#E4CF86'], ['#93CD78', '#D2AE5E'], ['#6DAF5A', '#B58A44'], ['#3E9A55', '#E8833A'], ['#358C4D', '#D4553A'], ['#4BAE63', '#F2A33C'],
+      ['#2F7F45', '#C9612F'], ['#2A7340', '#B5482C'], ['#3A8E50', '#E28A34'], ['#FF6FA7', '#E8833A']],
+    4: [['fill="#8A5C3B"/><ellipse cx="87" cy="102.4" rx="10" ry="4.8" fill="#A06E46"', 'fill="#C9D6E2"/><ellipse cx="87" cy="102.4" rx="10" ry="4.8" fill="#F6FAFE"'],
+      ['#B6E39A', '#F6FAFE'], ['#93CD78', '#DDE8F3'], ['#6DAF5A', '#C3D2E2'], ['#86CFF2', '#D9EDF9'], ['#5DB4E0', '#A9CBE3'], ['#F2E2B6', '#FFFFFF'], ['#DCC28C', '#D3DDE8'],
+      ['#E6D19F', '#E3EAF2'], ['#3E9A55', '#5E8F7A'], ['#358C4D', '#4E7E6A'], ['#4BAE63', '#E9F2F8'], ['#2F7F45', '#4A7A66'], ['#2A7340', '#406E5C'], ['#3A8E50', '#E3EDF5']],
+    5: [['#86CFF2" stroke="#FFFFFF"', '#FFD86A" stroke="#FFF1B8"'],
+      ['#B6E39A', '#3F6E5C'], ['#93CD78', '#2A4F43'], ['#6DAF5A', '#2F5E4C'], ['#86CFF2', '#2D5C8A'], ['#5DB4E0', '#1E4470'], ['#F2E2B6', '#8E8A73'], ['#DCC28C', '#6E6A58'],
+      ['#E6D19F', '#7E7A64'], ['#3E9A55', '#24553A'], ['#358C4D', '#1E4A33'], ['#4BAE63', '#2C6444'], ['#2F7F45', '#1C4430'], ['#2A7340', '#183C2A'], ['#3A8E50', '#25563C'], ['#FFF3DC', '#E8D9B6']],
+  };
+  const KS_EXTRA = {
+    4: '<path d="M4.6 23.4L16 12.4L27.4 23.4Z" fill="#FFFFFF" opacity=".92"/><path d="M78.6 8.6L86 4.4L93.4 8.6Z" fill="#FFFFFF" opacity=".92"/>',
+    5: '<circle cx="11" cy="27" r="6" fill="#FFD86A" opacity=".18"/><circle cx="22" cy="27" r="6" fill="#FFD86A" opacity=".18"/>'
+      + [[40, 52], [60, 96], [70, 30]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="5" fill="#FFD86A" opacity=".16"/><path d="M' + x + ' ' + (y + 6) + 'v-7" stroke="#2A2A2A" stroke-width=".8"/><circle cx="' + x + '" cy="' + (y - 1.6) + '" r="1.5" fill="#FFE7A8"/>').join(''),
   };
 
   // ---------------------------------------------------------------- level up
@@ -854,7 +982,9 @@
       this.extra = snap ? snap.extra : null;
       this.busy = false;
       this.timers = new Set();
-      this.el = h('article', { class: 'scene', 'data-game': spec.game, 'aria-label': this.G.name + (this.practice ? ', practice' : ', level ' + spec.level) });
+      // free play shows each level's own look; practice and research keep the first
+      this.lookLv = !spec.practice && app.session && app.session.kind === 'free' ? spec.level : 1;
+      this.el = h('article', { class: 'scene', 'data-game': spec.game, 'data-lv': this.lookLv, 'aria-label': this.G.name + (this.practice ? ', practice' : ', level ' + spec.level) });
       this.build();
       this.buildBoard();
       this.refresh(false);
@@ -956,6 +1086,8 @@
       this.toolsEl = h('div', { class: 'tools' });
       this.fx = h('div', { class: 'fx' });
       this.el.append(this.head, this.area, this.toolsEl, this.fx);
+      const dec = decor(sp.game, this.lookLv);
+      if (dec) this.el.prepend(dec);
       this.buildTools();
       this.bindDrag();
     }
@@ -1559,7 +1691,9 @@
     { n: 5, r: 1.0, at: 1.15, petal: '#A98BFF', deep: '#8A66F0', eye: '#FFD23F', seed: '#EE9F00' },
     { n: 9, r: 0.47, at: 1.28, petal: '#FFFFFF', deep: '#EDE6F5', eye: '#FFC93C', seed: '#E08E00', daisy: true },
     { n: 5, r: 1.0, at: 1.15, petal: '#FF815F', deep: '#EE5E42', eye: '#FFE27A', seed: '#EE9F00' },
+    { n: 6, r: 0.98, at: 1.0, petal: '#E8344E', deep: '#B81E37', eye: '#8A1428', seed: '#5A0A18' },
   ];
+  const CD_LEVEL_FLOWERS = { 1: [0, 1, 2, 3, 4], 2: [1, 3], 3: [2, 3, 0], 4: [4, 1], 5: [5, 3] };
   // now and then a small tuft of grass in a free corner of a bed
   function cdTuft(seed, cx, cy) {
     const r = Math.imul(seed + 101, 2654435761) >>> 0;
@@ -1671,7 +1805,8 @@
         pipes.append(tile);
         if (i === p.src) things.append(cdWell(cx, cy));
         if (isPlant) {
-          const plant = this.drawPlant(cx, cy, flower++ % CD_FLOWERS.length, i);
+          const fl = CD_LEVEL_FLOWERS[this.lookLv] || CD_LEVEL_FLOWERS[1];
+          const plant = this.drawPlant(cx, cy, fl[flower++ % fl.length], i);
           things.append(plant);
           this.plants[i] = plant;
           this.plantCount++;
@@ -2033,17 +2168,22 @@
           t.digits.forEach((d, k) => {
             const g = gem(d);
             if (marks) {
+              // the place behind each pin turns green (right place), gold (in the code, another
+              // place: it wiggles to say move me) or stays dark (not in the code), with a big mark
+              const cell = h('span', { class: 'clue' }, g);
               const show = () => {
                 g.classList.add('m' + marks[k]);
-                if (marks[k] > 0) g.append(h('span', { class: 'badge' }, icon(marks[k] === 2 ? 'check' : 'swap')));
+                cell.classList.add('c' + marks[k]);
+                cell.append(h('span', { class: 'badge' }, icon(marks[k] === 2 ? 'check' : marks[k] === 1 ? 'move' : 'x')));
+                if (marks[k] === 1 && r === tries.length - 1 && !this.summary) g.classList.add('wiggle');
               };
               if (r === this.flipRow) {
                 g.style.animationDelay = k * 150 + 'ms';
                 g.classList.add('flip');
                 this.later(() => { show(); Sound.play('flip', marks[k]); }, k * 150 + 160);
               } else show();
-            }
-            row.append(g);
+              row.append(cell);
+            } else row.append(g);
           });
           if (p.clue === 'count') {
             const cnt = h('div', { class: 'counts', 'aria-hidden': 'true' });
@@ -2094,6 +2234,20 @@
       if (this.summary || this.busy) return;
       if (this.draft.some((d) => d == null)) return;
       Sound.unlock();
+      const same = this.o.feedback ? this.run.tries.findIndex((t) => t.digits.every((d, k) => d === this.draft[k])) : -1;
+      if (same >= 0) {
+        const rows = this.rowsEl.children, was = rows[same], now = rows[this.run.tries.length];
+        Sound.play('lose');
+        buzz([20, 40, 20]);
+        if (now) { now.classList.remove('nope'); void now.offsetWidth; now.classList.add('nope'); }
+        if (was) {
+          was.classList.remove('again'); void was.offsetWidth; was.classList.add('again');
+          try { was.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { /* optional */ }
+          this.later(() => was.classList.remove('again'), 1600);
+        }
+        this.log('repeat_blocked', { detail: JSON.stringify({ same_as_try: same + 1, digits: this.draft }) });
+        return;
+      }
       const t = Math.round(this.elapsed());
       const rec = this.G.guess(this.p, this.run, this.draft.slice());
       rec.t_ms = t;
@@ -2197,6 +2351,8 @@
     meadow: { field: '#F7FBF2', ink: '#18291F', bg1: '#3A86EE', bg2: '#152C78' },
     sea: { field: '#EEF8FB', ink: '#0B2C3F', bg1: '#1FB2C6', bg2: '#0A3961' },
     sky: { field: '#FFF6EE', ink: '#2A1846', bg1: '#FF9A6A', bg2: '#5A2A88' },
+    'meadow-2': { field: '#FBF4FF', ink: '#2A1840', bg1: '#B98AE0', bg2: '#3B2275' },
+    'sea-4': { field: '#E4EEFA', ink: '#0B1A33', bg1: '#2B4A8C', bg2: '#070D26' },
   };
   // the thing that was there, shown afterwards as a bright sticker
   const GL_STICKER = { bird: '#3D8BFD', butterfly: '#FF6FA7', snail: '#FF9F1C', star: '#FFB81F', sailboat: '#FF5D5D', jellyfish: '#A774FF', kite: '#FF5D5D', rocket: '#3D8BFD' };
@@ -2333,7 +2489,7 @@
       const p = this.p;
       this.phase = this.summary ? 'done' : 'ready';
       this.D = 0; this.R = 0; this.dpr = 1;
-      const look = GL_STYLE[p.theme] || GL_STYLE.meadow;
+      const look = GL_STYLE[(p.theme || 'meadow') + '-' + this.lookLv] || GL_STYLE[p.theme] || GL_STYLE.meadow;
       this.ink = look.ink;
       this.maskShapes = p.pair.concat(p.targetSet || ['bird'], [p.distractor || 'leaf']);
       this.el.dataset.theme = p.theme || 'meadow';
@@ -2946,6 +3102,23 @@
     return g;
   }
   // the scene behind the posts, and the goal on a sign, clipboard or ticket
+  // the time of day over a setting: a warm low sun, or night with lit windows and stars
+  function skLight(uid, kind) {
+    const g = s('g', { 'aria-hidden': 'true', 'pointer-events': 'none' });
+    if (kind === 'sunset') {
+      g.innerHTML = '<defs><linearGradient id="' + uid + 'ss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF8A5C"/><stop offset=".45" stop-color="#FFC27A"/><stop offset="1" stop-color="#FF9E6A"/></linearGradient></defs>'
+        + '<rect width="100" height="136" fill="url(#' + uid + 'ss)" opacity=".5" style="mix-blend-mode:color"/>'
+        + '<rect width="100" height="136" fill="#FF8A50" opacity=".14" style="mix-blend-mode:multiply"/>'
+        + '<circle cx="78" cy="30" r="12" fill="#FFE2A0" opacity=".25"/><circle cx="78" cy="30" r="7" fill="#FFF0C8"/>';
+    } else {
+      let win = '';
+      for (const [x, hh] of [[8, 9], [13, 14], [19, 7], [25, 18], [31, 11], [60, 13], [66, 20], [72, 9], [78, 15], [84, 10], [90, 16]]) for (let y = 63 - hh + 2; y < 61; y += 4) win += '<rect x="' + (x + 1.4) + '" y="' + y + '" width="1.1" height="1.6" fill="#FFD86A" opacity="' + (((x + y) % 3) ? 0.85 : 0.3) + '"/>';
+      g.innerHTML = '<rect width="100" height="136" fill="#1B2A6B" opacity=".55" style="mix-blend-mode:multiply"/>' + win
+        + scatter(22, 61, 0, 0, 100, 40).map(([x, y, k]) => '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (0.2 + k * 0.35).toFixed(2) + '" fill="#FFFFFF" opacity="' + (0.5 + k * 0.5).toFixed(2) + '"/>').join('')
+        + '<circle cx="84" cy="12" r="5" fill="#FFF3D0"/><circle cx="84" cy="12" r="9" fill="#FFF3D0" opacity=".15"/>';
+    }
+    return g;
+  }
   function skScene(uid, look) {
     const g = s('g', { 'aria-hidden': 'true' });
     if (look === 'harbor') {
@@ -3053,6 +3226,8 @@
       svgEl.append(skDefs(uid, look));
       const world = s('g', { 'clip-path': 'url(#' + uid + 'clip)' });
       world.append(skScene(uid, look));
+      if (this.lookLv === 2 && look === 'stones') world.append(skLight(uid, 'sunset'));
+      if (this.lookLv === 4 && look === 'harbor') world.append(skLight(uid, 'night'));
       const cardEl = skCard(uid, look, p.goal);
       cardEl.setAttribute('role', 'img');
       cardEl.setAttribute('aria-label', 'Goal: ' + p.goal.map((a, k) => 'post ' + (k + 1) + (a.length ? ' ' + a.map((id) => L.names[id]).join(', ') : ' empty')).join('; '));
@@ -6157,13 +6332,13 @@
       '<circle cx="' + x + '" cy="' + (y - r * 0.25) + '" r="' + r * 0.85 + '" fill="' + (dark ? '#3A8E50' : '#4BAE63') + '"/>' +
       '<circle cx="' + (x - r * 0.28) + '" cy="' + (y - r * 0.52) + '" r="' + r * 0.32 + '" fill="#FFFFFF" fill-opacity=".14"/>';
   }
-  function ksMap(uid) {
+  function ksMap(uid, lv) {
     const g = s('g', { class: 'ks-map', 'aria-hidden': 'true' });
     const tufts = [[8, 14], [30, 37], [72, 18], [93, 40], [36, 79], [70, 92], [93, 110], [26, 115], [6, 60], [74, 70], [28, 56], [66, 8]]
       .map(([x, y]) => '<path d="M' + x + ' ' + y + 'l1 -2.2l1 2.2l1 -1.6l0.8 1.6" stroke="#6DAF5A" stroke-width=".6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>').join('');
     const blooms = [[80, 99, '#FF6FA7'], [86, 104, '#FFD23F'], [92, 99, '#FFFFFF'], [83, 107, '#FF8A3D'], [90, 106, '#FF6FA7'], [95, 103, '#FFD23F'], [78, 105, '#FFFFFF']]
       .map(([x, y, c]) => '<circle cx="' + x + '" cy="' + y + '" r="1.25" fill="' + c + '"/><circle cx="' + x + '" cy="' + y + '" r=".45" fill="#B8641F"/>').join('');
-    g.innerHTML =
+    let html =
       '<defs><linearGradient id="' + uid + 'g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B6E39A"/><stop offset="1" stop-color="#93CD78"/></linearGradient>' +
       '<clipPath id="' + uid + 'c"><rect x="0" y="0" width="100" height="120" rx="7"/></clipPath></defs>' +
       '<g clip-path="url(#' + uid + 'c)">' +
@@ -6197,6 +6372,12 @@
       '<path d="M73.6 115.2v1.8M84.4 115.2v1.8" stroke="#5B4636" stroke-width="1"/>' +
       '</g>' +
       '<rect x=".3" y=".3" width="99.4" height="119.4" rx="6.8" fill="none" stroke="rgba(0,0,0,.14)" stroke-width=".6"/>';
+    // the season: the same drawing in other colors, before it is parsed, and what only it has
+    if (KS_SEASON[lv]) {
+      for (const [a, b] of KS_SEASON[lv]) html = html.split(a).join(b);
+      html = html.replace('</g><rect x=".3"', (KS_EXTRA[lv] || '') + '</g><rect x=".3"');
+    }
+    g.innerHTML = html;
     return g;
   }
   function ksStone(x, y) {
@@ -6236,7 +6417,7 @@
       const placed = this.run.order.length;
       this.phase = this.summary ? 'done' : this.run.studied != null ? 'recall' : 'ready';
       const svgEl = s('svg', { class: 'board keepsake', viewBox: '0 0 100 150', role: 'group', 'aria-label': 'A park with ' + p.out.length + ' stones and a basket' });
-      svgEl.append(ksMap(this.uid));
+      svgEl.append(ksMap(this.uid, this.lookLv));
       this.stoneEls = {};
       for (const k of p.out) {
         const el = ksStone(ST[k][0], ST[k][1]);
@@ -6670,7 +6851,7 @@
       ['session_kind', 'study, or free for free play'],
       ['session_seed', 'with the plan, this fixes every puzzle'],
       ['event_index', 'order of the event within the session'],
-      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look or Switchback sign stopped before it was scored), drive (Switchback: the car starts or drives on after a pause), sign (one Switchback sign, scored when it is tapped or when its time runs out), stray (a tap on the Switchback sign button with no sign up), speed (Switchback speed change), off_road (the Switchback car left the road), look (Keepsake: the look starts, then ends by timer or early with a tap on the basket), place (Keepsake: one thing put on a stone), hidden, visible, puzzle_end, level_change, resume, session_end'],
+      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look or Switchback sign stopped before it was scored), drive (Switchback: the car starts or drives on after a pause), sign (one Switchback sign, scored when it is tapped or when its time runs out), stray (a tap on the Switchback sign button with no sign up), speed (Switchback speed change), off_road (the Switchback car left the road), look (Keepsake: the look starts, then ends by timer or early with a tap on the basket), place (Keepsake: one thing put on a stone), repeat_blocked (Tumbler with feedback on: a try identical to an earlier one is not taken; detail has which; from app 2.22), hidden, visible, puzzle_end, level_change, resume, session_end'],
       ['wall_time / t_session_ms', 'clock time, and ms since the session started'],
       ['seq / block', 'puzzle number in the plan and its block; practice boards have block 0 and seq 0'],
       ['puzzle_id', 'B{block}-{game}-L{level}-{occurrence}, or P-{game} for a practice board'],
@@ -6996,13 +7177,14 @@
   function levelAdds(g, lv) {
     const G = E.games[g], L = G && G.levels && G.levels[lv];
     if (!L) return '';
-    if (g === 'outbound') return L.cars + ' cars · ' + L.w + '×' + L.h + ' lot';
-    if (g === 'conduit') return L.w + '×' + L.h + ' garden';
-    if (g === 'tumbler') return L.pin.P + ' pins · ' + L.pin.C + ' colors';
-    if (g === 'stacks') return L.moves + ' moves' + (lv === 3 ? ' · the harbor' : lv === 5 ? ' · the bakery' : '');
-    if (g === 'keepsake') return L.items + ' things to remember';
+    const at = (t) => t + ' · ' + lookName(g, lv);
+    if (g === 'outbound') return at(L.cars + ' cars · ' + L.w + '×' + L.h + ' lot');
+    if (g === 'conduit') return at(L.w + '×' + L.h + ' beds');
+    if (g === 'tumbler') return at(L.pin.P + ' pins · ' + L.pin.C + ' colors');
+    if (g === 'stacks') return at(L.moves + ' moves');
+    if (g === 'keepsake') return at(L.items + ' things to remember');
     if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
-    if (g === 'glimpse') return ['', 'close to the middle', 'a little further out', 'near or far, at sea', 'a few shells in the way', 'in the sky, more in the way'][lv] || '';
+    if (g === 'glimpse') return at(['', 'close to the middle', 'a little further out', 'near or far', 'a few shells in the way', 'more in the way'][lv] || '');
     return '';
   }
   // Free play: how far a game is toward its next level. Two good cards in a row
@@ -7425,6 +7607,7 @@
         const card = makeCard(this, spec, p, snap);
         this.card = card;
         $('#app').dataset.scene = spec.game;
+        $('#app').dataset.lv = card.lookLv;
         this.swap(card.el, fromDy);
         if (snap) {
           this.logPuzzle(card, 'resume', { move_no: card.c.moves });
