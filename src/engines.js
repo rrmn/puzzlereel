@@ -95,6 +95,8 @@
   // Full analysis of the reachable state graph.
   // d: fewest taps to clear the lot (Infinity = dead end)
   // p: chance a player tapping movable cars at random clears the lot
+  // q: chance a sensible player clears it: one who drives out a car whenever one can leave,
+  //    and only when none can, taps one of the others at random (no undo)
   function obAnalyze(p) {
     const n = p.cars.length;
     const B = Math.max(p.w, p.h) + 2;
@@ -108,10 +110,10 @@
       for (let i = 0; i < n; i++) if (st[i] !== EXIT) left++;
       let res;
       if (left === 0) {
-        res = { d: 0, p: 1, m: 0, s: 0 };
+        res = { d: 0, p: 1, q: 1, m: 0, s: 0 };
       } else {
         const occ = obOccupancy(p, st);
-        let best = Infinity, ps = 0, m = 0, sl = Infinity;
+        let best = Infinity, ps = 0, m = 0, sl = Infinity, qe = 0, ne = 0, qs = 0;
         for (let i = 0; i < n; i++) {
           if (st[i] === EXIT) continue;
           const na = obSlide(p, st, occ, i);
@@ -124,8 +126,9 @@
           const rs = r.s + (na === EXIT ? 0 : 1);
           if (rs < sl) sl = rs;
           ps += r.p;
+          if (na === EXIT) { qe += r.q; ne++; } else qs += r.q;
         }
-        res = { d: best, p: m ? ps / m : 0, m, s: sl };
+        res = { d: best, p: m ? ps / m : 0, q: ne ? qe / ne : m ? qs / m : 0, m, s: sl };
         if (best === Infinity) deadStates++;
       }
       memo.set(key, res);
@@ -149,6 +152,7 @@
       memo, B,
       optimal: r0.d,
       pRandom: r0.p,
+      pSmart: r0.q,
       minSlides: r0.s,     // 0: tapping only cars with a clear way out always works
       states: memo.size,
       deadStates,
@@ -304,7 +308,7 @@
     if (L.traps && planted < 1) return null;
     for (let g = 0; g < (L.loops || 0); g++) if (!obPlantLoop(L, rng, occ, cars)) return null;
     let tries = 0;
-    while (cars.length < L.cars && tries < 900) {
+    while (cars.length < L.cars && tries < (L.dense ? 2000 : 900)) {
       tries++;
       const len = rng() < L.truck ? 3 : 2;
       const dir = DIRS[rng.int(4)];
@@ -314,7 +318,8 @@
       if (fx < 0 || fy < 0 || fx >= w || fy >= h) continue;
       let ok = true;
       for (let k = 0; k < len && ok; k++) if (occ[(y + k * d[1]) * w + (x + k * d[0])] !== -1) ok = false;
-      for (let lx = fx + d[0], ly = fy + d[1]; ok && lx >= 0 && ly >= 0 && lx < w && ly < h; lx += d[0], ly += d[1]) if (occ[ly * w + lx] !== -1) ok = false;
+      // a dense lot puts cars anywhere; otherwise each one's way out is clear of those before it
+      if (!L.dense) for (let lx = fx + d[0], ly = fy + d[1]; ok && lx >= 0 && ly >= 0 && lx < w && ly < h; lx += d[0], ly += d[1]) if (occ[ly * w + lx] !== -1) ok = false;
       if (!ok) continue;
       const id = cars.length;
       cars.push({ x, y, dir, len });
@@ -368,13 +373,19 @@
     goal: 'Clear the lot.',
     // loops: pinwheels, each needing one slide part of the way (so tapping only
     // cars with a clear way out stops working); traps: tempting dead ends;
-    // band: target range for the chance that random tapping clears the lot
+    // band: target range for the chance that random tapping clears the lot;
+    // dense: the other cars go anywhere, not only where their way out is clear, so cars
+    // hold each other up and a slide can end where it blocks for good; qBand: target range
+    // for the chance that a sensible player clears the lot (one who drives out any car that
+    // can leave, and only then slides one, picked at random); maxOpt: fewest taps at most
+    // (until engines 1.24 levels 3 to 5 were chosen by random tapping alone, and a sensible
+    // player cleared levels 1 to 4 almost every time)
     levels: {
       1: { w: 5, h: 5, cars: 5, truck: 0, loops: 0, traps: 0, band: [0.99, 1], attempts: 40 },
-      2: { w: 6, h: 6, cars: 7, truck: 0.1, loops: 0, traps: 0, band: [0.99, 1], attempts: 40 },
-      3: { w: 6, h: 6, cars: 8, truck: 0.1, loops: 1, traps: 0, band: [0, 1], attempts: 40 },
-      4: { w: 7, h: 7, cars: 10, truck: 0.15, loops: 1, traps: 1, band: [0.1, 0.55], attempts: 200 },
-      5: { w: 7, h: 7, cars: 11, truck: 0.15, loops: 2, traps: 0, band: [0, 0.3], attempts: 200 },
+      2: { w: 6, h: 6, cars: 7, truck: 0.1, loops: 1, traps: 0, band: [0, 1], attempts: 40 },
+      3: { w: 6, h: 6, cars: 9, truck: 0.1, loops: 1, traps: 0, dense: true, qBand: [0.3, 0.65], maxOpt: 11, attempts: 2000 },
+      4: { w: 7, h: 7, cars: 11, truck: 0.15, loops: 2, traps: 0, dense: true, qBand: [0.15, 0.42], maxOpt: 13, attempts: 1500 },
+      5: { w: 7, h: 7, cars: 12, truck: 0.15, loops: 2, traps: 0, dense: true, qBand: [0, 0.3], maxOpt: 15, attempts: 300 },
     },
     describe(p) { return p.w + '×' + p.h + ' lot, ' + p.cars.length + ' cars'; },
     generate(level, seed) {
@@ -388,8 +399,8 @@
         const p = { w: L.w, h: L.h, cars: placed };
         const an = obAnalyze(p);
         if (an.optimal === Infinity) continue;
-        const lo = L.band[0], hi = L.band[1];
-        const gap = an.pRandom < lo ? lo - an.pRandom : an.pRandom > hi ? an.pRandom - hi : 0;
+        const B = L.qBand || L.band, v = L.qBand ? an.pSmart : an.pRandom, lo = B[0], hi = B[1];
+        const gap = (v < lo ? lo - v : v > hi ? v - hi : 0) + (L.maxOpt && an.optimal > L.maxOpt ? 1 + an.optimal - L.maxOpt : 0);
         if (gap < bestGap) { best = { p, an }; bestGap = gap; }
         if (gap === 0) break;
       }
@@ -422,6 +433,7 @@
           optimal_moves: an.optimal,
           slides_needed: an.minSlides,
           p_random_solve: round(an.pRandom, 4),
+          p_sensible_solve: round(an.pSmart, 4),
           reachable_states: an.states,
           dead_end_states: an.deadStates,
           first_moves: an.firstMoves,
@@ -732,9 +744,10 @@
     for (let i = 0; i < n; i++) all.push(i);
     if (!propagate(dom, all)) return { solutions: 0, nodes: 0, forced: 0 };
     let forced = 0;
-    for (let i = 0; i < n; i++) if (bits(dom[i]) === 1) forced++;
+    const fixed = Array.from(dom, (d) => bits(d) === 1);
+    for (let i = 0; i < n; i++) if (fixed[i]) forced++;
     dfs(dom);
-    return { solutions, bypass, nodes, forced, first, exhausted: nodes > 200000 };
+    return { solutions, bypass, nodes, forced, fixed, first, exhausted: nodes > 200000 };
   }
 
   const Conduit = {
@@ -746,14 +759,18 @@
     keepRight: 0.25,     // share of tiles that start in their solved turn
     minTurns: 0.42,      // turns to solve per tile, at least
     maxTurns: 0.5,       // and at most, so taps per board follow the shared ladder (about 6, 8, 10, 12, 14)
-    // pick: how many unique boards to compare; the one that needs the most
-    // search beyond local edge rules is kept, so higher levels need more reasoning
+    // pick: how many unique boards to compare; the one whose tiles local rules settle least
+    // (each pipe's turn read from the border and its neighbours) is kept, then the one that
+    // needs the most search; keep: share of tiles that start in their solved turn. From engines
+    // 1.24 levels 3 to 5 compare 40, 100 and 200 boards and start with fewer tiles right, so
+    // they need reasoning across the board; until then most boards at every level could be
+    // read tile by tile from the border inward.
     levels: {
-      1: { w: 3, h: 4, pick: 1, attempts: 160 },
-      2: { w: 4, h: 4, pick: 1, attempts: 160 },
-      3: { w: 4, h: 5, pick: 1, attempts: 160 },
-      4: { w: 5, h: 5, pick: 8, attempts: 240 },
-      5: { w: 5, h: 6, pick: 8, attempts: 300 },
+      1: { w: 3, h: 4, pick: 1, keep: 0.25, attempts: 160 },
+      2: { w: 4, h: 4, pick: 3, keep: 0.25, attempts: 160 },
+      3: { w: 4, h: 5, pick: 40, keep: 0.15, attempts: 400 },
+      4: { w: 5, h: 5, pick: 100, keep: 0.1, attempts: 700 },
+      5: { w: 5, h: 6, pick: 200, keep: 0.05, attempts: 1000 },
     },
     describe(p) { return p.w + '×' + p.h + ' grid'; },
     // turns a board of this many tiles needs: at least two values to aim for
@@ -777,7 +794,7 @@
         const dry = cdSolve(w, h, sol, 2, src);
         if (dry.bypass || dry.exhausted) continue;
         found++;
-        if (!chosen || res.nodes > chosen.res.nodes || (res.nodes === chosen.res.nodes && res.forced < chosen.res.forced)) {
+        if (!chosen || res.forced < chosen.res.forced || (res.forced === chosen.res.forced && res.nodes > chosen.res.nodes)) {
           chosen = { sol, res };
         }
       }
@@ -798,15 +815,34 @@
       const turnsAt = (i, r) => (per[i] - (r % per[i])) % per[i];
       const needOf = (st) => { let d = 0; for (let k = 0; k < sol.length; k++) d += turnsAt(k, st[k]); return d; };
       const [minNeed, maxNeed] = this.turnRange(sol.length);
+      // from level 3 the tiles that start turned wrong are the ones local rules do not settle
+      // (the tiles that can be read from the border and their neighbours start right), so the
+      // turns to make are the ones that need thinking
+      const fixed = chosen.res.fixed || [], hardOnly = level >= 3;
+      const open = [], settled = [];
+      sol.forEach((m, i) => (fixed[i] ? settled : open).push(i));
       let start, need;
       for (let draw = 0; draw < 20; draw++) {
-        start = valid.map((vs) => (rng() < this.keepRight ? 0 : vs[rng.int(vs.length)]));
+        const keep = L.keep != null ? L.keep : this.keepRight;
+        if (hardOnly) {
+          // as many open tiles as the turns allow start one turn off (the settled ones right),
+          // so more of the garden starts broken and less of it shows the way
+          start = sol.map(() => 0);
+          need = 0;
+          for (const i of rng.shuffle(open.slice()).concat(rng.shuffle(settled.slice()))) {
+            if (need >= (fixed[i] ? minNeed : maxNeed)) continue;
+            const one = valid[i].filter((r) => turnsAt(i, r) === 1), any = valid[i].filter((r) => turnsAt(i, r) > 0 && need + turnsAt(i, r) <= maxNeed);
+            const from = one.length && need + 1 <= maxNeed ? one : any;
+            if (from.length) { start[i] = from[rng.int(from.length)]; need = needOf(start); }
+          }
+        } else start = valid.map((vs) => (rng() < keep ? 0 : vs[rng.int(vs.length)]));
         need = needOf(start);
         // never close to solved, never a long tapping job: turn single tiles to
         // another allowed position that brings the total toward the range
         // without overshooting it
         for (let guard = 0; (need < minNeed || need > maxNeed) && guard < 2000; guard++) {
-          const i = rng.int(sol.length);
+          const pool = hardOnly && guard < 1500 ? (need < minNeed ? open : settled) : null;
+          const i = pool && pool.length ? pool[rng.int(pool.length)] : rng.int(sol.length);
           const k = turnsAt(i, start[i]);
           const opts = valid[i].filter((r) => { const t = need - k + turnsAt(i, r); return need < minNeed ? t > need && t <= maxNeed : t < need && t >= minNeed; });
           if (!opts.length) continue;
@@ -1550,7 +1586,31 @@
     const rk = skRuleKey(R);
     if (!skAllCache.has(rk)) skAllCache.set(rk, Array.from(skDist([Array.from({ length: R.n }, (_, i) => i), [], []], R).keys(), (k) => k.split('|').map((x) => (x ? x.split('').map(Number) : []))));
     return skAllCache.get(rk);
+  }  // A goal-directed player: puts pieces where they belong, looking two moves ahead, and never
+  // takes back its last move unless it must. The share of tries it finishes within 1.5 times
+  // the fewest moves: low when the way there needs moves that look wrong (a piece away from
+  // its place first, the posts in an order that is not the obvious one).
+  function skSensible(start, goal, R, rng, tries) {
+    const gk = skKey(goal), m = skDist(goal, R).get(skKey(start)), par = Math.ceil(1.5 * m);
+    const fixed = (st) => { let f = 0; for (let p = 0; p < 3; p++) for (let h = 0; h < st[p].length && goal[p][h] === st[p][h]; h++) f++; return f; };
+    const look = (ns) => { if (skKey(ns) === gk) return 99; let v = fixed(ns); for (const [, , n2] of skNext(ns, R)) v = Math.max(v, fixed(n2) - 0.01); return v; };
+    let ok = 0;
+    for (let t = 0; t < tries; t++) {
+      let st = skCopy(start), last = null, moves = 0;
+      while (skKey(st) !== gk && moves < par) {
+        let opts = skNext(st, R);
+        const fwd = opts.filter(([a, b]) => !(last && a === last[1] && b === last[0]));
+        if (fwd.length) opts = fwd;
+        let best = -1e9, bag = [];
+        for (const o of opts) { const v = look(o[2]); if (v > best + 1e-9) { best = v; bag = [o]; } else if (Math.abs(v - best) < 1e-9) bag.push(o); }
+        const o = bag[rng.int(bag.length)];
+        last = [o[0], o[1]]; st = o[2]; moves++;
+      }
+      if (skKey(st) === gk) ok++;
+    }
+    return ok / tries;
   }
+
   const SK_ALL = skAll(SK_CLASSIC);
 
   const Stacks = {
@@ -1564,19 +1624,21 @@
     // every level a place of its own, two with a rule of their own that shows on the pieces.
     // moves: the fewest moves from start to goal; n pieces (3 if not given) on posts that hold caps
     // (3, 2 and 1 if not given). size: a piece goes only on a bigger one (piece 0 the biggest), as
-    // cake layers do; cherry: nothing can go on that piece (the scoop with the cherry). Ice cream
-    // needs three equal cones: on posts of 3, 2 and 1 the cherry leaves only 12 arrangements. The
-    // cake comes first: its rule leaves fewer wrong moves, so at 7 moves it sits between the harbor
-    // (5) and the ice cream (7), and every level is passed less often than the one before.
+    // cake layers do; cherry: nothing can go on that piece (the scoop with the cherry).
+    // qMax: of the boards with that many moves, only those a goal-directed player (skSensible)
+    // finishes within 1.5x the fewest moves at most this often: the ones whose way there looks
+    // wrong. From engines 1.24 the levels get longer and bigger (5, 6, 7 and 8 moves; four pieces
+    // from level 3) and pick those boards; until then 3, 4, 5, 7, 7 moves of any board, and a
+    // player who could finish however many moves it took hardly felt the levels go up.
     levels: {
       1: { moves: 3, theme: 'stones' },
-      2: { moves: 4, theme: 'station' },
-      3: { moves: 5, theme: 'harbor' },
-      4: { moves: 7, theme: 'cake', n: 4, caps: [4, 4, 4], size: true },
-      5: { moves: 7, theme: 'icecream', caps: [3, 3, 3], cherry: 2 },
+      2: { moves: 5, theme: 'station', qMax: 0.75 },
+      3: { moves: 6, theme: 'harbor', n: 4, caps: [4, 3, 2], qMax: 0.5 },
+      4: { moves: 7, theme: 'cake', n: 4, caps: [4, 4, 4], size: true, qMax: 0.25 },
+      5: { moves: 8, theme: 'icecream', n: 4, caps: [4, 4, 4], cherry: 2, qMax: 0.12 },
     },
     describe(p) { return p.moves + '-move problem' + (p.theme ? ', ' + p.theme : ''); },
-    build(level, seed, start, goal, theme, R) {
+    build(level, seed, start, goal, theme, R, q) {
       R = R || SK_CLASSIC;
       const moves = skDist(goal, R).get(skKey(start));
       return {
@@ -1584,7 +1646,7 @@
         n: R.n, caps: R.caps.slice(), cherry: R.cherry, size: R.size,
         start: skCopy(start), goal: skCopy(goal), moves,
         reference: moves,
-        features: { moves, start: skKey(start), goal: skKey(goal), theme, pieces: R.n, caps: R.caps.join(''), twist: R.cherry != null ? 'cherry' : R.size ? 'size' : '' },
+        features: { moves, start: skKey(start), goal: skKey(goal), theme, pieces: R.n, caps: R.caps.join(''), twist: R.cherry != null ? 'cherry' : R.size ? 'size' : '', sensible_solve: q == null ? '' : round(q, 3) },
       };
     },
     // the same puzzles in free play and research sessions: the place, pieces and rules of the level
@@ -1595,12 +1657,21 @@
       const theme = L.theme, moves = L.moves;
       const R = { n: L.n || 3, caps: L.caps || SK_CAPS, cherry: L.cherry != null ? L.cherry : null, size: !!L.size };
       const ALL = skAll(R);
+      // the goal-directed player gets its own draws, so the boards on offer do not depend on it
+      const prng = makeRng((seed ^ 0x5bd1e995) >>> 0);
+      let best = null;
       for (let attempt = 0; attempt < 100; attempt++) {
         const goal = ALL[rng.int(ALL.length)];
         const d = skDist(goal, R);
         const starts = ALL.filter((st) => d.get(skKey(st)) === moves);
-        if (starts.length) return this.build(level, seed, starts[rng.int(starts.length)], goal, theme, R);
+        if (!starts.length) continue;
+        const start = starts[rng.int(starts.length)];
+        if (L.qMax == null) return this.build(level, seed, start, goal, theme, R);
+        const q = skSensible(start, goal, R, prng, 12);
+        if (!best || q < best.q) best = { start, goal, q };
+        if (q <= L.qMax || attempt >= 60) break;
       }
+      if (best) return this.build(level, seed, best.start, best.goal, theme, R, best.q);
       throw new Error('Stacks: no ' + moves + '-move problem for seed ' + seed);
     },
     whyNot(p, st, b, piece) { return skWhyNot(skRules(p), st, b, piece); },
@@ -1666,7 +1737,7 @@
   const SB_FORK = 4.6;     // s from a fork's arrow sign to the next sign (the lanes come about 3 s after the arrow)
   const SB_TURN = 3.2;     // s from the new animal's board to the next sign
   // the second animal to watch for, from halfway (levels 4 and 5; at 5 in every place)
-  const SB_SWITCH = { farm: 'hen', savanna: 'monkey', fields: 'goose', desert: 'rabbit', forest: 'bear', jungle: 'elephant', coast: 'swan', outback: 'camel', village: 'rabbit', north: 'reindeer' };
+  const SB_SWITCH = { farm: 'hen', savanna: 'monkey', fields: 'goose', desert: 'rabbit', forest: 'bear', jungle: 'elephant', coast: 'swan', outback: 'emu', village: 'rabbit', north: 'reindeer' };
   // Master goes round every place in turn: first its own two, at dusk and night, then the rest
   const SB_TOUR = ['village', 'north', 'jungle', 'farm', 'coast', 'forest', 'desert', 'savanna', 'outback', 'fields'];
   // where it is dusk or night: there, at level 5, signs light up late in the headlights
@@ -1679,15 +1750,16 @@
     color: [['round_red', '50'], ['round_red', 'car'], ['square_blue', 'P']],
     symbol: [['tri', 'bang'], ['tri', 'curve'], ['tri', 'bumps']],
     animal: [['tri', 'bird'], ['tri', 'snail'], ['tri', 'turtle']],
-    // L5: look-alikes of each place's animal
-    farm: [['tri', 'moose'], ['tri', 'deer'], ['tri', 'camel']],
-    savanna: [['tri', 'cow'], ['tri', 'bear'], ['tri', 'camel']],
+    // L5: other animals of each place, look-alikes where the place has them (the animal that
+    // takes over halfway is one of them before halfway)
+    farm: [['tri', 'deer'], ['tri', 'moose'], ['tri', 'hen']],
+    savanna: [['tri', 'cow'], ['tri', 'ostrich'], ['tri', 'monkey']],
     fields: [['tri', 'cat'], ['tri', 'fox'], ['tri', 'hedgehog']],
-    desert: [['tri', 'cow'], ['tri', 'moose'], ['tri', 'deer']],
-    forest: [['tri', 'reindeer'], ['tri', 'moose'], ['tri', 'camel']],
-    jungle: [['tri', 'kangaroo'], ['tri', 'bear'], ['tri', 'cat']],
+    desert: [['tri', 'deer'], ['tri', 'fox'], ['tri', 'turtle']],
+    forest: [['tri', 'reindeer'], ['tri', 'moose'], ['tri', 'fox']],
+    jungle: [['tri', 'cat'], ['tri', 'bear'], ['tri', 'bird']],
     coast: [['tri', 'turtle'], ['tri', 'shell'], ['tri', 'fish']],
-    outback: [['tri', 'rabbit'], ['tri', 'deer'], ['tri', 'monkey']],
+    outback: [['tri', 'rabbit'], ['tri', 'fox'], ['tri', 'emu']],
     village: [['tri', 'goose'], ['tri', 'swan'], ['tri', 'hen']],
     north: [['tri', 'reindeer'], ['tri', 'deer'], ['tri', 'bear']],
   };
@@ -2068,12 +2140,12 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.23.0',
+    version: '1.24.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
     EXIT,
-    internals: { ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, skAll, SK_ALL },
+    internals: { cdTree, skSensible, ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, skAll, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;

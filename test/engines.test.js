@@ -105,21 +105,26 @@ test('outbound: random play labels dead ends correctly and undo restores state',
   assert.ok(checked > 100);
 });
 
-test('outbound: levels 3-5 need slides, levels 4-5 have dead ends, and they get harder', () => {
+test('outbound: slides from level 2, dead ends from level 3, and a sensible player clears less and less', () => {
   const avg = {};
   for (const lv of [1, 2, 3, 4, 5]) {
     let sum = 0, trapped = 0;
     for (let s = 0; s < 20; s++) {
       const p = O.generate(lv, 2000 + s);
-      sum += p.an.pRandom;
+      // a sensible player: drives out any car that can leave, and only then slides one at random
+      sum += p.an.pSmart;
       if (p.an.deadStates > 0) trapped++;
-      // levels 1-2 clear by tapping only cars with a clear way out; each pinwheel adds a needed slide
-      assert.equal(p.an.minSlides, O.levels[lv].loops, 'L' + lv + ' slides');
+      // level 1 clears by tapping only cars with a clear way out; each pinwheel needs a slide,
+      // and in the denser lots of levels 3 to 5 cars that hold each other up can need more
+      if (O.levels[lv].dense) assert.ok(p.an.minSlides >= O.levels[lv].loops, 'L' + lv + ' slides');
+      else assert.equal(p.an.minSlides, O.levels[lv].loops, 'L' + lv + ' slides');
+      if (O.levels[lv].maxOpt) assert.ok(p.an.optimal <= O.levels[lv].maxOpt, 'L' + lv + ' taps ' + p.an.optimal);
     }
     avg[lv] = sum / 20;
-    if (lv >= 4) assert.ok(trapped >= 18, 'L' + lv + ' trapped ' + trapped);
+    if (lv >= 3) assert.ok(trapped >= 18, 'L' + lv + ' trapped ' + trapped);
   }
-  assert.ok(avg[1] >= avg[3] && avg[3] > avg[4] && avg[4] > avg[5], JSON.stringify(avg));
+  assert.ok(avg[1] === 1 && avg[2] === 1, 'levels 1 and 2 are cleared by sensible play: ' + JSON.stringify(avg));
+  assert.ok(avg[3] < 0.7 && avg[3] > avg[4] && avg[4] > avg[5] && avg[5] <= 0.3, 'harder at every level from 3: ' + JSON.stringify(avg));
 });
 
 test('outbound: a pinwheel cannot be cleared without a slide, and one slide frees it', () => {
@@ -737,9 +742,10 @@ test('stacks: the cake and the ice cream have rules of their own', () => {
   assert.equal(r2.why, 'size');
   assert.notEqual(K.move(c, rc, 0, 1).kind, 'blocked', 'the smallest goes on a bigger one');
   assert.equal(E.internals.skAll(cakeRules).length, 81, 'four sized layers on three stands: 3 to the power 4 arrangements');
-  // ice cream: three cones that hold three each; nothing goes on the scoop with the cherry
+  // ice cream: four scoops on three cones that hold four each; nothing goes on the scoop with the cherry
   const ice = K.generate(5, 1);
-  assert.deepEqual(ice.caps, [3, 3, 3]);
+  assert.deepEqual(ice.caps, [4, 4, 4]);
+  assert.equal(ice.n, 4);
   assert.equal(ice.cherry, 2);
   const iceRules = { n: 3, caps: [3, 3, 3], cherry: 2, size: false };
   const q = K.build(5, 1, [[0, 2], [1], []], [[0], [1, 2], []], 'icecream', iceRules);
@@ -750,6 +756,36 @@ test('stacks: the cake and the ice cream have rules of their own', () => {
   assert.deepEqual(rq.st, [[0, 2], [1], []]);
   assert.notEqual(K.move(q, rq, 0, 1).kind, 'blocked', 'the scoop with the cherry can still move');
   for (const st of E.internals.skAll(iceRules)) for (const a of st) { const i = a.indexOf(2); assert.ok(i < 0 || i === a.length - 1, 'the cherry is always on top'); }
+});
+
+test('conduit: from level 3 local rules settle less and less of the board', () => {
+  let prev = 2;
+  for (const lv of [1, 2, 3, 4, 5]) {
+    let f = 0;
+    for (let s = 0; s < 16; s++) { const p = C.generate(lv, 3100 + s); f += p.features.forced_by_local_rules / p.features.tiles; }
+    f /= 16;
+    if (lv >= 3) assert.ok(f < prev - 0.04, 'L' + lv + ' settled by local rules ' + f.toFixed(2));
+    if (lv === 5) assert.ok(f < 0.5, 'L5 needs reasoning across the board: ' + f.toFixed(2));
+    prev = f;
+  }
+});
+
+test('stacks: every level is longer, and from level 2 the boards are the ones whose way looks wrong', () => {
+  const K = E.games.stacks;
+  let prevMoves = 0, prevQ = 2;
+  for (const lv of [1, 2, 3, 4, 5]) {
+    const L = K.levels[lv];
+    let q = 0, n = 0;
+    for (let s = 0; s < 24; s++) {
+      const p = K.generate(lv, 800 + s);
+      assert.equal(p.moves, L.moves);
+      assert.equal(p.n, L.n || 3);
+      if (L.qMax != null) { assert.ok(p.features.sensible_solve <= L.qMax + 1e-9, 'L' + lv + ' q ' + p.features.sensible_solve); q += p.features.sensible_solve; n++; }
+    }
+    assert.ok(L.moves > prevMoves, 'more moves at L' + lv);
+    prevMoves = L.moves;
+    if (n) { const m = q / n; assert.ok(m <= prevQ + 0.05, 'L' + lv + ' no easier for a goal-directed player: ' + m.toFixed(2)); prevQ = m; }
+  }
 });
 
 // one drive, checked against its level: signs, the animal on the road, forks, the new animal

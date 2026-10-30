@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.28.0';
+  const APP_VERSION = '2.29.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -269,12 +269,18 @@
         if (gl) r.glimpse = Object.assign({}, gl);
         store.set('pr1.records', r);
       }
-      // Stacks levels 4 and 5 are other puzzles now (the cake, the ice cream): their old records go, once
+      // Stacks levels 4 and 5 are other puzzles now (the cake, the ice cream): their old records go, once;
+      // and from app 2.29 the puzzle levels that got harder start their records afresh, once
       if (!skFresh) {
         skFresh = true;
         if (!store.get('pr1.skfresh', false)) {
           if (r.stacks) { delete r.stacks[4]; delete r.stacks[5]; store.set('pr1.records', r); }
           store.set('pr1.skfresh', true);
+        }
+        if (!store.get('pr1.harder229', false)) {
+          for (const [g, lvs] of [['outbound', [2, 3, 4, 5]], ['stacks', [2, 3, 4, 5]], ['conduit', [3, 4, 5]]]) if (r[g]) for (const lv of lvs) delete r[g][lv];
+          store.set('pr1.records', r);
+          store.set('pr1.harder229', true);
         }
       }
       return r;
@@ -375,17 +381,71 @@
         + [26, 374].map((x) => '<path d="M' + x + ' 800V700" stroke="#2A2A2A" stroke-width="4"/><circle cx="' + x + '" cy="692" r="34" fill="#FFD27A" opacity=".18"/><circle cx="' + x + '" cy="692" r="16" fill="#FFD27A" opacity=".35"/><rect x="' + (x - 8) + '" y="680" width="16" height="22" rx="4" fill="#FFE7A8"/><path d="M' + (x - 11) + ' 680h22l-11-10z" fill="#2A2A2A"/>').join('')
         + scatter(14, 13, 30, 560, 370, 700).map(([x, y, k]) => '<circle cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="' + (2 + k * 2).toFixed(1) + '" fill="#FFF0A0" opacity="' + (0.4 + k * 0.5).toFixed(2) + '"/>').join(''),
     },
+    // Tumbler: each level is the thing being opened, drawn round the lock, bold enough to name
     tumbler: {
-      2: () => Array.from({ length: 5 }, (_, i) => '<rect x="40" y="' + (700 + i * 16) + '" width="320" height="7" rx="3.5" fill="#000" opacity=".14"/>').join('')
-        + '<path d="M40 0V800M360 0V800" stroke="#000" stroke-opacity=".14" stroke-width="4"/><circle cx="372" cy="400" r="9" fill="#FFFFFF" opacity=".25"/>',
-      3: () => Array.from({ length: 6 }, (_, i) => '<rect x="' + (i * 68 - 8) + '" y="0" width="64" height="800" fill="' + (i % 2 ? '#000' : '#FFF') + '" opacity=".05"/><path d="M' + (i * 68 + 20) + ' 0q8 200 0 400t0 400" stroke="#000" stroke-opacity=".08" stroke-width="2" fill="none"/>').join('')
-        + '<circle cx="356" cy="420" r="18" fill="#E7B54A"/><circle cx="356" cy="420" r="8" fill="#B8862A"/><rect x="346" y="446" width="20" height="40" rx="6" fill="#E7B54A"/>',
-      4: () => '<g fill="none" stroke="#FFFFFF" stroke-opacity=".1"><circle cx="200" cy="420" r="300" stroke-width="18"/><circle cx="200" cy="420" r="250" stroke-width="3"/></g>'
-        + Array.from({ length: 24 }, (_, i) => { const a = (i * Math.PI) / 12; return '<rect x="-2" y="-14" width="4" height="28" fill="#FFFFFF" opacity=".1" transform="translate(' + (200 + Math.cos(a) * 275).toFixed(1) + ' ' + (420 + Math.sin(a) * 275).toFixed(1) + ') rotate(' + (i * 15 + 90) + ')"/>'; }).join('')
-        + [[24, 24], [376, 24], [24, 776], [376, 776]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="9" fill="#C9CFD8"/><circle cx="' + (x - 2) + '" cy="' + (y - 2) + '" r="3" fill="#FFFFFF" opacity=".7"/>').join(''),
-      5: () => '<g fill="none" stroke="#E7B54A"><circle cx="200" cy="420" r="320" stroke-width="14" stroke-opacity=".28"/><circle cx="200" cy="420" r="280" stroke-width="3" stroke-opacity=".35"/></g>'
-        + Array.from({ length: 16 }, (_, i) => { const a = (i * Math.PI) / 8; return '<circle cx="' + (200 + Math.cos(a) * 320).toFixed(1) + '" cy="' + (420 + Math.sin(a) * 320).toFixed(1) + '" r="10" fill="#E7B54A" opacity=".55"/>'; }).join('')
-        + starsSvg(18, 21, 800, 0.5).replace(/#FFFFFF/g, '#FFE08A'),
+      // a U-lock's shackle rising out of the lock, a bicycle leaning below
+      1: () => {
+        const wheel = (cx) => '<circle cx="' + cx + '" cy="712" r="60" fill="none" stroke="#1C1342" stroke-width="11"/><circle cx="' + cx + '" cy="712" r="53" fill="none" stroke="#C9CDD8" stroke-width="3"/>'
+          + Array.from({ length: 12 }, (_, i) => { const a = (i * Math.PI) / 6; return '<path d="M' + cx + ' 712L' + (cx + Math.cos(a) * 52).toFixed(1) + ' ' + (712 + Math.sin(a) * 52).toFixed(1) + '" stroke="#C9CDD8" stroke-width="1.6" opacity=".7"/>'; }).join('')
+          + '<circle cx="' + cx + '" cy="712" r="7" fill="#C9CDD8"/>';
+        return '<defs><linearGradient id="tbd1s" x1="0" x2="1"><stop offset="0" stop-color="#8E96AA"/><stop offset=".42" stop-color="#F4F6FA"/><stop offset="1" stop-color="#7E869C"/></linearGradient></defs>'
+          + '<path d="M128 272V224a72 72 0 0 1 144 0V272" fill="none" stroke="#1C1342" stroke-width="44" stroke-linecap="round"/>'
+          + '<path d="M128 272V224a72 72 0 0 1 144 0V272" fill="none" stroke="url(#tbd1s)" stroke-width="32"/>'
+          + '<path d="M118 230a82 82 0 0 1 30-66" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity=".55"/>'
+          + wheel(78) + wheel(322)
+          + '<g fill="none" stroke="#FFC83A" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"><path d="M78 712L188 712L156 616ZM188 712L284 622L156 616M284 622L322 712"/></g>'
+          + '<path d="M138 606h40" stroke="#1C1342" stroke-width="10" stroke-linecap="round"/><path d="M272 600l16-12h22" stroke="#1C1342" stroke-width="8" stroke-linecap="round" fill="none"/>'
+          + '<circle cx="188" cy="712" r="12" fill="#1C1342"/><circle cx="188" cy="712" r="5" fill="#C9CDD8"/>';
+      },
+      // a row of school lockers: vents and number plates over the lock, handles and feet under it
+      2: () => Array.from({ length: 6 }, (_, i) => {
+        const x = i * 80 - 40, c = i % 2 ? '#3F8F96' : '#46999F';
+        let v = '<rect x="' + (x + 3) + '" y="-10" width="74" height="780" rx="5" fill="' + c + '" stroke="#1E4A50" stroke-width="3"/>'
+          + '<rect x="' + (x + 9) + '" y="-4" width="8" height="770" rx="3" fill="#FFFFFF" opacity=".12"/>';
+        for (let k = 0; k < 4; k++) v += '<rect x="' + (x + 18) + '" y="' + (176 + k * 11) + '" width="44" height="5" rx="2.5" fill="#1E4A50"/>';
+        for (let k = 0; k < 3; k++) v += '<rect x="' + (x + 18) + '" y="' + (700 + k * 11) + '" width="44" height="5" rx="2.5" fill="#1E4A50"/>';
+        v += '<rect x="' + (x + 25) + '" y="150" width="30" height="18" rx="3" fill="#E3F2F2"/><text x="' + (x + 40) + '" y="164" text-anchor="middle" font-family="Lexend, system-ui, sans-serif" font-size="13" font-weight="700" fill="#1E4A50">' + (31 + i) + '</text>';
+        v += '<rect x="' + (x + 58) + '" y="604" width="9" height="46" rx="4.5" fill="#D5E4E6"/><rect x="' + (x + 58) + '" y="604" width="9" height="16" rx="4.5" fill="#FFFFFF" opacity=".5"/>';
+        return v;
+      }).join('') + '<rect x="0" y="766" width="400" height="40" fill="#163A3F"/><path d="M0 766H400" stroke="#0E2A2E" stroke-width="4"/>',
+      // the front door: a fanlight with the house number, panels, the letterbox, the knob, the mat
+      3: () => '<rect x="0" y="0" width="34" height="800" fill="#4A2814"/><rect x="366" y="0" width="34" height="800" fill="#4A2814"/>'
+        + '<path d="M34 0V800M366 0V800" stroke="#2E170A" stroke-width="5"/>'
+        + '<path d="M96 236a104 104 0 0 1 208 0Z" fill="#BFE3F2" stroke="#3A1E0E" stroke-width="10" stroke-linejoin="round"/>'
+        + [-0.66, -0.33, 0, 0.33, 0.66].map((a) => '<path d="M200 236L' + (200 + Math.sin(a) * 100).toFixed(1) + ' ' + (236 - Math.cos(a) * 100).toFixed(1) + '" stroke="#3A1E0E" stroke-width="5"/>').join('')
+        + '<path d="M128 196a76 76 0 0 1 40-38" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" fill="none" opacity=".7"/>'
+        + '<circle cx="200" cy="204" r="19" fill="#E7B54A" stroke="#8A5A1C" stroke-width="3"/><text x="200" y="211" text-anchor="middle" font-family="Lexend, system-ui, sans-serif" font-size="18" font-weight="700" fill="#5A3410">12</text>'
+        + [[60, 604, 130, 120], [210, 604, 130, 120]].map(([x, y, w, hh]) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" rx="6" fill="#8E5A36" stroke="#5A3218" stroke-width="5"/><rect x="' + (x + 12) + '" y="' + (y + 12) + '" width="' + (w - 24) + '" height="' + (hh - 24) + '" rx="4" fill="#9E6840"/>').join('')
+        + '<rect x="146" y="594" width="108" height="22" rx="6" fill="#E7B54A" stroke="#8A5A1C" stroke-width="3"/><rect x="158" y="602" width="84" height="6" rx="3" fill="#5A3410"/>'
+        + '<circle cx="340" cy="566" r="16" fill="#E7B54A" stroke="#8A5A1C" stroke-width="3"/><circle cx="335" cy="561" r="5" fill="#FFF2C8" opacity=".8"/>'
+        + '<rect x="40" y="758" width="320" height="50" rx="8" fill="#7A3A2A"/><rect x="52" y="768" width="296" height="40" rx="5" fill="none" stroke="#B8664C" stroke-width="4" stroke-dasharray="10 7"/>',
+      // the safe: a riveted steel door, its hinges, the dial over the lock and the handle under it
+      4: () => {
+        let v = '<rect x="14" y="14" width="372" height="772" rx="26" fill="none" stroke="#2C313B" stroke-width="12"/><rect x="26" y="26" width="348" height="748" rx="18" fill="none" stroke="#B4BCC8" stroke-width="2" opacity=".5"/>';
+        for (let k = 0; k < 15; k++) { const y = 48 + k * 51; v += '<circle cx="14" cy="' + y + '" r="5" fill="#D9DEE6"/><circle cx="386" cy="' + y + '" r="5" fill="#D9DEE6"/>'; }
+        v += [176, 640].map((y) => '<rect x="0" y="' + (y - 34) + '" width="22" height="68" rx="6" fill="#2C313B"/><rect x="4" y="' + (y - 28) + '" width="10" height="56" rx="4" fill="#5A616E"/>').join('');
+        v += '<circle cx="200" cy="186" r="50" fill="#2C313B"/><circle cx="200" cy="186" r="44" fill="#C9CFD8"/><circle cx="200" cy="186" r="30" fill="#9AA3B2"/><circle cx="200" cy="186" r="9" fill="#2C313B"/>';
+        for (let k = 0; k < 40; k++) { const a = (k * Math.PI) / 20; v += '<path d="M' + (200 + Math.cos(a) * 36).toFixed(1) + ' ' + (186 + Math.sin(a) * 36).toFixed(1) + 'L' + (200 + Math.cos(a) * (k % 5 ? 41 : 43)).toFixed(1) + ' ' + (186 + Math.sin(a) * (k % 5 ? 41 : 43)).toFixed(1) + '" stroke="#2C313B" stroke-width="' + (k % 5 ? 1.2 : 2.2) + '"/>'; }
+        v += '<path d="M200 128l-7-10h14z" fill="#E5564D"/>';
+        v += '<g transform="translate(200 668)">' + [0, 120, 240].map((d) => '<g transform="rotate(' + (d - 90) + ')"><rect x="0" y="-6" width="58" height="12" rx="6" fill="#C9CFD8" stroke="#2C313B" stroke-width="2.5"/><circle cx="60" cy="0" r="11" fill="#E7EBF0" stroke="#2C313B" stroke-width="2.5"/></g>').join('')
+          + '<circle r="20" fill="#C9CFD8" stroke="#2C313B" stroke-width="3"/><circle r="7" fill="#2C313B"/></g>';
+        return v;
+      },
+      // the bank vault: a round brass door with its ring of bolts, and the great wheel under the lock
+      5: () => {
+        let v = '<defs><radialGradient id="tbd5d" cx=".5" cy=".5" r=".5"><stop offset=".7" stop-color="#3A2C10"/><stop offset="1" stop-color="#1A1306"/></radialGradient></defs>'
+          + '<circle cx="200" cy="420" r="350" fill="url(#tbd5d)"/>'
+          + '<circle cx="200" cy="420" r="346" fill="none" stroke="#C9962E" stroke-width="22"/><circle cx="200" cy="420" r="326" fill="none" stroke="#7A5A1A" stroke-width="5"/>'
+          + '<circle cx="200" cy="420" r="300" fill="none" stroke="#E7B54A" stroke-width="3" opacity=".55"/>';
+        for (let k = 0; k < 20; k++) {
+          const a = (k * Math.PI) / 10, x = 200 + Math.cos(a) * 312, y = 420 + Math.sin(a) * 312;
+          v += '<g transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + (k * 18) + ')"><rect x="-16" y="-9" width="32" height="18" rx="9" fill="#E7B54A" stroke="#7A5A1A" stroke-width="2.5"/><rect x="-12" y="-6" width="12" height="4" rx="2" fill="#FFF2C8" opacity=".7"/></g>';
+        }
+        v += '<g transform="translate(200 672)"><circle r="70" fill="none" stroke="#7A5A1A" stroke-width="14"/><circle r="70" fill="none" stroke="#E7B54A" stroke-width="9"/>'
+          + [0, 60, 120, 180, 240, 300].map((d) => '<g transform="rotate(' + d + ')"><rect x="14" y="-5" width="70" height="10" rx="5" fill="#E7B54A" stroke="#7A5A1A" stroke-width="2"/><circle cx="88" cy="0" r="10" fill="#F2CF72" stroke="#7A5A1A" stroke-width="2.5"/></g>').join('')
+          + '<circle r="22" fill="#E7B54A" stroke="#7A5A1A" stroke-width="3"/><circle r="9" fill="#7A5A1A"/></g>';
+        return v;
+      },
     },
     keepsake: {
       2: () => sunSvg(330, 70, 30, '#FFF3B0') + scatter(6, 31, 20, 120, 380, 760).map(([x, y]) => '<path d="M' + x + ' ' + y + 'c-6-8-14-6-12 2 2 6 8 4 12-2zm0 0c6-8 14-6 12 2-2 6-8 4-12-2z" fill="#FF8FB8" opacity=".7"/>').join(''),
@@ -2153,6 +2213,9 @@
     goal() { this.goalEl.hidden = true; }
     // with feedback on (free play, practice) the board remembers for the player and says it plainly
     helps() { return !!this.o.feedback && this.p.clue === 'pin'; }
+    // words on the board (what a try's colors mean, why a color does not go there) are for
+    // learning: practice and the first level only; from level 2 the board helps without them
+    wordy() { return this.practice || (this.spec.level || 0) <= 1; }
     // what the tries so far say: per color 2 (found), 1 (in the code, place not known) or 0 (not in it);
     // per place the color found there and the colors known not to be there
     knowledge() {
@@ -2175,7 +2238,7 @@
       Sound.play('lose');
       buzz([20, 40, 20]);
       if (el) { el.classList.remove('nope'); void el.offsetWidth; el.classList.add('nope'); }
-      this.say(el, text, 'no');
+      if (text && this.wordy()) this.say(el, text, 'no');
     }
     put(c) {
       if (this.summary || this.busy) return;
@@ -2194,7 +2257,7 @@
           const slot = this.rowsEl.querySelector('.row.active') && this.rowsEl.querySelector('.row.active').children[k];
           if (ok == null) { this.nope(slot, 'Not here'); return; }
           // the color cannot go in the next place: it goes on to one where it can, and says so
-          this.say(slot, 'Not here', 'no', 1100);
+          if (this.wordy()) this.say(slot, 'Not here', 'no', 1100);
           k = ok;
         }
       }
@@ -2363,11 +2426,11 @@
     }
     start() {
       super.start();
-      if (this.helps() && (this.practice || !(store.get('pr1.tbsolved', 0) || 0))) this.later(() => { if (!this.draft.some((d, k) => d != null && this.run.revealed[k] == null)) this.goalSay = this.say(this.lockEl, 'Find the ' + this.p.P + ' hidden colors', '', 3200, true); }, 700);
+      if (this.helps() && this.wordy() && (this.practice || !(store.get('pr1.tbsolved', 0) || 0))) this.later(() => { if (!this.draft.some((d, k) => d != null && this.run.revealed[k] == null)) this.goalSay = this.say(this.lockEl, 'Find the ' + this.p.P + ' hidden colors', '', 3200, true); }, 700);
     }
     // what the colors of the last try mean, in words, while the player is new to it
     explain() {
-      if (!this.helps() || !(this.practice || (store.get('pr1.tbsolved', 0) || 0) < 6)) return;
+      if (!this.helps() || !this.wordy() || !(this.practice || (store.get('pr1.tbsolved', 0) || 0) < 6)) return;
       const t = this.run.tries[this.run.tries.length - 1], row = this.rowsEl.children[this.run.tries.length - 1];
       if (!t || !t.marks || !row) return;
       const WORDS = { 2: ['Right color, right place', 'yes'], 1: ['Right color, wrong place', 'move'], 0: ['Wrong color', 'no'] };
@@ -3268,14 +3331,15 @@
     'M0 -2.3a2.3 2.3 0 1 1 0 4.6a2.3 2.3 0 1 1 0-4.6z',
     'M0 -2.7L2.7 2.1H-2.7z',
     'M-2.1 -2.1h4.2v4.2h-4.2z',
+    'M0 -2.9L2.9 0L0 2.9L-2.9 0z',
   ];
   // the cake's layers, biggest first: the width tells them apart
   const SK_CAKE_W = [26, 21, 16, 11];
   const SK_LOOKS = {
     stones: { names: ['blue stone', 'red stone', 'green stone'], fill: ['#6F90C2', '#C9654C', '#6E9F5D'], rod: '#8A5C3B', puff: ['#E9D3A6', '#D5C091', '#FFFFFF'], post: 'post' },
     station: { names: ['blue suitcase', 'red suitcase', 'yellow suitcase'], fill: ['#4C78BE', '#D9493E', '#EDB43A'], rod: '#8E9AAA', puff: ['#FFFFFF', '#D9DEE5', '#F2C14E'], post: 'trolley' },
-    harbor: { names: ['red container', 'blue container', 'yellow container'], fill: ['#D24B3E', '#2F6DB0', '#E7B12F'], ink: ['#FFFFFF', '#FFFFFF', '#3A2A00'], rod: '#38506A', puff: ['#FFFFFF', '#C9D2DB', '#F0B23A'], post: 'post' },
-    icecream: { names: ['chocolate scoop', 'strawberry scoop', 'vanilla scoop with the cherry'], fill: ['#7B4A2D', '#F39AB5', '#F8EAC8'], rod: '#E0A35E', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'], post: 'cone', cherry: 2 },
+    harbor: { names: ['red container', 'blue container', 'yellow container', 'green container'], fill: ['#D24B3E', '#2F6DB0', '#E7B12F', '#3E9A55'], ink: ['#FFFFFF', '#FFFFFF', '#3A2A00', '#FFFFFF'], rod: '#38506A', puff: ['#FFFFFF', '#C9D2DB', '#F0B23A'], post: 'post' },
+    icecream: { names: ['chocolate scoop', 'strawberry scoop', 'vanilla scoop with the cherry', 'mint scoop'], fill: ['#7B4A2D', '#F39AB5', '#F8EAC8', '#9FDCC3'], rod: '#E0A35E', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'], post: 'cone', cherry: 2 },
     bakery: { names: ['strawberry layer', 'chocolate layer', 'lemon layer'], fill: ['#EE8AA3', '#8A5537', '#F0CF63'], ink: ['#FFFFFF', '#FFE6C2', '#7A5A00'], rod: '#D9B98C', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'], post: 'stand' },
     cake: { names: ['biggest layer', 'big layer', 'small layer', 'smallest layer'], fill: ['#A7D3B4', '#F4A9BF', '#F6D67C', '#BCA8E8'], rod: '#D9B98C', puff: ['#FF6FA7', '#FFD23F', '#7AD3F7', '#FFFFFF'], post: 'stand' },
   };
@@ -3365,8 +3429,9 @@
         s('path', { d: 'M-7.8 2.2C-4.6 3.8 4.6 3.8 7.8 2.2', stroke: skMix(c, -0.3), 'stroke-width': 0.8, fill: 'none', opacity: 0.45 }),
         s('ellipse', { cx: -3.3, cy: -5.2, rx: 2.9, ry: 1.3, fill: '#FFFFFF', opacity: 0.42, transform: 'rotate(-24 -3.3 -5.2)' }));
       const dots = id === 1 ? [[-4.8, -1.4, 0.5], [2.4, -4.6, 0.45], [5.2, -0.8, 0.5], [-1.2, 0.6, 0.45], [3.2, 1.6, 0.4], [-5.8, 1.4, 0.4]]
-        : id === 2 ? [[-4.2, -0.8, 0.26], [1.8, -3.6, 0.24], [4.8, 0.4, 0.26], [-1.4, 1.4, 0.22], [3.4, -6, 0.22]] : [];
-      dots.forEach(([x, y, r]) => g.append(s('circle', { cx: x, cy: y, r, fill: id === 1 ? '#D9476E' : '#6B4A2A', opacity: id === 1 ? 0.75 : 0.55 })));
+        : id === 2 ? [[-4.2, -0.8, 0.26], [1.8, -3.6, 0.24], [4.8, 0.4, 0.26], [-1.4, 1.4, 0.22], [3.4, -6, 0.22]]
+          : id === 3 ? [[-5, -2, 0.6], [1.6, -5.2, 0.55], [5.4, -1.6, 0.6], [-1.8, 0.8, 0.55], [3.6, 1.4, 0.5], [-4.6, -5.4, 0.45]] : [];
+      dots.forEach(([x, y, r]) => g.append(s('circle', { cx: x, cy: y, r, fill: id === 1 ? '#D9476E' : id === 3 ? '#4A2E1C' : '#6B4A2A', opacity: id === 1 ? 0.75 : id === 3 ? 0.8 : 0.55 })));
       if (id === L.cherry) {
         g.append(
           s('path', { d: 'M0.9 -11.4Q1.4 -14.8 4.6 -16', stroke: '#6E7B2E', 'stroke-width': 0.65, fill: 'none', 'stroke-linecap': 'round' }),
@@ -3997,7 +4062,7 @@
   // the lane to the landmark comes back to the middle over SB_SPLIT while the other one
   // bends away, out of sight by SB_AWAY; the arrow board stands just past the nose
   const SB_WIDE = 7, SB_SPLIT = 14, SB_AWAY = 16, SB_BEND = 9, SB_LEAD = 1.0;
-  const SB_DARK = 380;      // ms a sign stays dark at night until the headlights catch it (900 the first time)
+  const SB_DARK = 380;      // ms a sign takes at night to come out of the dark and light up
   const SB_COL = {
     sky: ['#79B3F0', '#BCDDF7', '#FFE4C4'], far: '#A9BFDB', hill: ['#8CC57C', '#7BB86E'],
     grass: ['#95D17F', '#8AC774'], rumble: ['#E5564D', '#F8F3EA'], road: ['#737886', '#6E7381'], lane: '#F8F3E6',
@@ -5547,6 +5612,24 @@
       ['p', 'M31 -87L43 -80.5L30.5 -81Z', '#F08A2B', ''], ['c', 31, -85, 2, '#1F1F24', 'd'],
       ['c', 26, -86.5, 1.5, '#1F1F24', 'd'],
     ] };
+    // the outback's bird: long legs, a shaggy body with drooping feathers, a long neck with blue skin
+    A.emu = { len: 0.62, gait: 'walk', stride: 9, lift: 7, rate: 1.7, bob: 2.6, parts: [
+      ['g', -1, -50, 50, 4.4, 1, 'claw', '#7E6E5E', ''],
+      ['e', -4, -58, 25, 18, -0.12, '#5B4A3A', ''],
+      ['p', 'M-24 -66Q-40 -60 -35 -42Q-31 -49 -28 -43Q-26 -51 -21 -45Q-19 -53 -13 -47Z', '#4B3C2F', ''],
+      ['e', -7, -63, 15, 8, -0.12, '#6E5B48', 'd'], ['e', -16, -54, 8, 4, 0.5, '#4B3C2F', 'd'], ['e', 2, -50, 9, 4, -0.3, '#4B3C2F', 'd'],
+      ['g', 8, -50, 50, 4.6, 0, 'claw', '#8A7A6A', ''],
+      ['q', 15, -66, 23, -84, 19, -100, 5.5, '#6A5C50', ''],
+      ['q', 18.5, -84, 21, -91, 19.5, -97, 3, '#7C9CBC', 'd'],
+      ['e', 21, -101, 6.5, 5, 0.1, '#4E443C', ''],
+      ['p', 'M26 -102.5L35 -100L26 -97.5Z', '#2E2A26', ''],
+      ['c', 22.5, -102.5, 1.8, '#F4E7C8', 'd'], ['c', 23, -102.5, 0.9, '#1F1A17', 'd'],
+    ] };
+    A.ostrich = { len: 0.66, gait: 'walk', stride: 9, lift: 7, rate: 1.7, bob: 2.6, parts: A.emu.parts.map((q) => {
+      const r = q.slice(), c = { '#7E6E5E': '#D49A8C', '#8A7A6A': '#E0A99A', '#5B4A3A': '#2B2725', '#4B3C2F': '#F5F2EA', '#6E5B48': '#3A3431', '#6A5C50': '#D9AFA4', '#7C9CBC': '#E7BFB4', '#4E443C': '#C99086' }[r[r.length - 2]];
+      if (c) r[r.length - 2] = c;
+      return r;
+    }) };
     A.hen = { len: 0.32, gait: 'walk', stride: 5, lift: 5, rate: 2.6, bob: 2.4, parts: [
       ['g', -2, -16, 16, 3.2, 0, 'claw', '#E8A53A', ''], ['g', 8, -16, 16, 3.2, 1, 'claw', '#E8A53A', ''],
       ['p', 'M-22 -38Q-40 -60 -31 -68Q-26 -52 -16 -42Z', '#7E4424', ''],
@@ -6051,8 +6134,6 @@
         this.later(() => this.signBtn.classList.remove('press'), 140);
       }
       const S = this.sign;
-      // a tap while a sign is still dark (at night) is noted, without a sound
-      if (S && !S.res && ts < S.on - 1) { this.run.stray++; this.log('stray', { move_no: this.run.i, source, detail: 'sign still dark' }); this.app.touch(); return; }
       if (S && !S.res && ts >= S.on - 1 && ts - S.on <= S.ms + SB_GRACE) { this.score(S, true, Math.max(0, ts - S.on), t, source); return; }
       this.run.stray++;
       this.log('stray', { move_no: this.run.i, source, detail: S && S.res ? 'after ' + S.res : '' });
@@ -6262,13 +6343,13 @@
       const k = run.i;
       const FK = this.fork, zb = FK && FK.shown ? FK.w0 + 2.6 - this.pos : -1;
       if (k < p.signs.length && this.tt >= p.signs[k].t && (!this.sign || this.sign.res) && !this.backing && !(zb > 0.5 && zb < SB_SIGN_Z + 3)) {
-        // at night a sign stands dark until the headlights catch it; its time up starts then
-        // (longer the first time, with a word about it)
-        const first = p.night && this.isNew('night'), dark = p.night ? (first ? 900 : SB_DARK) : 0;
-        this.sign = { k, at: ts, on: ts + dark, ms: this.G.windowMs(p, run, k), res: null, done: null, kmh: Math.round(this.kmh), d0: { t: run.drive.t, on: run.drive.on } };
+        // at night a sign comes out of the dark and lights up in the headlights as it appears
+        // (fade: how long that takes); the first time, with a word about it
+        const first = p.night && this.isNew('night');
+        this.sign = { k, at: ts, on: ts, fade: p.night ? SB_DARK : 0, ms: this.G.windowMs(p, run, k), res: null, done: null, kmh: Math.round(this.kmh), d0: { t: run.drive.t, on: run.drive.on } };
         if (first) {
           this.learned('night');
-          this.later(() => { if (this.sign && this.sign.k === k && this.signXY) this.say(this.mark([this.signXY[0], this.signXY[1] - this.plateP * 0.62]), 'At night, signs light up late', '', 2600); }, 60);
+          this.later(() => { if (this.sign && this.sign.k === k && this.signXY) this.say(this.mark([this.signXY[0], this.signXY[1] - this.plateP * 0.62]), 'At night, signs light up in your headlights', '', 2600); }, 120);
         }
         if (this.practice) this.guide();
       }
@@ -6755,25 +6836,24 @@
             ctx.strokeStyle = ring; ctx.lineWidth = 5;
             ctx.beginPath(); ctx.arc(gx + dxs, cy, P * 0.62 * scale, 0, Math.PI * 2); ctx.stroke();
           }
-          // at night: dark until the headlights catch it, then a flash as it lights up
-          const sg = p.signs[S.k], lit = age >= 0;
-          if (S.at < S.on && lit && age < 260) {
-            const R = P * (1 + age / 300);
-            ctx.globalAlpha = 1 - age / 260;
+          // at night: it comes out of the dark, brightening as the headlights reach it, with a
+          // warm shine that swells as it lights up and then fades
+          const sg = p.signs[S.k], f = S.fade ? Math.min(1, age0 / S.fade) : 1;
+          if (S.fade && age0 < S.fade + 320) {
+            const g = age0 < S.fade ? f : 1 - (age0 - S.fade) / 320, R = P * (0.9 + 0.35 * f);
+            ctx.globalAlpha = 0.55 * g;
             ctx.drawImage(sbGlow('255, 244, 210'), gx - R, cy - R, R * 2, R * 2);
             ctx.globalAlpha = 1;
           }
           ctx.save();
           ctx.translate(gx + dxs, cy);
           ctx.scale(scale, scale);
-          if (lit) sbPlate(ctx, sg.shape, sg.glyph, 0, 0, P);
-          else {
-            // a faint shine round its edge: something is there
-            ctx.globalAlpha = 0.3;
-            ctx.drawImage(sbGlow('200, 214, 255'), -P * 0.75, -P * 0.75, P * 1.5, P * 1.5);
-            ctx.globalAlpha = 1;
+          sbPlate(ctx, sg.shape, sg.glyph, 0, 0, P);
+          if (f < 1) {
             const dk = sbPlateDark(sg.shape, sg.glyph, P);
+            ctx.globalAlpha = Math.pow(1 - f, 1.4);
             ctx.drawImage(dk.c, -dk.S / 2, -dk.S / 2, dk.S, dk.S);
+            ctx.globalAlpha = 1;
           }
           ctx.restore();
           this.signXY = [gx, cy];
@@ -7720,11 +7800,12 @@
       const L = E.games[g].levels[k];
       if (g === 'tumbler') return '- L' + k + ': per-pin clues ' + L.pin.P + ' pins x ' + L.pin.C + ' colors, ' + L.pin.max + ' tries; count clues ' + L.count.P + ' pins x ' + L.count.C + ' colors, ' + L.count.max + ' tries';
       if (g === 'glimpse') return '- L' + k + ': ' + E.games.glimpse.describe(L) + '; ' + L.looks + ' looks a round; success at threshold_ms <= ' + L.advanceMs;
-      if (g === 'stacks') return '- L' + k + ': ' + L.moves + ' moves at best';
+      if (g === 'stacks') return '- L' + k + ': ' + L.moves + ' moves at best, ' + (L.n || 3) + ' pieces on posts of ' + (L.caps || [3, 2, 1]).join(', ') + (L.qMax != null ? '; a goal-directed player finishes within 1.5x at most ' + Math.round(L.qMax * 100) + '% of the time' : '');
       if (g === 'keepsake') return '- L' + k + ': ' + E.games.keepsake.describe(L);
       if (g === 'switchback') return '- L' + k + ': ' + E.games.switchback.describe(L) + ', road half-width ' + L.road.half + ', bends ' + L.road.curve.join(' to ') + (L.road.s ? ', ' + Math.round(L.road.s * 100) + '% as S-bends' : '') + '; success at threshold_ms <= ' + L.advanceMs + ' and speed_mean_kmh >= ' + L.advanceKmh;
       const desc = E.games[g].describe(Object.assign({}, L, { cars: { length: L.cars } }));
-      return '- L' + k + ': ' + desc + (g === 'outbound' ? ', ' + (L.traps || 0) + ' planted trap' + (L.traps === 1 ? '' : 's') : '');
+      if (g === 'outbound') return '- L' + k + ': ' + desc + ', ' + (L.loops || 0) + ' pinwheel' + (L.loops === 1 ? '' : 's') + (L.dense ? ', a full lot; a sensible player clears it ' + L.qBand.map((x) => Math.round(x * 100) + '%').join(' to ') + ' of the time, in ' + L.maxOpt + ' taps at most' : '');
+      return '- L' + k + ': ' + desc + (g === 'conduit' ? ', the hardest of ' + L.pick + ' board' + (L.pick === 1 ? '' : 's') : '');
     }).join('\n');
     const lines = [
       '# Puzzle Reel codebook (app ' + APP_VERSION + ', engines ' + E.version + ')', '',
@@ -7732,8 +7813,8 @@
       '## Event columns', '',
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
-      ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them.', '',
-        '## Levels', '', '### Outbound', lv('outbound'), 'L1 and L2 can be cleared by tapping only cars with a clear way out. L3 to L5 contain pinwheels, four cars that each block the next, so one car must first slide part of the way (feature `slides_needed`: 1 at L3 and L4, 2 at L5); L4 adds a planted trap, and L4 and L5 are chosen by the chance that random tapping clears the lot (feature `p_random_solve`). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.42 and 0.5 turns per tile. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+      ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them. Words on the board (what the colors of a try mean, Wrong color, Not here) come in practice and at L1 only, until six codes are cracked (from app 2.29; until then at every level); from L2 the board helps without words.', '',
+        '## Levels', '', '### Outbound', lv('outbound'), 'L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of unique boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse trips', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),
@@ -7743,12 +7824,12 @@
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
         'The staircase carries over between rounds of the same level for the same player: through the whole of a research session, and between visits in free play. A level without a value opens at its own starting point, three steps above its target (the free-play values are kept under a new key from app 2.21, so earlier ones start over; until app 2.25 research sessions started each block fresh and opened a new level three steps slower than the level below it ended). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Stacks', '', 'The tower-of-London task: pieces on three posts; a move takes the top piece of one post to another post where it is allowed. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from all arrangements with that distance. Every level is a place of its own, the same in free play and research sessions (practice: stones). L1 river stones, L2 suitcases at the station, L3 containers at the harbor: three pieces on posts that hold 3, 2 and 1 (36 arrangements). L4 the bakery: four layers of different sizes on three stands that hold 4, and a layer only goes on a bigger one (81 arrangements). L5 ice cream: three scoops on three cones that hold 3 each, and nothing goes on the scoop with the cherry (36 arrangements). The cake comes before the ice cream because its rule leaves fewer wrong moves: played through by the computer, every level is passed less often than the one before. `features` gives the place (`theme`), `pieces`, `caps` and `twist` (`size`, `cherry` or empty); a refused move is `blocked` with `detail` saying why. Until app 2.24 research sessions kept the three-piece task at every level (6 moves at L4). `first_move_ms` is the planning time before the first move.',
+        '## Stacks', '', 'The tower-of-London task: pieces on three posts; a move takes the top piece of one post to another post where it is allowed. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from all arrangements with that distance. Every level is a place of its own, the same in free play and research sessions (practice: stones). L1 river stones (3 moves) and L2 suitcases at the station (5 moves): three pieces on posts that hold 3, 2 and 1 (36 arrangements). L3 containers at the harbor (6 moves): four on posts that hold 4, 3 and 2 (264 arrangements). L4 the bakery (7 moves): four layers of different sizes on three stands that hold 4, and a layer only goes on a bigger one (81 arrangements). L5 ice cream (8 moves): four scoops on three cones that hold 4 each, and nothing goes on the scoop with the cherry (181 arrangements). From L2 each board is chosen among those with that many moves by how often a goal-directed player finishes it within 1.5 times the fewest moves (one who puts pieces where they belong looking two moves ahead and never takes back its last move; 12 tries; feature `sensible_solve`): at most 75% at L2, 50% at L3, 25% at L4 and 12% at L5, so the way there needs moves that look wrong, such as taking a piece away from its place first (from app 2.29; until then 3, 4, 5, 7 and 7 moves of any board, three pieces except the cake). `features` gives the place (`theme`), `pieces`, `caps` and `twist` (`size`, `cherry` or empty); a refused move is `blocked` with `detail` saying why. Until app 2.24 research sessions kept the three-piece task at every level (6 moves at L4). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (through a research session, between visits in free play; until app 2.25 each research block started fresh), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
         'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign and on its road (see `place`); on L4 and L5 another animal takes over halfway (see below). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives through the chequered finish line 8 units before it and brakes evenly to a stop 4.5 units past the line. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
-        'Each level brings one new thing to learn, and keeps the ones before (from app 2.27; until then every level only added signs, speed and bends). L1: steer and tap the target sign. L2: the animal on the road (below). L3: the road splits. Twice a drive at L3 (once at L4 and L5) a green arrow board comes up in the split ahead with an arrow and the landmark\'s flag; about 3 s later the road has widened to two lanes and splits around a grass island, and the lane on the arrow\'s side runs on to the landmark while the other one bends away. The lane the car\'s middle is in 1 road unit past the split counts (fork event, right_lane or wrong_lane). In the wrong lane the car brakes and is steered back into the right one over about 1 s (no new sign comes up meanwhile, and that time is left out of the speed measures). No sign comes up while the board is close ahead. L4: halfway (after the middle sign) a card shows another animal\'s sign and the sign button changes to it: from then on that sign is the target and the first animal\'s sign no longer counts; 4 in 10 of the other signs after it show the first animal (turn event; coast: crab then swan; outback: kangaroo then camel; at L5 also farm: cow then hen; savanna: elephant then monkey; fields: rabbit then goose; desert: camel then rabbit; forest: deer then bear; jungle: monkey then elephant; village: duck then rabbit; north: moose then reindeer, where the reindeer is also one of the look-alikes before halfway; after halfway a look-alike that is now the animal to tap shows the first animal instead). The animal on the road is the one whose sign counts at the time. L5: Master. Its drives go round all ten places in turn (from app 2.28): first its own two, the village at dusk and the north at night, then the jungle, farm, coast, forest, desert, savanna, outback and fields, and round again, everything learned on the way switched on (`place` says where; the other signs are look-alikes of each place\'s animal: farm moose, deer, camel; savanna cow, bear, camel; fields cat, fox, hedgehog; desert cow, moose, deer; forest reindeer, moose, camel; jungle kangaroo, bear, cat; coast turtle, shell, fish; outback rabbit, deer, monkey; village goose, swan, hen; north reindeer, deer, bear). Where the tour stands is kept on the device in free play (`pr1.sbtour`) and per session in a research session, which starts with the village; the generator gets the place, so a Master drive is its seed and its place (the seed\'s own pick of village or north is still drawn and then set aside, so sign times, the road, the animals and the forks do not depend on the place). Until app 2.28 every Master drive was the village or the north, from the seed. In the village and the north (the drives at dusk and night, with the headlights on) each sign shows dark for 0.38 s before it lights up; its time up and the reaction time count from when it lights up, and a tap while it is still dark is a stray (detail: sign still dark), without a sound. The first time a player meets something new (on this device), it comes with a short demo: the first animal on the road stops the car short of it and waits for a tap with a hand and a word (the beast event says so; the drive clock stands still meanwhile), the first fork is driven at three quarters of the speed with a word about the arrow and a word after it, and the first sign at night stays dark for 0.9 s with a word. The halfway card is its own demo. Events between two signs never come before the third sign or after the last but one: the board at halfway has a slot of its own (the next sign 3.2 s after it), a fork 4.6 s, an animal 3 s.',
+        'Each level brings one new thing to learn, and keeps the ones before (from app 2.27; until then every level only added signs, speed and bends). L1: steer and tap the target sign. L2: the animal on the road (below). L3: the road splits. Twice a drive at L3 (once at L4 and L5) a green arrow board comes up in the split ahead with an arrow and the landmark\'s flag; about 3 s later the road has widened to two lanes and splits around a grass island, and the lane on the arrow\'s side runs on to the landmark while the other one bends away. The lane the car\'s middle is in 1 road unit past the split counts (fork event, right_lane or wrong_lane). In the wrong lane the car brakes and is steered back into the right one over about 1 s (no new sign comes up meanwhile, and that time is left out of the speed measures). No sign comes up while the board is close ahead. L4: halfway (after the middle sign) a card shows another animal\'s sign and the sign button changes to it: from then on that sign is the target and the first animal\'s sign no longer counts; 4 in 10 of the other signs after it show the first animal (turn event; coast: crab then swan; outback: kangaroo then emu (a camel until app 2.29); at L5 also farm: cow then hen; savanna: elephant then monkey; fields: rabbit then goose; desert: camel then rabbit; forest: deer then bear; jungle: monkey then elephant; village: duck then rabbit; north: moose then reindeer, where the reindeer is also one of the look-alikes before halfway; after halfway a look-alike that is now the animal to tap shows the first animal instead). The animal on the road is the one whose sign counts at the time. L5: Master. Its drives go round all ten places in turn (from app 2.28): first its own two, the village at dusk and the north at night, then the jungle, farm, coast, forest, desert, savanna, outback and fields, and round again, everything learned on the way switched on (`place` says where; the other signs are other animals of each place, look-alikes where it has them: farm deer, moose, hen; savanna cow, ostrich, monkey; fields cat, fox, hedgehog; desert deer, fox, turtle; forest reindeer, moose, fox; jungle cat, bear, bird; coast turtle, shell, fish; outback rabbit, fox, emu; village goose, swan, hen; north reindeer, deer, bear; until app 2.29 some places had camels and kangaroos where they do not belong). Where the tour stands is kept on the device in free play (`pr1.sbtour`) and per session in a research session, which starts with the village; the generator gets the place, so a Master drive is its seed and its place (the seed\'s own pick of village or north is still drawn and then set aside, so sign times, the road, the animals and the forks do not depend on the place). Until app 2.28 every Master drive was the village or the north, from the seed. In the village and the north (the drives at dusk and night, with the headlights on) each sign comes out of the dark and lights up over its first 0.38 s; its time up and the reaction time count from when it appears (until app 2.29 it stood dark for 0.38 s first, and the time counted from when it lit up). The first time a player meets something new (on this device), it comes with a short demo: the first animal on the road stops the car short of it and waits for a tap with a hand and a word (the beast event says so; the drive clock stands still meanwhile), the first fork is driven at three quarters of the speed with a word about the arrow and a word after it, and the first sign at night comes with a word. The halfway card is its own demo. Events between two signs never come before the third sign or after the last but one: the board at halfway has a slot of its own (the next sign 3.2 s after it), a fork 4.6 s, an animal 3 s.',
         'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (twice a drive from L2; never at L1 or in practice), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
         'With feedback on, a caught target\'s animal comes off the sign and runs or hops into the field for about 1 s after the tap; with feedback off a tap only gives a soft click. The horn toots when an animal is tapped away whatever the feedback setting, and things collected fly to a counter shown when counters are on.',
         'Levels:', lv('switchback'),
@@ -7971,7 +8052,8 @@
     if (g === 'conduit') return at(L.w + '×' + L.h + ' beds');
     if (g === 'tumbler') return at(L.pin.P + ' hidden colors out of ' + L.pin.C);
     if (g === 'stacks') {
-      return at(L.moves + ' moves' + (L.n ? ' · ' + L.n + ' layers' : '') + (L.cherry != null ? ' · the cherry stays on top' : L.size ? ' · small goes on big' : ''));
+      const noun = { harbor: 'containers', cake: 'layers', icecream: 'scoops' }[L.theme] || 'pieces';
+      return at(L.moves + ' moves' + (L.n ? ' · ' + L.n + ' ' + noun : '') + (L.cherry != null ? ' · the cherry stays on top' : L.size ? ' · small goes on big' : ''));
     }
     if (g === 'keepsake') return at(L.items + ' things to remember');
     if (g === 'switchback') {
@@ -8384,7 +8466,8 @@
         if (spec.practice) p = E.games[spec.game].practice(spec.variant);
         else {
           p = Gen.peek(spec.game, spec.level, spec.seed, spec.variant);
-          if (!p && first) { try { p = Gen.sync(spec.game, spec.level, spec.seed, spec.variant); } catch (e) { p = null; } }
+          // (the first card is made at once, unless it takes a while: Outbound's denser lots are left to the worker)
+          if (!p && first && !(spec.game === 'outbound' && spec.level >= 3)) { try { p = Gen.sync(spec.game, spec.level, spec.seed, spec.variant); } catch (e) { p = null; } }
           if (!p) {
             this.swap(this.panel([h('div', { class: 'spinner', role: 'status', 'aria-label': 'Loading' })], spec.game), fromDy);
             fromDy = 0;
