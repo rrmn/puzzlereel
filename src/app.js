@@ -2145,6 +2145,8 @@
         });
       }
       this.run.revealed.forEach((c, k) => { if (c != null) { at[k] = c; color[c] = 2; } });
+      // as many colors known to be hidden as there are places: every other color is out, tried or not
+      if (Object.keys(color).filter((c) => color[c] >= 1).length >= P) for (let c = 0; c < this.p.C; c++) if (!(color[c] >= 1)) color[c] = 0;
       return { color, at, notAt };
     }
     // a word over something on the board, for a moment

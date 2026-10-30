@@ -468,7 +468,9 @@ button { cursor: pointer; }
 .gem.flip { animation: flip 0.32s ease-in-out; }
 .gem.m2 { box-shadow: 0 0 0 3px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.55); }
 .gem.m1 { box-shadow: 0 0 0 3px #FFC83A, 0 0 12px rgba(255, 200, 58, 0.4); }
-.gem.m0 { opacity: 0.35; filter: saturate(0.4); }
+/* a color that is not hidden turns gray, as in Wordle; its shape stays, so the try can still be read */
+.gem.m0 { background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.16) 0, rgba(255,255,255,0) 42%), #575B73; }
+.gem.m0 svg { filter: grayscale(1); opacity: 0.6; }
 .gem .badge { position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 1px 2px rgba(0,0,0,.35); }
 .gem .badge svg { width: 11px; height: 11px; }
 .gem.m2 .badge { background: #3DDC84; color: #08301A; }
@@ -497,8 +499,9 @@ button { cursor: pointer; }
 .tb-lock .gem.landed { animation: landed 0.7s cubic-bezier(.3,1.7,.5,1) both; }
 @keyframes landed { 0% { transform: translateY(60px) scale(0.4); opacity: 0; } 60% { transform: translateY(-6px) scale(1.15); opacity: 1; } 100% { transform: none; } }
 /* the palette remembers what the tries said */
-.palette .gem.k0 { opacity: 0.32; filter: saturate(0.3); }
-.palette .gem.k0::after { content: ''; position: absolute; inset: 6px; background: linear-gradient(45deg, transparent 44%, #FFFFFF 44%, #FFFFFF 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #FFFFFF 44%, #FFFFFF 56%, transparent 56%); }
+.palette .gem.k0 { background: radial-gradient(circle at 34% 28%, rgba(255,255,255,.16) 0, rgba(255,255,255,0) 42%), #575B73; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.22); }
+.palette .gem.k0 svg { filter: grayscale(1); opacity: 0.45; }
+.palette .gem.k0::after { content: ''; position: absolute; inset: 7px; background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,.75) 45%, rgba(255,255,255,.75) 55%, transparent 55%), linear-gradient(-45deg, transparent 45%, rgba(255,255,255,.75) 45%, rgba(255,255,255,.75) 55%, transparent 55%); }
 .palette .gem.k1 { box-shadow: 0 0 0 3.5px #FFC83A, 0 0 14px rgba(255, 200, 58, 0.55), inset 0 -3px 0 rgba(0, 0, 0, 0.22); }
 .palette .gem.k2 { box-shadow: 0 0 0 3.5px #3DDC84, 0 0 12px rgba(61, 220, 132, 0.45), inset 0 -3px 0 rgba(0, 0, 0, 0.22); }
 .palette .gem.nope, .row .gem.nope { animation: rattle 0.45s; }
@@ -5380,6 +5383,8 @@ PuzzleEnginesFactory(window);
         });
       }
       this.run.revealed.forEach((c, k) => { if (c != null) { at[k] = c; color[c] = 2; } });
+      // as many colors known to be hidden as there are places: every other color is out, tried or not
+      if (Object.keys(color).filter((c) => color[c] >= 1).length >= P) for (let c = 0; c < this.p.C; c++) if (!(color[c] >= 1)) color[c] = 0;
       return { color, at, notAt };
     }
     // a word over something on the board, for a moment

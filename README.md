@@ -34,7 +34,7 @@ Tumbler has to be obvious to someone who has never played a game, is anxious or 
 
 - **The lock.** Above the rows, one socket per hidden pin with a question mark; a pin found in its place lands in its socket and stays there. The first time (and in practice) the lock says "Find the 2 hidden colors".
 - **Words with the colors.** After a try, the clues are said in words under their tiles, one after the other: "Right color, right place", "Right color, wrong place", "Wrong color" (no word the player cannot see, such as "code" or "pin") (in practice always, in free play until six codes are cracked).
-- **The colors remember.** A color found gets a green ring, one in the code but not yet placed a gold ring, one not hidden at all is crossed out and cannot be picked ("Wrong color").
+- **The colors remember.** A color found gets a green ring, one in the code but not yet placed a gold ring, one not hidden at all turns gray and crossed out, in the rows too, as in Wordle, and cannot be picked ("Wrong color"); once as many colors are known to be hidden as there are places, every other color turns gray as well.
 - **Not here, but there.** A color put where it is known not to be ("Not here") moves on to the next place where it can go; if there is none, it is not taken. Found pins are already filled in. The practice hand points at a color that is in the code, then at Try, which pulses once the row is full.
 - **No wasted tries.** A try identical to an earlier one is not taken (`repeat_blocked`); the earlier row lights up.
 
