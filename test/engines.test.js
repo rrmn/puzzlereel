@@ -142,12 +142,13 @@ test('outbound: a pinwheel cannot be cleared without a slide, and one slide free
   }
 });
 
-test('conduit: unique solution, scrambled start, labels match distance', () => {
+test('conduit: one solution (or a few from level 3), scrambled start, labels match distance', () => {
   for (const lv of [1, 2, 3, 4, 5]) {
     for (let s = 0; s < 10; s++) {
       const p = C.generate(lv, 300 + s);
-      const res = cdSolve(p.w, p.h, p.sol, 2);
-      assert.equal(res.solutions, 1, 'unique L' + lv);
+      const res = cdSolve(p.w, p.h, p.sol, 5);
+      assert.equal(res.solutions, p.alts ? p.alts.length : 1, 'solutions L' + lv);
+      if (lv < 3) assert.equal(p.alts, null, 'one solution at L' + lv);
       const run = C.newRun(p);
       assert.equal(C.dist(p, run.rot), p.reference);
       assert.ok(p.reference > 0);
@@ -623,9 +624,9 @@ test('conduit: every pipe is needed, so watering every plant without a leak solv
   for (const lv of [1, 2, 3, 4, 5]) {
     for (let s = 0; s < 40; s++) {
       const p = C.generate(lv, 1500 + s);
-      const r = cdSolve(p.w, p.h, p.sol, 2, p.src);
+      const r = cdSolve(p.w, p.h, p.sol, 6, p.src);
       assert.equal(r.bypass, 0, 'L' + lv + ' seed ' + (1500 + s));
-      assert.equal(r.solutions, 1);
+      assert.equal(r.solutions, p.alts ? p.alts.length : 1);
     }
   }
 });
@@ -758,12 +759,66 @@ test('stacks: the cake and the ice cream have rules of their own', () => {
   for (const st of E.internals.skAll(iceRules)) for (const a of st) { const i = a.indexOf(2); assert.ok(i < 0 || i === a.length - 1, 'the cherry is always on top'); }
 });
 
+test('conduit: from level 3 about one board in three has more than one solution, and the one that looks nearest takes more turns', () => {
+  const { cdLooks } = E.internals;
+  for (const lv of [1, 2, 3, 4, 5]) {
+    let multi = 0, forcedM = 0, forcedOne = 0;
+    const n = 36;
+    for (let s = 0; s < n; s++) {
+      const p = C.generate(lv, 2600 + s);
+      const share = p.features.forced_by_local_rules / p.features.tiles;
+      if (!p.alts) { assert.equal(p.features.solutions, 1); forcedOne += share; continue; }
+      multi++; forcedM += share;
+      assert.ok(lv >= 3, 'one solution at L' + lv);
+      assert.ok(p.alts.length >= 2 && p.alts.length <= 4);
+      assert.equal(p.features.solutions, p.alts.length);
+      // the first solution takes the fewest turns, at least two fewer than any other
+      const lk = p.alts.map((w) => cdLooks(p.per, p.start, w));
+      assert.equal(lk[0].turns, p.reference);
+      assert.equal(C.dist(p, p.start), p.reference);
+      for (const x of lk.slice(1)) assert.ok(x.turns >= p.reference + 2, 'L' + lv + ' seed ' + (2600 + s) + ': another solution is as cheap');
+      // and another one looks nearer: fewer quarter turns from place, no more tiles out of place
+      const decoy = lk.slice(1).filter((x) => x.look < lk[0].look && x.wrong <= lk[0].wrong);
+      assert.ok(decoy.length, 'L' + lv + ' seed ' + (2600 + s) + ': the cheapest solution also looks nearest');
+      assert.ok(p.features.decoy_extra_turns >= 2);
+      // hints and labels lead to the cheapest
+      const run = C.newRun(p), h = C.hint(p, run);
+      assert.equal(h.kind, 'target');
+      assert.ok(C.needAt(p, run.rot, h.index, p.alts[0]) > 0, 'the hint turns a tile toward the cheapest solution');
+      let last;
+      for (let i = 0; i < p.sol.length; i++) { const k = C.needAt(p, run.rot, i); for (let t = 0; t < k; t++) last = C.tap(p, run, i); }
+      assert.ok(last.solved);
+      assert.equal(run.hist.length, p.reference);
+      assert.equal(last.way, 1);
+      assert.equal(last.detail, 'solution 1 of ' + p.alts.length);
+      assert.ok(C.connected(p, run).every((v) => v === 1));
+      // the garden also comes out right the other way, and the move says which
+      const other = C.newRun(p), d = p.alts.indexOf(decoy[0].way);
+      other.rot = d >= 0 ? p.alts[d].slice() : other.rot;
+      const j = other.rot.findIndex((r, i) => p.per[i] > 1);
+      other.rot[j] = (other.rot[j] + 3) % 4;
+      const fin = C.tap(p, other, j);
+      assert.ok(fin.solved);
+      assert.equal(fin.way, d + 1);
+      assert.equal(fin.detail, 'solution ' + (d + 1) + ' of ' + p.alts.length);
+      assert.ok(C.connected(p, other).every((v) => v === 1));
+    }
+    if (lv < 3) assert.equal(multi, 0);
+    else {
+      assert.ok(multi >= 0.15 * n && multi <= 0.55 * n, 'L' + lv + ' boards with more than one solution: ' + multi + ' of ' + n);
+      // and they need no less reasoning: local rules settle no more of them
+      assert.ok(forcedM / multi <= forcedOne / (n - multi) + 0.05, 'L' + lv + ' settled ' + (forcedM / multi).toFixed(2) + ' against ' + (forcedOne / (n - multi)).toFixed(2));
+    }
+  }
+});
+
 test('conduit: from level 3 local rules settle less and less of the board', () => {
   let prev = 2;
   for (const lv of [1, 2, 3, 4, 5]) {
+    // 40 boards, about a third of them with more than one solution from level 3
     let f = 0;
-    for (let s = 0; s < 16; s++) { const p = C.generate(lv, 3100 + s); f += p.features.forced_by_local_rules / p.features.tiles; }
-    f /= 16;
+    for (let s = 0; s < 40; s++) { const p = C.generate(lv, 3100 + s); f += p.features.forced_by_local_rules / p.features.tiles; }
+    f /= 40;
     if (lv >= 3) assert.ok(f < prev - 0.04, 'L' + lv + ' settled by local rules ' + f.toFixed(2));
     if (lv === 5) assert.ok(f < 0.5, 'L5 needs reasoning across the board: ' + f.toFixed(2));
     prev = f;

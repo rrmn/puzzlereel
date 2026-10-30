@@ -552,8 +552,9 @@
 
   // =====================================================================
   // CONDUIT: every tile is part of one spanning tree. Tiles start rotated.
-  // A tap turns a tile a quarter turn clockwise. Puzzles have exactly one
-  // solution, so each tile has a known number of taps left.
+  // A tap turns a tile a quarter turn clockwise. Most puzzles have exactly one
+  // solution, so each tile has a known number of taps left; from level 2 about
+  // one in three has two to four, and taps count toward the nearest of them.
   // =====================================================================
   const N = 1, E = 2, S = 4, W = 8;
   const SIDES = [N, E, S, W];
@@ -613,7 +614,7 @@
   // arms shows no other tile can be left out: the network keeps 2(n-1) minus
   // the arms of the dry tiles, and a connected network needs at least two per
   // tile it keeps, so every dry tile has exactly two arms.
-  function cdSolve(w, h, tiles, limit, dry) {
+  function cdSolve(w, h, tiles, limit, dry, keep, maxForced) {
     const n = w * h;
     const canDry = dry != null;
     const cand = [], dryBit = new Uint8Array(n);
@@ -729,7 +730,11 @@
         let left = 0;
         for (let i = 0; i < n; i++) if (dryBit[i] && dom[i] === dryBit[i]) left++;
         if (left) bypass++;
-        else if (!first) first = Array.from(dom, (d, i) => cand[i][Math.log2(d) | 0]);
+        else {
+          const sol = Array.from(dom, (d, i) => cand[i][Math.log2(d) | 0]);
+          if (!first) first = sol;
+          if (keep) all.push(sol);
+        }
         return;
       }
       for (let k = 0; k < cand[bi].length && !done(); k++) {
@@ -740,15 +745,75 @@
       }
     };
     const dom = dom0.slice();
-    const all = [];
-    for (let i = 0; i < n; i++) all.push(i);
-    if (!propagate(dom, all)) return { solutions: 0, nodes: 0, forced: 0 };
+    const every = [], all = [];
+    for (let i = 0; i < n; i++) every.push(i);
+    if (!propagate(dom, every)) return { solutions: 0, nodes: 0, forced: 0 };
     let forced = 0;
     const fixed = Array.from(dom, (d) => bits(d) === 1);
     for (let i = 0; i < n; i++) if (fixed[i]) forced++;
+    // a board local rules settle too much of is not searched
+    if (maxForced != null && forced > maxForced) return { solutions: 0, bypass: 0, nodes: 0, forced, fixed, first: null, all, exhausted: false, skipped: true };
     dfs(dom);
-    return { solutions, bypass, nodes, forced, fixed, first, exhausted: nodes > 200000 };
+    return { solutions, bypass, nodes, forced, fixed, first, all, exhausted: nodes > 200000 };
   }
+
+  // How far the tiles at `rot` are from one solution `way` (turns of each tile from the
+  // board's own): taps to make (tiles turn only clockwise), how far it looks (quarter turns
+  // either way, so a pipe one step past its place looks one off but takes three taps) and
+  // how many tiles are out of place.
+  function cdLooks(per, rot, way) {
+    let turns = 0, look = 0, wrong = 0;
+    for (let i = 0; i < per.length; i++) {
+      const p = per[i], d = ((((way ? way[i] : 0) - rot[i]) % p) + p) % p;
+      turns += d; look += Math.min(d, p - d); if (d) wrong++;
+    }
+    return { way, turns, look, wrong };
+  }
+
+  // A board with more than one solution starts so that the one that looks nearest is not the
+  // one with the fewest turns. Only the tiles where the solutions differ (D) tell them apart;
+  // every other tile counts the same toward each. Tries every start of the D tiles and keeps
+  // one where a single solution takes the fewest turns, at least two fewer than any other
+  // (and at most `most`), while another looks nearer: fewer quarter turns from place, with
+  // no more tiles out of place. Returns { D, st, best } or null when no start does that.
+  function cdTrick(per, valid, ways, rng, most) {
+    const D = [];
+    for (let i = 0; i < per.length; i++) if (ways.some((t) => t[i] !== ways[0][i])) D.push(i);
+    if (!D.length || D.length > 8) return null;
+    const K = ways.length;
+    // each start of each D tile (in random order), with its taps toward each solution,
+    // how far it looks from each and whether it is out of place in each
+    const opts = D.map((i) => rng.shuffle(valid[i].filter((r, k, a) => a.findIndex((q) => q % per[i] === r % per[i]) === k)).map((r) => {
+      const p = per[i], d = ways.map((t) => (((t[i] - r) % p) + p) % p);
+      return { r, d, look: d.map((x) => Math.min(x, p - x)), wrong: d.map((x) => (x ? 1 : 0)) };
+    }));
+    const T = new Array(K).fill(0), Lk = new Array(K).fill(0), Wr = new Array(K).fill(0);
+    const st = new Array(D.length).fill(0), ok = [];
+    const visit = (j) => {
+      if (ok.length >= 24) return;
+      let lo = Infinity;
+      for (let k = 0; k < K; k++) if (T[k] < lo) lo = T[k];
+      if (lo > most) return; // taps only add up
+      if (j < D.length) {
+        for (const o of opts[j]) {
+          st[j] = o.r;
+          for (let k = 0; k < K; k++) { T[k] += o.d[k]; Lk[k] += o.look[k]; Wr[k] += o.wrong[k]; }
+          visit(j + 1);
+          for (let k = 0; k < K; k++) { T[k] -= o.d[k]; Lk[k] -= o.look[k]; Wr[k] -= o.wrong[k]; }
+        }
+        return;
+      }
+      let best = 0;
+      for (let k = 1; k < K; k++) if (T[k] < T[best]) best = k;
+      for (let k = 0; k < K; k++) if (k !== best && T[k] < T[best] + 2) return;
+      for (let k = 0; k < K; k++) if (k !== best && Lk[k] < Lk[best] && Wr[k] <= Wr[best]) { ok.push({ st: st.slice(), best }); return; }
+    };
+    visit(0);
+    if (!ok.length) return null;
+    const pick = ok[rng.int(ok.length)];
+    return { D, st: pick.st, best: pick.best };
+  }
+
 
   const Conduit = {
     id: 'conduit',
@@ -765,12 +830,21 @@
     // 1.24 levels 3 to 5 compare 40, 100 and 200 boards and start with fewer tiles right, so
     // they need reasoning across the board; until then most boards at every level could be
     // read tile by tile from the border inward.
+    // multi: the share of boards with more than one solution (2 to 4), drawn from up to
+    // multiAttempts boards (they are rare: 1 to 3 in 100, and fewer can start with the trick).
+    // Such a board starts so that the solution that looks nearest takes at least two more turns
+    // than the one with the fewest (see cdTrick), and it is kept only if local rules settle at
+    // most settleMax of it, about as much as of the one-solution boards at its level, so more
+    // than one solution makes a board harder, not easier. Levels 1 and 2 keep one solution:
+    // a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick.
+    // (From app 2.30; until then every board had exactly one solution.)
+    trickTurns: 0.5,     // the tiles that tell the solutions apart take at most this share of the board's turns
     levels: {
-      1: { w: 3, h: 4, pick: 1, keep: 0.25, attempts: 160 },
-      2: { w: 4, h: 4, pick: 3, keep: 0.25, attempts: 160 },
-      3: { w: 4, h: 5, pick: 40, keep: 0.15, attempts: 400 },
-      4: { w: 5, h: 5, pick: 100, keep: 0.1, attempts: 700 },
-      5: { w: 5, h: 6, pick: 200, keep: 0.05, attempts: 1000 },
+      1: { w: 3, h: 4, pick: 1, keep: 0.25, attempts: 160, multi: 0 },
+      2: { w: 4, h: 4, pick: 3, keep: 0.25, attempts: 160, multi: 0 },
+      3: { w: 4, h: 5, pick: 40, keep: 0.15, attempts: 400, multi: 0.33, settleMax: 0.55, multiAttempts: 6000 },
+      4: { w: 5, h: 5, pick: 100, keep: 0.1, attempts: 700, multi: 0.33, settleMax: 0.45, multiAttempts: 4000 },
+      5: { w: 5, h: 6, pick: 200, keep: 0.05, attempts: 1000, multi: 0.33, settleMax: 0.36, multiAttempts: 4000 },
     },
     describe(p) { return p.w + '×' + p.h + ' grid'; },
     // turns a board of this many tiles needs: at least two values to aim for
@@ -778,32 +852,14 @@
       const lo = Math.ceil(tiles * this.minTurns);
       return [lo, Math.max(lo + 1, Math.floor(tiles * this.maxTurns))];
     },
-    generate(level, seed) {
-      const L = this.levels[level];
+    generate(level, seed, variant) {
+      const L0 = this.levels[level], L = variant === 'one' ? Object.assign({}, L0, { multi: 0 }) : L0;
       const rng = makeRng(seed);
       const w = L.w, h = L.h;
       const src = ((h / 2) | 0) * w + ((w / 2) | 0);
-      let chosen = null, found = 0;
-      for (let attempt = 0; attempt < L.attempts && found < L.pick; attempt++) {
-        const sol = cdTree(w, h, src, rng);
-        if (!sol) continue;
-        const res = cdSolve(w, h, sol, 2);
-        if (res.solutions !== 1 || res.exhausted) continue;
-        // every pipe must be needed: no way to water every plant without a
-        // leak while some pipe stays dry, so a garden in bloom is a solved board
-        const dry = cdSolve(w, h, sol, 2, src);
-        if (dry.bypass || dry.exhausted) continue;
-        found++;
-        if (!chosen || res.forced < chosen.res.forced || (res.forced === chosen.res.forced && res.nodes > chosen.res.nodes)) {
-          chosen = { sol, res };
-        }
-      }
-      if (!chosen) throw new Error('Conduit: no unique puzzle for level ' + level + ' seed ' + seed);
-      const sol = chosen.sol;
-      const per = sol.map(periodOf);
-      // Starting turns: a pipe never starts pointing off the board, and some
-      // inner tiles start right, so the work is in the reasoning, not the tapping.
-      const valid = sol.map((m, i) => {
+      const [minNeed, maxNeed] = this.turnRange(w * h);
+      // the turns a tile may start at: a pipe never starts pointing off the board
+      const validOf = (sol) => sol.map((m, i) => {
         const x = i % w, y = (i / w) | 0, out = [];
         for (let r = 0; r < 4; r++) {
           const mm = rotCW(m, r);
@@ -812,44 +868,94 @@
         }
         return out;
       });
+      // every solution as the turns of each tile from the board's own (its own is all 0)
+      const altsOf = (sol, all) => all.map((sm) => sm.map((m, i) => { for (let r = 0; r < 4; r++) if (rotCW(sol[i], r) === m) return r; return 0; }));
+      // some boards have more than one solution (drawn apart from the board, so the rest stays)
+      const multi = !!L.multi && makeRng((seed ^ 0x2c1b3c6d) >>> 0)() < L.multi;
+      let chosen = null, found = 0;
+      const tries = multi ? L.multiAttempts : L.attempts, want = multi ? 1 : L.pick;
+      for (let attempt = 0; attempt < tries && found < want; attempt++) {
+        const sol = cdTree(w, h, src, rng);
+        if (!sol) continue;
+        const res = cdSolve(w, h, sol, multi ? 5 : 2, null, multi, multi && L.settleMax != null ? L.settleMax * w * h : null);
+        if (res.exhausted || res.skipped || (multi ? res.solutions < 2 || res.solutions > 4 : res.solutions !== 1)) continue;
+        // every pipe must be needed: no way to water every plant without a
+        // leak while some pipe stays dry, so a garden in bloom is a solved board
+        const dry = cdSolve(w, h, sol, 6, src);
+        if (dry.bypass || dry.exhausted) continue;
+        // with more than one solution, the board is kept only if it can start so that the
+        // solution that looks nearest is not the one with the fewest turns
+        let alts = null, trick = null;
+        if (multi) {
+          alts = altsOf(sol, res.all);
+          trick = cdTrick(sol.map(periodOf), validOf(sol), alts, rng, this.trickTurns * maxNeed);
+          if (!trick) continue;
+        }
+        found++;
+        if (!chosen || res.forced < chosen.res.forced || (res.forced === chosen.res.forced && res.nodes > chosen.res.nodes)) {
+          chosen = { sol, res, alts, trick };
+        }
+      }
+      if (!chosen && multi) return this.generate(level, seed, 'one');
+      if (!chosen) throw new Error('Conduit: no unique puzzle for level ' + level + ' seed ' + seed);
+      const sol = chosen.sol, trick = chosen.trick;
+      const per = sol.map(periodOf);
+      const valid = validOf(sol);
       const turnsAt = (i, r) => (per[i] - (r % per[i])) % per[i];
-      const needOf = (st) => { let d = 0; for (let k = 0; k < sol.length; k++) d += turnsAt(k, st[k]); return d; };
-      const [minNeed, maxNeed] = this.turnRange(sol.length);
+      const P0 = { per, alts: chosen.alts };
+      const needOf = (st) => this.dist(P0, st);
+      // The tiles where the solutions differ start as the trick sets them. Every other tile is
+      // the same in each solution, so its turns count the same toward each, and only those
+      // tiles are turned to bring the board into its range of turns.
+      const inTrick = new Uint8Array(sol.length);
+      if (trick) for (const i of trick.D) inTrick[i] = 1;
+      const free = [];
+      for (let i = 0; i < sol.length; i++) if (!inTrick[i]) free.push(i);
+      const withTrick = (st) => { if (trick) trick.D.forEach((i, a) => { st[i] = trick.st[a]; }); return st; };
       // from level 3 the tiles that start turned wrong are the ones local rules do not settle
       // (the tiles that can be read from the border and their neighbours start right), so the
       // turns to make are the ones that need thinking
       const fixed = chosen.res.fixed || [], hardOnly = level >= 3;
       const open = [], settled = [];
-      sol.forEach((m, i) => (fixed[i] ? settled : open).push(i));
+      for (const i of free) (fixed[i] ? settled : open).push(i);
       let start, need;
       for (let draw = 0; draw < 20; draw++) {
         const keep = L.keep != null ? L.keep : this.keepRight;
         if (hardOnly) {
           // as many open tiles as the turns allow start one turn off (the settled ones right),
           // so more of the garden starts broken and less of it shows the way
-          start = sol.map(() => 0);
-          need = 0;
+          start = withTrick(sol.map(() => 0));
+          need = needOf(start);
           for (const i of rng.shuffle(open.slice()).concat(rng.shuffle(settled.slice()))) {
             if (need >= (fixed[i] ? minNeed : maxNeed)) continue;
             const one = valid[i].filter((r) => turnsAt(i, r) === 1), any = valid[i].filter((r) => turnsAt(i, r) > 0 && need + turnsAt(i, r) <= maxNeed);
             const from = one.length && need + 1 <= maxNeed ? one : any;
             if (from.length) { start[i] = from[rng.int(from.length)]; need = needOf(start); }
           }
-        } else start = valid.map((vs) => (rng() < keep ? 0 : vs[rng.int(vs.length)]));
+        } else start = withTrick(valid.map((vs) => (rng() < keep ? 0 : vs[rng.int(vs.length)])));
         need = needOf(start);
         // never close to solved, never a long tapping job: turn single tiles to
         // another allowed position that brings the total toward the range
         // without overshooting it
         for (let guard = 0; (need < minNeed || need > maxNeed) && guard < 2000; guard++) {
           const pool = hardOnly && guard < 1500 ? (need < minNeed ? open : settled) : null;
-          const i = pool && pool.length ? pool[rng.int(pool.length)] : rng.int(sol.length);
-          const k = turnsAt(i, start[i]);
-          const opts = valid[i].filter((r) => { const t = need - k + turnsAt(i, r); return need < minNeed ? t > need && t <= maxNeed : t < need && t >= minNeed; });
+          const i = pool && pool.length ? pool[rng.int(pool.length)] : free[rng.int(free.length)];
+          const was = start[i];
+          const opts = valid[i].filter((r) => { start[i] = r; const t = needOf(start); start[i] = was; return need < minNeed ? t > need && t <= maxNeed : t < need && t >= minNeed; });
           if (!opts.length) continue;
           start[i] = opts[rng.int(opts.length)];
           need = needOf(start);
         }
         if (need >= minNeed && need <= maxNeed) break;
+      }
+      // the solutions in order of turns from the start: the first is the one with the fewest
+      let alts = null, decoy = null;
+      if (chosen.alts) {
+        const lk = chosen.alts.map((t) => cdLooks(per, start, t)).sort((a, b) => a.turns - b.turns);
+        alts = lk.map((x) => x.way);
+        decoy = lk.slice(1).filter((x) => x.look < lk[0].look && x.wrong <= lk[0].wrong).sort((a, b) => a.look - b.look)[0];
+        // the start keeps the trick (the other tiles count the same toward every solution)
+        if (!decoy || lk[1].turns < lk[0].turns + 2) return this.generate(level, seed, 'one');
       }
       const tally = { end: 0, straight: 0, elbow: 0, tee: 0 };
       for (const m of sol) {
@@ -859,22 +965,43 @@
         else if (m === (N | S) || m === (E | W)) tally.straight++;
         else tally.elbow++;
       }
+      const features = {
+        tiles: w * h,
+        solutions: alts ? alts.length : 1,
+        optimal_turns: need,
+        forced_by_local_rules: chosen.res.forced,
+        search_nodes: chosen.res.nodes,
+        ends: tally.end, straights: tally.straight, elbows: tally.elbow, tees: tally.tee,
+      };
+      // how many more turns the solution that looks nearest takes
+      if (decoy) features.decoy_extra_turns = decoy.turns - need;
       return {
         game: 'conduit', level, seed,
-        w, h, src, sol, per, start,
+        w, h, src, sol, per, start, alts,
         reference: need,
-        features: {
-          tiles: w * h,
-          optimal_turns: need,
-          forced_by_local_rules: chosen.res.forced,
-          search_nodes: chosen.res.nodes,
-          ends: tally.end, straights: tally.straight, elbows: tally.elbow, tees: tally.tee,
-        },
+        features,
       };
     },
     newRun(p) { return { rot: p.start.slice(), hist: [] }; },
-    needAt(p, rot, i) { const per = p.per[i]; return (per - (rot[i] % per)) % per; },
-    dist(p, rot) { let d = 0; for (let i = 0; i < rot.length; i++) d += this.needAt(p, rot, i); return d; },
+    // with more than one solution, turns are counted toward the one the tiles are now nearest
+    ways(p) { return p.alts && p.alts.length > 1 ? p.alts : null; },
+    turnsTo(p, rot, i, t) { const per = p.per[i]; return (((t - rot[i]) % per) + per) % per; },
+    distTo(p, rot, way) { let d = 0; for (let i = 0; i < rot.length; i++) d += this.turnsTo(p, rot, i, way ? way[i] : 0); return d; },
+    nearest(p, rot) {
+      const W = this.ways(p);
+      if (!W) return null;
+      let best = W[0], bd = Infinity;
+      for (const t of W) { const d = this.distTo(p, rot, t); if (d < bd) { bd = d; best = t; } }
+      return best;
+    },
+    needAt(p, rot, i, way) { const t = way !== undefined ? way : this.nearest(p, rot); return this.turnsTo(p, rot, i, t ? t[i] : 0); },
+    dist(p, rot) {
+      const W = this.ways(p);
+      if (!W) return this.distTo(p, rot, null);
+      let d = Infinity;
+      for (const t of W) d = Math.min(d, this.distTo(p, rot, t));
+      return d;
+    },
     maskAt(p, run, i) { return rotCW(p.sol[i], run.rot[i]); },
     connected(p, run) {
       const n = p.w * p.h;
@@ -903,9 +1030,12 @@
       run.rot[i] = (from + 1) % 4;
       run.hist.push(i);
       const dA = this.dist(p, run.rot);
-      const cls = p.per[i] === 1 ? 'neutral' : nB > 0 ? 'optimal' : 'wasted';
+      const cls = p.per[i] === 1 ? 'neutral' : dA < dB ? 'optimal' : 'wasted';
       const x = i % p.w, y = (i / p.w) | 0;
-      return { kind: 'move', target: 'r' + (y + 1) + 'c' + (x + 1), index: i, from, to: run.rot[i], dBefore: dB, dAfter: dA, cls, solved: dA === 0, stuck: false };
+      // which solution the garden came out as, when it has more than one
+      // (solution 1 is the one with the fewest turns from the start)
+      const W = this.ways(p), way = dA === 0 && W ? W.findIndex((t) => this.distTo(p, run.rot, t) === 0) + 1 : null;
+      return { kind: 'move', target: 'r' + (y + 1) + 'c' + (x + 1), index: i, from, to: run.rot[i], dBefore: dB, dAfter: dA, cls, solved: dA === 0, stuck: false, way, ways: W ? W.length : 1, detail: way ? 'solution ' + way + ' of ' + W.length : '' };
     },
     undo(p, run) {
       const i = run.hist.pop();
@@ -918,10 +1048,10 @@
     },
     restart(p, run) { run.rot = p.start.slice(); run.hist = []; },
     hint(p, run) {
-      const on = this.connected(p, run);
+      const on = this.connected(p, run), way = this.nearest(p, run.rot);
       let fallback = -1;
       for (let i = 0; i < run.rot.length; i++) {
-        if (this.needAt(p, run.rot, i) === 0) continue;
+        if (this.needAt(p, run.rot, i, way) === 0) continue;
         if (fallback < 0) fallback = i;
         const x = i % p.w, y = (i / p.w) | 0;
         for (const s of SIDES) {
@@ -2140,12 +2270,12 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.24.0',
+    version: '1.25.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
     EXIT,
-    internals: { cdTree, skSensible, ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, skAll, SK_ALL },
+    internals: { cdTree, cdTrick, cdLooks, skSensible, ksDist, sbRoad, sbItems, obBuild, obPlantLoop, obAnalyze, obOccupancy, obSlide, cdSolve, rotCW, tbSpace, tbCount, tbPin, tbMarks, tbBest, tbEntropy, tbEncode, tbDecode, tbSolverPath, tbCanonical, tbSeen, periodOf, glLadder, glNearest, glSlotOf, skDist, skKey, skNext, skAll, SK_ALL },
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = Engines;
   else root.Engines = Engines;
