@@ -415,7 +415,7 @@ test('glimpse: the frame ladder runs from about 2000 ms to one frame at any refr
   assert.deepEqual(glLadder(1000 / 60), [120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
 });
 
-test('glimpse: a fresh staircase starts at 1500 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
+test('glimpse: a fresh staircase starts at 1200 ms, one step shorter after a hit, six longer after a miss, never under 50 ms', () => {
   const p = G.generate(2, 77);
   const run = G.newRun(p, null);
   const T = 1000 / 60;
@@ -425,8 +425,8 @@ test('glimpse: a fresh staircase starts at 1500 ms, one step shorter after a hit
     steps.push(plan.idx);
     G.record(p, run, { correct: !!ok, plan });
   }
-  assert.equal(G.startMs, 1500);
-  assert.deepEqual(steps, [3, 4, 5, 0, 1, 2]);
+  assert.equal(G.startMs, 1200);
+  assert.deepEqual(steps, [5, 6, 7, 1, 2, 3]);
   const sm = G.summary(p, run);
   assert.equal(sm.correct, 4);
   assert.equal(sm.reversals, 3);
@@ -485,6 +485,55 @@ test('glimpse: practice is fixed, uses long display times and does not adapt', (
   }
   assert.deepEqual(shown, [120, 72, 42]);
   assert.equal(G.summary(a, run).threshold_ms, null);
+});
+
+test('glimpse: every level asks for the thing around the middle; level 1 keeps it close', () => {
+  for (const lv of [1, 2, 3, 4, 5]) assert.ok(G.levels[lv].periph, 'L' + lv);
+  assert.deepEqual(G.levels[1].rings, [1]);
+  assert.deepEqual(G.levels[2].rings, [2], 'level 2 is the practice task, as fixed blocks use it');
+});
+
+test('glimpse: a round counts once a right answer brings the flash to the target, as the counter shows it', () => {
+  const T = 1000 / 60;
+  const play = (lv, answers, start) => {
+    const p = G.generate(lv, 31, 'mix');
+    const run = G.newRun(p, start || null);
+    for (const ok of answers) G.record(p, run, { correct: !!ok, plan: G.plan(p, run, T) });
+    return { p, sm: G.summary(p, run) };
+  };
+  // a first round with every answer right moves on, slow as its start is
+  let r = play(1, [1, 1, 1, 1]);
+  assert.ok(r.sm.threshold_ms > r.p.advanceMs, 'the average of the round is still slow');
+  assert.ok(G.success(r.p, r.sm), 'but the flash got to ' + r.sm.reach_ms + ' ms');
+  // a slip after the target was reached does not take it back
+  r = play(1, [1, 1, 0, 1]);
+  assert.ok(G.success(r.p, r.sm));
+  // a slip before it was reached sends the flash back up
+  r = play(1, [1, 0, 1, 1]);
+  assert.ok(!G.success(r.p, r.sm), 'reached only ' + r.sm.reach_ms + ' ms');
+  // no right answer, nothing reached
+  r = play(2, [0, 0, 0, 0]);
+  assert.equal(r.sm.reach_ms, null);
+  assert.ok(!G.success(r.p, r.sm));
+  // practice never counts toward a level
+  const pr = G.practice(), run = G.newRun(pr, null);
+  for (let i = 0; i < pr.n; i++) G.record(pr, run, { correct: true, plan: G.plan(pr, run, T) });
+  assert.ok(!G.success(pr, G.summary(pr, run)));
+});
+
+test('switchback: a fresh drive that catches its first three targets reaches the level 1 sign time', () => {
+  const B = E.games.switchback;
+  const p = B.generate(1, 12);
+  const run = B.newRun(p, null);
+  let caught = 0;
+  for (let k = 0; k < p.signs.length; k++) {
+    const go = p.signs[k].go;
+    B.record(p, run, { responded: go && caught < 3, rt: 500, planned: run.ms });
+    if (go) caught++;
+  }
+  const sm = B.summary(p, run);
+  assert.ok(sm.reach_ms <= p.advanceMs, 'reached ' + sm.reach_ms + ' ms');
+  assert.ok(sm.threshold_ms > p.advanceMs, 'though the average over the drive is slower');
 });
 
 test('glimpse: runs survive serialize/restore', () => {
@@ -790,9 +839,9 @@ test('switchback: the sign time and speed staircases', () => {
 test('switchback: success needs both the sign time and the speed of the level', () => {
   const B = E.games.switchback;
   const p = B.generate(2, 5);
-  const ok = { threshold_ms: p.advanceMs, speed_mean_kmh: p.advanceKmh };
+  const ok = { reach_ms: p.advanceMs, speed_mean_kmh: p.advanceKmh };
   assert.ok(B.success(p, ok));
-  assert.ok(!B.success(p, Object.assign({}, ok, { threshold_ms: p.advanceMs + 1 })));
+  assert.ok(!B.success(p, Object.assign({}, ok, { reach_ms: p.advanceMs + 1 })));
   assert.ok(!B.success(p, Object.assign({}, ok, { speed_mean_kmh: p.advanceKmh - 0.5 })));
   assert.ok(!B.success(B.practice(), ok));
 });
@@ -852,4 +901,9 @@ test('keepsake: one try per thing, a taken stone refuses, feedback moves a wrong
   const pr = K.practice();
   assert.equal(pr.things.length, 2);
   assert.equal(pr.out.length, 4);
+});
+
+test('the app script parses (a stray quote in a long text breaks the whole page)', () => {
+  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'src', 'app.js'), 'utf8');
+  assert.doesNotThrow(() => new Function(src));
 });

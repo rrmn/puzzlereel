@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.19.0';
+  const APP_VERSION = '2.20.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -79,46 +79,45 @@
     menu: '<path d="M4 7h16M4 12h16M4 17h10"/>',
     undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
     restart: '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 3.5V9H9"/>',
-    hint: '<path d="M9 18h6M10.2 21.5h3.6"/><path d="M12 2.6a6.4 6.4 0 0 0-3.7 11.6c.6.5.9 1.1.9 1.9V17h5.6v-.9c0-.8.3-1.4.9-1.9A6.4 6.4 0 0 0 12 2.6z"/>',
-    skip: '<path d="M5.5 5.5 15 12l-9.5 6.5z"/><path d="M18.5 5.5v13"/>',
+    hint: '<path class="df" d="M12 2.6a6.4 6.4 0 0 0-3.7 11.6c.6.5.9 1.1.9 1.9V17h5.6v-.9c0-.8.3-1.4.9-1.9A6.4 6.4 0 0 0 12 2.6z"/><path d="M9 18h6M10.2 21.5h3.6"/><path d="M12 2.6a6.4 6.4 0 0 0-3.7 11.6c.6.5.9 1.1.9 1.9V17h5.6v-.9c0-.8.3-1.4.9-1.9A6.4 6.4 0 0 0 12 2.6z"/>',
+    skip: '<path class="df" d="M5.5 5.5 15 12l-9.5 6.5z"/><path d="M5.5 5.5 15 12l-9.5 6.5z"/><path d="M18.5 5.5v13"/>',
     next: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
     up: '<path d="m6 15 6-6 6 6"/>',
     x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
     check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
     swap: '<path d="M6 8.5h12M15 5.5l3 3-3 3"/><path d="M18 15.5H6M9 12.5l-3 3 3 3"/>',
-    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    clock: '<circle class="df" cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     tapped: '<path d="M9.5 11.5V5.2a1.7 1.7 0 0 1 3.4 0v5.6"/><path d="M12.9 10.2V9a1.7 1.7 0 0 1 3.4 0v2.2"/><path d="M16.3 10.8a1.7 1.7 0 0 1 3.2.8v3.2a6.7 6.7 0 0 1-6.7 6.7h-.6a6.6 6.6 0 0 1-5.2-2.5l-3-3.8a1.7 1.7 0 0 1 2.6-2.2l2.4 2.4"/>',
-    sound: '<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
-    help: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.8"/><path d="M12 17.2v.1"/>',
-    flask: '<path d="M9 3h6M10 3v6.2L4.8 18.1A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-2.9L14 9.2V3"/><path d="M7.5 14.5h9"/>',
+    sound: '<path class="df" d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    help: '<circle class="df" cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.8"/><path d="M12 17.2v.1"/>',
+    flask: '<path class="df" d="M7.5 14.5h9l2.7 3.6A2 2 0 0 1 17.5 21h-11a2 2 0 0 1-1.7-2.9z"/><path d="M9 3h6M10 3v6.2L4.8 18.1A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-2.9L14 9.2V3"/><path d="M7.5 14.5h9"/>',
     chart: '<path d="M5 20V11M11 20V5M17 20v-7"/><path d="M3 20h18"/>',
     save: '<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/>',
-    key: '<circle cx="8" cy="15" r="4.2"/><path d="m11 12 8.5-8.5M16.2 6.8l2.2 2.2M13.6 9.4l2 2"/>',
+    key: '<circle class="df" cx="8" cy="15" r="4.2"/><circle cx="8" cy="15" r="4.2"/><path d="m11 12 8.5-8.5M16.2 6.8l2.2 2.2M13.6 9.4l2 2"/>',
     erase: '<path d="M21 5H9l-6 7 6 7h12z"/><path d="m12.5 9.5 5 5M17.5 9.5l-5 5"/>',
-    play: '<path d="M7.5 5.5 18.5 12l-11 6.5z"/>',
+    play: '<path class="df" d="M7.5 5.5 18.5 12l-11 6.5z"/><path d="M7.5 5.5 18.5 12l-11 6.5z"/>',
     pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>',
-    car: '<path d="M4 16.5V13l2-5.2A2 2 0 0 1 7.9 6.5h8.2a2 2 0 0 1 1.9 1.3L20 13v3.5z"/><path d="M4 13h16"/><circle cx="7.6" cy="16.6" r="1.7"/><circle cx="16.4" cy="16.6" r="1.7"/>',
-    drop: '<path d="M12 3.2s6.2 6.6 6.2 11.2a6.2 6.2 0 0 1-12.4 0C5.8 9.8 12 3.2 12 3.2z"/>',
-    sprout: '<path d="M12 21v-8"/><path d="M12 13c0-4.2 3-6.8 7.4-6.8 0 4.2-3 6.8-7.4 6.8zM12 15.2c0-3.6-2.6-5.7-6.2-5.7 0 3.6 2.6 5.7 6.2 5.7z"/>',
-    lock: '<rect x="5" y="10.5" width="14" height="10.5" rx="2.6"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/><path d="M12 14.5v2.5"/>',
+    car: '<path class="df" d="M4 16.5V13l2-5.2A2 2 0 0 1 7.9 6.5h8.2a2 2 0 0 1 1.9 1.3L20 13v3.5z"/><path d="M4 16.5V13l2-5.2A2 2 0 0 1 7.9 6.5h8.2a2 2 0 0 1 1.9 1.3L20 13v3.5z"/><path d="M4 13h16"/><circle cx="7.6" cy="16.6" r="1.7"/><circle cx="16.4" cy="16.6" r="1.7"/>',
+    drop: '<path class="df" d="M12 3.2s6.2 6.6 6.2 11.2a6.2 6.2 0 0 1-12.4 0C5.8 9.8 12 3.2 12 3.2z"/><path d="M12 3.2s6.2 6.6 6.2 11.2a6.2 6.2 0 0 1-12.4 0C5.8 9.8 12 3.2 12 3.2z"/>',
+    sprout: '<path class="df" d="M12 13c0-4.2 3-6.8 7.4-6.8 0 4.2-3 6.8-7.4 6.8zM12 15.2c0-3.6-2.6-5.7-6.2-5.7 0 3.6 2.6 5.7 6.2 5.7z"/><path d="M12 21v-8"/><path d="M12 13c0-4.2 3-6.8 7.4-6.8 0 4.2-3 6.8-7.4 6.8zM12 15.2c0-3.6-2.6-5.7-6.2-5.7 0 3.6 2.6 5.7 6.2 5.7z"/>',
+    lock: '<rect class="df" x="5" y="10.5" width="14" height="10.5" rx="2.6"/><rect x="5" y="10.5" width="14" height="10.5" rx="2.6"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7"/><path d="M12 14.5v2.5"/>',
     star: '<path fill="currentColor" stroke="none" d="M12 2.4l2.95 6 6.6.95-4.78 4.66 1.13 6.57L12 17.48l-5.9 3.1 1.13-6.57L2.45 9.35l6.6-.95z"/>',
     flame: '<path fill="currentColor" stroke="none" d="M12.6 2.4c.7 3.3 5 5.5 5 10.4a5.6 5.6 0 0 1-11.2 0c0-2.8 1.5-4.4 2.8-5.6.2 1.8 1 3 2.3 3.7-.6-3.3.3-6.1 1.1-8.5z"/>',
-    eye: '<path d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z"/><circle cx="12" cy="12" r="3.1"/>',
+    eye: '<path class="df" d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z"/><path d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z"/><circle cx="12" cy="12" r="3.1"/>',
     bolt: '<path fill="currentColor" stroke="none" d="M13.6 2.2 4.8 13.4h6.1l-1.4 8.4 8.8-11.2h-6.1z"/>',
-    stack: '<rect x="4" y="15" width="16" height="5" rx="2"/><rect x="6" y="9.5" width="12" height="5" rx="2"/><rect x="8" y="4" width="8" height="5" rx="2"/>',
-    person: '<circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0"/>',
+    stack: '<path class="df" d="M6 15h12a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2zM8 9.5h8a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2zM10 4h4a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><rect x="4" y="15" width="16" height="5" rx="2"/><rect x="6" y="9.5" width="12" height="5" rx="2"/><rect x="8" y="4" width="8" height="5" rx="2"/>',
+    person: '<circle class="df" cx="12" cy="8.2" r="3.7"/><path class="df" d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0z"/><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0"/>',
     grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
     wheel: '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12.4" r="2.2"/><path d="M3.6 11.2q8.4-1.8 16.8 0M12 14.6v6"/>',
-    gauge: '<path d="M4.2 17a8.2 8.2 0 1 1 15.6 0"/><path d="m12 14.6 3.6-4.4"/><circle cx="12" cy="15" r="1.3"/>',
-    sign: '<path d="M12 3.6 21 19.4H3z"/><path d="M12 9.6v4.2"/><path d="M12 16.6v.1"/>',
+    gauge: '<path class="df" d="M4.2 17a8.2 8.2 0 1 1 15.6 0z"/><path d="M4.2 17a8.2 8.2 0 1 1 15.6 0"/><path d="m12 14.6 3.6-4.4"/><circle cx="12" cy="15" r="1.3"/>',
+    sign: '<path class="df" d="M12 3.6 21 19.4H3z"/><path d="M12 3.6 21 19.4H3z"/><path d="M12 9.6v4.2"/><path d="M12 16.6v.1"/>',
     road: '<path d="M8.4 3.5 4.8 20.5M15.6 3.5l3.6 17"/><path d="M12 4.5v2.6M12 10.6v2.8M12 17v3"/>',
-    basket: '<path d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M7.6 10.4 11 4.6M16.4 10.4 13 4.6"/><path d="M9.4 14v3.4M14.6 14v3.4"/>',
-    day: '<rect x="3.8" y="5.2" width="16.4" height="15.4" rx="3.2"/><path d="M3.8 10h16.4M8.4 3.2v4M15.6 3.2v4"/><path d="M8 14.2h.1M12 14.2h.1M16 14.2h.1M8 17.4h.1M12 17.4h.1"/>',
+    basket: '<path class="df" d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M7.6 10.4 11 4.6M16.4 10.4 13 4.6"/><path d="M9.4 14v3.4M14.6 14v3.4"/>',
+    day: '<path class="df" d="M7 5.2h10a3.2 3.2 0 0 1 3.2 3.2V10H3.8V8.4A3.2 3.2 0 0 1 7 5.2z"/><rect x="3.8" y="5.2" width="16.4" height="15.4" rx="3.2"/><path d="M3.8 10h16.4M8.4 3.2v4M15.6 3.2v4"/><path d="M8 14.2h.1M12 14.2h.1M16 14.2h.1M8 17.4h.1M12 17.4h.1"/>',
     rise: '<path d="M3.5 17.5 9.5 11.5l4 4 7-7.5"/><path d="M15 8h5.5v5.5"/>',
     back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
     more: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
   };
-  const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', stacks: 'stack', switchback: 'wheel', keepsake: 'basket', mixed: 'grid' };
   function icon(name, cls) {
     const el = document.createElementNS(SVGNS, 'svg');
     el.setAttribute('viewBox', '0 0 24 24');
@@ -130,6 +129,98 @@
     el.setAttribute('aria-hidden', 'true');
     if (cls) el.setAttribute('class', cls);
     el.innerHTML = ICONS[name] || '';
+    return el;
+  }
+  // ------------------------------------------------------------ game badges
+  // Each game's own small picture on its color, like an app icon, for the menu, the
+  // title row and the "only" chip. Drawn in a 48 box; ids are per drawing, since the
+  // same badge can be on screen twice. Art is built on first use (it borrows the
+  // Glimpse animals and the Tumbler pegs, defined further down).
+  const BADGE_BG = {
+    mixed: ['#56659A', '#2B3459'], outbound: ['#FFD978', '#FFB531'], conduit: ['#86DC8F', '#47B35A'],
+    tumbler: ['#7563D2', '#45339A'], glimpse: ['#5596EE', '#2161CC'], stacks: ['#9DD9D5', '#58ACA9'],
+    switchback: ['#F99B77', '#E35E45'], keepsake: ['#F599B7', '#DA5B85'],
+  };
+  let badgeArt = null, badgeSeq = 0;
+  function makeBadgeArt() {
+    const disc = (cy, w, c) => '<rect x="' + (24 - w / 2) + '" y="' + (cy - 3.4) + '" width="' + w + '" height="6.8" rx="3.4" fill="' + c + '"/>'
+      + '<rect x="' + (24 - w / 2 + 2.6) + '" y="' + (cy - 2.3) + '" width="' + (w * 0.34).toFixed(1) + '" height="1.5" rx=".75" fill="#fff" opacity=".38"/>';
+    const peg = (x, k) => '<circle cx="' + x + '" cy="30.4" r="4.7" fill="' + PEGS[k].fill + '"/>'
+      + '<path d="' + PEGS[k].glyph + '" fill="' + PEGS[k].ink + '" transform="translate(' + (x - 3.44) + ' 26.96) scale(.43)"/>';
+    return {
+      mixed: [[8.5, 8.5, '#FFC94D'], [25.5, 8.5, '#6CCB78'], [8.5, 25.5, '#9A86F0'], [25.5, 25.5, '#F07C5C']].map(([x, y, c]) =>
+        '<rect x="' + x + '" y="' + (y + 1.2) + '" width="14" height="14" rx="4.4" fill="#000" opacity=".16"/>'
+        + '<rect x="' + x + '" y="' + y + '" width="14" height="14" rx="4.4" fill="' + c + '"/>'
+        + '<rect x="' + (x + 2.6) + '" y="' + (y + 2.4) + '" width="5" height="2" rx="1" fill="#fff" opacity=".45"/>').join(''),
+      outbound: '<ellipse cx="25" cy="40.8" rx="10.4" ry="2.4" fill="#A05E00" opacity=".2"/>'
+        + '<rect x="12.8" y="16.6" width="2.8" height="3.6" rx="1.3" fill="#D63E35"/><rect x="32.4" y="16.6" width="2.8" height="3.6" rx="1.3" fill="#D63E35"/>'
+        + '<rect x="14.6" y="5.8" width="18.8" height="34.4" rx="7.2" fill="#F2564D"/>'
+        + '<path d="M28.6 6.2q4.8 1.2 4.8 6.6v20.6q0 5.6-4.8 6.6z" fill="#000" opacity=".1"/>'
+        + '<path d="M17.3 15.2q6.7-3.3 13.4 0l-1.2 4.4H18.5z" fill="#26324A"/>'
+        + '<path d="M18.5 32.4h11l1 3.3q-6.5 2.3-13 0z" fill="#26324A" opacity=".88"/>'
+        + '<rect x="18.3" y="20.5" width="11.4" height="11.2" rx="2.6" fill="#fff" opacity=".13"/>'
+        + '<path d="M20.4 28.6 24 24.8l3.6 3.8" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+        + '<rect x="16.4" y="7.1" width="4" height="2.2" rx="1.1" fill="#FFF4C2"/><rect x="27.6" y="7.1" width="4" height="2.2" rx="1.1" fill="#FFF4C2"/>',
+      conduit: '<ellipse cx="24.5" cy="43.4" rx="10.5" ry="1.9" fill="#1E5A2A" opacity=".2"/>'
+        + '<path d="M-1 10.5h13.5a7 7 0 0 1 7 7v2.6" fill="none" stroke="#2E9CF2" stroke-width="7"/>'
+        + '<path d="M-1 8.2h13.5a9.3 9.3 0 0 1 9.3 9.3v2.6" fill="none" stroke="#8ED0FF" stroke-width="1.5"/>'
+        + '<rect x="14.6" y="19.4" width="9.8" height="3.6" rx="1.3" fill="#1C78C4"/>'
+        + '<path d="M19.5 25.6c-1.5 2-2.3 3.4-2.3 4.4a2.3 2.3 0 0 0 4.6 0c0-1-.8-2.4-2.3-4.4z" fill="#9AD6FF"/>'
+        + '<path d="M28.6 31.2v-7.4" stroke="#2C8A3C" stroke-width="2.1" stroke-linecap="round"/>'
+        + '<path d="M28.6 25.4c.2-4.6 3.2-7.4 7.8-7.2-.1 4.5-3.2 7.4-7.8 7.2z" fill="#3AA94B"/>'
+        + '<path d="M28.4 27.2c-.4-3.4-2.7-5.2-6-5 .3 3.3 2.6 5.2 6 5z" fill="#5CC56A"/>'
+        + '<path d="M13.4 34.4h21.2l-2.3 8.2q-.4 1.4-1.8 1.4H17.5q-1.4 0-1.8-1.4z" fill="#D9734A"/>'
+        + '<rect x="11.8" y="30.4" width="24.4" height="5" rx="2" fill="#EC8A5E"/>'
+        + '<rect x="14" y="31.6" width="7" height="1.4" rx=".7" fill="#fff" opacity=".3"/>',
+      tumbler: '<path d="M16.4 21v-4.8a7.6 7.6 0 0 1 15.2 0V21" fill="none" stroke="#DCD4FA" stroke-width="4.4" stroke-linecap="round"/>'
+        + '<rect x="8.4" y="19.2" width="31.2" height="23" rx="6.6" fill="#1E1650" opacity=".25" transform="translate(0 1.4)"/>'
+        + '<rect x="8.4" y="19.2" width="31.2" height="23" rx="6.6" fill="#FFFFFF"/>'
+        + '<path d="M8.4 34.6h31.2v1q0 6.6-6.6 6.6H15q-6.6 0-6.6-6.6z" fill="#5B47AE" opacity=".1"/>'
+        + peg(15.9, 0) + peg(24, 1) + peg(32.1, 2),
+      glimpse: '<path d="M10.4 5.6l1.2 3.7 3.7 1.2-3.7 1.2-1.2 3.7-1.2-3.7-3.7-1.2 3.7-1.2z" fill="#fff" opacity=".92"/>'
+        + '<circle cx="25" cy="26" r="17.2" fill="#0E2E6E" opacity=".22" transform="translate(0 1.2)"/>'
+        + '<circle cx="25" cy="26" r="17.2" fill="#F7FBF2"/>'
+        + '<circle cx="25" cy="26" r="11.2" fill="none" stroke="#18291F" stroke-opacity=".1" stroke-width=".8"/>'
+        + '<g transform="translate(16.9 17.6) scale(.162)"><path d="' + GL_PATHS.rabbit + '" fill="#18291F"/></g>'
+        + '<g transform="translate(29.6 12.4) scale(.07)"><path d="' + GL_PATHS.bird + '" fill="#2F72DC"/></g>',
+      stacks: '<path d="M-1 37.8c9-2.2 17-.4 26-1.4s15-1.6 24 0V49H-1z" fill="#EEDDB9"/>'
+        + '<ellipse cx="24" cy="38.6" rx="13" ry="1.9" fill="#8A6A3B" opacity=".22"/>'
+        + '<rect x="22.7" y="7" width="2.6" height="31.6" rx="1.3" fill="#8A5C3B"/>'
+        + disc(33.8, 25, '#6F90C2') + disc(26.6, 19.4, '#D06A50') + disc(19.4, 13.8, '#72A862'),
+      switchback: '<path d="M-1 29.6c9-3.6 19-1 29-2.8s15-2.2 21-.6V49H-1z" fill="#A3D886"/>'
+        + '<path d="M-1 33.4c11-2.6 20-.8 30-2.4s14-1.6 20-.8V49H-1z" fill="#8BCB6F"/>'
+        + '<path d="M26.6 27.4h3.1c.6 2.6-3.6 4.8-2.4 8.2 1.2 3.6 8.4 6.6 9.6 13.4H14.6c1.4-7 7.4-10.2 7.2-13.6-.2-3.2 4.6-5.2 4.8-8z" fill="#6D7383"/>'
+        + '<path d="M28.1 29.2c-.6 1.6-2.6 2.8-2.1 5.4M26.6 38.4c1.4 2.4 3.6 4.6 3.6 9" fill="none" stroke="#F8F3E6" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="2.4 2.6"/>'
+        + '<rect x="35.2" y="17" width="1.6" height="14" rx=".8" fill="#7F8794"/>'
+        + '<path d="M36 6.4 43.4 19.2H28.6z" fill="#fff" stroke="#fff" stroke-width="3.2" stroke-linejoin="round"/>'
+        + '<path d="M36 7.8 42.2 18.4H29.8z" fill="#E23B36" stroke="#E23B36" stroke-width="1" stroke-linejoin="round"/>'
+        + '<path d="M36 11 39.6 17.2H32.4z" fill="#fff" stroke="#fff" stroke-width=".6" stroke-linejoin="round"/>'
+        + '<g transform="translate(32.9 13.5) scale(.29)" fill="#26324A"><path d="M4 5.2C4 3.8 5 3 6.4 3H17c1.6 0 2.6 1 2.6 2.6V9.8c0 1-.8 1.8-1.8 1.8H6c-1.2 0-2-.8-2-2z"/><path d="M.4 4.2C.4 2.8 1.4 2 2.6 2h2.8v6.2H2.6C1.2 8.2.4 7.2.4 6z"/><path d="M5.4 10.6h2v4.6h-2zM8.6 10.6h2v4.6h-2zM14 10.6h2v4.6h-2zM17.2 10.6h2v4.6h-2z"/><path d="M1 2.4.2.4l1.8 1.4M4.8 2.4 5.6.4 3.8 1.8z"/></g>',
+      keepsake: '<path d="M14.6 25c0-13.6 18.8-13.6 18.8 0" fill="none" stroke="#B9773D" stroke-width="3" stroke-linecap="round"/>'
+        + '<path d="M19.4 18.4c1.8-1.3 4.6-.4 5.2 2.2.8 3.4-1.4 6.8-4.2 6.8-.4 0-.7-.1-1-.2-.3.1-.6.2-1 .2-2.8 0-5-3.4-4.2-6.8.6-2.6 3.4-3.5 5.2-2.2z" fill="#E8463D"/>'
+        + '<path d="M19.4 18.6c0-1.4.5-2.4 1.5-3" stroke="#6B4423" stroke-width="1.1" stroke-linecap="round" fill="none"/>'
+        + '<path d="M20.6 16.6c1.4-1.5 3.4-1.6 4.6-.6-1.3 1.4-3.2 1.6-4.6.6z" fill="#4CAF50"/>'
+        + '<ellipse cx="16.8" cy="21.2" rx="1" ry="1.6" fill="#fff" opacity=".45"/>'
+        + '<path d="M30.6 15.6c1.8 0 2.4 2 3.4 3.6 1 1.6 2.4 2.8 2.4 4.8 0 2.6-2.6 4-5.8 4s-5.8-1.4-5.8-4c0-2 1.4-3.2 2.4-4.8s1.6-3.6 3.4-3.6z" fill="#F2C94C"/>'
+        + '<path d="M30.6 15.8v-2" stroke="#6B4423" stroke-width="1.1" stroke-linecap="round"/>'
+        + '<path d="M9.4 27.6h29.2l-2.8 12.6q-.4 1.8-2.2 1.8H14.4q-1.8 0-2.2-1.8z" fill="#CF8C4E"/>'
+        + '<path d="M11 32.4h26M12.1 37.2h23.8M18.2 28v13.6M24 28v13.6M29.8 28v13.6" stroke="#A86B33" stroke-width="1.2" opacity=".75"/>'
+        + '<rect x="7.8" y="24.6" width="32.4" height="5" rx="2.5" fill="#E2A766"/>'
+        + '<rect x="10.4" y="25.6" width="9" height="1.4" rx=".7" fill="#fff" opacity=".35"/>',
+    };
+  }
+  function badge(g, cls) {
+    if (!badgeArt) badgeArt = makeBadgeArt();
+    const id = 'bdg' + (++badgeSeq), c = BADGE_BG[g] || BADGE_BG.mixed;
+    const el = document.createElementNS(SVGNS, 'svg');
+    el.setAttribute('viewBox', '0 0 48 48');
+    el.setAttribute('aria-hidden', 'true');
+    el.setAttribute('class', 'badge' + (cls ? ' ' + cls : ''));
+    el.innerHTML = '<defs><linearGradient id="' + id + 'g" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="' + c[0] + '"/><stop offset="1" stop-color="' + c[1] + '"/></linearGradient>'
+      + '<clipPath id="' + id + 'c"><rect width="48" height="48" rx="13"/></clipPath></defs>'
+      + '<rect width="48" height="48" rx="13" fill="url(#' + id + 'g)"/>'
+      + '<g clip-path="url(#' + id + 'c)">' + (badgeArt[g] || '') + '</g>'
+      + '<rect x=".7" y=".7" width="46.6" height="46.6" rx="12.4" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="1.4"/>';
     return el;
   }
   const HAND_SVG = '<svg viewBox="0 0 48 56" aria-hidden="true"><path d="M18 4c2.2 0 4 1.8 4 4v14.5l2.2-.6c1.9-.5 3.9.6 4.4 2.5l.1.4 1.9-.4c1.9-.4 3.8.7 4.3 2.6l.1.5 1.4-.3c2-.4 4 .9 4.4 2.9l.1.6V40c0 7.7-6.3 14-14 14h-2.5c-4.4 0-8.5-2.2-10.9-5.9L6.4 39.5c-1.2-1.9-.7-4.4 1.2-5.6 1.7-1.1 3.9-.8 5.2.7L14 36V8c0-2.2 1.8-4 4-4z" fill="#FFFFFF" stroke="#1F2230" stroke-width="2.6" stroke-linejoin="round"/><path d="M22 29v7M28.7 30v6M34.9 32v5" stroke="#1F2230" stroke-width="2" stroke-linecap="round" opacity="0.35"/></svg>';
@@ -632,7 +723,7 @@
     build() {
       const sp = this.spec;
       const title = h('div', { class: 'title' },
-        h('span', { class: 'game-ico' }, icon(GAME_ICON[sp.game])),
+        h('span', { class: 'game-ico' }, badge(sp.game)),
         h('span', { class: 'game-name', text: this.G.name }),
         this.practice ? h('span', { class: 'tag', text: 'Practice' }) : pips(sp.level, null, this.halfway()));
       this.goalEl = h('span', { class: 'goal', role: 'status' });
@@ -844,6 +935,7 @@
       sm.level_next = res.level_next;
       sm.level_change = res.change && res.change.changed ? res.change : null;
       sm.toward = res.toward || null;
+      sm.goal = res.goal || null;
       this.updateStatus();
       if (this.onResolved) this.onResolved(outcome);
       if (quiet) return;
@@ -960,6 +1052,11 @@
         const T = sm.toward, slots = h('span', { class: 'res-slots', 'aria-hidden': 'true' });
         for (let i = 0; i < T.need; i++) slots.append(h('i', { class: i < T.have ? 'on' : '' }, i < T.have ? icon('check') : null));
         panel.append(h('div', { class: 'res-level toward', role: 'status' }, slots, 'One more for ' + LEVEL_NAMES[T.to - 1]));
+      } else if (sm.goal && this.o.counter) {
+        // a round that did not count: the goal for the next level, as the profile shows it, a met part ticked
+        const G2 = sm.goal, chips = h('span', { class: 'res-chips', 'aria-hidden': 'true' });
+        G2.chips.forEach(([ico, t, met]) => chips.append(h('span', { class: 'res-chip' + (met ? ' met' : '') }, icon(ico), t, met ? icon('check', 'res-met') : null)));
+        panel.append(h('div', { class: 'res-level goal', role: 'status', 'aria-label': LEVEL_NAMES[G2.to - 1] + ' needs ' + G2.text }, chips, 'for ' + LEVEL_NAMES[G2.to - 1]));
       }
       const last = this.app.isLast(this.spec);
       const again = this.practice && sm.passed === false && !this.app.practiceDone(this.spec.game);
@@ -2433,7 +2530,7 @@
       const stars = complete && !this.practice ? (miss <= 1 ? 3 : miss === 2 ? 2 : 1) : 0;
       return {
         outcome,
-        success: complete && !this.practice && g.threshold_ms != null && this.p.advanceMs != null && g.threshold_ms <= this.p.advanceMs,
+        success: complete && !this.practice && this.G.success(this.p, g),
         duration_ms: dur, first_move_ms: null, hidden_ms: Math.round(this.hiddenMs),
         moves: g.n, reference: null, par: null, efficiency: '',
         stars, gl: g,
@@ -2456,7 +2553,7 @@
       const g = sm.gl;
       if (!g || !g.n) return null;
       return h('div', { class: 'res-stats' },
-        h('span', { 'aria-label': 'Fastest correct look' }, icon('bolt'), h('b', { text: g.best_ms != null ? secs(g.best_ms) + ' s' : '–' })),
+        h('span', { 'aria-label': 'Shortest flash reached' }, icon('bolt'), h('b', { text: g.reach_ms != null ? secs(g.reach_ms) + ' s' : '–' })),
         h('span', { 'aria-label': 'Looks right' }, icon('eye'), h('b', { text: g.correct + '/' + g.n })));
     }
     onKey(e) {
@@ -5760,10 +5857,15 @@
       if (!d || !d.n) return null;
       const c = h('canvas', { class: 'res-item', width: 44, height: 44, 'aria-hidden': 'true' }), g = c.getContext('2d');
       if (g) g.drawImage(sbItem(this.place.item), 0, 0, 44, 44);
-      // what counts first (the signs, the road); the things collected are a bonus, below
+      // what counts first: the target signs caught, as the tally counted them (taps on other
+      // signs beside them), and the road; the things collected are a bonus, below
+      const sg = h('canvas', { class: 'res-sign', width: 48, height: 48, 'aria-hidden': 'true' }), sc = sg.getContext('2d');
+      if (sc) { sc.setTransform(2, 0, 0, 2, 0, 0); sbPlate(sc, 'tri', this.p.target, 12, 12.7, 21.6); }
+      const targets = d.hits + d.misses;
       return h('div', { class: 'res-stack' },
         h('div', { class: 'res-stats' },
-          h('span', { 'aria-label': 'Signs right' }, icon('sign'), h('b', { text: d.correct + '/' + d.n })),
+          h('span', { 'aria-label': d.hits + ' of ' + targets + ' target signs caught' + (d.false_alarms ? ', ' + d.false_alarms + ' taps on other signs' : '') },
+            sg, h('b', { text: d.hits + '/' + targets }), d.false_alarms ? h('small', { class: 'res-wrong' }, icon('x'), String(d.false_alarms)) : null),
           h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' }))),
         d.items ? h('div', { class: 'res-bonus', 'aria-label': 'Collected ' + d.collected + ' of ' + d.items }, c, h('b', { text: d.collected + '/' + d.items })) : null);
     }
@@ -6274,7 +6376,7 @@
   const EVENT_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'event_index', 'event', 'wall_time', 't_session_ms', 'seq', 'block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 't_ms', 'move_no', 'target', 'from', 'to', 'd_before', 'd_after', 'cls', 'exact', 'partial', 'marks', 'cands_before', 'cands_after', 'consistent', 'info_expected', 'info_best', 'info_actual', 'best_try',
     'refresh_ms', 'frames', 'flash_ms', 'flash_measured_ms', 'frame_drop', 'fix_ms', 'mask_ms', 'shown', 'chosen', 'ring', 'dir', 'dir_chosen', 'n_distract', 'rt_center_ms', 'rt_where_ms', 'stair_next_ms', 'reversal', 'field_px', 'window_ms', 'rt_ms', 'speed_kmh', 'on_road', 'source', 'error_dist', 'detail'];
   const PUZZLE_COLS = ['session_id', 'participant', 'condition', 'session_kind', 'session_seed', 'app_version', 'seq', 'block', 'in_block', 'puzzle_id', 'puzzle_seed', 'game', 'level', 'adaptive', 'practice', 'params', 'outcome', 'success', 'stars', 'started_at', 'ended_at', 'duration_ms', 'first_move_ms', 'hidden_ms', 'moves', 'reference', 'par', 'efficiency', 'n_optimal', 'n_wasted', 'n_dead_end', 'n_in_dead_end', 'n_blocked', 'n_undo', 'n_restart', 'n_hint', 'n_suboptimal', 'n_zero_info', 'n_inconsistent', 'mean_info_ratio',
-    'n_correct', 'accuracy', 'threshold_ms', 'best_ms', 'start_ms', 'end_ms', 'n_reversals', 'refresh_ms', 'n_frame_drops', 'field_px',
+    'n_correct', 'accuracy', 'threshold_ms', 'best_ms', 'reach_ms', 'start_ms', 'end_ms', 'n_reversals', 'refresh_ms', 'n_frame_drops', 'field_px',
     'n_hit', 'n_miss', 'n_false_alarm', 'n_stray', 'rt_mean_ms', 'on_road', 'n_off_road', 'speed_mean_kmh', 'speed_start_kmh', 'speed_end_kmh',
     'place', 'n_animals', 'n_shooed', 'animal_rt_mean_ms', 'brake_s', 'n_items', 'n_collected', 'study_ms', 'mean_error', 'level_next', 'features'];
 
@@ -6361,7 +6463,7 @@
     puzzles: [
       ['params', 'board description'],
       ['outcome', 'solved, failed, skipped, timeout, abandoned; Glimpse rounds end complete when every look is answered, Switchback drives when the car stops at the finish'],
-      ['success', '1 if solved with moves <= par (drives adaptive levels); on practice rows, 1 if the practice was played right (see Practice); Glimpse: a complete round with threshold_ms at or under the level\'s target. Switchback: a complete drive with threshold_ms at or under the level\'s sign time and speed_mean_kmh at or over its speed. Keepsake: at most one thing on the wrong stone'],
+      ['success', '1 if solved with moves <= par (drives adaptive levels); on practice rows, 1 if the practice was played right (see Practice); Glimpse: a complete round with reach_ms at or under the level\'s target. Switchback: a complete drive with reach_ms at or under the level\'s sign time and speed_mean_kmh at or over its speed (until app 2.20 both used threshold_ms, which a fresh round could miss with every answer right). Keepsake: at most one thing on the wrong stone'],
       ['stars', '3 = solved in the fewest moves, 2 = at or under par, 1 = solved, 0 = not solved. Glimpse: 3 = at most 1 miss in the round, 2 = two misses, 1 = more; every finished round earns at least 1. Switchback: 3 = at least 90% of signs right and 90% of the time on the road, 2 = 75% and 75%, 1 = finished. Keepsake: 3 = every thing on its stone, 2 = one wrong, 1 = more'],
       ['duration_ms / first_move_ms / hidden_ms', 'time on the puzzle, time to first move (Stacks: planning time before the first piece is set down), time the page was hidden'],
       ['moves', 'Outbound: car moves that changed the lot. Conduit: turns. Tumbler: tries. Stacks: pieces moved to another post (lifting a piece and putting it back is not a move)'],
@@ -6372,6 +6474,7 @@
       ['n_correct / accuracy', 'Glimpse: looks with the animal and the place both right, and their share. Switchback: hits plus correct rejections, and their share of signs. Keepsake: things put on their own stone, and their share'],
       ['threshold_ms', 'Glimpse: geometric mean display time over the round, leaving out a fresh staircase\'s descent before its first miss; the staircase settles at about 86% correct, never below 50 ms. Switchback: the same over target signs, for how long a sign stays up'],
       ['best_ms', 'Glimpse: shortest display time answered correctly'],
+      ['reach_ms', 'Glimpse: the shortest display time a correct answer brought the staircase to (the next flash, as the counter shows it). Switchback: the same for how long a sign stays up, after a caught target. At or under the level\'s target, the round is a success (from app 2.20)'],
       ['start_ms / end_ms', 'Glimpse and Switchback: staircase value at the start of the round, and the value carried to the next round'],
       ['n_reversals', 'Glimpse: staircase reversals in the round'],
       ['refresh_ms / n_frame_drops / field_px', 'Glimpse: median frame period over the round, looks flagged frame_drop, field radius in CSS pixels'],
@@ -6423,7 +6526,7 @@
         'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play take the scene of the level (meadow at L1 and L2, sea at L3 and L4, sky at L5) and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
-        'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 1500 ms, a slow and easy look for older players and non-gamers (until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. At level 2 and up a look is correct only when the animal and the place are both right.',
+        'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 1200 ms, a slow and easy look for older players and non-gamers, like the second look of practice (until app 2.20: 1500 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
@@ -6528,8 +6631,10 @@
       if (r.outcome === 'skipped') return;
       const e = { lv: Number(r.level) || 1, ok: Number(r.success) ? 1 : 0, st: Number(r.stars) || 0 };
       if (r.game === 'glimpse' || r.game === 'switchback') {
-        if (r.threshold_ms === '' || r.threshold_ms == null) return;
-        e.ms = Number(r.threshold_ms);
+        // how far the round got (from app 2.20; before that, its threshold)
+        const v = r.reach_ms !== '' && r.reach_ms != null ? r.reach_ms : r.threshold_ms;
+        if (v === '' || v == null) return;
+        e.ms = Number(v);
         if (r.game === 'switchback') e.kmh = Number(r.speed_mean_kmh) || 0;
       } else if (r.game === 'keepsake') {
         e.n = Number(r.reference) || 0;
@@ -6651,7 +6756,7 @@
     if (g === 'stacks') return L.moves + ' moves' + (lv === 3 ? ' · the harbor' : lv === 5 ? ' · the bakery' : '');
     if (g === 'keepsake') return L.items + ' things to remember';
     if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
-    if (g === 'glimpse') return ['', 'the middle only', 'the middle and one around it', 'near or far, at sea', 'with shells in the way', 'in the sky, with clouds in the way'][lv] || '';
+    if (g === 'glimpse') return ['', 'close to the middle', 'a little further out', 'near or far, at sea', 'with shells in the way', 'in the sky, with clouds in the way'][lv] || '';
     return '';
   }
   // Free play: how far a game is toward its next level. Two good cards in a row
@@ -6670,7 +6775,7 @@
   function pfGoal(g, lv) {
     if (g === 'glimpse') {
       const ms = E.games.glimpse.levels[lv].advanceMs;
-      return { chips: [['eye', secs(ms) + ' s']], text: 'a flash of ' + secs(ms) + ' s or less' };
+      return { chips: [['bolt', secs(ms) + ' s']], text: 'the flash down to ' + secs(ms) + ' s' };
     }
     if (g === 'switchback') {
       const L = E.games.switchback.levels[lv];
@@ -6771,7 +6876,7 @@
     if (g === 'glimpse') {
       const goal = (e) => E.games.glimpse.levels[e.lv].advanceMs;
       const r = pfRise(all, lv, (e) => e.ms, -1, 8);
-      row('eye', 'Flash', bars((e) => e.ms, goal, (e) => e.ms <= goal(e)), (e) => secs(e.ms) + ' s',
+      row('bolt', 'Flash', bars((e) => e.ms, goal, (e) => e.ms <= goal(e) + 0.5), (e) => secs(e.ms) + ' s',
         'Flash in your last ' + H.length + ' rounds, in seconds: ' + list((e) => secs(e.ms)),
         r && [secs(r.d) + ' s', 'Flash ' + secs(r.d) + ' s shorter over your last ' + r.k + ' rounds']);
     } else if (g === 'switchback') {
@@ -6807,7 +6912,7 @@
     const min = Math.round(t.ms / 60000);
     const big = (ico, v, label) => h('div', { class: 'pf-num' }, icon(ico), h('b', { text: String(v) }), h('span', { text: label }));
     let fig = null;
-    if (g === 'glimpse') { const b = store.get('pr1.glbest', {})[lv]; if (b != null) fig = big('bolt', secs(b) + ' s', 'fastest look'); }
+    if (g === 'glimpse') { const b = store.get('pr1.glreach', {})[lv] || store.get('pr1.glbest', {})[lv]; if (b != null) fig = big('bolt', secs(b) + ' s', 'fastest flash'); }
     if (g === 'switchback') { const k = Math.max(t.kmh || 0, ...H.map((e) => Math.round(e.kmh || 0))); if (k) fig = big('gauge', k, 'best km/h'); }
     if (g === 'keepsake' && t.cards) fig = big('star', t.perfect + '/' + t.cards, 'all right');
     if ((g === 'outbound' || g === 'conduit') && t.solved) fig = big('bolt', t.perfect + '/' + t.solved, g === 'conduit' ? 'fewest turns' : 'fewest moves');
@@ -7109,7 +7214,7 @@
       const neutral = sm.outcome === 'abandoned' || sm.outcome === 'skipped';
       const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game));
       const level_next = sp.adaptive && change ? change.to : '';
-      let toward = null;
+      let toward = null, goal = null;
       this.logPuzzle(card, 'puzzle_end', { move_no: card.c.moves, cls: sm.outcome, detail: JSON.stringify({ success: sm.success, stars: sm.stars, moves: sm.moves, par: sm.par, reference: sm.reference }) });
       if (change && change.changed) this.logPuzzle(card, 'level_change', { from: change.from, to: change.to });
       const c = card.c, applies = APPLIES[sp.game];
@@ -7123,10 +7228,10 @@
       }
       if (g && !sp.practice && g.n) {
         this.glimpseKeep(sp, card.run.ms);
-        if (S.kind === 'free' && g.best_ms != null && sm.outcome === 'complete') {
-          const best = store.get('pr1.glbest', {});
-          if (best[sp.level] != null && g.best_ms < best[sp.level] - 0.5) sm.newBest = g.best_ms;
-          if (best[sp.level] == null || g.best_ms < best[sp.level]) { best[sp.level] = g.best_ms; store.set('pr1.glbest', best); }
+        if (S.kind === 'free' && g.reach_ms != null && sm.outcome === 'complete') {
+          const best = store.get('pr1.glreach', {});
+          if (best[sp.level] != null && g.reach_ms < best[sp.level] - 0.5) sm.newBest = g.reach_ms;
+          if (best[sp.level] == null || g.reach_ms < best[sp.level]) { best[sp.level] = g.reach_ms; store.set('pr1.glreach', best); }
         }
       }
       S.puzzles.push({
@@ -7141,6 +7246,7 @@
         mean_info_ratio: sp.game === 'tumbler' && c.infoRatioN ? r4(c.infoRatioSum / c.infoRatioN) : '',
         n_correct: g ? g.correct : d ? d.correct : m ? m.correct : '', accuracy: g && g.n ? r4(g.accuracy) : d && d.n ? r4(d.accuracy) : m && m.n ? r4(m.accuracy) : '',
         threshold_ms: g && g.threshold_ms != null ? g.threshold_ms : d && d.threshold_ms != null ? d.threshold_ms : '', best_ms: g && g.best_ms != null ? g.best_ms : '',
+        reach_ms: g && g.reach_ms != null ? g.reach_ms : d && d.reach_ms != null ? d.reach_ms : '',
         start_ms: g && g.start_ms != null ? g.start_ms : d && d.start_ms != null ? d.start_ms : '', end_ms: g && g.end_ms != null ? g.end_ms : d && d.end_ms != null ? d.end_ms : '',
         n_reversals: g ? g.reversals : d ? d.reversals : '', refresh_ms: g && g.refresh_ms != null ? r4(g.refresh_ms) : '',
         n_frame_drops: g ? g.drops : '', field_px: g && card.R ? Math.round(card.R) : '',
@@ -7185,13 +7291,20 @@
           store.set('pr1.lvrun', runs);
           // a good card that does not move the level yet: say how close the next one is
           if (sm.success && !change.changed && change.to < 5 && a && a.streak > 0) toward = { to: change.to + 1, have: a.streak, need: this.upAfter(sp.game) };
+          // a timed round that did not count: what this level asks for the next, and the part it met
+          if (!sm.success && sm.outcome === 'complete' && change.to < 5 && (g || d)) {
+            const P = pfGoal(sp.game, change.to), L = card.p;
+            const met = g ? [g.reach_ms != null && g.reach_ms <= L.advanceMs + 0.5]
+              : [d.reach_ms != null && d.reach_ms <= L.advanceMs, d.speed_mean_kmh != null && d.speed_mean_kmh >= L.advanceKmh];
+            goal = { to: change.to + 1, chips: P.chips.map((c, i) => c.concat([met[i]])), text: P.text };
+          }
         }
         if (sm.outcome !== 'abandoned') Stats.record(this, S.puzzles[S.puzzles.length - 1]);
         this.hudBump = sm.stars > 0;
       }
       this.renderHud();
       this.touch(true);
-      return { level_next, change, toward };
+      return { level_next, change, toward, goal };
     },
 
     // ---------- logging & persistence
@@ -7298,7 +7411,7 @@
         const only = S && S.kind === 'free' && S.blocks[0] && S.blocks[0].game !== 'mixed' ? S.blocks[0].game : null;
         if (only) {
           M.append(h('button', { class: 'only-chip', type: 'button', 'aria-label': 'Only ' + LABEL[only] + '. Back to all games', onclick: () => this.startFree(false, 'mixed') },
-            icon(GAME_ICON[only]), h('span', { text: LABEL[only] + ' only' }), h('span', { class: 'chip-x' }, icon('x'))));
+            badge(only), h('span', { text: LABEL[only] + ' only' }), h('span', { class: 'chip-x' }, icon('x'))));
         } else {
           M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
         }
@@ -7395,7 +7508,7 @@
           const t = all[g], on = played(g), P = levelProgress(g), best = Math.max(t ? t.top : 0, P.lv);
           const say = LABEL[g] + ', ' + (on ? LEVEL_NAMES[P.lv - 1] + (P.have ? ', halfway to ' + LEVEL_NAMES[P.lv] : '') + ', ' + t.stars + ' stars' : 'not played yet');
           const row = h('button', { class: 'pf-row' + (on ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-label': say },
-            h('span', { class: 'pf-ico', 'aria-hidden': 'true' }, miniWorld(g)),
+            h('span', { class: 'pf-ico', 'aria-hidden': 'true' }, badge(g)),
             h('span', { class: 'pf-name' }, h('b', { text: LABEL[g] }),
               h('span', { class: 'pf-sub' }, pfLadder(P, best, 'pf-small'), h('small', { text: on ? LEVEL_NAMES[P.lv - 1] : 'New' }))),
             h('span', { class: 'pf-stars' }, on ? icon('star') : null, on ? String(t.stars) : null),
@@ -7464,7 +7577,7 @@
           class: 'gp' + (g === focus ? ' on' : ''), type: 'button', 'data-game': g, 'aria-pressed': g === focus ? 'true' : 'false',
           'aria-label': g === 'mixed' ? 'All games' : LABEL[g],
           onclick: () => { closeSheet(); this.startFree(false, g); },
-        }, h('span', { class: 'gp-ico' }, icon(GAME_ICON[g])), h('span', { text: g === 'mixed' ? 'All' : LABEL[g] }))));
+        }, h('span', { class: 'gp-ico' }, badge(g)), h('span', { text: g === 'mixed' ? 'All' : LABEL[g] }))));
       openSheet('Puzzle Reel', [picker, h('div', { class: 'menu' },
         soundRow,
         item('person', 'Profile', 'Your levels and bests', () => { closeSheet(); this.openProfile(); }),
@@ -7676,5 +7789,5 @@
   const hot = window.claude && window.claude.hot;
   if (hot && typeof hot.ready === 'function') hot.ready(start);
   else start(hot && hot.data ? hot.data : {});
-  window.PuzzleReel = { App, Gen, Sound, seqInit, seqNext, seqRecord, eventsCSV, puzzlesCSV, codebookMarkdown };
+  window.PuzzleReel = { App, Gen, Sound, seqInit, seqNext, seqRecord, eventsCSV, puzzlesCSV, codebookMarkdown, badge };
 })();

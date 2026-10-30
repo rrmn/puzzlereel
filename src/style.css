@@ -141,6 +141,7 @@ button { cursor: pointer; }
 }
 .only-chip:active { transform: scale(0.95); }
 .only-chip > svg { width: 19px; height: 19px; }
+.only-chip > .badge { width: 24px; height: 24px; margin-left: -4px; }
 .only-chip .chip-x { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--bg2); }
 .only-chip .chip-x svg { width: 15px; height: 15px; }
 .pill {
@@ -186,8 +187,8 @@ button { cursor: pointer; }
   padding: 6px max(18px, env(safe-area-inset-right, 0px)) 0 max(18px, env(safe-area-inset-left, 0px));
 }
 .title { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.game-ico { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--chip); flex: none; }
-.game-ico svg { width: 22px; height: 22px; }
+.game-ico { width: 34px; height: 34px; display: grid; place-items: center; flex: none; filter: drop-shadow(0 1.5px 2px rgba(20, 24, 40, 0.16)); }
+.game-ico .badge { width: 34px; height: 34px; }
 .game-name { font-family: var(--display); font-weight: 600; font-size: 25px; letter-spacing: 0.005em; line-height: 1; }
 .pips { --pip: var(--ink); display: inline-flex; gap: 3px; margin-left: 2px; }
 .pips i { width: 7px; height: 7px; border-radius: 50%; background: var(--pip); opacity: 0.22; }
@@ -621,6 +622,9 @@ button { cursor: pointer; }
 .sb-btn:focus-visible { box-shadow: 0 0 0 4px #FFFFFF, 0 0 0 7px #3A1F14; }
 .sb-anchor { position: absolute; left: 0; top: 0; width: 2px; height: 2px; margin: -1px 0 0 -1px; pointer-events: none; }
 .res-stats .res-item { width: 22px; height: 22px; }
+.res-stats .res-sign { width: 24px; height: 24px; }
+.res-stats .res-wrong { display: inline-flex; align-items: center; gap: 1px; margin-left: 2px; color: var(--bad); font-size: 15px; font-weight: 600; }
+.res-stats .res-wrong svg { width: 14px; height: 14px; stroke-width: 3; }
 .hand.drag svg { animation: dragx 1.3s ease-in-out infinite; transform-origin: 36% 8%; }
 .hand.drag .ripple { display: none; }
 @media (max-height: 640px) {
@@ -688,6 +692,13 @@ button { cursor: pointer; }
 .res-slots i.on { background: var(--gold); box-shadow: none; color: #5A3B00; animation: pop 0.45s 1s cubic-bezier(.3,1.9,.5,1) both; }
 .res-slots svg { width: 15px; height: 15px; stroke-width: 3; }
 @keyframes slotwait { 0%, 100% { box-shadow: inset 0 0 0 2.2px #CFC7B6; } 50% { box-shadow: inset 0 0 0 2.2px var(--gold-deep); } }
+/* a timed round that did not count: the next level's goal, the part met ticked */
+.res-level.goal { background: #F1EEE6; color: var(--paper-soft); padding-left: 6px; font-weight: 500; }
+.res-chips { display: inline-flex; gap: 5px; }
+.res-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px 3px 7px; border-radius: 999px; background: #fff; color: var(--paper-ink); font-weight: 600; font-variant-numeric: tabular-nums; box-shadow: inset 0 0 0 1.5px #E2DACB; }
+.res-chip svg { width: 16px; height: 16px; }
+.res-chip.met { color: #1E7A4E; box-shadow: inset 0 0 0 1.5px #A9DDBF; }
+.res-chip .res-met { width: 14px; height: 14px; stroke-width: 3.2; }
 .next {
   margin-top: 4px; width: 100%; max-width: 360px; height: 58px; border: 0; border-radius: 999px;
   background: var(--paper-ink); color: var(--paper);
@@ -749,16 +760,8 @@ button { cursor: pointer; }
   box-shadow: inset 0 0 0 1.5px transparent; transition: box-shadow 0.15s, transform 0.12s;
 }
 .gp:active { transform: scale(0.95); }
-.gp .gp-ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; }
-.gp .gp-ico svg { width: 23px; height: 23px; }
-.gp[data-game="mixed"] .gp-ico { background: #3A4770; color: #FFFFFF; }
-.gp[data-game="outbound"] .gp-ico { background: #FFC94D; color: #3A2810; }
-.gp[data-game="conduit"] .gp-ico { background: #6CCB78; color: #0F3A1D; }
-.gp[data-game="tumbler"] .gp-ico { background: #5B47AE; color: #FFFFFF; }
-.gp[data-game="glimpse"] .gp-ico { background: #2F72DC; color: #FFFFFF; }
-.gp[data-game="stacks"] .gp-ico { background: #7FC4C2; color: #17383C; }
-.gp[data-game="switchback"] .gp-ico { background: #EF7A5A; color: #FFFFFF; }
-.gp[data-game="keepsake"] .gp-ico { background: #E9789D; color: #FFFFFF; }
+.gp .gp-ico { width: 48px; height: 48px; display: grid; place-items: center; filter: drop-shadow(0 2px 3px rgba(20, 24, 40, 0.16)); }
+.gp .gp-ico .badge { width: 48px; height: 48px; }
 .gp.on { box-shadow: inset 0 0 0 2px var(--accent); }
 .menu { display: flex; flex-direction: column; gap: 8px; }
 .menu-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border-radius: 18px; border: 0; background: var(--field); text-align: left; }
@@ -923,9 +926,9 @@ code { font-family: var(--mono); font-size: 12px; }
   border: 0; background: none; color: var(--sheet-ink); text-align: left; transition: background 0.15s; -webkit-tap-highlight-color: transparent; }
 .pf-row + .pf-row { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--mute) 40%, transparent); }
 .pf-row:active { background: color-mix(in srgb, var(--pc) 10%, transparent); }
-.pf-ico { width: 46px; height: 46px; border-radius: 13px; overflow: hidden; display: grid; place-items: center; background: radial-gradient(120% 90% at 50% 10%, var(--g1), var(--gc)); }
-.pf-ico svg { width: 56px; height: 42px; flex: none; }
-.pf-row.fresh .pf-ico svg { opacity: 0.6; filter: saturate(0.6); }
+.pf-ico { width: 46px; height: 46px; display: grid; place-items: center; flex: none; filter: drop-shadow(0 1.5px 2.5px rgba(20, 24, 40, 0.14)); }
+.pf-ico .badge { width: 46px; height: 46px; }
+.pf-row.fresh .pf-ico .badge { opacity: 0.75; filter: saturate(0.7); }
 .pf-name { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .pf-name b { font-family: var(--display); font-weight: 600; font-size: 18px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pf-sub { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -1042,3 +1045,6 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-num svg { width: 20px; height: 20px; color: var(--sheet-soft); margin-bottom: 3px; }
 .pf-num b { font-family: var(--display); font-weight: 600; font-size: 28px; line-height: 1.05; white-space: nowrap; }
 .pf-num span { font-size: 14px; color: var(--sheet-soft); line-height: 1.2; }
+
+/* duotone: closed shapes in the line icons carry a soft fill of their own color */
+svg .df { fill: currentColor; stroke: none; opacity: 0.2; }

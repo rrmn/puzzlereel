@@ -1312,7 +1312,7 @@
     kind: 'trials',
     levelDown: false,      // the display time already adapts; levels only add load
     trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
-    startMs: 1500,         // a fresh staircase starts here: a slow, easy look for anyone (practice ends at 700 ms)
+    startMs: 1200,         // a fresh staircase starts here: a slow, easy look for anyone, like the second look of practice (which ends at 700 ms)
     maxMs: GL_TOP,         // top of the ladder
     warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
     minMs: 50,             // the flash is never shorter than this: past it, the next level asks more instead
@@ -1321,12 +1321,14 @@
     up: 6, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 6/7, about 86%
     themes: GL_THEMES,
     themeOrder: GL_THEME_ORDER,
-    // advanceMs: a round at or under this display time counts as a success (two in a row: next level).
-    // Human speeds for older players and non-gamers: a one-second look moves you up, and the levels
-    // add more to see rather than asking for a faster eye. The flash itself keeps adapting at every
-    // level, so quick players still see it get shorter.
+    // advanceMs: a round counts as a success when a right answer brings the flash down to this
+    // (two in a row: next level). Human speeds for older players and non-gamers: a one-second look
+    // moves you up, and the levels add more to see rather than asking for a faster eye. The flash
+    // itself keeps adapting at every level, so quick players still see it get shorter.
+    // Every level asks for the animal and the thing around it, as practice does; level 1 keeps
+    // that thing close to the middle (until engines 1.17 level 1 was the middle only).
     levels: {
-      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
+      1: { periph: true, rings: [1], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
       2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
       3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 1000, looks: 5 },
       4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 1200, looks: 6 },
@@ -1451,10 +1453,13 @@
       const tail = res.slice(from);
       const gm = tail.length ? Math.exp(tail.reduce((a, x) => a + Math.log(x.ms), 0) / tail.length) : null;
       const hits = res.filter((x) => x.ok).map((x) => x.ms);
+      // the flash after each right answer, as the counter shows it: the shortest is how far the round got
+      const reached = res.filter((x) => x.ok && x.next != null).map((x) => x.next);
       return {
         n, correct: k, accuracy: n ? k / n : null,
         threshold_ms: p.fixedMs || gm == null ? null : round(gm, 2),
         best_ms: hits.length ? Math.min.apply(null, hits) : null,
+        reach_ms: reached.length ? Math.min.apply(null, reached) : null,
         start_ms: run.start == null ? null : round(run.start, 2),
         end_ms: p.fixedMs || run.ms == null ? null : round(run.ms, 2),
         reversals: run.rev.length,
@@ -1462,6 +1467,11 @@
         drops: res.filter((x) => x.drop).length,
       };
     },
+    // a success: some right answer brought the flash to the level's target or under. What the
+    // counter showed is what counts, and a good round counts even if a slip comes after.
+    // (Until engines 1.17: threshold_ms at or under the target, which a fresh round, slow at
+    // the start, could miss with every look right.)
+    success(p, s) { return p.advanceMs != null && s.reach_ms != null && s.reach_ms <= p.advanceMs + 0.5; },
     progress(p, run) { return { done: run.i, total: p.n }; },
     serialize(run) { return JSON.parse(JSON.stringify(run)); },
     restore(p, data) { return JSON.parse(JSON.stringify(data)); },
@@ -1832,12 +1842,14 @@
       const tail = go.slice(from);
       const gm = tail.length ? Math.exp(tail.reduce((a, x) => a + Math.log(x.ms), 0) / tail.length) : null;
       const rts = res.filter((x) => x.cls === 'hit').map((x) => x.rt);
+      const reached = res.filter((x) => x.cls === 'hit' && x.next != null).map((x) => x.next);
       const shoo = run.ba.filter((b) => b.cls === 'shooed').map((b) => b.rt);
       const D = run.drive;
       return {
         n, hits, misses, false_alarms: fas, correct_rejections: crs, stray: run.stray,
         correct: hits + crs, accuracy: n ? (hits + crs) / n : null,
         threshold_ms: p.fixedMs || gm == null ? null : Math.round(gm),
+        reach_ms: reached.length ? Math.min.apply(null, reached) : null,
         rt_mean_ms: rts.length ? Math.round(rts.reduce((a, x) => a + x, 0) / rts.length) : null,
         start_ms: run.start.ms == null ? null : Math.round(run.start.ms), end_ms: p.fixedMs ? null : Math.round(run.ms),
         reversals: run.rev.length,
@@ -1847,8 +1859,10 @@
         speed_mean_kmh: D.vs > 0 ? round(D.vt / D.vs, 1) : null, speed_start_kmh: run.start.kmh, speed_end_kmh: run.kmh,
       };
     },
+    // a caught target brought the sign time to the level's or under (until engines 1.17: threshold_ms),
+    // and the drive kept the level's speed on average
     success(p, s) {
-      return p.advanceMs != null && s.threshold_ms != null && s.threshold_ms <= p.advanceMs && s.speed_mean_kmh != null && s.speed_mean_kmh >= p.advanceKmh;
+      return p.advanceMs != null && s.reach_ms != null && s.reach_ms <= p.advanceMs && s.speed_mean_kmh != null && s.speed_mean_kmh >= p.advanceKmh;
     },
     progress(p, run) { return { done: run.i, total: p.signs.length }; },
     serialize(run) { return JSON.parse(JSON.stringify(run)); },
@@ -1952,7 +1966,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.16.0',
+    version: '1.17.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
