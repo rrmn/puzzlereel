@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.23.0';
+  const APP_VERSION = '2.23.1';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -256,6 +256,7 @@
     switchback: { lower: false, fmt: (v) => v + ' km/h', what: 'best average speed' },
     keepsake: { lower: true, fmt: (v) => secs(v) + ' s', what: 'shortest look, all right' },
   };
+  let skFresh = false;
   const Records = {
     all() {
       let r = store.get('pr1.records', null);
@@ -265,6 +266,14 @@
         const gl = store.get('pr1.glreach', null);
         if (gl) r.glimpse = Object.assign({}, gl);
         store.set('pr1.records', r);
+      }
+      // Stacks levels 4 and 5 are other puzzles now (the cake, the ice cream): their old records go, once
+      if (!skFresh) {
+        skFresh = true;
+        if (!store.get('pr1.skfresh', false)) {
+          if (r.stacks) { delete r.stacks[4]; delete r.stacks[5]; store.set('pr1.records', r); }
+          store.set('pr1.skfresh', true);
+        }
       }
       return r;
     },
@@ -300,7 +309,7 @@
     tumbler: ['the bike lock', 'the school locker', 'the front door', 'the safe', 'the vault'],
     keepsake: ['the park in spring', 'the park in summer', 'the park in autumn', 'the park in winter', 'the park at night'],
     glimpse: ['the meadow', 'the meadow at dusk', 'the sea', 'the sea at night', 'the sunset sky'],
-    stacks: ['the river stones', 'the station', 'the harbor', 'the ice cream parlor', 'the bakery'],
+    stacks: ['the river stones', 'the station', 'the harbor', 'the bakery', 'the ice cream parlor'],
   };
   const lookName = (g, lv) => (LOOK_NAMES[g] ? LOOK_NAMES[g][lv - 1] || '' : '');
   // a seeded scatter: n points in a box, the same every time
@@ -7264,7 +7273,7 @@
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play (where a new level opens at its own starting point instead; the free-play values are kept under a new key from app 2.21, so earlier ones start over). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). Free play is not this task at every level: each level has its own place, and L4 and L5 their own rules (station at L2; at L4 three cones that hold 3 each, and nothing goes on the piece with the cherry; at L5 four pieces of different sizes on three posts that hold 4, and a piece only goes on a bigger one). `features` gives `pieces`, `caps` and `twist` (`cherry`, `size` or empty); a refused move is `blocked` with `detail` saying why. `first_move_ms` is the planning time before the first move.',
+        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). Free play is not this task at every level: each level has its own place, and L4 and L5 their own rules and 7 moves each (station at L2; at L4 four pieces of different sizes on three posts that hold 4, and a piece only goes on a bigger one; at L5 three cones that hold 3 each, and nothing goes on the piece with the cherry). `features` gives `pieces`, `caps` and `twist` (`cherry`, `size` or empty); a refused move is `blocked` with `detail` saying why. `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
@@ -7491,7 +7500,7 @@
     if (g === 'tumbler') return at(L.pin.P + ' hidden colors out of ' + L.pin.C);
     if (g === 'stacks') {
       const F = (G.free && G.free[lv]) || {};
-      return at(L.moves + ' moves' + (F.n ? ' · ' + F.n + ' layers' : '') + (F.cherry != null ? ' · the cherry stays on top' : F.size ? ' · small goes on big' : ''));
+      return at((F.moves || L.moves) + ' moves' + (F.n ? ' · ' + F.n + ' layers' : '') + (F.cherry != null ? ' · the cherry stays on top' : F.size ? ' · small goes on big' : ''));
     }
     if (g === 'keepsake') return at(L.items + ' things to remember');
     if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';

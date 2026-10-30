@@ -1499,15 +1499,16 @@
   // research blocks: the classic task in three settings (stones at 1 and 2, the harbor at 3 and 4, the bakery at 5)
   const SK_LEVEL_THEME = { 1: 'stones', 2: 'stones', 3: 'harbor', 4: 'harbor', 5: 'bakery' };
   // free play: every level a place of its own, two with a twist that shows on the pieces.
-  // cherry: nothing can go on that piece (the scoop with the cherry); size: a piece goes only on a
-  // bigger one (piece 0 the biggest), as cake layers do. Ice cream needs three equal cones: on posts
-  // of 3, 2 and 1 the cherry leaves only 12 arrangements, none of them 6 moves apart.
+  // size: a piece goes only on a bigger one (piece 0 the biggest), as cake layers do; cherry:
+  // nothing can go on that piece (the scoop with the cherry). Ice cream needs three equal cones: on
+  // posts of 3, 2 and 1 the cherry leaves only 12 arrangements. The cake comes first: its rule
+  // leaves fewer wrong moves, so at 7 moves it sits between the harbor (5) and the ice cream (7).
   const SK_FREE = {
     1: { theme: 'stones' },
     2: { theme: 'station' },
     3: { theme: 'harbor' },
-    4: { theme: 'icecream', caps: [3, 3, 3], cherry: 2 },
-    5: { theme: 'cake', n: 4, caps: [4, 4, 4], size: true },
+    4: { theme: 'cake', n: 4, caps: [4, 4, 4], size: true, moves: 7 },
+    5: { theme: 'icecream', caps: [3, 3, 3], cherry: 2, moves: 7 },
   };
   const SK_CLASSIC = { n: 3, caps: SK_CAPS, cherry: null, size: false };
   const skRules = (p) => ({ n: p.n || 3, caps: p.caps || SK_CAPS, cherry: p.cherry != null ? p.cherry : null, size: !!p.size });
@@ -1599,14 +1600,15 @@
       const F = variant === 'free' ? SK_FREE[level] : null;
       const theme = variant === 'classic' ? 'stones' : F ? F.theme : SK_LEVEL_THEME[level] || 'stones';
       const R = F ? { n: F.n || 3, caps: F.caps || SK_CAPS, cherry: F.cherry != null ? F.cherry : null, size: !!F.size } : SK_CLASSIC;
+      const moves = (F && F.moves) || L.moves;
       const ALL = skAll(R);
       for (let attempt = 0; attempt < 100; attempt++) {
         const goal = ALL[rng.int(ALL.length)];
         const d = skDist(goal, R);
-        const starts = ALL.filter((st) => d.get(skKey(st)) === L.moves);
+        const starts = ALL.filter((st) => d.get(skKey(st)) === moves);
         if (starts.length) return this.build(level, seed, starts[rng.int(starts.length)], goal, theme, R);
       }
-      throw new Error('Stacks: no ' + L.moves + '-move problem for seed ' + seed);
+      throw new Error('Stacks: no ' + moves + '-move problem for seed ' + seed);
     },
     whyNot(p, st, b, piece) { return skWhyNot(skRules(p), st, b, piece); },
     newRun(p) { return { st: skCopy(p.start), hist: [] }; },
