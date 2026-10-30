@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.11.0';
+  const APP_VERSION = '2.12.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -115,6 +115,8 @@
     basket: '<path d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M7.6 10.4 11 4.6M16.4 10.4 13 4.6"/><path d="M9.4 14v3.4M14.6 14v3.4"/>',
     day: '<rect x="3.8" y="5.2" width="16.4" height="15.4" rx="3.2"/><path d="M3.8 10h16.4M8.4 3.2v4M15.6 3.2v4"/><path d="M8 14.2h.1M12 14.2h.1M16 14.2h.1M8 17.4h.1M12 17.4h.1"/>',
     rise: '<path d="M3.5 17.5 9.5 11.5l4 4 7-7.5"/><path d="M15 8h5.5v5.5"/>',
+    back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+    more: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
   };
   const GAME_ICON = { outbound: 'car', conduit: 'drop', tumbler: 'lock', glimpse: 'eye', stacks: 'stack', switchback: 'wheel', keepsake: 'basket', mixed: 'grid' };
   function icon(name, cls) {
@@ -6465,8 +6467,10 @@
     },
   };
   // a small picture of each game's world, 80 x 60
+  // each drawing gets its own clip id: the same game can be on screen twice
+  let mwSeq = 0;
   function miniWorld(g) {
-    const svg = s('svg', { class: 'pf-art', viewBox: '0 0 80 60', 'aria-hidden': 'true' });
+    const svg = s('svg', { class: 'pf-art', viewBox: '0 0 80 60', 'aria-hidden': 'true' }), cid = 'mw' + (++mwSeq);
     const car = (x, y, a, c) => s('g', { transform: 'translate(' + x + ' ' + y + ') rotate(' + a + ')' },
       s('rect', { x: -5, y: -9, width: 10, height: 18, rx: 3.4, fill: c }),
       s('path', { d: 'M-3.6 -4.6L-3 -7H3L3.6 -4.6Z', fill: '#24334A' }),
@@ -6496,16 +6500,16 @@
         s('g', { transform: 'translate(31 21) scale(0.18)' }, s('path', { d: GL_PATHS.rabbit, fill: '#18291F' })),
         s('g', { transform: 'translate(51 8) scale(0.1)' }, s('path', { d: GL_PATHS.bird, fill: '#3D8BFD' })));
     } else if (g === 'stacks') {
-      svg.append(s('clipPath', { id: 'pfsk' }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
-        s('g', { 'clip-path': 'url(#pfsk)' }, s('rect', { x: 0, y: 0, width: 80, height: 60, fill: '#8CCBD8' }), s('path', { d: 'M0 44C16 40 30 47 48 43S70 40 80 42V60H0Z', fill: '#EAD8B2' })),
+      svg.append(s('clipPath', { id: cid }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
+        s('g', { 'clip-path': 'url(#' + cid + ')' }, s('rect', { x: 0, y: 0, width: 80, height: 60, fill: '#8CCBD8' }), s('path', { d: 'M0 44C16 40 30 47 48 43S70 40 80 42V60H0Z', fill: '#EAD8B2' })),
         s('rect', { x: 38.5, y: 10, width: 3, height: 40, rx: 1.2, fill: '#8A5C3B' }));
       [['#6F90C2', 46], ['#C9654C', 37], ['#6E9F5D', 28]].forEach(([c, y]) => svg.append(
         s('path', { d: 'M27 ' + y + 'C26.8 ' + (y - 3.8) + ' 32 ' + (y - 6) + ' 40 ' + (y - 6) + 'C48 ' + (y - 6) + ' 53.2 ' + (y - 3.6) + ' 53 ' + y + 'C52.8 ' + (y + 3.6) + ' 47.6 ' + (y + 5.4) + ' 40 ' + (y + 5.4) + 'C32.4 ' + (y + 5.4) + ' 27.2 ' + (y + 3.6) + ' 27 ' + y + 'Z', fill: c }),
         s('ellipse', { cx: 35.5, cy: y - 3, rx: 3.6, ry: 1, fill: '#FFFFFF', opacity: 0.3 })));
       svg.append(s('rect', { x: 38.5, y: 10, width: 3, height: 9, rx: 1.2, fill: '#8A5C3B' }));
     } else if (g === 'keepsake') {
-      svg.append(s('clipPath', { id: 'pfks' }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
-        s('g', { 'clip-path': 'url(#pfks)' },
+      svg.append(s('clipPath', { id: cid }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
+        s('g', { 'clip-path': 'url(#' + cid + ')' },
           s('rect', { x: 0, y: 0, width: 80, height: 60, fill: '#A9DC8E' }),
           s('path', { d: 'M44 62C40 50 30 46 36 36S52 24 46 -2', stroke: '#F2E2B6', 'stroke-width': 9, fill: 'none' }),
           s('ellipse', { cx: 18, cy: 44, rx: 10, ry: 6, fill: '#86CFF2' }),
@@ -6515,8 +6519,8 @@
         s('path', { d: 'M58 33.6C59.8 32.3 62 33.6 62 36.1C62 38.8 60.1 40.5 58 40C55.9 40.5 54 38.8 54 36.1C54 33.6 56.2 32.3 58 33.6Z', fill: '#E8463D' }),
         s('ellipse', { cx: 36, cy: 30.6, rx: 5.6, ry: 3.4, fill: '#A79F8E' }), s('ellipse', { cx: 36, cy: 30, rx: 5.6, ry: 3.2, fill: '#EEE9DE' }));
     } else if (g === 'switchback') {
-      svg.append(s('clipPath', { id: 'pfsb' }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
-        s('g', { 'clip-path': 'url(#pfsb)' },
+      svg.append(s('clipPath', { id: cid }, s('rect', { x: 6, y: 3, width: 68, height: 54, rx: 9 })),
+        s('g', { 'clip-path': 'url(#' + cid + ')' },
           s('rect', { x: 0, y: 0, width: 80, height: 60, fill: '#BCDDF7' }),
           s('path', { d: 'M0 25C12 19 24 23 38 20S64 17 80 22V60H0Z', fill: '#A9BFDB' }),
           s('path', { d: 'M0 27C18 24 30 27 46 25S68 24 80 26V60H0Z', fill: '#95D17F' }),
@@ -6559,8 +6563,8 @@
   }
   // five steps from Beginner to Master: the ones reached, the next one filling
   // up, and (for games that can step back) how high this player has been
-  function pfLadder(P, best) {
-    const el = h('div', { class: 'pf-ladder', role: 'img', 'aria-label': 'Level ' + P.lv + ' of 5, ' + LEVEL_NAMES[P.lv - 1] + (best > P.lv ? ', best ' + LEVEL_NAMES[best - 1] : '') });
+  function pfLadder(P, best, cls) {
+    const el = h('div', { class: 'pf-ladder' + (cls ? ' ' + cls : ''), role: 'img', 'aria-label': 'Level ' + P.lv + ' of 5, ' + LEVEL_NAMES[P.lv - 1] + (best > P.lv ? ', best ' + LEVEL_NAMES[best - 1] : '') });
     for (let i = 1; i <= 5; i++) {
       const seg = h('i', { class: i <= P.lv ? 'on' : i <= best ? 'been' : '' });
       if (i === P.lv + 1 && P.have) seg.append(h('b', { style: 'width:' + pct(P.have / P.need) }));
@@ -7238,83 +7242,82 @@
     },
 
     // ---------- profile
+    // Two views in one sheet: every game at a glance (its level, how close the
+    // next one is, its stars), and one game's own page, opened from its row.
     openProfile() {
       if (this.card && this.card.abort) this.card.abort('menu opened');
       const { all, hist, days } = Stats.load(this);
       const played = (g) => !!(all[g] && all[g].cards);
-      const body = [];
+      const overview = h('div', { class: 'pf-over' }), page = h('div', { class: 'pf-page', hidden: true });
       // everything so far, in three big numbers; no streak to keep up
       if (ORDER.some(played)) {
         const min = Math.round(ORDER.reduce((a, g) => a + (all[g] ? all[g].ms : 0), 0) / 60000), stars = store.get('pr1.stars', 0);
-        const big = (ico, v, label, cls) => h('div', { class: 'pf-big' + (cls ? ' ' + cls : '') }, icon(ico), h('b', { text: String(v) }), h('span', { text: label }));
-        body.push(h('div', { class: 'pf-head' },
+        const big = (ico, v, label, cls) => h('div', { class: 'pf-big' + (cls ? ' ' + cls : '') }, h('span', null, icon(ico), h('b', { text: String(v) })), h('small', { text: label }));
+        overview.append(h('div', { class: 'pf-head' },
           big('star', stars, stars === 1 ? 'star' : 'stars', 'gold'),
           big('day', days.length, days.length === 1 ? 'day played' : 'days played'),
           big('clock', min < 1 ? '<1' : min, min > 1 ? 'minutes' : 'minute')));
       }
-      const wrap = h('div', { class: 'pf-areas' });
-      const detail = h('div', { class: 'pf-detail', hidden: true });
-      const tiles = {};
-      let open = null;
-      const fill = (g) => {
-        const t = all[g], P = levelProgress(g), H = hist[g] || [], best = Math.max(t ? t.top : 0, P.lv);
-        detail.dataset.game = g;
-        detail.append(
-          h('div', { class: 'pf-dhead' }, h('b', { text: LABEL[g] }), h('span', { class: 'pf-lv', text: LEVEL_NAMES[P.lv - 1] }), best > P.lv ? h('span', { class: 'pf-best', text: 'best ' + LEVEL_NAMES[best - 1] }) : null),
-          pfLadder(P, best),
-          pfNext(g, P, () => { closeSheet(); this.startFree(false, g); }));
-        if (H.length) detail.append(pfCurve(g, H, P.lv));
-        if (played(g)) detail.append(pfNumbers(g, t, H, P.lv));
-        detail.append(h('p', { class: 'pf-ev' }, h('b', { text: EVIDENCE[g][0] }), EVIDENCE[g][1]));
-      };
-      const show = (g, quiet) => {
-        const { tile, area } = tiles[g];
-        wrap.querySelectorAll('.pf-tile').forEach((x) => { x.classList.remove('on'); x.setAttribute('aria-expanded', 'false'); });
-        detail.textContent = '';
-        if (open === g) { open = null; detail.hidden = true; return; }
-        open = g;
-        tile.classList.add('on');
-        tile.setAttribute('aria-expanded', 'true');
-        area.after(detail);
-        detail.hidden = false;
-        fill(g);
-        if (quiet) return;
-        // bring the panel up into view, but keep the tapped tile on screen above it
-        requestAnimationFrame(() => {
-          const sc = detail.closest('.sheet-body');
-          if (!sc) return;
-          const r = detail.getBoundingClientRect(), b = sc.getBoundingClientRect(), tr = tile.getBoundingClientRect();
-          const by = Math.min(r.bottom - b.bottom + 16, tr.top - b.top - 8);
-          if (by > 0) sc.scrollBy({ top: by, behavior: 'smooth' });
-        });
-      };
+      const rows = {};
       for (const A of AREAS) {
-        const n = Math.max(1, A.games.length);
-        const grid = h('div', { class: 'pf-grid', style: 'grid-template-columns:repeat(' + n + ',minmax(0,1fr))' });
-        const area = h('section', { class: 'pf-area', style: 'grid-column:span ' + n }, h('h3', { text: A.name }), grid);
-        if (!A.games.length) grid.append(h('div', { class: 'pf-tile ghost', role: 'img', 'aria-label': 'No game yet' }, icon('lock')));
+        const list = h('div', { class: 'pf-list' });
         for (const g of A.games) {
-          const t = all[g], on = played(g), P = levelProgress(g);
-          const tile = h('button', { class: 'pf-tile' + (on ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-expanded': 'false', 'aria-label': LABEL[g] + (on ? ', ' + LEVEL_NAMES[P.lv - 1] + ', ' + t.stars + ' stars' : ', not played yet') },
-            miniWorld(g),
-            h('span', { class: 'pf-tile-foot' }, h('b', { text: LABEL[g] }), on ? pips(P.lv, null, P.have > 0) : null, on ? h('span', { class: 'pf-stars' }, icon('star'), String(t.stars)) : null));
-          tile.addEventListener('click', () => show(g));
-          tiles[g] = { tile, area };
-          grid.append(tile);
+          const t = all[g], on = played(g), P = levelProgress(g), best = Math.max(t ? t.top : 0, P.lv);
+          const say = LABEL[g] + ', ' + (on ? LEVEL_NAMES[P.lv - 1] + (P.have ? ', halfway to ' + LEVEL_NAMES[P.lv] : '') + ', ' + t.stars + ' stars' : 'not played yet');
+          const row = h('button', { class: 'pf-row' + (on ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-label': say },
+            h('span', { class: 'pf-ico', 'aria-hidden': 'true' }, miniWorld(g)),
+            h('span', { class: 'pf-name' }, h('b', { text: LABEL[g] }),
+              h('span', { class: 'pf-sub' }, pfLadder(P, best, 'pf-small'), h('small', { text: on ? LEVEL_NAMES[P.lv - 1] : 'New' }))),
+            h('span', { class: 'pf-stars' }, on ? icon('star') : null, on ? String(t.stars) : null),
+            icon('more', 'pf-more'));
+          row.addEventListener('click', () => openGame(g));
+          rows[g] = row;
+          list.append(row);
         }
-        wrap.append(area);
+        overview.append(h('section', { class: 'pf-group' }, h('h3', { text: A.name }), list));
       }
-      body.push(wrap);
-      openSheet('Profile', body).classList.add('profile');
-      // open on the game played last, so the way to its next level is in view at once
-      const g0 = this.lastPlayed();
-      if (g0 && tiles[g0]) show(g0, true);
-    },
-    lastPlayed() {
-      const S = this.session;
-      const lists = [S && S.kind === 'free' ? S.puzzles : []].concat(Sessions.all().filter((x) => x.kind === 'free' && (!S || x.id !== S.id)).map((x) => x.puzzles));
-      for (const rows of lists) for (let i = rows.length - 1; i >= 0; i--) if (!Number(rows[i].practice) && rows[i].outcome !== 'abandoned' && rows[i].outcome !== 'skipped') return rows[i].game;
-      return null;
+      const sheet = openSheet('Profile', [overview, page]);
+      sheet.classList.add('profile');
+      const body = sheet.querySelector('.sheet-body'), title = sheet.querySelector('.sheet-head h2');
+      const back = h('button', { class: 'back', type: 'button', 'aria-label': 'All games', hidden: true, onclick: () => closeGame() }, icon('back'));
+      title.before(back);
+      let keepY = 0, from = null;
+      const openGame = (g) => {
+        const t = all[g], P = levelProgress(g), H = hist[g] || [], best = Math.max(t ? t.top : 0, P.lv);
+        const area = AREAS.find((A) => A.games.indexOf(g) >= 0);
+        keepY = body.scrollTop;
+        from = g;
+        // the sheet keeps its height, so moving between the two views does not make it jump
+        sheet.style.minHeight = Math.round(sheet.getBoundingClientRect().height) + 'px';
+        page.textContent = '';
+        page.dataset.game = g;
+        page.append(
+          h('div', { class: 'pf-hero' },
+            h('div', { class: 'pf-hero-text' },
+              h('small', { text: area ? area.name : '' }),
+              h('b', { text: LABEL[g] }),
+              h('span', { class: 'pf-hero-lv' }, h('span', { class: 'pf-lv', text: LEVEL_NAMES[P.lv - 1] }), best > P.lv ? h('span', { text: 'best ' + LEVEL_NAMES[best - 1] }) : null)),
+            miniWorld(g),
+            pfLadder(P, best)),
+          pfNext(g, P, () => { closeSheet(); this.startFree(false, g); }));
+        if (H.length) page.append(pfCurve(g, H, P.lv));
+        if (played(g)) page.append(pfNumbers(g, t, H, P.lv));
+        page.append(h('p', { class: 'pf-ev' }, h('b', { text: EVIDENCE[g][0] }), EVIDENCE[g][1]));
+        overview.hidden = true;
+        page.hidden = false;
+        back.hidden = false;
+        body.scrollTop = 0;
+        try { back.focus({ preventScroll: true }); } catch (e) { /* optional */ }
+      };
+      const closeGame = () => {
+        page.hidden = true;
+        page.textContent = '';
+        overview.hidden = false;
+        back.hidden = true;
+        sheet.style.minHeight = '';
+        body.scrollTop = keepY;
+        if (from && rows[from]) try { rows[from].focus({ preventScroll: true }); } catch (e) { /* optional */ }
+      };
     },
 
     // ---------- menu

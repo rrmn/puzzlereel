@@ -66,12 +66,14 @@ Difficulty grows inside each game in its own way: Outbound needs slides from lev
 
 ## Profile
 
-The menu's Profile opens on three big numbers (stars, days played, minutes) and every game under one of the concept paper's five areas (Reaction, Memory, Patterns, Problem solving, Focus). Each tile shows the game's level as five pips; a half-filled pip means one of the two good cards for the next level is already done. The panel for the game played last opens by itself; tapping another tile opens that one. A panel has:
+The menu's Profile has two views in one sheet.
 
-- **The level ladder**, Beginner to Master, with the next step filling up (and a lighter tint up to the best level reached, for games that can step back).
-- **Next**: the good cards still needed as slots that fill in, what a good card is in the game's own terms (Glimpse: a flash at or under the level's target; Switchback: sign time and speed; the others: two or three stars), and a Play button straight into that game.
-- **The player's own curve**: the last twelve rounds, newest on the right. Glimpse shows each round's flash and Switchback each drive's sign time and speed as bars, with a notch at the target that round's level had; bars that met it are in the game's color. The puzzles show each card's stars, Keepsake the things put back on the right stone. Tapping a round reads it out (moves against the best, sign time, things right). When the first two and the last two rounds at the current level show a clear gain, one line says so ("Your flash is 35 ms shorter over your last 8 rounds"); otherwise nothing is said.
-- **Three numbers**: cards (rounds, drives), minutes, and one figure of the game's own (fewest-move solves, tries per code, planning time, fastest correct look, best speed, cards with every thing right), plus the evidence level of the format.
+- **Every game at a glance**, on one phone screen: three big numbers (stars, days played, minutes), then the seven games under the concept paper's five areas (Reaction, Memory, Patterns, Problem solving, Focus). Each row shows the game's picture, its level ladder from Beginner to Master with the next step filling up (half filled when one of the two good cards for it is done; a lighter tint up to the best level reached, for games that can step back), the level's name and the game's stars.
+- **One game's own page**, opened by tapping its row (the arrow at the top goes back to the overview, where it was):
+  - a header card with the game's picture, its area, level and ladder;
+  - **Next**: the good cards still needed as slots that fill in, what a good card is in the game's own terms (Glimpse: a flash at or under the level's target; Switchback: sign time and speed; the others: two or three stars), and a Play button straight into that game;
+  - **the player's own curve**: the last twelve rounds, newest on the right. Glimpse shows each round's flash and Switchback each drive's sign time and speed as bars, with a notch at the target that round's level had; bars that met it are in the game's color. The puzzles show each card's stars, Keepsake the things put back on the right stone. Tapping a round reads it out (moves against the best, sign time, things right). When the first two and the last two rounds at the current level show a clear gain, one line says so ("Your flash is 35 ms shorter over your last 8 rounds"); otherwise nothing is said;
+  - **three numbers**: cards (rounds, drives), minutes, and one figure of the game's own (fewest-move solves, tries per code, planning time, fastest correct look, best speed, cards with every thing right), plus the evidence level of the format.
 
 In free play the good cards toward the next level carry over between visits, so a run is never lost by closing the app. After a good card that does not level up yet, the result says "One more for Expert" with a slot that fills in; a level up names the new level, and Switchback, like Glimpse, marks a new best.
 
