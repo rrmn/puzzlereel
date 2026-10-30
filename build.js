@@ -1,5 +1,6 @@
 // Inlines the engines, app and styles into self-contained pages:
-//   dist/puzzle-reel.html  a complete HTML document for any static host
+//   index.html             the complete page at the site root (GitHub Pages serves it as is)
+//   dist/puzzle-reel.html  the same page, for links made before the root served it
 //   dist/artifact.html     the same page as body content, for claude.ai artifacts
 const fs = require('fs');
 const path = require('path');
@@ -28,4 +29,5 @@ const artifact = headPart.trim() + '\n' + bodyPart.trim() + '\n';
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist', 'puzzle-reel.html'), standalone);
 fs.writeFileSync(path.join(__dirname, 'dist', 'artifact.html'), artifact);
-console.log('wrote dist/puzzle-reel.html and dist/artifact.html', (standalone.length / 1024).toFixed(1) + ' KB');
+fs.writeFileSync(path.join(__dirname, 'index.html'), standalone);
+console.log('wrote index.html, dist/puzzle-reel.html and dist/artifact.html', (standalone.length / 1024).toFixed(1) + ' KB');

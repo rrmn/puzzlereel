@@ -952,12 +952,14 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-chip.stars { gap: 1px; padding: 0 10px; }
 .pf-chip.stars svg { width: 20px; height: 20px; color: var(--gold); }
 .pf-chip.stars svg path { stroke: #C98A0C; stroke-width: 1.3; }
-.pf-next-say { margin: 0; font-size: 15px; line-height: 1.35; color: var(--sheet-soft); }
 
 /* the player's own curve: last twelve rounds, newest on the right */
 .pf-curve { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .pf-cap { display: flex; align-items: center; gap: 7px; font-size: 15px; color: var(--sheet-soft); margin-top: 2px; }
 .pf-cap svg { width: 18px; height: 18px; }
+.pf-up { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px 0 7px; border-radius: 999px; margin-left: 2px;
+  background: color-mix(in srgb, var(--pc) 15%, transparent); color: var(--sheet-ink); font-family: var(--display); font-weight: 600; font-size: 15px; white-space: nowrap; }
+.pf-up svg { width: 17px; height: 17px; color: var(--pc); stroke-width: 2.8; }
 .pf-val { margin-left: auto; font-family: var(--display); font-weight: 600; font-size: 18px; color: var(--sheet-ink); white-space: nowrap; }
 .pf-plot { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; align-items: end; margin-bottom: 10px; border-bottom: 1px solid color-mix(in srgb, var(--mute) 70%, transparent); }
 .pf-col { position: relative; display: block; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -981,8 +983,6 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-plot.stars svg path { stroke: var(--mute); stroke-width: 1.6; }
 .pf-plot.stars svg.on { color: var(--gold); }
 .pf-plot.stars svg.on path { stroke: #C98A0C; stroke-width: 1.3; }
-.pf-rise { margin: 4px 0 0; display: flex; align-items: center; gap: 8px; font-size: 15px; line-height: 1.3; color: var(--sheet-ink); }
-.pf-rise svg { flex: none; width: 22px; height: 22px; padding: 3px; border-radius: 50%; background: var(--pc); color: var(--pc-ink); stroke-width: 2.8; }
 
 /* three numbers, big */
 .pf-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 2px; }
@@ -990,8 +990,6 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-num svg { width: 20px; height: 20px; color: var(--sheet-soft); margin-bottom: 3px; }
 .pf-num b { font-family: var(--display); font-weight: 600; font-size: 28px; line-height: 1.05; white-space: nowrap; }
 .pf-num span { font-size: 14px; color: var(--sheet-soft); line-height: 1.2; }
-.pf-ev { margin: 0; font-size: 13px; line-height: 1.4; color: var(--sheet-soft); }
-.pf-ev b { color: var(--sheet-ink); margin-right: 6px; }
 </style>
 </head>
 <body>
@@ -3906,7 +3904,7 @@ PuzzleEnginesFactory(window);
         if (!instant) this.later(() => Sound.play('level'), 700);
       }
       if (sm.newBestKmh && this.o.counter && !this.practice) {
-        panel.append(h('div', { class: 'res-level best' }, icon('gauge'), 'New best · ' + sm.newBestKmh + ' km/h on average'));
+        panel.append(h('div', { class: 'res-level best' }, icon('gauge'), 'New best · ' + sm.newBestKmh + ' km/h'));
         if (!instant) this.later(() => Sound.play('level'), 700);
       }
       if (sm.level_change && this.o.counter) {
@@ -9351,16 +9349,6 @@ PuzzleEnginesFactory(window);
     { name: 'Focus', games: ['switchback'] },
   ];
   const LEVEL_NAMES = ['Beginner', 'Advanced', 'Pro', 'Expert', 'Master'];
-  // the paper's evidence level for each game's format, and where it comes from
-  const EVIDENCE = {
-    glimpse: ['Causal', 'ACTIVE trial, effects after 10 years (Rebok et al. 2014)'],
-    switchback: ['Causal', 'Adaptive multitasking training, effects after 6 months (Anguera et al. 2013)'],
-    stacks: ['Near', 'Tower-of-London paradigm'],
-    keepsake: ['Near', 'Object-location memory paradigm'],
-    outbound: ['Plausible', 'No study of this format'],
-    conduit: ['Plausible', 'No study of this format'],
-    tumbler: ['Plausible', 'No study of this format'],
-  };
   // per-game stats from free play on this device, the last rounds of each game
   // in its own terms (for the curve in the profile), and the days played
   const HIST_N = 24;
@@ -9513,15 +9501,15 @@ PuzzleEnginesFactory(window);
   const pfNoun = (g, n) => (g === 'glimpse' ? ['round', 'rounds'] : g === 'switchback' ? ['drive', 'drives'] : ['card', 'cards'])[n === 1 ? 0 : 1];
   const secs = (ms) => String(Math.round(ms / 10) / 100);
   const pct = (x) => (Math.max(0, Math.min(1, x)) * 100).toFixed(1) + '%';
-  // what a good card is at this level, in the game's own terms
+  // what a good card is at this level, in the game's own terms (text: for screen readers)
   function pfGoal(g, lv) {
     if (g === 'glimpse') {
       const ms = E.games.glimpse.levels[lv].advanceMs;
-      return { chips: [['eye', ms + ' ms']], text: 'a flash of ' + ms + '\u00a0ms or less' };
+      return { chips: [['eye', ms + ' ms']], text: 'a flash of ' + ms + ' ms or less' };
     }
     if (g === 'switchback') {
       const L = E.games.switchback.levels[lv];
-      return { chips: [['sign', secs(L.advanceMs) + ' s'], ['gauge', L.advanceKmh + ' km/h']], text: 'signs up ' + secs(L.advanceMs) + '\u00a0s or less, at ' + L.advanceKmh + '\u00a0km/h or more' };
+      return { chips: [['sign', secs(L.advanceMs) + ' s'], ['gauge', L.advanceKmh + ' km/h']], text: 'signs up ' + secs(L.advanceMs) + ' s or less, at ' + L.advanceKmh + ' km/h or more' };
     }
     return { stars: true, text: 'two or three stars' };
   }
@@ -9540,28 +9528,27 @@ PuzzleEnginesFactory(window);
   // card is, and a way straight into the game
   function pfNext(g, P, play) {
     const go = h('button', { class: 'pf-play', type: 'button', onclick: play }, icon('play'), 'Play');
-    if (P.lv >= 5) return h('div', { class: 'pf-next top' }, h('div', { class: 'pf-next-top' }, icon('star', 'pf-crown'), h('b', { text: 'Master' }), go), h('p', { class: 'pf-next-say', text: 'You reached the top level. From here on, chase your own bests.' }));
+    if (P.lv >= 5) return h('div', { class: 'pf-next top' }, h('div', { class: 'pf-next-top' }, icon('star', 'pf-crown'), h('b', { text: 'Master' }), go));
     const goal = pfGoal(g, P.lv);
-    const slots = h('span', { class: 'pf-slots', role: 'img', 'aria-label': P.have + ' of ' + P.need + ' done' });
+    const slots = h('span', { class: 'pf-slots', 'aria-hidden': 'true' });
     for (let i = 0; i < P.need; i++) slots.append(h('i', { class: i < P.have ? 'on' : '' }, i < P.have ? icon('check') : null));
     const chips = h('span', { class: 'pf-chips' });
     if (goal.stars) chips.append(h('span', { class: 'pf-chip stars', 'aria-hidden': 'true' }, icon('star'), icon('star')));
     else goal.chips.forEach(([ico, t]) => chips.append(h('span', { class: 'pf-chip' }, icon(ico), t)));
     const left = P.need - P.have;
-    const say = (left === 1 ? (P.have ? 'One more ' : 'One ') + pfNoun(g, 1) : 'Two ' + pfNoun(g, 2) + ' in a row') + ' with ' + goal.text + '.';
+    const say = (left === 1 ? (P.have ? 'One more ' : 'One ') + pfNoun(g, 1) : 'Two ' + pfNoun(g, 2) + ' in a row') + ' with ' + goal.text;
     return h('div', { class: 'pf-next' },
       h('div', { class: 'pf-next-top' }, h('span', { class: 'pf-next-k', text: 'Next' }), h('b', { text: LEVEL_NAMES[P.lv] }), go),
-      h('div', { class: 'pf-next-row' }, slots, chips),
-      h('p', { class: 'pf-next-say', text: say }));
+      h('div', { class: 'pf-next-row', role: 'img', 'aria-label': say }, slots, chips));
   }
-  // first two against last two rounds at this level, said only when it is a real gain
-  function pfRise(H, lv, f, better, min, say) {
+  // first two against last two rounds at this level, shown only when it is a real gain
+  function pfRise(H, lv, f, better, min) {
     const at = H.filter((e) => e.lv === lv);
     if (at.length < 4) return null;
     const a = (f(at[0]) + f(at[1])) / 2, b = (f(at[at.length - 2]) + f(at[at.length - 1])) / 2;
     const d = (b - a) * better;
     if (!(d >= min) || d / Math.abs(a || 1) < 0.06) return null;
-    return say(d, at.length);
+    return { d, k: at.length };
   }
   // The player's own curve: the last twelve rounds of one game, newest on the
   // right. Glimpse and Switchback draw each round against the goal its level
@@ -9595,28 +9582,31 @@ PuzzleEnginesFactory(window);
         c.append(h('b', { class: 'pf-bar', style: 'height:' + pct(value(e) / top) }), h('u', { class: 'pf-tick', style: 'bottom:' + pct(goal(e) / top) }));
       });
     };
-    const row = (ico, title, el, say, label) => {
+    // gain: how much better the last rounds are than the first ones at this level
+    const row = (ico, title, el, say, label, gain) => {
       const v = h('b', { class: 'pf-val' });
       rows.push({ v, say });
-      fig.append(h('div', { class: 'pf-cap' }, icon(ico), h('span', { text: title }), v), el);
+      fig.append(h('div', { class: 'pf-cap' }, icon(ico), h('span', { text: title }),
+        gain ? h('span', { class: 'pf-up', role: 'img', 'aria-label': gain[1] }, icon('rise'), gain[0]) : null, v), el);
       el.setAttribute('role', 'img');
       el.setAttribute('aria-label', label);
     };
-    let rise = null;
     const list = (f) => H.map(f).join(', ');
     if (g === 'glimpse') {
       const goal = (e) => E.games.glimpse.levels[e.lv].advanceMs;
-      row('eye', 'Flash per round', bars((e) => e.ms, goal, (e) => e.ms <= goal(e)), (e) => Math.round(e.ms) + ' ms',
-        'Flash in your last ' + H.length + ' rounds, in ms: ' + list((e) => Math.round(e.ms)));
-      rise = pfRise(all, lv, (e) => e.ms, -1, 8, (d, k) => 'Your flash is ' + Math.round(d) + ' ms shorter over your last ' + k + ' rounds');
+      const r = pfRise(all, lv, (e) => e.ms, -1, 8);
+      row('eye', 'Flash', bars((e) => e.ms, goal, (e) => e.ms <= goal(e)), (e) => Math.round(e.ms) + ' ms',
+        'Flash in your last ' + H.length + ' rounds, in ms: ' + list((e) => Math.round(e.ms)),
+        r && [Math.round(r.d) + ' ms', 'Flash ' + Math.round(r.d) + ' ms shorter over your last ' + r.k + ' rounds']);
     } else if (g === 'switchback') {
       const L = (e) => E.games.switchback.levels[e.lv];
+      const rs = pfRise(all, lv, (e) => e.ms, -1, 60), rk = pfRise(all, lv, (e) => e.kmh, 1, 3);
       row('sign', 'Sign time', bars((e) => e.ms, (e) => L(e).advanceMs, (e) => e.ms <= L(e).advanceMs), (e) => secs(e.ms) + ' s',
-        'How long signs stayed up in your last ' + H.length + ' drives, in seconds: ' + list((e) => secs(e.ms)));
+        'How long signs stayed up in your last ' + H.length + ' drives, in seconds: ' + list((e) => secs(e.ms)),
+        rs && [secs(rs.d) + ' s', 'Signs ' + secs(rs.d) + ' s shorter over your last ' + rs.k + ' drives']);
       row('gauge', 'Speed', bars((e) => e.kmh, (e) => L(e).advanceKmh, (e) => e.kmh >= L(e).advanceKmh), (e) => Math.round(e.kmh) + ' km/h',
-        'Speed in your last ' + H.length + ' drives, in km/h: ' + list((e) => Math.round(e.kmh)));
-      rise = pfRise(all, lv, (e) => e.kmh, 1, 3, (d, k) => 'You drive ' + Math.round(d) + ' km/h faster over your last ' + k + ' drives') ||
-        pfRise(all, lv, (e) => e.ms, -1, 60, (d, k) => 'You catch signs ' + secs(d) + ' s quicker over your last ' + k + ' drives');
+        'Speed in your last ' + H.length + ' drives, in km/h: ' + list((e) => Math.round(e.kmh)),
+        rk && [Math.round(rk.d) + ' km/h', Math.round(rk.d) + ' km/h faster over your last ' + rk.k + ' drives']);
     } else if (g === 'keepsake') {
       const most = Math.max(...H.map((e) => e.n));
       row('basket', 'Put back right', plot('dots', (c, e) => {
@@ -9633,7 +9623,6 @@ PuzzleEnginesFactory(window);
       }), (e) => (e.st ? e.m + ' ' + unit[e.m === 1 ? 0 : 1] + (e.ref != null ? ' · ' + ref + e.ref : '') : 'not solved'),
       'Stars in your last ' + H.length + ' cards: ' + list((e) => e.st));
     }
-    if (rise) fig.append(h('p', { class: 'pf-rise' }, icon('rise'), rise));
     select(H.length - 1);
     return fig;
   }
@@ -10266,7 +10255,6 @@ PuzzleEnginesFactory(window);
           pfNext(g, P, () => { closeSheet(); this.startFree(false, g); }));
         if (H.length) page.append(pfCurve(g, H, P.lv));
         if (played(g)) page.append(pfNumbers(g, t, H, P.lv));
-        page.append(h('p', { class: 'pf-ev' }, h('b', { text: EVIDENCE[g][0] }), EVIDENCE[g][1]));
         overview.hidden = true;
         page.hidden = false;
         back.hidden = false;
@@ -10301,7 +10289,7 @@ PuzzleEnginesFactory(window);
         }, h('span', { class: 'gp-ico' }, icon(GAME_ICON[g])), h('span', { text: g === 'mixed' ? 'All' : LABEL[g] }))));
       openSheet('Puzzle Reel', [picker, h('div', { class: 'menu' },
         soundRow,
-        item('person', 'Profile', 'Your games by skill area', () => { closeSheet(); this.openProfile(); }),
+        item('person', 'Profile', 'Your levels and bests', () => { closeSheet(); this.openProfile(); }),
         item('help', 'How to play', 'Replay the practice board', () => { closeSheet(); this.replayPractice(); }),
         item('flask', 'Research session', 'Participant, seed, plan and options', () => { closeSheet(); this.openSetup(); }),
         item('chart', 'Data', 'Save logs as CSV or JSON', () => { closeSheet(); this.openData(); }))]);

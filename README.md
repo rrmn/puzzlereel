@@ -72,8 +72,10 @@ The menu's Profile has two views in one sheet.
 - **One game's own page**, opened by tapping its row (the arrow at the top goes back to the overview, where it was):
   - a header card with the game's picture, its area, level and ladder;
   - **Next**: the good cards still needed as slots that fill in, what a good card is in the game's own terms (Glimpse: a flash at or under the level's target; Switchback: sign time and speed; the others: two or three stars), and a Play button straight into that game;
-  - **the player's own curve**: the last twelve rounds, newest on the right. Glimpse shows each round's flash and Switchback each drive's sign time and speed as bars, with a notch at the target that round's level had; bars that met it are in the game's color. The puzzles show each card's stars, Keepsake the things put back on the right stone. Tapping a round reads it out (moves against the best, sign time, things right). When the first two and the last two rounds at the current level show a clear gain, one line says so ("Your flash is 35 ms shorter over your last 8 rounds"); otherwise nothing is said;
-  - **three numbers**: cards (rounds, drives), minutes, and one figure of the game's own (fewest-move solves, tries per code, planning time, fastest correct look, best speed, cards with every thing right), plus the evidence level of the format.
+  - **the player's own curve**: the last twelve rounds, newest on the right. Glimpse shows each round's flash and Switchback each drive's sign time and speed as bars, with a notch at the target that round's level had; bars that met it are in the game's color. The puzzles show each card's stars, Keepsake the things put back on the right stone. Tapping a round reads it out (moves against the best, sign time, things right). When the first two and the last two rounds at the current level show a clear gain, a small badge with a rising arrow sits on that chart (Glimpse: ms shorter; Switchback: sign time shorter, speed higher); otherwise nothing is shown;
+  - **three numbers**: cards (rounds, drives), minutes, and one figure of the game's own (fewest-move solves, tries per code, planning time, fastest correct look, best speed, cards with every thing right).
+
+The profile speaks only in the games' own terms: no evidence levels, studies or explanations on screen (those live in this README and the codebook).
 
 In free play the good cards toward the next level carry over between visits, so a run is never lost by closing the app. After a good card that does not level up yet, the result says "One more for Expert" with a slot that fills in; a level up names the new level, and Switchback, like Glimpse, marks a new best.
 
@@ -88,7 +90,7 @@ src/style.css    styles
 src/shell.html   page template
 build.js         inlines everything into dist/
 test/            node tests for the engines
-index.html       redirects the site root to dist/puzzle-reel.html
+index.html       the built page itself at the site root, so puzzlereel.org opens the app directly
 ```
 
 ## Build and test
@@ -96,7 +98,7 @@ index.html       redirects the site root to dist/puzzle-reel.html
 No dependencies; Node 18 or later.
 
 ```
-npm run build   # writes dist/puzzle-reel.html (standalone) and dist/artifact.html (claude.ai)
+npm run build   # writes index.html and dist/puzzle-reel.html (standalone, the same page) and dist/artifact.html (claude.ai)
 npm test        # determinism, solvability, labels vs brute force, both clue styles, every Conduit pipe needed, taps per level, Glimpse balance and staircase vs a simulated observer, Switchback places, signs, animals, things and staircases, Keepsake placement, speed
 ```
 
@@ -104,7 +106,7 @@ Puzzle generation runs in a Web Worker built from the same engine source, with a
 
 ## Hosting
 
-`dist/puzzle-reel.html` is one self-contained HTML file, so any static host works, including GitHub Pages (deploy from the `main` branch; the site root redirects to the page). Outside claude.ai the Save buttons download files directly.
+`dist/puzzle-reel.html` is one self-contained HTML file, so any static host works, including GitHub Pages (deploy from the `main` branch; the build also writes the page to `index.html`, so the site root serves the app itself with no redirect). Outside claude.ai the Save buttons download files directly.
 
 ## Reproducibility
 

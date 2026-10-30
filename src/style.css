@@ -941,12 +941,14 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-chip.stars { gap: 1px; padding: 0 10px; }
 .pf-chip.stars svg { width: 20px; height: 20px; color: var(--gold); }
 .pf-chip.stars svg path { stroke: #C98A0C; stroke-width: 1.3; }
-.pf-next-say { margin: 0; font-size: 15px; line-height: 1.35; color: var(--sheet-soft); }
 
 /* the player's own curve: last twelve rounds, newest on the right */
 .pf-curve { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .pf-cap { display: flex; align-items: center; gap: 7px; font-size: 15px; color: var(--sheet-soft); margin-top: 2px; }
 .pf-cap svg { width: 18px; height: 18px; }
+.pf-up { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px 0 7px; border-radius: 999px; margin-left: 2px;
+  background: color-mix(in srgb, var(--pc) 15%, transparent); color: var(--sheet-ink); font-family: var(--display); font-weight: 600; font-size: 15px; white-space: nowrap; }
+.pf-up svg { width: 17px; height: 17px; color: var(--pc); stroke-width: 2.8; }
 .pf-val { margin-left: auto; font-family: var(--display); font-weight: 600; font-size: 18px; color: var(--sheet-ink); white-space: nowrap; }
 .pf-plot { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; align-items: end; margin-bottom: 10px; border-bottom: 1px solid color-mix(in srgb, var(--mute) 70%, transparent); }
 .pf-col { position: relative; display: block; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -970,8 +972,6 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-plot.stars svg path { stroke: var(--mute); stroke-width: 1.6; }
 .pf-plot.stars svg.on { color: var(--gold); }
 .pf-plot.stars svg.on path { stroke: #C98A0C; stroke-width: 1.3; }
-.pf-rise { margin: 4px 0 0; display: flex; align-items: center; gap: 8px; font-size: 15px; line-height: 1.3; color: var(--sheet-ink); }
-.pf-rise svg { flex: none; width: 22px; height: 22px; padding: 3px; border-radius: 50%; background: var(--pc); color: var(--pc-ink); stroke-width: 2.8; }
 
 /* three numbers, big */
 .pf-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding-top: 2px; }
@@ -979,5 +979,3 @@ code { font-family: var(--mono); font-size: 12px; }
 .pf-num svg { width: 20px; height: 20px; color: var(--sheet-soft); margin-bottom: 3px; }
 .pf-num b { font-family: var(--display); font-weight: 600; font-size: 28px; line-height: 1.05; white-space: nowrap; }
 .pf-num span { font-size: 14px; color: var(--sheet-soft); line-height: 1.2; }
-.pf-ev { margin: 0; font-size: 13px; line-height: 1.4; color: var(--sheet-soft); }
-.pf-ev b { color: var(--sheet-ink); margin-right: 6px; }
