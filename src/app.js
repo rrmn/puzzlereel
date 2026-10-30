@@ -2113,7 +2113,10 @@
       }
       this.clearBtn = h('button', { class: 'vbtn ghost', type: 'button', 'aria-label': 'Clear the row', onclick: () => this.clearDraft() }, icon('erase'));
       this.tryBtn = h('button', { class: 'vbtn go', type: 'button', onclick: () => this.submit() }, icon('key'), 'Try');
-      vault.append(this.lightsEl, this.rowsEl, this.palEl, h('div', { class: 'vault-actions' }, this.clearBtn, this.tryBtn));
+      // the lock: what is hidden, one socket per pin, filled in as each pin is found
+      this.lockEl = h('div', { class: 'tb-lock', role: 'img' });
+      this.lockKnown = null;
+      vault.append(this.lightsEl, this.lockEl, this.rowsEl, this.palEl, h('div', { class: 'vault-actions' }, this.clearBtn, this.tryBtn));
       this.vault = vault;
       this.area.append(vault);
     }
@@ -2127,11 +2130,61 @@
     }
     hasHistory() { return false; }
     goal() { this.goalEl.hidden = true; }
+    // with feedback on (free play, practice) the board remembers for the player and says it plainly
+    helps() { return !!this.o.feedback && this.p.clue === 'pin'; }
+    // what the tries so far say: per color 2 (found), 1 (in the code, place not known) or 0 (not in it);
+    // per place the color found there and the colors known not to be there
+    knowledge() {
+      const P = this.p.P, color = {}, at = new Array(P).fill(null), notAt = Array.from({ length: P }, () => new Set());
+      for (const t of this.run.tries) {
+        if (!t.marks) continue;
+        t.digits.forEach((d, k) => {
+          const m = t.marks[k];
+          color[d] = Math.max(color[d] == null ? -1 : color[d], m);
+          if (m === 2) at[k] = d; else notAt[k].add(d);
+        });
+      }
+      this.run.revealed.forEach((c, k) => { if (c != null) { at[k] = c; color[c] = 2; } });
+      return { color, at, notAt };
+    }
+    // a word over something on the board, for a moment
+    say(el, text, kind, ms, below) {
+      if (!el || !this.el.isConnected) return;
+      const pt = relPos(this, el);
+      const b = h('div', { class: 'tb-say ' + (kind || '') + (below ? ' below' : ''), role: 'status' }, text);
+      b.style.left = Math.round(pt.x) + 'px';
+      b.style.top = Math.round(below ? pt.y + pt.h / 2 + 10 : pt.y - pt.h / 2 - 8) + 'px';
+      this.fx.append(b);
+      setTimeout(() => { b.classList.add('out'); setTimeout(() => b.remove(), 300); }, ms || 1700);
+      return b;
+    }
+    nope(el, text) {
+      Sound.play('lose');
+      buzz([20, 40, 20]);
+      if (el) { el.classList.remove('nope'); void el.offsetWidth; el.classList.add('nope'); }
+      this.say(el, text, 'no');
+    }
     put(c) {
       if (this.summary || this.busy) return;
       Sound.unlock();
-      const k = this.draft.indexOf(null);
-      if (k < 0) return;
+      if (this.goalSay) { this.goalSay.remove(); this.goalSay = null; }
+      const empty = [];
+      this.draft.forEach((d, j) => { if (d == null) empty.push(j); });
+      if (!empty.length) return;
+      let k = empty[0];
+      if (this.helps() && this.run.tries.length) {
+        const K = this.knowledge();
+        if (K.color[c] === 0) { this.nope(this.palEl.children[c], 'Not in the code'); return; }
+        const fits = (j) => (K.at[j] == null || K.at[j] === c) && !K.notAt[j].has(c);
+        if (!fits(k)) {
+          const ok = empty.find(fits);
+          const slot = this.rowsEl.querySelector('.row.active') && this.rowsEl.querySelector('.row.active').children[k];
+          if (ok == null) { this.nope(slot, 'Not here'); return; }
+          // the color cannot go in the next place: it goes on to one where it can, and says so
+          this.say(slot, 'Not here', 'no', 1100);
+          k = ok;
+        }
+      }
       this.draft[k] = c;
       this.popAt = k;
       Sound.play('pop', c);
@@ -2224,7 +2277,33 @@
         this.rowsEl.append(row);
         focusRow = row;
       }
+      // the lock: found pins in their sockets, the rest a question mark
+      const K = this.knowledge(), was = this.lockKnown || [];
+      this.lockEl.textContent = '';
+      for (let k = 0; k < p.P; k++) {
+        const c = this.summary && this.summary.outcome === 'solved' ? p.secretDigits[k] : K.at[k];
+        const sock = h('span', { class: 'sock' + (c != null ? ' found' : '') });
+        if (c != null) {
+          const g = gem(c);
+          if (was[k] == null && this.lockKnown) { g.classList.add('landed'); }
+          sock.append(g);
+        } else sock.append(h('b', { text: '?' }));
+        this.lockEl.append(sock);
+      }
+      const nowFound = K.at.filter((c) => c != null).length, before = was.filter((c) => c != null).length;
+      if (this.lockKnown && nowFound > before && !this.summary) Sound.play('bloom', nowFound);
+      this.lockKnown = K.at.slice();
+      this.lockEl.setAttribute('aria-label', 'The lock: ' + nowFound + ' of ' + p.P + ' pins found');
+      // the palette remembers: found, in the code, or not in it
+      if (this.helps()) {
+        [...this.palEl.children].forEach((b, c) => {
+          b.classList.toggle('k2', K.color[c] === 2);
+          b.classList.toggle('k1', K.color[c] === 1);
+          b.classList.toggle('k0', K.color[c] === 0);
+        });
+      }
       const full = this.draft.every((d) => d != null);
+      this.tryBtn.classList.toggle('ready', full && !this.summary && !this.busy);
       this.tryBtn.disabled = !full || !!this.summary || this.busy;
       this.clearBtn.disabled = !!this.summary || this.draft.every((d, k) => d == null || this.run.revealed[k] != null);
       this.palEl.querySelectorAll('button').forEach((b) => { b.disabled = !!this.summary || full; });
@@ -2267,11 +2346,32 @@
           off: !rec.consistent && !rec.solved,
         };
         this.busy = false;
-        if (rec.solved) this.vault.classList.add('open');
-        else if (rec.failed) { this.vault.classList.remove('shake'); void this.vault.offsetWidth; this.vault.classList.add('shake'); }
+        if (rec.solved) {
+          this.vault.classList.add('open');
+          if (!this.practice) store.set('pr1.tbsolved', (store.get('pr1.tbsolved', 0) || 0) + 1);
+        } else if (rec.failed) { this.vault.classList.remove('shake'); void this.vault.offsetWidth; this.vault.classList.add('shake'); }
         this.commit(rec);
-        if (!this.summary) this.refresh();
+        if (!this.summary) { this.refresh(); this.explain(); this.later(() => this.guide(), 1400); }
       }, settle);
+    }
+    start() {
+      super.start();
+      if (this.helps() && (this.practice || !(store.get('pr1.tbsolved', 0) || 0))) this.later(() => { if (!this.draft.some((d, k) => d != null && this.run.revealed[k] == null)) this.goalSay = this.say(this.lockEl, 'Find the ' + this.p.P + ' hidden colors', '', 3200, true); }, 700);
+    }
+    // what the colors of the last try mean, in words, while the player is new to it
+    explain() {
+      if (!this.helps() || !(this.practice || (store.get('pr1.tbsolved', 0) || 0) < 6)) return;
+      const t = this.run.tries[this.run.tries.length - 1], row = this.rowsEl.children[this.run.tries.length - 1];
+      if (!t || !t.marks || !row) return;
+      const WORDS = { 2: ['Right!', 'yes'], 1: ['Right color, other place', 'move'], 0: ['Not in the code', 'no'] };
+      let delay = 0;
+      for (const m of [2, 1, 0]) {
+        const k = t.marks.indexOf(m);
+        if (k < 0) continue;
+        const cell = row.children[k];
+        this.later(() => this.say(cell, WORDS[m][0], WORDS[m][1], 1900, true), delay);
+        delay += 1500;
+      }
     }
     moveFields(rec) {
       return {
@@ -2293,7 +2393,13 @@
       if (slot) { const p = relPos(this, slot); sparks(this, p.x, p.y, ['#FFC83A', '#FFFFFF', PEGS[hint.color].fill], 12); }
     }
     guideTarget() {
-      if (this.run.tries.length) return null;
+      if (this.run.tries.length) {
+        if (!this.practice || !this.helps()) return null;
+        if (this.draft.every((d) => d != null)) return this.tryBtn;
+        const K = this.knowledge();
+        for (let c = 0; c < this.p.C; c++) if (K.color[c] >= 1 && this.draft.indexOf(c) < 0) return this.palEl.children[c];
+        return null;
+      }
       const k = this.draft.indexOf(null);
       if (k === 0 || (k === 1 && this.draft[0] === 0)) return this.palEl.children[k === 0 ? 0 : 1];
       if (k === 1) return this.rowsEl.querySelector('.row.active .gem');
@@ -6945,7 +7051,7 @@
       '## Event columns', '',
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
-      ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them.', '',
+      ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them.', '',
         '## Levels', '', '### Outbound', lv('outbound'), 'L1 and L2 can be cleared by tapping only cars with a clear way out. L3 to L5 contain pinwheels, four cars that each block the next, so one car must first slide part of the way (feature `slides_needed`: 1 at L3 and L4, 2 at L5); L4 adds a planted trap, and L4 and L5 are chosen by the chance that random tapping clears the lot (feature `p_random_solve`). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.42 and 0.5 turns per tile. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse scenes', '',

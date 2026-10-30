@@ -477,6 +477,38 @@ button { cursor: pointer; }
 @keyframes wiggle { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-5px) rotate(-6deg); } 40% { transform: translateX(5px) rotate(6deg); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
 /* the same try again: it does not count; the row shakes and the earlier one lights up */
 .row.nope { animation: rattle 0.5s; }
+/* the lock: what is hidden, one socket per pin; found pins land in it */
+.tb-lock { display: flex; justify-content: center; gap: 10px; padding: 8px 12px; margin: 0 auto 2px; border-radius: 18px; background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.12); }
+.tb-lock .sock { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
+.tb-lock .sock b { font-family: var(--display); font-weight: 700; font-size: 24px; color: rgba(255, 255, 255, 0.55); }
+.tb-lock .sock.found { background: rgba(61, 220, 132, 0.25); box-shadow: inset 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.45); }
+.tb-lock .gem { width: 38px; height: 38px; }
+.tb-lock .gem.landed { animation: landed 0.7s cubic-bezier(.3,1.7,.5,1) both; }
+@keyframes landed { 0% { transform: translateY(60px) scale(0.4); opacity: 0; } 60% { transform: translateY(-6px) scale(1.15); opacity: 1; } 100% { transform: none; } }
+/* the palette remembers what the tries said */
+.palette .gem.k0 { opacity: 0.32; filter: saturate(0.3); }
+.palette .gem.k0::after { content: ''; position: absolute; inset: 6px; background: linear-gradient(45deg, transparent 44%, #FFFFFF 44%, #FFFFFF 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #FFFFFF 44%, #FFFFFF 56%, transparent 56%); }
+.palette .gem.k1 { box-shadow: 0 0 0 3.5px #FFC83A, 0 0 14px rgba(255, 200, 58, 0.55), inset 0 -3px 0 rgba(0, 0, 0, 0.22); }
+.palette .gem.k2 { box-shadow: 0 0 0 3.5px #3DDC84, 0 0 12px rgba(61, 220, 132, 0.45), inset 0 -3px 0 rgba(0, 0, 0, 0.22); }
+.palette .gem.nope, .row .gem.nope { animation: rattle 0.45s; }
+/* Try, when the row is full: here is the next step */
+.vbtn.go.ready { animation: tryready 1.4s ease-in-out infinite; }
+@keyframes tryready { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 200, 58, 0.55); } 50% { box-shadow: 0 0 0 9px rgba(255, 200, 58, 0); } }
+/* a word on the board for a moment: what a color means, or why not */
+.tb-say { position: absolute; z-index: 9; transform: translate(-50%, -100%); padding: 8px 14px; border-radius: 14px; font-family: var(--display); font-weight: 700; font-size: 18px; line-height: 1.15; white-space: nowrap;
+  background: #FFFFFF; color: #23263A; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); pointer-events: none; animation: sayin 0.3s cubic-bezier(.3,1.6,.5,1) both; }
+.tb-say::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 14px; height: 14px; background: inherit; transform: translateX(-50%) rotate(45deg); border-radius: 3px; }
+.tb-say.yes { background: #3DDC84; color: #08301A; }
+.tb-say.move { background: #FFC83A; color: #3A2600; }
+.tb-say.no { background: #FFFFFF; color: #8A1C2C; }
+.tb-say.out { animation: sayout 0.3s ease-in both; }
+.tb-say.below { transform: translate(-50%, 0); animation-name: sayinb; }
+.tb-say.below::after { bottom: auto; top: -7px; }
+.tb-say.below.out { animation: sayoutb 0.3s ease-in both; }
+@keyframes sayinb { from { opacity: 0; transform: translate(-50%, -20%) scale(0.8); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes sayoutb { to { opacity: 0; transform: translate(-50%, 10%) scale(0.95); } }
+@keyframes sayin { from { opacity: 0; transform: translate(-50%, -80%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -100%) scale(1); } }
+@keyframes sayout { to { opacity: 0; transform: translate(-50%, -110%) scale(0.95); } }
 .row.again { box-shadow: inset 0 0 0 3px #FFC83A, 0 0 18px rgba(255, 200, 58, 0.6); background: rgba(255, 200, 58, 0.18); transition: box-shadow 0.2s, background 0.2s; }
 .gem.m1 .badge { background: #FFC83A; color: #3A2600; }
 .counts { display: grid; grid-template-columns: repeat(3, 9px); gap: 4px; margin-left: 4px; }
