@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.23.1';
+  const APP_VERSION = '2.24.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -300,9 +300,9 @@
   };
 
   // ---------------------------------------------------------------- level looks
-  // Every level of a game has a look of its own, so a new level is also a new place (free play;
-  // practice and research blocks keep the first look). The rules and pieces stay the same: the
-  // colors, the board's materials and the scene around it change.
+  // Every level of a game has a look of its own, so a new level is also a new place (practice
+  // keeps the first look). The colors, the board's materials and the scene around it change;
+  // in Stacks the pieces and rules change too.
   const LOOK_NAMES = {
     outbound: ['the town lot', 'the beach', 'the city at night', 'the ski lodge', 'the ferry at sunset'],
     conduit: ['the herb garden', 'the vegetable patch', 'the greenhouse', 'the desert oasis', 'the palace garden at night'],
@@ -826,8 +826,7 @@
     const spec = {
       seq: S.n + 1, block: S.b + 1, inBlock: S.k + 1, game, level, adaptive: !!B.adaptive, j,
       seed: E.puzzleSeed(S.seed, S.b, game, level, j),
-      // Stacks in free play (the endless block): each level its own place and rules
-      variant: game === 'tumbler' ? (S.clue || 'pin') : game === 'stacks' && B.count >= FREE_COUNT ? 'free' : game === 'glimpse' || game === 'stacks' ? (B.adaptive ? 'mix' : 'classic') : '',
+      variant: game === 'tumbler' ? (S.clue || 'pin') : '',
     };
     spec.id = 'B' + spec.block + '-' + game + '-L' + level + '-' + (j + 1);
     S.k++;
@@ -992,8 +991,8 @@
       this.extra = snap ? snap.extra : null;
       this.busy = false;
       this.timers = new Set();
-      // free play shows each level's own look; practice and research keep the first
-      this.lookLv = !spec.practice && app.session && app.session.kind === 'free' ? spec.level : 1;
+      // each level's own look, in free play and research sessions alike; practice has the first
+      this.lookLv = spec.practice ? 1 : spec.level;
       this.el = h('article', { class: 'scene', 'data-game': spec.game, 'data-lv': this.lookLv, 'aria-label': this.G.name + (this.practice ? ', practice' : ', level ' + spec.level) });
       this.build();
       this.buildBoard();
@@ -7267,13 +7266,13 @@
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse scenes', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
-        'Fixed blocks and practice always use the classic set (meadow, always the bird), so measurement stays comparable. Adaptive blocks and free play take the scene of the level (meadow at L1 and L2, sea at L3 and L4, sky at L5) and take turns with its three targets. The scene is in `params` and `features`; each look logs its target in `target`.', '',
+        'Every round takes the scene of its level (meadow at L1 and L2, sea at L3 and L4, sky at L5) and takes turns with its three targets, the same in free play and research sessions; practice uses the meadow with the bird. Until app 2.24 fixed blocks used the meadow with the bird and 6 looks at every level. The scene is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
-        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
+        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
         'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play (where a new level opens at its own starting point instead; the free-play values are kept under a new key from app 2.21, so earlier ones start over). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
-        '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks take the setting of the level: stones at L1 and L2, harbor at L3 and L4, bakery at L5 (in `params` and `features`). Free play is not this task at every level: each level has its own place, and L4 and L5 their own rules and 7 moves each (station at L2; at L4 four pieces of different sizes on three posts that hold 4, and a piece only goes on a bigger one; at L5 three cones that hold 3 each, and nothing goes on the piece with the cherry). `features` gives `pieces`, `caps` and `twist` (`cherry`, `size` or empty); a refused move is `blocked` with `detail` saying why. `first_move_ms` is the planning time before the first move.',
+        '## Stacks', '', 'The tower-of-London task: pieces on three posts; a move takes the top piece of one post to another post where it is allowed. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from all arrangements with that distance. Every level is a place of its own, the same in free play and research sessions (practice: stones). L1 river stones, L2 suitcases at the station, L3 containers at the harbor: three pieces on posts that hold 3, 2 and 1 (36 arrangements). L4 the bakery: four layers of different sizes on three stands that hold 4, and a layer only goes on a bigger one (81 arrangements). L5 ice cream: three scoops on three cones that hold 3 each, and nothing goes on the scoop with the cherry (36 arrangements). The cake comes before the ice cream because its rule leaves fewer wrong moves: played through by the computer, every level is passed less often than the one before. `features` gives the place (`theme`), `pieces`, `caps` and `twist` (`size`, `cherry` or empty); a refused move is `blocked` with `detail` saying why. Until app 2.24 research sessions kept the three-piece task at every level (6 moves at L4). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (within a block in research sessions, between visits in free play), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
@@ -7499,8 +7498,7 @@
     if (g === 'conduit') return at(L.w + '×' + L.h + ' beds');
     if (g === 'tumbler') return at(L.pin.P + ' hidden colors out of ' + L.pin.C);
     if (g === 'stacks') {
-      const F = (G.free && G.free[lv]) || {};
-      return at((F.moves || L.moves) + ' moves' + (F.n ? ' · ' + F.n + ' layers' : '') + (F.cherry != null ? ' · the cherry stays on top' : F.size ? ' · small goes on big' : ''));
+      return at(L.moves + ' moves' + (L.n ? ' · ' + L.n + ' layers' : '') + (L.cherry != null ? ' · the cherry stays on top' : L.size ? ' · small goes on big' : ''));
     }
     if (g === 'keepsake') return at(L.items + ' things to remember');
     if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
@@ -8436,7 +8434,7 @@
             h('div', { class: 'inline' }, seed, h('button', { class: 'btn', type: 'button', onclick: () => { seed.value = String(randomSeed()); } }, 'New seed')),
             h('span', { class: 'help', text: 'Same seed and plan, same puzzles for everyone.' })),
           h('div', { class: 'field' }, h('span', { class: 'lbl', text: 'Plan' }), plan, sumLine,
-            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler, Glimpse, Stacks, Switchback and Keepsake. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks (6 in fixed blocks); its display time adapts on every look and its level never goes down. Fixed blocks show Glimpse and Stacks in one setting.' }))),
+            h('span', { class: 'help', text: 'All games rotates Outbound, Conduit, Tumbler, Glimpse, Stacks, Switchback and Keepsake. Adaptive blocks start at the chosen level, go up after two successes and down after a miss. A Glimpse round is 4 to 6 looks; its display time adapts on every look and its level never goes down. Every level plays as in free play.' }))),
         h('fieldset', null, h('legend', { text: 'What participants see' }),
           h('div', { class: 'checks' },
             opt('practice', 'o-practice', 'Practice board before each new game'),

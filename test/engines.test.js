@@ -499,7 +499,7 @@ test('glimpse: things in the way come in small steps, and each level opens three
   for (let lv = 2; lv <= 5; lv++) assert.ok(ds[lv - 1] - ds[lv - 2] <= 8, 'L' + lv + ' adds at most 8');
   const T = 1000 / 60;
   for (let lv = 1; lv <= 5; lv++) {
-    const p = G.generate(lv, 40 + lv, 'mix');
+    const p = G.generate(lv, 40 + lv);
     const run = G.newRun(p, { at: G.levelStart(lv) });
     assert.ok(run.fresh, 'a level start is a fresh staircase');
     assert.ok(Math.abs(run.ms - p.advanceMs / Math.pow(0.9, 3)) < 1e-6);
@@ -516,7 +516,7 @@ test('glimpse: things in the way come in small steps, and each level opens three
 test('glimpse: a round counts once a right answer brings the flash to the target, as the counter shows it', () => {
   const T = 1000 / 60;
   const play = (lv, answers, start) => {
-    const p = G.generate(lv, 31, 'mix');
+    const p = G.generate(lv, 31);
     const run = G.newRun(p, start || { at: G.levelStart(lv) });
     for (const ok of answers) G.record(p, run, { correct: !!ok, plan: G.plan(p, run, T) });
     return { p, sm: G.summary(p, run) };
@@ -565,16 +565,11 @@ test('glimpse: runs survive serialize/restore', () => {
   assert.deepEqual(G.plan(p, back, 1000 / 60), G.plan(p, run, 1000 / 60));
 });
 
-test('glimpse: fixed blocks use the classic set; others get the scene of their level and take turns with its targets', () => {
+test('glimpse: every round gets the scene of its level and takes turns with its targets', () => {
   for (const lv of [2, 3, 4, 5]) {
     const L = G.levels[lv];
     for (let s = 0; s < 12; s++) {
-      const c = G.generate(lv, 300 + s, 'classic');
-      assert.equal(c.n, G.trials, 'fixed blocks always have the full round');
-      assert.equal(c.theme, 'meadow');
-      assert.ok(c.trials.every((t) => t.tg === 'bird'));
-      assert.deepEqual(c.pair, G.themes.meadow.pairs[L.pair]);
-      const m = G.generate(lv, 300 + s, 'mix');
+      const m = G.generate(lv, 300 + s);
       assert.ok(G.themeOrder.includes(m.theme));
       const th = G.themes[m.theme];
       assert.deepEqual(m.pair, th.pairs[L.pair]);
@@ -587,7 +582,7 @@ test('glimpse: fixed blocks use the classic set; others get the scene of their l
   }
   // each level has its own scene, so moving up is arriving somewhere new
   const scene = { 1: 'meadow', 2: 'meadow', 3: 'sea', 4: 'sea', 5: 'sky' };
-  for (const lv of [1, 2, 3, 4, 5]) for (let s = 0; s < 8; s++) assert.equal(G.generate(lv, 50 + s, 'mix').theme, scene[lv]);
+  for (const lv of [1, 2, 3, 4, 5]) for (let s = 0; s < 8; s++) assert.equal(G.generate(lv, 50 + s).theme, scene[lv]);
 });
 
 test('conduit: no pipe starts pointing off the board, and every board needs a bounded number of turns', () => {
@@ -648,7 +643,7 @@ test('friction: at every level the four games take about the same number of taps
     conduit: (lv, s) => C.generate(lv, s).reference,
     tumbler: (lv, s) => tumblerTaps(T.generate(lv, s, 'pin')),
     'tumbler (count clues)': (lv, s) => tumblerTaps(T.generate(lv, s, 'count')),
-    glimpse: (lv, s) => { const p = G.generate(lv, s, 'mix'); return 1 + p.n * (p.periph ? 2 : 1); },
+    glimpse: (lv, s) => { const p = G.generate(lv, s); return 1 + p.n * (p.periph ? 2 : 1); },
     // one tap lifts a piece, one sets it down
     stacks: (lv, s) => 2 * E.games.stacks.generate(lv, s).reference,
     // one tap to start, one per target sign and one per animal on the road; steering is not a tap
@@ -690,10 +685,11 @@ test('stacks: each level needs its number of moves, hints follow a shortest path
         assert.equal(last.dAfter, last.dBefore - 1);
       }
       assert.ok(last.solved, 'solved along the hints in ' + p.reference + ' moves');
-      assert.deepEqual(K.progress(p, run), { done: 3, total: 3 });
+      assert.deepEqual(K.progress(p, run), { done: p.n, total: p.n });
       // a wasted move, then undo puts everything back
       const r2 = K.newRun(p);
-      const opts = E.internals.skNext(r2.st).filter(([, , ns]) => K.dist(p, ns) >= p.reference);
+      const R = { n: p.n, caps: p.caps, cherry: p.cherry, size: p.size };
+      const opts = E.internals.skNext(r2.st, R).filter(([, , ns]) => K.dist(p, ns) >= p.reference);
       if (!opts.length) continue; // every first move helps here
       const w = K.move(p, r2, opts[0][0], opts[0][1]);
       assert.equal(w.cls, 'wasted');
@@ -703,9 +699,9 @@ test('stacks: each level needs its number of moves, hints follow a shortest path
     }
   }
   assert.equal(E.internals.SK_ALL.length, 36, 'three pieces on posts of 3, 2 and 1 have 36 arrangements');
-  for (let s = 0; s < 20; s++) assert.equal(K.generate(3, 50 + s, 'classic').theme, 'stones', 'fixed blocks keep one setting');
-  const setting = { 1: 'stones', 2: 'stones', 3: 'harbor', 4: 'harbor', 5: 'bakery' };
-  for (const lv of [1, 2, 3, 4, 5]) for (let s = 0; s < 6; s++) assert.equal(K.generate(lv, 50 + s).theme, setting[lv], 'each level has its own setting');
+  // each level is a place of its own, the same in free play and research sessions
+  const place = { 1: 'stones', 2: 'station', 3: 'harbor', 4: 'cake', 5: 'icecream' };
+  for (const lv of [1, 2, 3, 4, 5]) for (let s = 0; s < 6; s++) assert.equal(K.generate(lv, 50 + s).theme, place[lv], 'each level has its own place');
 });
 
 test('stacks: a full post refuses a piece, practice takes two moves, runs survive serialize/restore', () => {
@@ -726,29 +722,22 @@ test('stacks: a full post refuses a piece, practice takes two moves, runs surviv
   assert.deepEqual(K.restore(q, JSON.parse(JSON.stringify(K.serialize(rq)))), rq);
 });
 
-test('stacks free play: each level its own place; the cherry stays on top, a layer only goes on a bigger one', () => {
+test('stacks: the cake and the ice cream have rules of their own', () => {
   const K = E.games.stacks;
-  const place = { 1: 'stones', 2: 'station', 3: 'harbor', 4: 'cake', 5: 'icecream' };
-  for (const lv of [1, 2, 3, 4, 5]) {
-    for (let s = 0; s < 20; s++) {
-      const p = K.generate(lv, 300 + s, 'free');
-      assert.equal(p.theme, place[lv]);
-      assert.equal(p.reference, K.free[lv].moves || K.levels[lv].moves);
-      assert.equal(K.dist(p, p.start), p.reference);
-      // the hints solve it, and every hinted move is one the level allows
-      const run = K.newRun(p);
-      let last = null;
-      for (let k = 0; k < p.reference; k++) {
-        const hnt = K.hint(p, run);
-        last = K.move(p, run, hnt.a, hnt.b);
-        assert.equal(last.cls, 'optimal');
-      }
-      assert.ok(last.solved);
-      assert.deepEqual(K.progress(p, run), { done: p.n, total: p.n });
-    }
-  }
+  // the cake: four layers on three stands; a bigger layer never goes on a smaller one
+  const cake = K.generate(4, 1);
+  assert.equal(cake.n, 4);
+  assert.equal(cake.size, true);
+  const cakeRules = { n: 4, caps: [4, 4, 4], cherry: null, size: true };
+  const c = K.build(4, 1, [[0, 3], [1], [2]], [[0, 1, 2, 3], [], []], 'cake', cakeRules);
+  const rc = K.newRun(c);
+  const r2 = K.move(c, rc, 1, 0);
+  assert.equal(r2.kind, 'blocked');
+  assert.equal(r2.why, 'size');
+  assert.notEqual(K.move(c, rc, 0, 1).kind, 'blocked', 'the smallest goes on a bigger one');
+  assert.equal(E.internals.skAll(cakeRules).length, 81, 'four sized layers on three stands: 3 to the power 4 arrangements');
   // ice cream: three cones that hold three each; nothing goes on the scoop with the cherry
-  const ice = K.generate(5, 1, 'free');
+  const ice = K.generate(5, 1);
   assert.deepEqual(ice.caps, [3, 3, 3]);
   assert.equal(ice.cherry, 2);
   const iceRules = { n: 3, caps: [3, 3, 3], cherry: 2, size: false };
@@ -760,28 +749,6 @@ test('stacks free play: each level its own place; the cherry stays on top, a lay
   assert.deepEqual(rq.st, [[0, 2], [1], []]);
   assert.notEqual(K.move(q, rq, 0, 1).kind, 'blocked', 'the scoop with the cherry can still move');
   for (const st of E.internals.skAll(iceRules)) for (const a of st) { const i = a.indexOf(2); assert.ok(i < 0 || i === a.length - 1, 'the cherry is always on top'); }
-  // the cake: four layers on three stands; a bigger layer never goes on a smaller one
-  const cake = K.generate(4, 1, 'free');
-  assert.equal(cake.n, 4);
-  assert.equal(cake.size, true);
-  const cakeRules = { n: 4, caps: [4, 4, 4], cherry: null, size: true };
-  const c = K.build(4, 1, [[0, 3], [1], [2]], [[0, 1, 2, 3], [], []], 'cake', cakeRules);
-  const rc = K.newRun(c);
-  const r2 = K.move(c, rc, 1, 0);
-  assert.equal(r2.kind, 'blocked');
-  assert.equal(r2.why, 'size');
-  assert.notEqual(K.move(c, rc, 0, 1).kind, 'blocked', 'the smallest goes on a bigger one');
-  assert.equal(E.internals.skAll(cakeRules).length, 81, 'four sized layers on three stands: 3 to the power 4 arrangements');
-  // research blocks keep the classic task
-  for (const v of ['mix', 'classic']) {
-    for (const lv of [1, 2, 3, 4, 5]) {
-      const p = K.generate(lv, 7, v);
-      assert.equal(p.n, 3);
-      assert.deepEqual(p.caps, [3, 2, 1]);
-      assert.equal(p.cherry, null);
-      assert.equal(p.size, false);
-    }
-  }
 });
 
 test('switchback: place, animal, signs, things and road follow the level', () => {

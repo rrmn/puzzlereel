@@ -1290,8 +1290,7 @@
     return best;
   }
   // Scenes. Each has an easy and a harder pair for the middle, three things to
-  // find around it and one distractor. Fixed (measurement) blocks and practice
-  // use the classic set: meadow, always the bird.
+  // find around it and one distractor. Practice uses the meadow with the bird.
   const GL_THEMES = {
     meadow: { pairs: { easy: ['rabbit', 'hedgehog'], hard: ['cat', 'fox'] }, targets: ['bird', 'butterfly', 'snail'], distractor: 'leaf' },
     sea: { pairs: { easy: ['fish', 'turtle'], hard: ['fish', 'whale'] }, targets: ['star', 'sailboat', 'jellyfish'], distractor: 'shell' },
@@ -1311,7 +1310,7 @@
     noun: 'look',
     kind: 'trials',
     levelDown: false,      // the display time already adapts; levels only add load (free play steps back after a round with under half right)
-    trials: 6,             // looks per round in fixed blocks; other rounds use the level's looks (4 to 6). The staircase carries over between rounds
+    trials: 6,             // looks per round when a level does not say (the levels have 4 to 6). The staircase carries over between rounds
     startMs: 1500,         // a fresh staircase in a research block starts here: a slow, easy look for anyone (free play starts each level at levelStart)
     maxMs: GL_TOP,         // top of the ladder
     warmUp: 2,             // a carried-over round starts this many steps slower, so it opens with a likely hit
@@ -1370,17 +1369,16 @@
         },
       };
     },
-    // variant 'classic': meadow scene, always the bird (fixed blocks); anything else: the scene
-    // of its level (meadow at 1 and 2, the sea at 3 and 4, the sky at 5), targets in turn, so
-    // moving up a level is also arriving somewhere new
-    generate(level, seed, variant) {
+    // the same rounds in free play and research sessions: the scene of the level (meadow at 1 and
+    // 2, the sea at 3 and 4, the sky at 5), targets in turn, so moving up a level is also arriving
+    // somewhere new
+    generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const classic = variant === 'classic';
-      const n = classic ? this.trials : L.looks || this.trials;
+      const n = L.looks || this.trials;
       rng.int(GL_THEME_ORDER.length); // the draw that used to pick the scene, kept so seeds still give the same looks
-      const themeName = classic ? 'meadow' : GL_LEVEL_THEME[level] || 'meadow';
-      const targetSet = classic ? ['bird'] : GL_THEMES[themeName].targets;
+      const themeName = GL_LEVEL_THEME[level] || 'meadow';
+      const targetSet = GL_THEMES[themeName].targets;
       const tgs = rng.shuffle(Array.from({ length: n }, (_, i) => targetSet[i % targetSet.length]));
       const centers = rng.shuffle(Array.from({ length: n }, (_, i) => i % 2));
       let dirs = [], rings = [];
@@ -1495,21 +1493,6 @@
   // so a breadth-first search from the goal gives the moves left from each.
   // =====================================================================
   const SK_CAPS = [3, 2, 1];
-  const SK_THEMES = ['stones', 'harbor', 'bakery'];
-  // research blocks: the classic task in three settings (stones at 1 and 2, the harbor at 3 and 4, the bakery at 5)
-  const SK_LEVEL_THEME = { 1: 'stones', 2: 'stones', 3: 'harbor', 4: 'harbor', 5: 'bakery' };
-  // free play: every level a place of its own, two with a twist that shows on the pieces.
-  // size: a piece goes only on a bigger one (piece 0 the biggest), as cake layers do; cherry:
-  // nothing can go on that piece (the scoop with the cherry). Ice cream needs three equal cones: on
-  // posts of 3, 2 and 1 the cherry leaves only 12 arrangements. The cake comes first: its rule
-  // leaves fewer wrong moves, so at 7 moves it sits between the harbor (5) and the ice cream (7).
-  const SK_FREE = {
-    1: { theme: 'stones' },
-    2: { theme: 'station' },
-    3: { theme: 'harbor' },
-    4: { theme: 'cake', n: 4, caps: [4, 4, 4], size: true, moves: 7 },
-    5: { theme: 'icecream', caps: [3, 3, 3], cherry: 2, moves: 7 },
-  };
   const SK_CLASSIC = { n: 3, caps: SK_CAPS, cherry: null, size: false };
   const skRules = (p) => ({ n: p.n || 3, caps: p.caps || SK_CAPS, cherry: p.cherry != null ? p.cherry : null, size: !!p.size });
   const skRuleKey = (R) => R.n + '/' + R.caps.join('') + '/' + (R.cherry == null ? '-' : R.cherry) + (R.size ? 's' : '');
@@ -1574,10 +1557,21 @@
     rule: 'Tap a post to lift its top piece, then tap another post to set it down. A post holds only as many pieces as it is tall.',
     goal: 'Build the arrangement on the card in as few moves as possible.',
     caps: SK_CAPS,
-    themes: SK_THEMES,
-    free: SK_FREE,
-    // moves: the fewest moves from start to goal
-    levels: { 1: { moves: 3 }, 2: { moves: 4 }, 3: { moves: 5 }, 4: { moves: 6 }, 5: { moves: 7 } },
+    themes: ['stones', 'station', 'harbor', 'cake', 'icecream'],
+    // every level a place of its own, two with a rule of their own that shows on the pieces.
+    // moves: the fewest moves from start to goal; n pieces (3 if not given) on posts that hold caps
+    // (3, 2 and 1 if not given). size: a piece goes only on a bigger one (piece 0 the biggest), as
+    // cake layers do; cherry: nothing can go on that piece (the scoop with the cherry). Ice cream
+    // needs three equal cones: on posts of 3, 2 and 1 the cherry leaves only 12 arrangements. The
+    // cake comes first: its rule leaves fewer wrong moves, so at 7 moves it sits between the harbor
+    // (5) and the ice cream (7), and every level is passed less often than the one before.
+    levels: {
+      1: { moves: 3, theme: 'stones' },
+      2: { moves: 4, theme: 'station' },
+      3: { moves: 5, theme: 'harbor' },
+      4: { moves: 7, theme: 'cake', n: 4, caps: [4, 4, 4], size: true },
+      5: { moves: 7, theme: 'icecream', caps: [3, 3, 3], cherry: 2 },
+    },
     describe(p) { return p.moves + '-move problem' + (p.theme ? ', ' + p.theme : ''); },
     build(level, seed, start, goal, theme, R) {
       R = R || SK_CLASSIC;
@@ -1590,17 +1584,13 @@
         features: { moves, start: skKey(start), goal: skKey(goal), theme, pieces: R.n, caps: R.caps.join(''), twist: R.cherry != null ? 'cherry' : R.size ? 'size' : '' },
       };
     },
-    // variant 'classic' (fixed blocks): always the stones; 'free' (free play): the place and rules
-    // of its level (SK_FREE); otherwise (adaptive research blocks) the classic task in the setting
-    // of its level (river stones at 1 and 2, the harbor at 3 and 4, the bakery at 5)
-    generate(level, seed, variant) {
+    // the same puzzles in free play and research sessions: the place, pieces and rules of the level
+    generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
       rng.int(3); // the draw that used to pick the setting, kept so seeds still give the same boards
-      const F = variant === 'free' ? SK_FREE[level] : null;
-      const theme = variant === 'classic' ? 'stones' : F ? F.theme : SK_LEVEL_THEME[level] || 'stones';
-      const R = F ? { n: F.n || 3, caps: F.caps || SK_CAPS, cherry: F.cherry != null ? F.cherry : null, size: !!F.size } : SK_CLASSIC;
-      const moves = (F && F.moves) || L.moves;
+      const theme = L.theme, moves = L.moves;
+      const R = { n: L.n || 3, caps: L.caps || SK_CAPS, cherry: L.cherry != null ? L.cherry : null, size: !!L.size };
       const ALL = skAll(R);
       for (let attempt = 0; attempt < 100; attempt++) {
         const goal = ALL[rng.int(ALL.length)];
@@ -2021,7 +2011,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.19.0',
+    version: '1.20.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
