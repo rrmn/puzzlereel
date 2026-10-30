@@ -18,11 +18,11 @@ Every game has levels 1 to 5, and a level asks about the same effort in each gam
 
 | Level | Outbound | Conduit | Tumbler, per-pin clues | Tumbler, count clues | Glimpse | Stacks | Switchback | Keepsake |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 5 (5×5 lot, 5 cars) | 6.5 (3×4) | 7.0 (2 pins, 4 colors) | 8.4 (2 pins, 4 colors) | 9 (4 looks) | 6 (3 moves) | 7 (5 of 8 signs, 1 animal) | 7 (3 things, 6 stones) |
-| 2 | 7 (6×6, 7 cars) | 7.6 (4×4) | 9.3 (3 pins, 4 colors) | 9.1 (2 pins, 5 colors) | 9 (4 looks) | 8 (4 moves) | 9 (7 of 12, 1) | 9 (4 of 7) |
-| 3 | 9 (6×6, 8 cars, 1 pinwheel) | 9.6 (4×5) | 10.7 (3 pins, 5 colors) | 11.2 (3 pins, 3 colors) | 11 (5 looks) | 10 (5 moves) | 12 (9 of 16, 2) | 11 (5 of 8) |
-| 4 | 11 (7×7, 10 cars, 1 pinwheel, 1 trap) | 11.7 (5×5) | 13.3 (4 pins, 5 colors) | 13.7 (3 pins, 4 colors) | 13 (6 looks) | 12 (6 moves) | 14 (11 of 20, 2) | 13 (6 of 10) |
-| 5 | 13 (7×7, 11 cars, 2 pinwheels) | 14.5 (5×6) | 13.7 (4 pins, 6 colors) | 14.0 (3 pins, 5 colors) | 13 (6 looks) | 14 (7 moves) | 16 (13 of 24, 2) | 15 (7 of 12) |
+| 1 | 5 (5×5 lot, 5 cars) | 6.5 (3×4) | 7.0 (2 pins, 4 colors) | 8.4 (2 pins, 4 colors) | 9 (4 looks) | 6 (3 moves) | 7 (5 of 8 signs, 1 animal) | 5 (2 things, 4 stones) |
+| 2 | 7 (6×6, 7 cars) | 7.6 (4×4) | 9.3 (3 pins, 4 colors) | 9.1 (2 pins, 5 colors) | 9 (4 looks) | 8 (4 moves) | 9 (7 of 12, 1) | 7 (3 of 5) |
+| 3 | 9 (6×6, 8 cars, 1 pinwheel) | 9.6 (4×5) | 10.7 (3 pins, 5 colors) | 11.2 (3 pins, 3 colors) | 11 (5 looks) | 10 (5 moves) | 12 (9 of 16, 2) | 9 (4 of 6) |
+| 4 | 11 (7×7, 10 cars, 1 pinwheel, 1 trap) | 11.7 (5×5) | 13.3 (4 pins, 5 colors) | 13.7 (3 pins, 4 colors) | 13 (6 looks) | 14 (7 moves, 4 layers) | 14 (11 of 20, 2) | 11 (5 of 7) |
+| 5 | 13 (7×7, 11 cars, 2 pinwheels) | 14.5 (5×6) | 13.7 (4 pins, 6 colors) | 14.0 (3 pins, 5 colors) | 13 (6 looks) | 14 (7 moves) | 16 (13 of 24, 2) | 13 (6 of 8) |
 
 Outbound counts the solver's moves, Conduit the turns needed, Tumbler the taps along the most informative tries (pins already in the right spot carry into the next row with per-pin clues), Glimpse one tap to start plus one per answer, Stacks two taps per move (lift, set down), Switchback one tap to start plus one per target sign and one per animal on the road (steering and collecting are not counted), and Keepsake one tap to look plus two per thing (pick up, put down). Thinking time is not in these numbers; compare `duration_ms` by game and level in pilot data.
 
