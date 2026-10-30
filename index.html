@@ -2326,13 +2326,16 @@ function PuzzleEnginesFactory(root) {
     up: 6, down: 1,        // weighted up/down: p(correct) settles at up / (up + down) = 6/7, about 86%
     themes: GL_THEMES,
     themeOrder: GL_THEME_ORDER,
-    // advanceMs: a round at or under this display time counts as a success (two in a row: next level)
+    // advanceMs: a round at or under this display time counts as a success (two in a row: next level).
+    // Set for older players and non-gamers: in simulation with slow observers every player moves up
+    // from level 1 within about 4 rounds, and level 5 stays a goal that takes practice; the flash
+    // itself keeps adapting at every level, so fast players are still pushed.
     levels: {
-      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 60, looks: 4 },
-      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 90, looks: 4 },
-      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 120, looks: 5 },
-      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 180, looks: 6 },
-      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 240, looks: 6 },
+      1: { periph: false, rings: [], distract: 0, pair: 'easy', advanceMs: 300, looks: 4 },
+      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 350, looks: 4 },
+      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 400, looks: 5 },
+      4: { periph: true, rings: [1, 2, 3], distract: 23, pair: 'easy', advanceMs: 500, looks: 6 },
+      5: { periph: true, rings: [1, 2, 3], distract: 47, pair: 'hard', advanceMs: 600, looks: 6 },
     },
     slots: GL_SLOTS,
     ringR: GL_RING_R,
@@ -2948,7 +2951,7 @@ function PuzzleEnginesFactory(root) {
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.12.0',
+    version: '1.13.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],
@@ -2963,7 +2966,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.12.0';
+  const APP_VERSION = '2.13.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
