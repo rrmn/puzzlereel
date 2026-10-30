@@ -206,6 +206,33 @@ button { cursor: pointer; }
 .pips i.on { opacity: 0.9; }
 /* the next level half earned: one good card of the two it takes */
 .pips i.half { opacity: 0.9; background: linear-gradient(90deg, var(--pip) 50%, transparent 50%); box-shadow: inset 0 0 0 1.4px var(--pip); }
+/* free play: the level is a button (what the next one takes), and the next pip glows while this card can count */
+.pips.tap { cursor: pointer; padding: 8px 4px; margin: -8px -4px -8px -2px; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
+.pips.tap:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; }
+.pips i { transition: opacity 0.3s, transform 0.3s; }
+.pips i.live { opacity: 0.9; background: var(--gold); box-shadow: 0 0 0 2px rgba(255, 196, 46, 0.35); animation: pipwait 1.8s ease-in-out infinite; }
+.pips i.live.half { background: linear-gradient(90deg, var(--gold) 50%, transparent 50%); box-shadow: inset 0 0 0 1.4px var(--gold), 0 0 0 2px rgba(255, 196, 46, 0.35); }
+@keyframes pipwait { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+/* the record to beat at this level */
+.rec { display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 9px; border-radius: 999px; background: var(--chip); font-family: var(--display); font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; transition: opacity 0.35s, background 0.35s, box-shadow 0.35s; }
+.rec svg { width: 19px; height: 19px; color: var(--gold-deep, #C98A00); }
+.rec.gone { opacity: 0.4; }
+.rec.gone b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.rec.live { background: #FFE58A; color: #5A3B00; box-shadow: 0 0 0 3px rgba(255, 205, 60, 0.45); animation: bump 0.45s cubic-bezier(.3,1.6,.5,1); }
+.rec.live svg { color: #B57800; }
+/* what the next level takes, under the head for a moment */
+.cue { position: absolute; z-index: 8; left: 50%; top: 132px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 7px; border-radius: 999px;
+  background: #FFFDF7; color: var(--paper-ink, #23263A); font-family: var(--display); font-weight: 600; font-size: 15px; white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(20, 24, 40, 0.22); animation: towardin 0.42s cubic-bezier(.3,1.5,.5,1) both; pointer-events: none; }
+.cue.out { animation: towardout 0.3s ease-in both; }
+.cue .res-chip { box-shadow: inset 0 0 0 1.5px #E2DACB; }
+.cue .res-chip.stars svg { color: var(--gold); width: 15px; height: 15px; }
+.cue .res-slots i { width: 22px; height: 22px; }
+.cue .res-slots svg { width: 14px; height: 14px; }
+.cue .res-slots i { animation: none !important; }
+.cue-to { color: var(--paper-soft, #6A6E82); font-weight: 500; }
+@keyframes towardin { from { opacity: 0; transform: translate(-50%, -10px) scale(0.92); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes towardout { to { opacity: 0; transform: translate(-50%, -8px) scale(0.96); } }
 .tag { font-family: var(--display); font-weight: 600; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: var(--bg2); letter-spacing: 0.02em; }
 .status { display: flex; align-items: center; gap: 8px; }
 /* Switchback: this place's sign and one dot per target sign of the drive */
@@ -686,6 +713,15 @@ button { cursor: pointer; }
 .res-stats b { color: var(--paper-ink); font-weight: 600; }
 .res-level { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: #FFF3CF; color: #7A5200; font-family: var(--display); font-weight: 600; font-size: 16px; animation: pop 0.5s 0.6s cubic-bezier(.3,1.7,.5,1) both; }
 .res-level.down { background: #EEF0F6; color: var(--paper-soft); }
+/* records: a new one in gold with the old one struck beside it; otherwise the one to beat, quiet */
+.res-level.record { background: linear-gradient(180deg, #FFE98F, #FFD24D); color: #5A3B00; box-shadow: 0 0 0 2px #FFF1B8, 0 4px 14px rgba(230, 160, 0, 0.35); position: relative; overflow: hidden; }
+.res-level.record svg { width: 19px; height: 19px; color: #A86A00; }
+.res-level.record s { font-family: var(--ui); font-weight: 500; font-size: 14px; opacity: 0.6; }
+.res-level.record::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.85) 50%, transparent 65%) no-repeat; background-size: 250% 100%; animation: pfshine 1.3s 0.9s ease-in-out 2 both; pointer-events: none; }
+.res-level.rec-was { background: transparent; color: var(--paper-soft); font-family: var(--ui); font-weight: 500; font-size: 15px; padding: 2px 10px; animation-delay: 0.4s; }
+.res-level.rec-was svg { width: 17px; height: 17px; color: var(--gold-deep, #C98A00); }
+.res-level.beat { background: linear-gradient(180deg, #E6DEFF, #D2C6FF); color: #3B2A8C; box-shadow: 0 0 0 2px #F1ECFF; }
+.res-level.beat svg { width: 18px; height: 18px; }
 .res-level-row { display: inline-flex; align-items: center; gap: 8px; }
 /* a level up says what the new level brings */
 .res-level.up { flex-direction: column; gap: 1px; border-radius: 22px; }
@@ -1059,6 +1095,54 @@ code { font-family: var(--mono); font-size: 12px; }
 
 /* duotone: closed shapes in the line icons carry a soft fill of their own color */
 svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
+
+/* iPhone haptics: a switch toggled through its label, kept out of sight */
+.haptic { position: fixed; left: -200px; top: -200px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+
+/* ---------------------------------------------------------------- level up
+   The first time a game reaches a level: the badge takes its medal, the ladder fills a step,
+   what the level brings, then play on (or see the result first). */
+.lu { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px;
+  background: radial-gradient(120% 80% at 50% 34%, color-mix(in srgb, var(--lu, #5B47AE) 70%, #FFFFFF) 0%, var(--lu, #5B47AE) 46%, color-mix(in srgb, var(--lu, #5B47AE) 55%, #0B0D1C) 100%);
+  animation: fadein 0.32s ease-out both; color: #FFFFFF; }
+.lu.out { animation: luout 0.28s ease-in both; }
+@keyframes luout { to { opacity: 0; transform: scale(1.03); } }
+.lu[data-game="outbound"] { --lu: #F2A31B; }
+.lu[data-game="conduit"] { --lu: #3FA653; }
+.lu[data-game="tumbler"] { --lu: #4E3BA6; }
+.lu[data-game="glimpse"] { --lu: #2563CF; }
+.lu[data-game="stacks"] { --lu: #3E9C98; }
+.lu[data-game="switchback"] { --lu: #DD5A40; }
+.lu[data-game="keepsake"] { --lu: #D45784; }
+.lu-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.lu-card { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 340px; width: 100%; }
+.lu-badge { position: relative; width: 148px; height: 148px; display: grid; place-items: center; margin-bottom: 14px; animation: lubadge 0.75s 0.1s cubic-bezier(.25,1.6,.45,1) both; }
+.lu-glow { position: absolute; inset: -40px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 62%); animation: luglow 2.4s ease-in-out infinite; }
+.lu-art { position: relative; width: 132px; height: 132px; filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.3)); }
+.lu-art .medal { transform-box: fill-box; transform-origin: center; animation: lumedal 0.6s 0.85s cubic-bezier(.3,1.9,.5,1) both; }
+@keyframes lubadge { 0% { opacity: 0; transform: scale(0.3) rotate(-14deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes lumedal { 0% { opacity: 0; transform: scale(0.1); } 70% { opacity: 1; transform: scale(1.45); } 100% { transform: scale(1); } }
+@keyframes luglow { 0%, 100% { opacity: 0.7; transform: scale(0.94); } 50% { opacity: 1; transform: scale(1.06); } }
+.lu-k { margin: 0; font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; animation: luin 0.4s 0.45s both; }
+.lu-name { margin: 2px 0 12px; font-family: var(--display); font-weight: 700; font-size: 52px; line-height: 1; letter-spacing: 0.005em; text-shadow: 0 3px 14px rgba(0, 0, 0, 0.22); animation: luname 0.6s 0.55s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes luin { from { opacity: 0; transform: translateY(8px); } to { opacity: 0.85; transform: none; } }
+@keyframes luname { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+.lu-ladder { display: flex; gap: 6px; width: 220px; margin-bottom: 14px; animation: luin 0.4s 0.7s both; }
+.lu-ladder i { flex: 1; height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.25); overflow: hidden; position: relative; }
+.lu-ladder i.on { background: #FFFFFF; }
+.lu-ladder i.new::after { content: ''; position: absolute; inset: 0; background: #FFD23F; transform-origin: left; animation: lufill 0.7s 1.1s cubic-bezier(.4,1.4,.5,1) both; box-shadow: 0 0 10px #FFD23F; }
+@keyframes lufill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.lu-adds { margin: 0 0 22px; padding: 8px 16px; border-radius: 14px; background: rgba(255, 255, 255, 0.16); font-size: 17px; line-height: 1.35; animation: luin 0.4s 1.3s both; }
+.lu-adds b { font-family: var(--display); font-weight: 600; color: #FFE27A; }
+.lu-go { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; height: 56px; padding: 0 26px; border: 0; border-radius: 999px;
+  background: #FFFFFF; color: color-mix(in srgb, var(--lu, #5B47AE) 70%, #10132A); font-family: var(--display); font-weight: 700; font-size: 20px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25); animation: luin 0.4s 1.5s both; cursor: pointer; }
+.lu-go svg { width: 20px; height: 20px; }
+.lu-go:active { transform: scale(0.96); }
+.lu-go:focus { outline: none; }
+.lu-go:focus-visible { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(255, 255, 255, 0.55); }
+.lu-later { margin-top: 10px; padding: 10px 16px; border: 0; background: transparent; color: rgba(255, 255, 255, 0.85); font-family: var(--ui); font-size: 15px; font-weight: 500; cursor: pointer; animation: luin 0.4s 1.6s both; }
+@media (prefers-reduced-motion: reduce) { .lu, .lu *, .lu-art .medal { animation: none !important; } }
 </style>
 </head>
 <body>
@@ -3066,10 +3150,11 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.21.0';
+  const APP_VERSION = '2.22.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const LABEL = { mixed: 'All games', outbound: 'Outbound', conduit: 'Conduit', tumbler: 'Tumbler', glimpse: 'Glimpse', stacks: 'Stacks', switchback: 'Switchback', keepsake: 'Keepsake' };
 
   // ---------------------------------------------------------------- helpers
@@ -3181,6 +3266,7 @@ PuzzleEnginesFactory(window);
     day: '<path class="df" d="M7 5.2h10a3.2 3.2 0 0 1 3.2 3.2V10H3.8V8.4A3.2 3.2 0 0 1 7 5.2z"/><rect x="3.8" y="5.2" width="16.4" height="15.4" rx="3.2"/><path d="M3.8 10h16.4M8.4 3.2v4M15.6 3.2v4"/><path d="M8 14.2h.1M12 14.2h.1M16 14.2h.1M8 17.4h.1M12 17.4h.1"/>',
     rise: '<path d="M3.5 17.5 9.5 11.5l4 4 7-7.5"/><path d="M15 8h5.5v5.5"/>',
     back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+    trophy: '<path class="df" d="M7 3.8h10v5.6a5 5 0 0 1-10 0z"/><path d="M7 3.8h10v5.6a5 5 0 0 1-10 0z"/><path d="M7 6H4.4v1.4A3.6 3.6 0 0 0 8 11M17 6h2.6v1.4A3.6 3.6 0 0 1 16 11"/><path d="M12 14.4v3.4M8.6 20.6h6.8M9.6 17.8h4.8"/>',
     more: '<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
   };
   function icon(name, cls) {
@@ -3274,7 +3360,20 @@ PuzzleEnginesFactory(window);
         + '<rect x="10.4" y="25.6" width="9" height="1.4" rx=".7" fill="#fff" opacity=".35"/>',
     };
   }
-  function badge(g, cls) {
+  // the level's medal on a game's badge: bronze for Advanced, silver for Pro, gold for Expert,
+  // gold with a crown for Master. Seen in the menu, the title row and the profile
+  const MEDAL = { 2: ['#F6C08A', '#B9692C', '#6E3A12'], 3: ['#FFFFFF', '#B4BDCA', '#566173'], 4: ['#FFEA94', '#EBA51C', '#7A4E00'], 5: ['#FFEA94', '#EBA51C', '#7A4E00'] };
+  const STAR_D = 'M12 2.4l2.95 6 6.6.95-4.78 4.66 1.13 6.57L12 17.48l-5.9 3.1 1.13-6.57L2.45 9.35l6.6-.95z';
+  function medalSvg(lv, id) {
+    const c = MEDAL[lv];
+    if (!c) return '';
+    const glyph = lv === 5 ? '<path d="M34.3 42.6h9.4l1.1-6.6-3.2 2.6L39 34.2l-2.6 4.4-3.2-2.6z" fill="' + c[2] + '"/>'
+      : '<path d="' + STAR_D + '" fill="' + c[2] + '" transform="translate(34.68 34.6) scale(.36)"/>';
+    return '<g class="medal"><defs><linearGradient id="' + id + 'm" x1="0" y1="0" x2=".45" y2="1"><stop offset="0" stop-color="' + c[0] + '"/><stop offset="1" stop-color="' + c[1] + '"/></linearGradient></defs>'
+      + '<circle cx="39" cy="39.8" r="8.8" fill="#000" opacity=".22"/>'
+      + '<circle cx="39" cy="39" r="8.8" fill="url(#' + id + 'm)" stroke="#fff" stroke-width="1.8"/>' + glyph + '</g>';
+  }
+  function badge(g, cls, level) {
     if (!badgeArt) badgeArt = makeBadgeArt();
     const id = 'bdg' + (++badgeSeq), c = BADGE_BG[g] || BADGE_BG.mixed;
     const el = document.createElementNS(SVGNS, 'svg');
@@ -3285,8 +3384,126 @@ PuzzleEnginesFactory(window);
       + '<clipPath id="' + id + 'c"><rect width="48" height="48" rx="13"/></clipPath></defs>'
       + '<rect width="48" height="48" rx="13" fill="url(#' + id + 'g)"/>'
       + '<g clip-path="url(#' + id + 'c)">' + (badgeArt[g] || '') + '</g>'
-      + '<rect x=".7" y=".7" width="46.6" height="46.6" rx="12.4" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="1.4"/>';
+      + '<rect x=".7" y=".7" width="46.6" height="46.6" rx="12.4" fill="none" stroke="#fff" stroke-opacity=".24" stroke-width="1.4"/>'
+      + (level > 1 ? medalSvg(level, id) : '');
     return el;
+  }
+  const gameLevel = (g) => Math.max(1, Math.min(5, store.get('pr1.levels', {})[g] || 1));
+
+  // ---------------------------------------------------------------- records
+  // Your best at each level of each game in free play, in the game's own measure: the fastest
+  // solve, the fewest tries, the shortest flash reached, the best average speed, the shortest look
+  // with everything right. One number to beat on every card, beside what is possible at all.
+  const tsec = (ms) => (ms < 59950 ? (Math.round(ms / 100) / 10).toFixed(1) + ' s' : clock(ms));
+  const RECORD = {
+    outbound: { lower: true, fmt: tsec, what: 'fastest solve' },
+    conduit: { lower: true, fmt: tsec, what: 'fastest solve' },
+    stacks: { lower: true, fmt: tsec, what: 'fastest solve' },
+    tumbler: { lower: true, fmt: (v) => v + (v === 1 ? ' try' : ' tries'), what: 'fewest tries' },
+    glimpse: { lower: true, fmt: (v) => secs(v) + ' s', what: 'shortest flash' },
+    switchback: { lower: false, fmt: (v) => v + ' km/h', what: 'best average speed' },
+    keepsake: { lower: true, fmt: (v) => secs(v) + ' s', what: 'shortest look, all right' },
+  };
+  const Records = {
+    all() {
+      let r = store.get('pr1.records', null);
+      if (!r) {
+        // the first time: Glimpse's shortest flashes, kept per level before records existed
+        r = {};
+        const gl = store.get('pr1.glreach', null);
+        if (gl) r.glimpse = Object.assign({}, gl);
+        store.set('pr1.records', r);
+      }
+      return r;
+    },
+    get(g, lv) { const r = this.all(); return r[g] && r[g][lv] != null ? r[g][lv] : null; },
+    // the card in the game's measure, or null when it cannot be a record
+    value(g, sm) {
+      if (g === 'outbound' || g === 'conduit' || g === 'stacks') return sm.outcome === 'solved' ? Math.max(0, Math.round(sm.duration_ms - (sm.hidden_ms || 0))) : null;
+      if (g === 'tumbler') return sm.outcome === 'solved' ? sm.moves : null;
+      if (sm.outcome !== 'complete') return null;
+      if (g === 'glimpse') return sm.gl && sm.gl.reach_ms != null ? Math.round(sm.gl.reach_ms) : null;
+      if (g === 'switchback') return sm.sb && sm.sb.speed_mean_kmh != null ? Math.round(sm.sb.speed_mean_kmh) : null;
+      if (g === 'keepsake') return sm.ks && sm.ks.n && sm.ks.correct === sm.ks.n && sm.ks.study_ms != null ? Math.round(sm.ks.study_ms) : null;
+      return null;
+    },
+    // keep a card's value; a new record must also look better as shown, not only by a hair
+    note(g, lv, sm) {
+      const v = this.value(g, sm);
+      if (v == null || !RECORD[g]) return null;
+      const r = this.all(), prev = r[g] && r[g][lv] != null ? r[g][lv] : null, R = RECORD[g];
+      const isNew = prev != null && (R.lower ? v < prev : v > prev) && R.fmt(v) !== R.fmt(prev);
+      if (prev == null || isNew) { (r[g] = r[g] || {})[lv] = v; store.set('pr1.records', r); }
+      return { v, prev, isNew, first: prev == null };
+    },
+  };
+
+  // ---------------------------------------------------------------- level up
+  // Reaching a level for the first time is a moment of its own: the game's badge takes its new
+  // medal, the ladder fills a step, what the level brings, a fanfare, a buzz and a burst of the
+  // game's colors. Coming back to a level after stepping down gets the pill only.
+  function burst(cv, colors) {
+    if (reducedMotion()) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+    const cx = W / 2, cy = H * 0.36, parts = [];
+    for (let i = 0; i < 140; i++) {
+      const a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 9;
+      parts.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 4, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+        w: 6 + Math.random() * 7, h: 4 + Math.random() * 5, c: colors[i % colors.length], star: i % 9 === 0 });
+    }
+    const t0 = now();
+    const frame = () => {
+      const t = now() - t0;
+      ctx.clearRect(0, 0, W, H);
+      const fade = t > 1500 ? Math.max(0, 1 - (t - 1500) / 700) : 1;
+      for (const p of parts) {
+        p.vy += 0.24; p.vx *= 0.985; p.vy *= 0.985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.star ? '#FFD23F' : p.c;
+        if (p.star) { ctx.beginPath(); for (let k = 0; k < 10; k++) { const rr = k % 2 ? 3 : 7, aa = (k * Math.PI) / 5; ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); } ctx.fill(); }
+        else ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (t < 2200) requestAnimationFrame(frame); else ctx.clearRect(0, 0, W, H);
+    };
+    requestAnimationFrame(frame);
+  }
+  function levelUpMoment(g, to, onPlay) {
+    const layer = $('#layer');
+    if (!layer) return;
+    const cv = h('canvas', { class: 'lu-fx', 'aria-hidden': 'true' });
+    const ladder = h('div', { class: 'lu-ladder', 'aria-hidden': 'true' });
+    for (let i = 1; i <= 5; i++) ladder.append(h('i', { class: i < to ? 'on' : i === to ? 'new' : '' }));
+    const adds = levelAdds(g, to);
+    let gone = false;
+    const close = () => {
+      if (gone) return;
+      gone = true;
+      ov.classList.add('out');
+      document.removeEventListener('keydown', onKey);
+      setTimeout(() => ov.remove(), 280);
+    };
+    const onKey = (e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); close(); } };
+    const go = h('button', { class: 'lu-go', type: 'button', onclick: () => { close(); if (onPlay) onPlay(); } }, icon('play'), 'Play ' + LEVEL_NAMES[to - 1]);
+    const ov = h('div', { class: 'lu', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Level up: ' + LEVEL_NAMES[to - 1] + (adds ? ', ' + adds : ''), 'data-game': g },
+      cv,
+      h('div', { class: 'lu-card' },
+        h('div', { class: 'lu-badge' }, h('i', { class: 'lu-glow' }), badge(g, 'lu-art', to)),
+        h('p', { class: 'lu-k', text: 'Level up' }),
+        h('h2', { class: 'lu-name', text: LEVEL_NAMES[to - 1] }),
+        ladder,
+        adds ? h('p', { class: 'lu-adds' }, h('b', { text: 'New ' }), adds) : null,
+        go,
+        h('button', { class: 'lu-later', type: 'button', onclick: close }, 'See my result')));
+    layer.append(ov);
+    document.addEventListener('keydown', onKey);
+    Sound.play('levelup');
+    buzz([30, 70, 30, 70, 30, 120, 90]);
+    requestAnimationFrame(() => burst(cv, CONFETTI[g] || ['#FFD23F']));
+    setTimeout(() => { try { go.focus({ preventScroll: true }); } catch (e) { /* optional */ } }, 60);
   }
   const HAND_SVG = '<svg viewBox="0 0 48 56" aria-hidden="true"><path d="M18 4c2.2 0 4 1.8 4 4v14.5l2.2-.6c1.9-.5 3.9.6 4.4 2.5l.1.4 1.9-.4c1.9-.4 3.8.7 4.3 2.6l.1.5 1.4-.3c2-.4 4 .9 4.4 2.9l.1.6V40c0 7.7-6.3 14-14 14h-2.5c-4.4 0-8.5-2.2-10.9-5.9L6.4 39.5c-1.2-1.9-.7-4.4 1.2-5.6 1.7-1.1 3.9-.8 5.2.7L14 36V8c0-2.2 1.8-4 4-4z" fill="#FFFFFF" stroke="#1F2230" stroke-width="2.6" stroke-linejoin="round"/><path d="M22 29v7M28.7 30v6M34.9 32v5" stroke="#1F2230" stroke-width="2" stroke-linecap="round" opacity="0.35"/></svg>';
   // half: the next level is half earned (one good card of the two it takes)
@@ -3413,6 +3630,12 @@ PuzzleEnginesFactory(window);
     win: (S) => [523, 659, 784, 1047].forEach((f, i) => S.tone(f, f, 0.24, 'triangle', 0.2, i * 0.09)),
     star: (S, i) => { const f = 990 * Math.pow(1.26, i || 0); S.tone(f, f * 1.01, 0.32, 'sine', 0.18); S.tone(f * 2, f * 2, 0.18, 'sine', 0.05, 0.02); },
     level: (S) => [659, 784, 988, 1319].forEach((f, i) => S.tone(f, f, 0.16, 'square', 0.05, i * 0.07)),
+    record: (S) => { [784, 988, 1175, 1568].forEach((f, i) => S.tone(f, f * 1.005, 0.2, 'triangle', 0.16, i * 0.06)); S.tone(2093, 2093, 0.5, 'sine', 0.05, 0.26); },
+    levelup: (S) => {
+      [523, 659, 784, 1047, 1319].forEach((f, i) => S.tone(f, f, 0.22, 'triangle', 0.17, i * 0.08));
+      [1047, 1319, 1568].forEach((f) => S.tone(f, f * 1.003, 0.9, 'sine', 0.07, 0.46));
+      S.noise(0.6, 4000, 9000, 1, 0.025, 0.42);
+    },
     fail: (S) => [392, 330, 247].forEach((f, i) => S.tone(f, f * 0.98, 0.24, 'triangle', 0.17, i * 0.14)),
     dead: (S) => S.tone(240, 105, 0.5, 'sawtooth', 0.06),
     hint: (S) => { S.tone(1320, 1320, 0.12, 'sine', 0.12); S.tone(1760, 1760, 0.18, 'sine', 0.1, 0.08); },
@@ -3432,9 +3655,27 @@ PuzzleEnginesFactory(window);
     ping: (S, k) => { const f = 1175 * Math.pow(1.122, k || 0); S.tone(f, f, 0.07, 'sine', 0.11); S.tone(f * 1.5, f * 1.5, 0.12, 'sine', 0.07, 0.05); },
     skip: (S) => { S.noise(0.26, 500, 2600, 1.1, 0.13); S.tone(520, 780, 0.07, 'triangle', 0.1); S.tone(700, 1040, 0.08, 'triangle', 0.09, 0.08); },
   };
+  // Safari on iPhone has no vibrate: a switch toggled through its label gives one light tap
+  // of the Taptic Engine (Safari 17.4+), so a pattern becomes one tap per pulse
+  let hapticLabel = null;
+  function iosTap() {
+    try {
+      if (!hapticLabel) {
+        const sw = h('input', { type: 'checkbox', id: 'pr-haptic', tabindex: '-1', 'aria-hidden': 'true' });
+        sw.setAttribute('switch', '');
+        hapticLabel = h('label', { for: 'pr-haptic', 'aria-hidden': 'true' });
+        document.body.append(h('div', { class: 'haptic', 'aria-hidden': 'true' }, sw, hapticLabel));
+      }
+      hapticLabel.click();
+    } catch (e) { /* optional */ }
+  }
   function buzz(pattern) {
     if (!Sound.on) return;
-    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* optional */ }
+    try { if (navigator.vibrate) { navigator.vibrate(pattern); return; } } catch (e) { /* optional */ }
+    if (!IOS) return;
+    const p = Array.isArray(pattern) ? pattern : [pattern];
+    let t = 0;
+    for (let i = 0; i < p.length; i += 2) { if (t) setTimeout(iosTap, t); else iosTap(); t += (p[i] || 0) + (p[i + 1] || 0); }
   }
 
   // --------------------------------------------------------------- effects
@@ -3771,9 +4012,59 @@ PuzzleEnginesFactory(window);
     }
     freshRun(p) { return this.G.newRun(p); }
     usesClock() { return true; }
+    free() { const S = this.app.session; return !!(S && S.kind === 'free' && this.spec.adaptive && !this.practice && this.o.counter); }
+    // while playing: does this card still count toward the next level?
+    canCount() { return this.potentialStars() >= 2; }
+    // the record chip: '' (to beat), 'gone' (out of reach this time) or 'live' (on its way to a new one)
+    recordState(rec) {
+      const g = this.spec.game;
+      if (g === 'outbound' || g === 'conduit' || g === 'stacks') return this.elapsed() - this.hiddenMs > rec ? 'gone' : '';
+      if (g === 'tumbler') return this.c.moves >= rec ? 'gone' : '';
+      return '';
+    }
+    updateRecord() {
+      const el = this.recEl;
+      if (!el) return;
+      const rec = this.free() ? Records.get(this.spec.game, this.spec.level) : null;
+      el.hidden = rec == null || !!this.summary;
+      if (el.hidden) { clearInterval(this.recTick); return; }
+      const R = RECORD[this.spec.game];
+      if (el.dataset.v !== String(rec)) {
+        el.dataset.v = String(rec);
+        el.textContent = '';
+        el.append(icon('trophy'), h('b', { text: R.fmt(rec) }));
+        el.setAttribute('aria-label', 'Your record at this level, ' + R.what + ': ' + R.fmt(rec));
+      }
+      const st = this.recordState(rec);
+      el.classList.toggle('gone', st === 'gone');
+      if (st === 'live' && !el.classList.contains('live')) { el.classList.remove('live'); void el.offsetWidth; Sound.play('ping', 4); }
+      el.classList.toggle('live', st === 'live');
+    }
+    // what the next level takes, under the head for a moment: the goal and the good cards so far
+    showToward(asked) {
+      if (!this.free() || this.spec.level >= 5 || this.summary) return;
+      const g = this.spec.game, P = levelProgress(g), goal = pfGoal(g, this.spec.level);
+      if (this.towardEl) this.towardEl.remove();
+      const slots = h('span', { class: 'res-slots' });
+      for (let i = 0; i < P.need; i++) slots.append(h('i', { class: i < P.have ? 'on' : '' }, i < P.have ? icon('check') : null));
+      const chips = h('span', { class: 'res-chips' });
+      if (goal.stars) chips.append(h('span', { class: 'res-chip stars' }, icon('star'), icon('star')));
+      else goal.chips.forEach(([ico, t]) => chips.append(h('span', { class: 'res-chip' }, icon(ico), t)));
+      const left = P.need - P.have;
+      this.towardEl = h('div', { class: 'cue', role: 'status', 'aria-label': (left === 1 ? 'One more' : 'Two') + ' good ' + pfNoun(g, left) + ' for ' + LEVEL_NAMES[this.spec.level] + ': ' + goal.text },
+        chips, slots, h('span', { class: 'cue-to', text: 'for ' + LEVEL_NAMES[this.spec.level] }));
+      // just under the head, wherever its chips wrapped to
+      this.towardEl.style.top = Math.round(this.head.offsetTop + this.head.offsetHeight + 10) + 'px';
+      this.el.append(this.towardEl);
+      const el = this.towardEl;
+      clearTimeout(this.towardTimer);
+      this.towardTimer = setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, asked ? 3200 : 2600);
+    }
     later(fn, ms) { const t = setTimeout(() => { this.timers.delete(t); fn(); }, ms); this.timers.add(t); return t; }
     destroy() {
       clearInterval(this.tick);
+      clearInterval(this.recTick);
+      clearTimeout(this.towardTimer);
       for (const t of this.timers) clearTimeout(t);
       this.timers.clear();
     }
@@ -3787,16 +4078,28 @@ PuzzleEnginesFactory(window);
     }
     build() {
       const sp = this.spec;
+      const lp = this.practice ? null : pips(sp.level, null, this.halfway());
+      // the next level's pip: tap the level for what it takes; it glows while this card can count
+      this.nextPip = lp && this.free() && sp.level < 5 ? lp.children[sp.level] : null;
+      if (lp && this.free()) {
+        lp.classList.add('tap');
+        lp.setAttribute('role', 'button');
+        lp.setAttribute('tabindex', '0');
+        lp.setAttribute('aria-label', 'Level ' + sp.level + ', ' + LEVEL_NAMES[sp.level - 1] + '. What the next level takes');
+        lp.addEventListener('click', () => this.showToward(true));
+        lp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.showToward(true); } });
+      }
       const title = h('div', { class: 'title' },
-        h('span', { class: 'game-ico' }, badge(sp.game)),
+        h('span', { class: 'game-ico' }, badge(sp.game, null, this.practice ? 1 : sp.level)),
         h('span', { class: 'game-name', text: this.G.name }),
-        this.practice ? h('span', { class: 'tag', text: 'Practice' }) : pips(sp.level, null, this.halfway()));
+        this.practice ? h('span', { class: 'tag', text: 'Practice' }) : lp);
       this.goalEl = h('span', { class: 'goal', role: 'status' });
       this.meterEl = h('span', { class: 'meter', role: 'img' });
       this.meterStars = [0, 1, 2].map(() => icon('star'));
       this.meterEl.append(this.meterStars[0], this.meterStars[1], this.meterStars[2]);
       this.clockEl = h('span', { class: 'clock', hidden: true });
-      const status = h('div', { class: 'status' }, this.goalEl, this.meterEl, this.clockEl);
+      this.recEl = h('span', { class: 'rec', role: 'img', hidden: true });
+      const status = h('div', { class: 'status' }, this.goalEl, this.meterEl, this.recEl, this.clockEl);
       this.head = h('div', { class: 'scene-head' }, title, status);
       this.area = h('div', { class: 'board-area' });
       this.toolsEl = h('div', { class: 'tools' });
@@ -3828,6 +4131,11 @@ PuzzleEnginesFactory(window);
     }
     start() {
       this.t0 = now();
+      if (this.free() && Records.get(this.spec.game, this.spec.level) != null && ['outbound', 'conduit', 'stacks'].indexOf(this.spec.game) >= 0) {
+        clearInterval(this.recTick);
+        this.recTick = setInterval(() => this.updateRecord(), 400);
+      }
+      if (this.free()) this.later(() => this.showToward(false), 450);
       this.log('puzzle_start', {
         detail: JSON.stringify({ params: this.G.describe(this.p), reference: this.p.reference, par: this.par, practice: this.practice ? 1 : 0, features: this.p.features }),
       });
@@ -3842,6 +4150,8 @@ PuzzleEnginesFactory(window);
     potentialStars() { const m = this.c.moves; return m <= this.p.reference ? 3 : m <= this.par ? 2 : 1; }
     updateStatus() {
       this.goal();
+      this.updateRecord();
+      if (this.nextPip) this.nextPip.classList.toggle('live', !this.summary && this.canCount());
       const showStars = this.o.counter && !this.practice;
       this.meterEl.hidden = !showStars;
       if (showStars) {
@@ -3985,6 +4295,8 @@ PuzzleEnginesFactory(window);
     resolve(outcome, quiet) {
       if (this.summary) return;
       clearInterval(this.tick);
+      clearInterval(this.recTick);
+      if (this.towardEl) { this.towardEl.remove(); this.towardEl = null; }
       if (this.beforeResolve) this.beforeResolve(outcome);
       if (this.hiddenAt != null) { this.hiddenMs += now() - this.hiddenAt; this.hiddenAt = null; }
       const dur = Math.round(this.elapsed());
@@ -4056,7 +4368,7 @@ PuzzleEnginesFactory(window);
       const refWord = this.spec.game === 'tumbler' ? 'aim ' : 'fewest ';
       return h('div', { class: 'res-stats' },
         h('span', null, icon('tapped'), h('b', { text: String(sm.moves) }), ' ' + unit[sm.moves === 1 ? 0 : 1], h('span', { text: ' · ' + refWord + sm.reference })),
-        h('span', null, icon('clock'), h('b', { text: clock(sm.duration_ms) })));
+        h('span', null, icon('clock'), h('b', { text: tsec(Math.max(0, sm.duration_ms - (sm.hidden_ms || 0))) })));
     }
     resultTitle(sm) {
       if (this.practice && sm.passed === false) return 'Once more';
@@ -4095,13 +4407,20 @@ PuzzleEnginesFactory(window);
         const stats = this.resultStats(sm);
         if (stats) panel.append(stats);
       }
-      if (sm.newBest && this.o.counter && !this.practice) {
-        panel.append(h('div', { class: 'res-level best' }, icon('bolt'), 'New best · ' + secs(sm.newBest) + ' s'));
-        if (!instant) this.later(() => Sound.play('level'), 700);
+      const rc = this.o.counter && !this.practice ? sm.record : null, RR = RECORD[this.spec.game];
+      if (rc && rc.isNew) {
+        // a new record: gold, with the old one beside it
+        panel.append(h('div', { class: 'res-level record', role: 'status', 'aria-label': 'New record, ' + RR.what + ': ' + RR.fmt(rc.v) + ', was ' + RR.fmt(rc.prev) },
+          icon('trophy'), h('span', { text: 'New record · ' + RR.fmt(rc.v) }), h('s', { text: RR.fmt(rc.prev) })));
+        if (!instant) this.later(() => { Sound.play('record'); buzz([20, 50, 20, 50, 40]); }, 650);
+      } else if (rc) {
+        // the record to beat next time (the first card at a level sets it)
+        panel.append(h('div', { class: 'res-level rec-was', 'aria-label': (rc.first ? 'Your first record here, ' : 'Your record, ') + RR.what + ': ' + RR.fmt(rc.first ? rc.v : rc.prev) },
+          icon('trophy'), (rc.first ? 'Record set · ' : 'Record · ') + RR.fmt(rc.first ? rc.v : rc.prev)));
       }
-      if (sm.newBestKmh && this.o.counter && !this.practice) {
-        panel.append(h('div', { class: 'res-level best' }, icon('gauge'), 'New best · ' + sm.newBestKmh + ' km/h'));
-        if (!instant) this.later(() => Sound.play('level'), 700);
+      if (sm.beatAim && this.o.counter && !this.practice) {
+        panel.append(h('div', { class: 'res-level beat', role: 'status' }, icon('key'), 'Fewer tries than the computer'));
+        if (!instant) this.later(() => Sound.play('hint'), 500);
       }
       if (sm.level_change && this.o.counter) {
         const up = sm.level_change.to > sm.level_change.from;
@@ -4111,7 +4430,11 @@ PuzzleEnginesFactory(window);
         panel.append(h('div', { class: 'res-level' + (up ? ' up' : ' down') },
           h('span', { class: 'res-level-row' }, (up ? 'Level up · ' : 'Level · ') + LEVEL_NAMES[sm.level_change.to - 1], pp),
           adds ? h('small', { text: adds }) : null));
-        if (up && !instant) this.later(() => Sound.play('level'), 900);
+        if (up && !instant) {
+          // the first time at a level: its own moment; back at a level after stepping down: the pill
+          if (sm.level_change.first) this.later(() => levelUpMoment(this.spec.game, sm.level_change.to, () => this.app.next()), 1100);
+          else this.later(() => Sound.play('level'), 900);
+        }
       } else if (sm.toward && this.o.counter) {
         // halfway to the next level: the slot just earned fills in, the other waits
         const T = sm.toward, slots = h('span', { class: 'res-slots', 'aria-hidden': 'true' });
@@ -5603,6 +5926,12 @@ PuzzleEnginesFactory(window);
     }
     // passed: at most one look wrong of the three
     practicePassed(sm) { return sm.outcome === 'complete' && !!sm.gl && sm.gl.correct >= sm.gl.n - 1; }
+    recordState(rec) {
+      const reached = this.run.res.filter((x) => x.ok && x.next != null).map((x) => x.next);
+      if (!reached.length) return '';
+      const best = Math.min.apply(null, reached);
+      return best < rec && secs(best) !== secs(rec) ? 'live' : '';
+    }
     celebrate(sm) {
       this.renderDots();
       return this.trialCelebrate(sm, CONFETTI.glimpse);
@@ -8931,7 +9260,8 @@ PuzzleEnginesFactory(window);
         h('div', { class: 'res-stats' },
           h('span', { 'aria-label': d.hits + ' of ' + targets + ' target signs caught' + (d.false_alarms ? ', ' + d.false_alarms + ' taps on other signs' : '') },
             sg, h('b', { text: d.hits + '/' + targets }), d.false_alarms ? h('small', { class: 'res-wrong' }, icon('x'), String(d.false_alarms)) : null),
-          h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' }))),
+          h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' })),
+          d.speed_mean_kmh != null ? h('span', { 'aria-label': 'Average speed' }, icon('gauge'), h('b', { text: Math.round(d.speed_mean_kmh) + ' km/h' })) : null),
         d.items ? h('div', { class: 'res-bonus', 'aria-label': 'Collected ' + d.collected + ' of ' + d.items }, c, h('b', { text: d.collected + '/' + d.items })) : null);
     }
     extraSnapshot() { return { tt: this.tt, pos: this.pos, endW: this.endW }; }
@@ -9416,7 +9746,7 @@ PuzzleEnginesFactory(window);
       if (!d || !d.n) return null;
       return h('div', { class: 'res-stats' },
         h('span', { 'aria-label': 'Put back in the right place' }, icon('check'), h('b', { text: d.correct + '/' + d.n })),
-        h('span', null, icon('clock'), h('b', { text: clock(sm.duration_ms) })));
+        d.study_ms != null ? h('span', { 'aria-label': 'Looked for ' + secs(d.study_ms) + ' seconds' }, icon('eye'), h('b', { text: secs(d.study_ms) + ' s' })) : null);
     }
     extraSnapshot() { return null; }
     onKey(e) {
@@ -9977,12 +10307,14 @@ PuzzleEnginesFactory(window);
     const min = Math.round(t.ms / 60000);
     const big = (ico, v, label) => h('div', { class: 'pf-num' }, icon(ico), h('b', { text: String(v) }), h('span', { text: label }));
     let fig = null;
-    if (g === 'glimpse') { const b = store.get('pr1.glreach', {})[lv] || store.get('pr1.glbest', {})[lv]; if (b != null) fig = big('bolt', secs(b) + ' s', 'fastest flash'); }
     if (g === 'switchback') { const k = Math.max(t.kmh || 0, ...H.map((e) => Math.round(e.kmh || 0))); if (k) fig = big('gauge', k, 'best km/h'); }
     if (g === 'keepsake' && t.cards) fig = big('star', t.perfect + '/' + t.cards, 'all right');
     if ((g === 'outbound' || g === 'conduit') && t.solved) fig = big('bolt', t.perfect + '/' + t.solved, g === 'conduit' ? 'fewest turns' : 'fewest moves');
     if (g === 'stacks' && t.planN) fig = big('hint', Math.round(t.plan / t.planN / 100) / 10 + ' s', 'to plan');
     if (g === 'tumbler' && t.solved) fig = big('key', Math.round((t.tries / t.solved) * 10) / 10, 'tries a code');
+    // your record at this level, when there is one, says the most
+    const rec = Records.get(g, lv);
+    if (rec != null && RECORD[g]) fig = big('trophy', RECORD[g].fmt(rec), 'record, ' + LEVEL_NAMES[lv - 1]);
     return h('div', { class: 'pf-nums' }, big('tapped', t.cards, pfNoun(g, t.cards)), big('clock', min < 1 ? '<1' : min, 'min'), fig);
   }
 
@@ -10299,18 +10631,22 @@ PuzzleEnginesFactory(window);
       const n = (k) => (applies.indexOf(k) >= 0 ? c[k] : '');
       const g = sm.gl || null, d = sm.sb || null, m = sm.ks || null;
       if (d && !sp.practice && d.n && sm.outcome === 'complete') this.switchbackKeep(sp, card.run.ms, card.run.kmh);
-      // a drive faster on average than any before it is a new best
-      if (d && !sp.practice && S.kind === 'free' && sm.outcome === 'complete' && d.speed_mean_kmh != null) {
-        const was = (Stats.load(this).all.switchback || {}).kmh || 0;
-        if (was && Math.round(d.speed_mean_kmh) > was) sm.newBestKmh = Math.round(d.speed_mean_kmh);
-      }
       if (g && !sp.practice && g.n) {
         this.glimpseKeep(sp, card.run.ms);
         if (change && change.changed && change.to < change.from) this.glimpseForget(sp, change.from);
-        if (S.kind === 'free' && g.reach_ms != null && sm.outcome === 'complete') {
-          const best = store.get('pr1.glreach', {});
-          if (best[sp.level] != null && g.reach_ms < best[sp.level] - 0.5) sm.newBest = g.reach_ms;
-          if (best[sp.level] == null || g.reach_ms < best[sp.level]) { best[sp.level] = g.reach_ms; store.set('pr1.glreach', best); }
+      }
+      if (S.kind === 'free' && !sp.practice && !neutral) {
+        // your record at this level, in the game's own measure
+        sm.record = Records.note(sp.game, sp.level, sm);
+        // Tumbler: cracked in fewer tries than the computer's own way of guessing
+        if (sp.game === 'tumbler' && sm.outcome === 'solved' && sm.reference != null && sm.moves < sm.reference) sm.beatAim = true;
+        // the first time this game reaches a level
+        if (change && change.changed && change.to > change.from) {
+          const reached = store.get('pr1.reached', {});
+          const top = reached[sp.game] || ((Stats.load(this).all[sp.game] || {}).top || 1);
+          change.first = change.to > top;
+          reached[sp.game] = Math.max(top, change.to);
+          store.set('pr1.reached', reached);
         }
       }
       S.puzzles.push({
@@ -10587,7 +10923,7 @@ PuzzleEnginesFactory(window);
           const t = all[g], on = played(g), P = levelProgress(g), best = Math.max(t ? t.top : 0, P.lv);
           const say = LABEL[g] + ', ' + (on ? LEVEL_NAMES[P.lv - 1] + (P.have ? ', halfway to ' + LEVEL_NAMES[P.lv] : '') + ', ' + t.stars + ' stars' : 'not played yet');
           const row = h('button', { class: 'pf-row' + (on ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-label': say },
-            h('span', { class: 'pf-ico', 'aria-hidden': 'true' }, badge(g)),
+            h('span', { class: 'pf-ico', 'aria-hidden': 'true' }, badge(g, null, P.lv)),
             h('span', { class: 'pf-name' }, h('b', { text: LABEL[g] }),
               h('span', { class: 'pf-sub' }, pfLadder(P, best, 'pf-small'), h('small', { text: on ? LEVEL_NAMES[P.lv - 1] : 'New' }))),
             h('span', { class: 'pf-stars' }, on ? icon('star') : null, on ? String(t.stars) : null),
@@ -10656,7 +10992,7 @@ PuzzleEnginesFactory(window);
           class: 'gp' + (g === focus ? ' on' : ''), type: 'button', 'data-game': g, 'aria-pressed': g === focus ? 'true' : 'false',
           'aria-label': g === 'mixed' ? 'All games' : LABEL[g],
           onclick: () => { closeSheet(); this.startFree(false, g); },
-        }, h('span', { class: 'gp-ico' }, badge(g)), h('span', { text: g === 'mixed' ? 'All' : LABEL[g] }))));
+        }, h('span', { class: 'gp-ico' }, badge(g, null, g === 'mixed' ? 1 : gameLevel(g))), h('span', { text: g === 'mixed' ? 'All' : LABEL[g] }))));
       openSheet('Puzzle Reel', [picker, h('div', { class: 'menu' },
         soundRow,
         item('person', 'Profile', 'Your levels and bests', () => { closeSheet(); this.openProfile(); }),

@@ -195,6 +195,33 @@ button { cursor: pointer; }
 .pips i.on { opacity: 0.9; }
 /* the next level half earned: one good card of the two it takes */
 .pips i.half { opacity: 0.9; background: linear-gradient(90deg, var(--pip) 50%, transparent 50%); box-shadow: inset 0 0 0 1.4px var(--pip); }
+/* free play: the level is a button (what the next one takes), and the next pip glows while this card can count */
+.pips.tap { cursor: pointer; padding: 8px 4px; margin: -8px -4px -8px -2px; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
+.pips.tap:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; }
+.pips i { transition: opacity 0.3s, transform 0.3s; }
+.pips i.live { opacity: 0.9; background: var(--gold); box-shadow: 0 0 0 2px rgba(255, 196, 46, 0.35); animation: pipwait 1.8s ease-in-out infinite; }
+.pips i.live.half { background: linear-gradient(90deg, var(--gold) 50%, transparent 50%); box-shadow: inset 0 0 0 1.4px var(--gold), 0 0 0 2px rgba(255, 196, 46, 0.35); }
+@keyframes pipwait { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+/* the record to beat at this level */
+.rec { display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 12px 0 9px; border-radius: 999px; background: var(--chip); font-family: var(--display); font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; transition: opacity 0.35s, background 0.35s, box-shadow 0.35s; }
+.rec svg { width: 19px; height: 19px; color: var(--gold-deep, #C98A00); }
+.rec.gone { opacity: 0.4; }
+.rec.gone b { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.rec.live { background: #FFE58A; color: #5A3B00; box-shadow: 0 0 0 3px rgba(255, 205, 60, 0.45); animation: bump 0.45s cubic-bezier(.3,1.6,.5,1); }
+.rec.live svg { color: #B57800; }
+/* what the next level takes, under the head for a moment */
+.cue { position: absolute; z-index: 8; left: 50%; top: 132px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 7px; border-radius: 999px;
+  background: #FFFDF7; color: var(--paper-ink, #23263A); font-family: var(--display); font-weight: 600; font-size: 15px; white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(20, 24, 40, 0.22); animation: towardin 0.42s cubic-bezier(.3,1.5,.5,1) both; pointer-events: none; }
+.cue.out { animation: towardout 0.3s ease-in both; }
+.cue .res-chip { box-shadow: inset 0 0 0 1.5px #E2DACB; }
+.cue .res-chip.stars svg { color: var(--gold); width: 15px; height: 15px; }
+.cue .res-slots i { width: 22px; height: 22px; }
+.cue .res-slots svg { width: 14px; height: 14px; }
+.cue .res-slots i { animation: none !important; }
+.cue-to { color: var(--paper-soft, #6A6E82); font-weight: 500; }
+@keyframes towardin { from { opacity: 0; transform: translate(-50%, -10px) scale(0.92); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes towardout { to { opacity: 0; transform: translate(-50%, -8px) scale(0.96); } }
 .tag { font-family: var(--display); font-weight: 600; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--ink); color: var(--bg2); letter-spacing: 0.02em; }
 .status { display: flex; align-items: center; gap: 8px; }
 /* Switchback: this place's sign and one dot per target sign of the drive */
@@ -675,6 +702,15 @@ button { cursor: pointer; }
 .res-stats b { color: var(--paper-ink); font-weight: 600; }
 .res-level { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: #FFF3CF; color: #7A5200; font-family: var(--display); font-weight: 600; font-size: 16px; animation: pop 0.5s 0.6s cubic-bezier(.3,1.7,.5,1) both; }
 .res-level.down { background: #EEF0F6; color: var(--paper-soft); }
+/* records: a new one in gold with the old one struck beside it; otherwise the one to beat, quiet */
+.res-level.record { background: linear-gradient(180deg, #FFE98F, #FFD24D); color: #5A3B00; box-shadow: 0 0 0 2px #FFF1B8, 0 4px 14px rgba(230, 160, 0, 0.35); position: relative; overflow: hidden; }
+.res-level.record svg { width: 19px; height: 19px; color: #A86A00; }
+.res-level.record s { font-family: var(--ui); font-weight: 500; font-size: 14px; opacity: 0.6; }
+.res-level.record::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.85) 50%, transparent 65%) no-repeat; background-size: 250% 100%; animation: pfshine 1.3s 0.9s ease-in-out 2 both; pointer-events: none; }
+.res-level.rec-was { background: transparent; color: var(--paper-soft); font-family: var(--ui); font-weight: 500; font-size: 15px; padding: 2px 10px; animation-delay: 0.4s; }
+.res-level.rec-was svg { width: 17px; height: 17px; color: var(--gold-deep, #C98A00); }
+.res-level.beat { background: linear-gradient(180deg, #E6DEFF, #D2C6FF); color: #3B2A8C; box-shadow: 0 0 0 2px #F1ECFF; }
+.res-level.beat svg { width: 18px; height: 18px; }
 .res-level-row { display: inline-flex; align-items: center; gap: 8px; }
 /* a level up says what the new level brings */
 .res-level.up { flex-direction: column; gap: 1px; border-radius: 22px; }
@@ -1048,3 +1084,51 @@ code { font-family: var(--mono); font-size: 12px; }
 
 /* duotone: closed shapes in the line icons carry a soft fill of their own color */
 svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
+
+/* iPhone haptics: a switch toggled through its label, kept out of sight */
+.haptic { position: fixed; left: -200px; top: -200px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+
+/* ---------------------------------------------------------------- level up
+   The first time a game reaches a level: the badge takes its medal, the ladder fills a step,
+   what the level brings, then play on (or see the result first). */
+.lu { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px;
+  background: radial-gradient(120% 80% at 50% 34%, color-mix(in srgb, var(--lu, #5B47AE) 70%, #FFFFFF) 0%, var(--lu, #5B47AE) 46%, color-mix(in srgb, var(--lu, #5B47AE) 55%, #0B0D1C) 100%);
+  animation: fadein 0.32s ease-out both; color: #FFFFFF; }
+.lu.out { animation: luout 0.28s ease-in both; }
+@keyframes luout { to { opacity: 0; transform: scale(1.03); } }
+.lu[data-game="outbound"] { --lu: #F2A31B; }
+.lu[data-game="conduit"] { --lu: #3FA653; }
+.lu[data-game="tumbler"] { --lu: #4E3BA6; }
+.lu[data-game="glimpse"] { --lu: #2563CF; }
+.lu[data-game="stacks"] { --lu: #3E9C98; }
+.lu[data-game="switchback"] { --lu: #DD5A40; }
+.lu[data-game="keepsake"] { --lu: #D45784; }
+.lu-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.lu-card { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 340px; width: 100%; }
+.lu-badge { position: relative; width: 148px; height: 148px; display: grid; place-items: center; margin-bottom: 14px; animation: lubadge 0.75s 0.1s cubic-bezier(.25,1.6,.45,1) both; }
+.lu-glow { position: absolute; inset: -40px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 62%); animation: luglow 2.4s ease-in-out infinite; }
+.lu-art { position: relative; width: 132px; height: 132px; filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.3)); }
+.lu-art .medal { transform-box: fill-box; transform-origin: center; animation: lumedal 0.6s 0.85s cubic-bezier(.3,1.9,.5,1) both; }
+@keyframes lubadge { 0% { opacity: 0; transform: scale(0.3) rotate(-14deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes lumedal { 0% { opacity: 0; transform: scale(0.1); } 70% { opacity: 1; transform: scale(1.45); } 100% { transform: scale(1); } }
+@keyframes luglow { 0%, 100% { opacity: 0.7; transform: scale(0.94); } 50% { opacity: 1; transform: scale(1.06); } }
+.lu-k { margin: 0; font-family: var(--display); font-weight: 600; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; animation: luin 0.4s 0.45s both; }
+.lu-name { margin: 2px 0 12px; font-family: var(--display); font-weight: 700; font-size: 52px; line-height: 1; letter-spacing: 0.005em; text-shadow: 0 3px 14px rgba(0, 0, 0, 0.22); animation: luname 0.6s 0.55s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes luin { from { opacity: 0; transform: translateY(8px); } to { opacity: 0.85; transform: none; } }
+@keyframes luname { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+.lu-ladder { display: flex; gap: 6px; width: 220px; margin-bottom: 14px; animation: luin 0.4s 0.7s both; }
+.lu-ladder i { flex: 1; height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.25); overflow: hidden; position: relative; }
+.lu-ladder i.on { background: #FFFFFF; }
+.lu-ladder i.new::after { content: ''; position: absolute; inset: 0; background: #FFD23F; transform-origin: left; animation: lufill 0.7s 1.1s cubic-bezier(.4,1.4,.5,1) both; box-shadow: 0 0 10px #FFD23F; }
+@keyframes lufill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.lu-adds { margin: 0 0 22px; padding: 8px 16px; border-radius: 14px; background: rgba(255, 255, 255, 0.16); font-size: 17px; line-height: 1.35; animation: luin 0.4s 1.3s both; }
+.lu-adds b { font-family: var(--display); font-weight: 600; color: #FFE27A; }
+.lu-go { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; height: 56px; padding: 0 26px; border: 0; border-radius: 999px;
+  background: #FFFFFF; color: color-mix(in srgb, var(--lu, #5B47AE) 70%, #10132A); font-family: var(--display); font-weight: 700; font-size: 20px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25); animation: luin 0.4s 1.5s both; cursor: pointer; }
+.lu-go svg { width: 20px; height: 20px; }
+.lu-go:active { transform: scale(0.96); }
+.lu-go:focus { outline: none; }
+.lu-go:focus-visible { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(255, 255, 255, 0.55); }
+.lu-later { margin-top: 10px; padding: 10px 16px; border: 0; background: transparent; color: rgba(255, 255, 255, 0.85); font-family: var(--ui); font-size: 15px; font-weight: 500; cursor: pointer; animation: luin 0.4s 1.6s both; }
+@media (prefers-reduced-motion: reduce) { .lu, .lu *, .lu-art .medal { animation: none !important; } }
