@@ -2112,7 +2112,7 @@
         this.palEl.append(b);
       }
       this.clearBtn = h('button', { class: 'vbtn ghost', type: 'button', 'aria-label': 'Clear the row', onclick: () => this.clearDraft() }, icon('erase'));
-      this.tryBtn = h('button', { class: 'vbtn go', type: 'button', onclick: () => this.submit() }, icon('key'), 'Try');
+      this.tryBtn = h('button', { class: 'vbtn go', type: 'button', onclick: () => this.submit() }, icon('key'), 'Check');
       // the lock: what is hidden, one socket per pin, filled in as each pin is found
       this.lockEl = h('div', { class: 'tb-lock', role: 'img' });
       this.lockKnown = null;
