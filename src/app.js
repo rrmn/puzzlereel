@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.14.0';
+  const APP_VERSION = '2.15.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -1986,9 +1986,9 @@
       });
       this.lens.addEventListener('pointerdown', (e) => this.lensDown(e));
       this.dotsEl = h('div', { class: 'gl-dots', 'aria-hidden': 'true' });
-      // a point for the practice hand to rest on during the first flash
-      this.anchorEl = h('i', { class: 'gl-anchor', 'aria-hidden': 'true' });
-      this.lens.append(this.canvas, this.anchorEl, this.spotsEl, this.choiceEl, this.goBtn);
+      // the question, drawn where it is asked: a "?" where the animal was, then the thing to find
+      this.askEl = h('div', { class: 'gl-ask', 'aria-hidden': 'true', hidden: true });
+      this.lens.append(this.canvas, this.askEl, this.spotsEl, this.choiceEl, this.goBtn);
       this.area.classList.add('gl-area');
       this.area.append(h('div', { class: 'gl-wrap' }, this.lens, this.dotsEl));
       if (this.phase === 'done') this.goBtn.hidden = true;
@@ -2119,11 +2119,11 @@
             this.blit(this.stimC);
             st.onset = ts;
             this.phase = 'stim';
-            if (this.practice && this.run.i === 0 && p.periph) this.showWhere(t);
+            if (this.practice && this.run.i === 0) this.showMarks(t);
           }
         } else if (this.phase === 'stim') {
           if (ts - st.onset >= (st.plan.frames - 0.5) * st.T) {
-            if (this.practice) this.hideHand();
+            if (this.practice) this.hideMarks();
             this.blit(this.maskC);
             st.offset = ts;
             this.phase = 'mask';
@@ -2149,15 +2149,24 @@
       this.st = null;
       this.blit(null);
       this.app.steady(false);
+      this.hideMarks();
       this.log('interrupted', { move_no: this.run.i + 1, detail: ph + ', ' + reason });
       this.phase = 'ready';
       this.goBtn.disabled = false;
       this.goBtn.classList.remove('away');
     }
     onHidden() { this.abort('page hidden'); }
+    ask(kind, name) {
+      this.askEl.textContent = '';
+      this.askEl.className = 'gl-ask ' + kind;
+      if (name) this.askEl.append(h('span', { class: 'gl-ask-thing' }, glSvg(name)));
+      this.askEl.append(h('b', { text: '?' }));
+      this.askEl.hidden = false;
+    }
     askWhat() {
       this.phase = 'what';
       this.ans = {};
+      this.ask('what');
       this.choiceBtns.forEach((b) => { b.className = 'gl-choice'; b.disabled = false; });
       this.choiceEl.classList.remove('gone');
       this.choiceEl.hidden = false;
@@ -2175,19 +2184,30 @@
       this.hideHand();
       if (this.p.periph) this.askWhere(); else this.finishLook();
     }
-    // the practice hand points at the bird while the first flash is up
-    showWhere(t) {
-      const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
-      this.anchorEl.style.left = q[0] + 'px';
-      this.anchorEl.style.top = q[1] + this.R * 0.1 + 'px';
-      if (!this.hand) this.hand = new Hand(this);
-      this.hand.point(this.anchorEl);
+    // during the first practice flash, soft rings round the two things to remember
+    // (a hand would say "tap", and this is the moment to look)
+    showMarks(t) {
+      this.hideMarks();
+      const at = [[this.R, this.R, 0.52]];
+      if (this.p.periph) { const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir)); at.push([q[0], q[1], 0.36]); }
+      this.marks = at.map(([x, y, d]) => {
+        const m = h('i', { class: 'gl-mark', 'aria-hidden': 'true' });
+        const size = Math.round(d * this.R);
+        m.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + size + 'px;height:' + size + 'px;margin:' + -size / 2 + 'px 0 0 ' + -size / 2 + 'px';
+        this.lens.append(m);
+        return m;
+      });
     }
+    hideMarks() { (this.marks || []).forEach((m) => m.remove()); this.marks = null; }
     askWhere() {
       this.phase = 'where';
       this.choiceEl.classList.add('gone');
+      const t = this.p.trials[this.run.i], tg = t.tg || 'bird';
+      this.ask('where', tg);
+      this.spotsEl.setAttribute('aria-label', 'Where the ' + tg + ' was');
       this.placeSpots();
       this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; });
+      this.spotsEl.classList.add('asking');
       this.spotsEl.hidden = false;
       this.whereAt = now();
       this.later(() => this.guide(), 260);
@@ -2215,6 +2235,8 @@
     }
     finishLook() {
       this.phase = 'fb';
+      this.askEl.hidden = true;
+      this.spotsEl.classList.remove('asking');
       const p = this.p, t = p.trials[this.run.i], st = this.st, a = this.ans;
       const cOk = a.c === t.c, dOk = p.periph ? a.d === t.dir : true;
       const correct = cOk && dOk;
@@ -2338,6 +2360,8 @@
       this.goBtn.hidden = true;
       this.choiceEl.hidden = true;
       this.spotsEl.hidden = true;
+      this.askEl.hidden = true;
+      this.hideMarks();
       this.clearReveal();
     }
     makeSummary(outcome, dur) {
@@ -6312,7 +6336,7 @@
         '## Glimpse timing', '',
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do; rounds in fixed blocks are always 6 looks. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase starts at 1500 ms, a slow and easy look for older players and non-gamers (until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. At level 2 and up a look is correct only when the animal and the place are both right.',
-        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first one a hand points at the bird. After an answer with feedback on, the next look follows 1.1 s later.',
+        'The staircase carries over between rounds of the same level: within a block in research sessions (each block starts fresh, and a new level starts three steps slower than the level below it ended, when that one has a value; until app 2.13: 83 ms slower), and between visits in free play. A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
         '## Stacks', '', 'The tower-of-London task: three pieces on three posts that hold 3, 2 and 1. A move takes the top piece of one post to another post with room. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from the 36 arrangements with that distance. ' + 'Settings: ' + E.games.stacks.themes.join(', ') + ' (same rules and pieces, different look); fixed blocks and practice always use stones, adaptive blocks and free play draw the setting from the puzzle seed (in `params` and `features`). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
