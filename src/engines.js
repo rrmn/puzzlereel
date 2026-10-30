@@ -310,7 +310,7 @@
     let tries = 0;
     while (cars.length < L.cars && tries < (L.dense ? 2000 : 900)) {
       tries++;
-      const len = rng() < L.truck ? 3 : 2;
+      const len = rng() < L.truck ? 3 : L.bike && rng() < L.bike ? 1 : 2;
       const dir = DIRS[rng.int(4)];
       const d = DIR[dir];
       const x = rng.int(w), y = rng.int(h);
@@ -343,7 +343,7 @@
     let tries = 0;
     while (cars.length < L.cars && tries < 600) {
       tries++;
-      const len = rng() < L.truck ? 3 : 2;
+      const len = rng() < L.truck ? 3 : L.bike && rng() < L.bike ? 1 : 2;
       const dir = DIRS[rng.int(4)];
       const d = DIR[dir];
       const x = rng.int(w), y = rng.int(h);
@@ -381,11 +381,11 @@
     // (until engines 1.24 levels 3 to 5 were chosen by random tapping alone, and a sensible
     // player cleared levels 1 to 4 almost every time)
     levels: {
-      1: { w: 5, h: 5, cars: 5, truck: 0, loops: 0, traps: 0, band: [0.99, 1], attempts: 40 },
-      2: { w: 6, h: 6, cars: 7, truck: 0.1, loops: 1, traps: 0, band: [0, 1], attempts: 40 },
-      3: { w: 6, h: 6, cars: 9, truck: 0.1, loops: 1, traps: 0, dense: true, qBand: [0.3, 0.65], maxOpt: 11, attempts: 2000 },
-      4: { w: 7, h: 7, cars: 11, truck: 0.15, loops: 2, traps: 0, dense: true, qBand: [0.15, 0.42], maxOpt: 13, attempts: 1500 },
-      5: { w: 7, h: 7, cars: 12, truck: 0.15, loops: 2, traps: 0, dense: true, qBand: [0, 0.3], maxOpt: 15, attempts: 300 },
+      1: { w: 5, h: 5, cars: 5, truck: 0, bike: 0.25, loops: 0, traps: 0, band: [0.99, 1], attempts: 40 },
+      2: { w: 6, h: 6, cars: 7, truck: 0.1, bike: 0.25, loops: 1, traps: 0, band: [0, 1], attempts: 40 },
+      3: { w: 6, h: 6, cars: 9, truck: 0.1, bike: 0.25, loops: 1, traps: 0, dense: true, qBand: [0.3, 0.65], maxOpt: 11, attempts: 2000 },
+      4: { w: 7, h: 7, cars: 11, truck: 0.15, bike: 0.25, loops: 2, traps: 0, dense: true, qBand: [0.15, 0.42], maxOpt: 13, attempts: 1500 },
+      5: { w: 7, h: 7, cars: 12, truck: 0.15, bike: 0.25, loops: 2, traps: 0, dense: true, qBand: [0, 0.3], maxOpt: 15, attempts: 300 },
     },
     describe(p) { return p.w + '×' + p.h + ' lot, ' + p.cars.length + ' cars'; },
     generate(level, seed) {
@@ -430,6 +430,7 @@
         features: {
           cars: cars.length,
           trucks: cars.filter((c) => c.len === 3).length,
+          bikes: cars.filter((c) => c.len === 1).length,
           optimal_moves: an.optimal,
           slides_needed: an.minSlides,
           p_random_solve: round(an.pRandom, 4),
@@ -2270,7 +2271,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.25.0',
+    version: '1.26.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],

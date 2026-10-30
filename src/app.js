@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.32.0';
+  const APP_VERSION = '2.33.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -1604,252 +1604,325 @@
   const OB_SKIS = [['#F2564D', '#FFFFFF'], ['#3D8BFD', '#FFC93C'], ['#22BFB0', '#1F2128'], ['#FFFFFF', '#9B6BFF']];
   const obLight = (hex) => { const n = parseInt(hex.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 165; };
   const obR = (x, y, w, hh, rx, f, extra) => '<rect x="' + (+x).toFixed(2) + '" y="' + (+y).toFixed(2) + '" width="' + (+w).toFixed(2) + '" height="' + (+hh).toFixed(2) + '" rx="' + rx + '" fill="' + f + '"' + (extra || '') + '/>';
-  // Each place has several kinds of car, so no two neighbours look alike: the short ones (two
-  // spaces) and the long ones (three) each come from the place's own set, in turn.
+  // Each place has its own kinds of vehicle, every kind with an outline and one big thing of its
+  // own, so neighbours never look alike: bikes take one space, cars two, the long ones three.
+  // In each place they are taken in turn, so no two in a row are the same kind.
   const OB_SETS = {
-    town: [['hatch', 'mini', 'sports', 'convertible', 'sedan', 'beetle'], ['truck', 'delivery', 'fire']],
-    beach: [['jeep', 'buggy', 'convertible', 'pickup', 'beetle'], ['camper', 'icecream']],
-    city: [['taxi', 'sedan', 'taxi', 'sports', 'taxi', 'mini'], ['bus', 'limo', 'delivery']],
-    ski: [['skicar', 'suv', 'pickup', 'estate', 'beetle'], ['plough', 'snowcat']],
-    ferry: [['estate', 'suv', 'pickup', 'sedan', 'hatch', 'mini'], ['lorry', 'motorhome', 'delivery']],
+    town: [['bicycle', 'scooter'], ['hatch', 'beetle', 'sports', 'convertible', 'mini'], ['mixer', 'delivery', 'fire']],
+    beach: [['quad', 'bicycle'], ['jeep', 'buggy', 'convertible', 'pickup', 'beetle'], ['camper', 'icecream']],
+    city: [['motorbike', 'pizza'], ['taxi', 'police', 'sedan', 'taxi', 'sports', 'mini'], ['bus', 'limo', 'delivery']],
+    ski: [['snowmobile'], ['jeep', 'estate', 'pickup', 'beetle', 'hatch'], ['plough', 'snowcat']],
+    ferry: [['motorbike', 'bicycle'], ['estate', 'jeep', 'pickup', 'sedan', 'mini', 'beetle'], ['lorry', 'motorhome', 'delivery']],
   };
-  const OB_MODEL_NAMES = { hatch: 'Car', mini: 'Mini', sports: 'Sports car', convertible: 'Convertible', sedan: 'Car', beetle: 'Beetle', estate: 'Estate car', suv: 'Jeep', pickup: 'Pickup', jeep: 'Jeep', buggy: 'Beach buggy', taxi: 'Taxi', skicar: 'Car', truck: 'Truck', delivery: 'Van', fire: 'Fire engine', camper: 'Camper van', icecream: 'Ice cream van', bus: 'Bus', limo: 'Limousine', plough: 'Snowplough', snowcat: 'Snowcat', lorry: 'Lorry', motorhome: 'Motorhome' };
-  const obModel = (kit, c, i, seed) => { const set = OB_SETS[kit][c.len === 3 ? 1 : 0]; return set[(i + (seed >>> 0)) % set.length]; };
-  // one vehicle, drawn facing up, its middle at 0 0: what it is, its color, and where its arrow goes
+  const OB_MODEL_NAMES = { bicycle: 'Bicycle', scooter: 'Scooter', quad: 'Quad bike', motorbike: 'Motorbike', pizza: 'Pizza scooter', snowmobile: 'Snowmobile', hatch: 'Car', beetle: 'Beetle', sports: 'Sports car', convertible: 'Convertible', mini: 'Mini', jeep: 'Jeep', buggy: 'Beach buggy', pickup: 'Pickup', taxi: 'Taxi', police: 'Police car', sedan: 'Car', estate: 'Estate car', mixer: 'Cement mixer', delivery: 'Van', fire: 'Fire engine', camper: 'Camper van', icecream: 'Ice cream van', bus: 'Bus', limo: 'Limousine', plough: 'Snowplough', snowcat: 'Snowcat', lorry: 'Lorry', motorhome: 'Motorhome' };
+  // tall ones throw a longer shadow
+  const OB_HEIGHT = { bicycle: 0.5, scooter: 0.6, quad: 0.7, motorbike: 0.6, pizza: 0.7, snowmobile: 0.7, sports: 0.7, convertible: 0.8, buggy: 0.8, beetle: 1.1, hatch: 1.1, mini: 1.0, sedan: 1.0, taxi: 1.0, police: 1.0, estate: 1.1, pickup: 1.3, jeep: 1.4, limo: 1.0, plough: 1.6, snowcat: 1.6, mixer: 1.8, delivery: 1.9, fire: 1.8, camper: 1.9, icecream: 2.0, bus: 2.1, lorry: 2.1, motorhome: 2.1 };
+  const OB_HAIR = ['#3A2618', '#E8C26A', '#1F1B18', '#B5532E', '#8A5A36', '#D9D9D9'];
+  const obSet = (kit, len) => OB_SETS[kit][len === 1 ? 0 : len === 3 ? 2 : 1];
+  const obModel = (kit, c, i, seed) => { const set = obSet(kit, c.len); return set[(i + (seed >>> 0)) % set.length]; };
+  // one vehicle, drawn facing up, its middle at 0 0: its look, the color under its arrow, where the
+  // arrow goes, and how the arrow should be drawn (small on bikes, edged where the top is busy)
   function obVehicle(kit, c, uid, model) {
     const L = c.len * 10, top = -L / 2, bot = L / 2;
     let col = CAR_COLORS[c.color % CAR_COLORS.length].fill;
     if (model === 'taxi') col = OB_TAXI[c.color % OB_TAXI.length];
     if (model === 'bus') col = OB_BUS[c.color % OB_BUS.length];
     if (model === 'fire') col = '#E2372E';
+    if (model === 'police') col = '#F4F5F7';
     if (model === 'limo') col = ['#1F2128', '#F4F5F7', '#6B2E3E', '#1F2128'][c.color % 4];
     if (model === 'plough' || model === 'snowcat') col = c.color % 2 ? '#FF8A1F' : '#FFC23A';
     if (kit === 'ski' && col === '#F4F5F7') col = '#56688F';
-    const glass = '#24334A', tyre = '#1B1E26', R = obR;
+    const glass = '#24334A', tyre = '#1B1E26', R = obR, hair = OB_HAIR[c.color % OB_HAIR.length];
     const g = (id) => 'url(#' + uid + id + ')';
-    const shadow = R(-4.2, top + 0.8, 8.4, L - 1.6, 3, 'rgba(10,12,20,0.5)', ' filter="' + g('b') + '" transform="translate(0.7 1.1)"');
-    const wheels = (ww, hh, mid) => R(-4.8, top + 2.1, ww, hh, 0.7, tyre) + R(4.8 - ww, top + 2.1, ww, hh, 0.7, tyre)
-      + R(-4.8, bot - 2.1 - hh, ww, hh, 0.7, tyre) + R(4.8 - ww, bot - 2.1 - hh, ww, hh, 0.7, tyre)
-      + (mid ? R(-4.8, bot - 5.6 - hh, ww, hh, 0.7, tyre) + R(4.8 - ww, bot - 5.6 - hh, ww, hh, 0.7, tyre) : '');
-    const body = (rx, x0, w0, y0, h0, f) => { const x = x0 == null ? -4.2 : x0, w = w0 || 8.4, y = y0 == null ? top + 0.8 : y0, hh = h0 || L - 1.6; return R(x, y, w, hh, rx, f || col) + R(x, y, w, hh, rx, g('g')); };
-    const lamps = (fy) => R(-3.6, (fy == null ? top + 1.0 : fy), 1.7, 1.0, 0.5, '#FFF4BE') + R(1.9, (fy == null ? top + 1.0 : fy), 1.7, 1.0, 0.5, '#FFF4BE')
-      + R(-3.5, bot - 1.9, 1.5, 0.8, 0.4, '#FF4D4D') + R(2.0, bot - 1.9, 1.5, 0.8, 0.4, '#FF4D4D');
-    const shield = (y0, y1, wTop, wBot) => '<path d="M' + -wBot + ' ' + y1 + 'L' + -wTop + ' ' + y0 + 'L' + wTop + ' ' + y0 + 'L' + wBot + ' ' + y1 + 'Z" fill="' + glass + '"/>';
-    const rearGlass = (y0, y1, wTop, wBot) => '<path d="M' + -wTop + ' ' + y0 + 'L' + wTop + ' ' + y0 + 'L' + wBot + ' ' + y1 + 'L' + -wBot + ' ' + y1 + 'Z" fill="' + glass + '" opacity="0.85"/>';
-    const roof = (y0, y1, f, rx) => R(-3.2, y0, 6.4, y1 - y0, rx == null ? 1.4 : rx, f || 'rgba(0,0,0,0.12)');
-    const rails = (y0, y1) => '<path d="M-2.7 ' + y0 + 'V' + y1 + 'M2.7 ' + y0 + 'V' + y1 + '" stroke="#2A2E38" stroke-width="0.45" stroke-linecap="round"/>';
-    const snowCap = (y) => '<ellipse cx="-1" cy="' + y + '" rx="2.3" ry="0.95" fill="#FFFFFF" opacity=".92"/><ellipse cx="1.8" cy="' + (y - 0.3) + '" rx="1.1" ry="0.6" fill="#FFFFFF" opacity=".85"/>';
-    const hatch = () => wheels(1.6, 2.7) + body(3) + shield(top + 2.9, top + 5.4, 2.6, 3.2) + roof(top + 5.4, bot - 5.4) + rearGlass(bot - 5.4, bot - 3.4, 3.1, 2.6);
-    let v = shadow, arrowY = 0.4, roofy = false, under = null;
+    const C = (x, y, r, f, extra) => '<circle cx="' + (+x).toFixed(2) + '" cy="' + (+y).toFixed(2) + '" r="' + r + '" fill="' + f + '"' + (extra || '') + '/>';
+    const El = (x, y, rx, ry, f, extra) => '<ellipse cx="' + (+x).toFixed(2) + '" cy="' + (+y).toFixed(2) + '" rx="' + rx + '" ry="' + ry + '" fill="' + f + '"' + (extra || '') + '/>';
+    const P = (d, f, extra) => '<path d="' + d + '" fill="' + f + '"' + (extra || '') + '/>';
+    const line = (d, stroke, w, extra) => '<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="' + w + '" stroke-linecap="round"' + (extra || '') + '/>';
+    const tyres = (x0, ww, hh, yF, yB) => R(-x0 - ww, yF, ww, hh, 0.7, tyre) + R(x0, yF, ww, hh, 0.7, tyre) + R(-x0 - ww, yB, ww, hh, 0.7, tyre) + R(x0, yB, ww, hh, 0.7, tyre);
+    const wheels = (mid) => tyres(3.2, 1.6, 2.7, top + 2.1, bot - 4.8) + (mid ? R(-4.8, bot - 8.3, 1.6, 2.7, 0.7, tyre) + R(3.2, bot - 8.3, 1.6, 2.7, 0.7, tyre) : '');
+    const shine = (x, y, w, hh, rx) => R(x, y, w, hh, rx, g('g'));
+    const box = (x, y, w, hh, rx, f) => R(x, y, w, hh, rx, f) + shine(x, y, w, hh, rx);
+    const lamps = (yF, xF) => R(-(xF || 3.6), yF == null ? top + 1.0 : yF, 1.6, 0.95, 0.47, '#FFF4BE') + R((xF || 3.6) - 1.6, yF == null ? top + 1.0 : yF, 1.6, 0.95, 0.47, '#FFF4BE')
+      + R(-3.4, bot - 1.85, 1.4, 0.75, 0.37, '#FF4D4D') + R(2.0, bot - 1.85, 1.4, 0.75, 0.37, '#FF4D4D');
+    const shield = (y0, y1, wTop, wBot) => P('M' + -wBot + ' ' + y1 + 'L' + -wTop + ' ' + y0 + 'L' + wTop + ' ' + y0 + 'L' + wBot + ' ' + y1 + 'Z', glass);
+    const rearGlass = (y0, y1, wTop, wBot) => P('M' + -wTop + ' ' + y0 + 'L' + wTop + ' ' + y0 + 'L' + wBot + ' ' + y1 + 'L' + -wBot + ' ' + y1 + 'Z', glass, ' opacity=".85"');
+    const roof = (y0, y1, f, rx, x0) => R(-(x0 || 3.2), y0, 2 * (x0 || 3.2), y1 - y0, rx == null ? 1.4 : rx, f || 'rgba(0,0,0,0.12)');
+    // a person seen from above: hair, and the shoulders when asked
+    const head = (x, y, hc, sh) => (sh ? El(x, y + 0.9, 1.75, 0.95, sh) : '') + C(x, y, 1.12, hc) + El(x - 0.3, y - 0.35, 0.45, 0.3, '#FFFFFF', ' opacity=".25"');
+    const helmet = (x, y, hc, stripe) => C(x, y, 1.15, hc) + (stripe ? R(x - 0.28, y - 1.1, 0.56, 2.2, 0.28, stripe) : '') + P('M' + (x - 0.85) + ' ' + (y - 0.55) + 'Q' + x + ' ' + (y - 1.35) + ' ' + (x + 0.85) + ' ' + (y - 0.55) + 'Z', glass, ' opacity=".8"');
+    const snow = (y) => El(-1, y, 2.3, 0.95, '#FFFFFF', ' opacity=".92"') + El(1.8, y - 0.3, 1.1, 0.6, '#FFFFFF', ' opacity=".85"');
+    const board = (x, y, ry, f) => '<g transform="rotate(-4 ' + x + ' ' + y + ')">' + El(x, y, 1.15, ry, f) + El(x, y, 0.24, ry - 0.6, '#FFFFFF', ' opacity=".85"') + '</g>';
+    const bag = (x, y, w, hh, f) => R(x, y, w, hh, 0.5, f) + R(x + w / 2 - 0.3, y - 0.3, 0.6, hh + 0.6, 0.2, '#2A2E38', ' opacity=".55"');
+    let v = '', arrowY = 0.4, roofy = false, under = null, small = false;
     switch (model) {
-      case 'hatch': case 'skicar':
-        v += hatch() + lamps();
-        if (model === 'skicar') {
-          const sk = OB_SKIS[c.color % OB_SKIS.length];
-          v += '<path d="M-3.6 ' + (top + 7.2) + 'H3.6M-3.6 ' + (bot - 6.2) + 'H3.6" stroke="#2A2E38" stroke-width="0.5"/>'
-            + R(-3.7, top + 4.6, 1.0, L - 8.6, 0.5, sk[0]) + R(-2.5, top + 5.0, 1.0, L - 9.2, 0.5, sk[1])
-            + '<path d="M-3.8 -0.6h2.4M-3.8 1.4h2.4" stroke="#1F2128" stroke-width="0.5"/>';
-          roofy = true;
-        }
+      // ---------------------------------------------------------------- one space
+      case 'bicycle': {
+        // a bicycle and its rider: two thin wheels, the handlebar, shoulders and a head
+        const shirt = col;
+        v += R(-0.38, top + 0.6, 0.76, 3.4, 0.38, tyre) + R(-0.38, bot - 4.0, 0.76, 3.4, 0.38, tyre)
+          + line('M0 ' + (top + 2.4) + 'V' + (bot - 2.3), '#8E96A3', 0.5) + line('M-1.9 ' + (top + 3.1) + 'H1.9', '#2A2E38', 0.45)
+          + line('M-1.5 ' + (top + 5.8) + 'L-1.8 ' + (top + 3.2) + 'M1.5 ' + (top + 5.8) + 'L1.8 ' + (top + 3.2), shirt, 0.75)
+          + El(0, top + 6.0, 1.9, 1.05, shirt) + head(0, top + 5.2, OB_HAIR[(c.color + 2) % OB_HAIR.length]);
+        if (kit === 'ferry') v += R(-1.6, bot - 2.9, 3.2, 1.6, 0.4, '#3D8BFD');
+        arrowY = bot - 2.0; small = true; roofy = true;
         break;
-      case 'sedan':
-        v += wheels(1.6, 2.7) + body(2.6, -4.0, 8.0) + shield(top + 4.8, top + 7.2, 2.5, 3.1) + roof(top + 7.2, bot - 6.6, null, 1.2)
-          + rearGlass(bot - 6.6, bot - 4.8, 3.0, 2.5) + '<path d="M-3.2 ' + (bot - 2.6) + 'H3.2" stroke="rgba(0,0,0,0.2)" stroke-width="0.35"/>' + lamps();
-        arrowY = 0.2;
+      }
+      case 'scooter':
+        // a scooter: a round body wider at the back, the rider on it
+        v += R(-0.5, top + 0.7, 1.0, 2.4, 0.5, tyre) + R(-0.55, bot - 2.9, 1.1, 2.3, 0.55, tyre)
+          + P('M0 ' + (top + 1.5) + 'C1.2 ' + (top + 1.5) + ' 1.4 ' + (top + 3.4) + ' 1.1 ' + (top + 4.6) + 'C1.9 ' + (top + 6) + ' 2.2 ' + (bot - 2.6) + ' 1.4 ' + (bot - 1.6) + 'H-1.4C-2.2 ' + (bot - 2.6) + ' -1.9 ' + (top + 6) + ' -1.1 ' + (top + 4.6) + 'C-1.4 ' + (top + 3.4) + ' -1.2 ' + (top + 1.5) + ' 0 ' + (top + 1.5) + 'Z', col)
+          + line('M-1.9 ' + (top + 2.4) + 'H1.9', '#2A2E38', 0.45) + C(0, top + 1.7, 0.45, '#FFF4BE') + head(0, top + 5.4, OB_HAIR[(c.color + 1) % OB_HAIR.length], '#2A2E38');
+        arrowY = bot - 2.4; small = true; roofy = true;
+        break;
+      case 'quad':
+        // a quad bike: four fat wheels, the rider in the middle
+        v += tyres(1.5, 1.4, 2.2, top + 0.8, bot - 3.0) + box(-1.6, top + 1.0, 3.2, L - 2.2, 1.2, col)
+          + line('M-2.3 ' + (top + 3.0) + 'H2.3', '#2A2E38', 0.45) + head(0, top + 4.9, '#E2453C', '#2A2E38') + R(-0.25, top + 3.8, 0.5, 2.2, 0.25, '#FFFFFF', ' opacity=".7"');
+        arrowY = bot - 2.2; small = true; roofy = true;
+        break;
+      case 'motorbike': case 'pizza':
+        // a motorbike: wheels, the tank, a rider in a helmet; the pizza scooter has a box behind
+        v += R(-0.55, top + 0.5, 1.1, 2.8, 0.55, tyre) + R(-0.6, bot - 3.3, 1.2, 2.8, 0.6, tyre)
+          + El(0, top + 3.6, 1.15, 1.7, col) + line('M-2.1 ' + (top + 2.6) + 'H2.1', '#2A2E38', 0.45) + C(0, top + 0.9, 0.45, '#FFF4BE')
+          + C(-2.1, top + 2.6, 0.4, '#C9D4E0') + C(2.1, top + 2.6, 0.4, '#C9D4E0')
+          + (model === 'pizza' ? R(-1.9, bot - 3.6, 3.8, 3.2, 0.4, '#E2453C') + C(0, bot - 2.0, 1.0, '#FFD23F') + C(-0.3, bot - 2.2, 0.25, '#E2453C') + C(0.35, bot - 1.8, 0.25, '#E2453C') : '')
+          + El(0, top + 5.7, 1.85, 1.0, '#2A2E38') + helmet(0, top + 5.0, model === 'pizza' ? '#FFFFFF' : col, model === 'pizza' ? '#E2453C' : '#FFFFFF');
+        arrowY = model === 'pizza' ? top + 2.0 : bot - 2.2; small = true; roofy = true;
+        break;
+      case 'snowmobile':
+        // a snowmobile: two skis in front, the body and windscreen, the track behind
+        v += R(-2.2, top + 0.6, 0.7, 4.6, 0.35, '#2A2E38') + R(1.5, top + 0.6, 0.7, 4.6, 0.35, '#2A2E38')
+          + R(-1.3, bot - 3.6, 2.6, 3.2, 0.4, '#2A2E38') + line('M-1.1 ' + (bot - 3.2) + 'H1.1M-1.1 ' + (bot - 2.4) + 'H1.1M-1.1 ' + (bot - 1.6) + 'H1.1', '#5E6676', 0.3)
+          + P('M0 ' + (top + 1.4) + 'C1.6 ' + (top + 1.6) + ' 1.9 ' + (top + 4) + ' 1.7 ' + (bot - 2.4) + 'H-1.7C-1.9 ' + (top + 4) + ' -1.6 ' + (top + 1.6) + ' 0 ' + (top + 1.4) + 'Z', col)
+          + P('M-1.3 ' + (top + 3.6) + 'Q0 ' + (top + 2.4) + ' 1.3 ' + (top + 3.6) + 'L1.1 ' + (top + 4.2) + 'Q0 ' + (top + 3.3) + ' -1.1 ' + (top + 4.2) + 'Z', '#9EDCF0', ' opacity=".9"')
+          + head(0, top + 5.8, '#3D8BFD', '#2A2E38');
+        arrowY = bot - 2.2; small = true; roofy = true;
+        break;
+      // ---------------------------------------------------------------- two spaces
+      case 'hatch':
+        v += wheels() + box(-4.0, top + 0.9, 8.0, L - 1.8, 3.2, col) + El(0, top + 3.0, 2.6, 1.2, '#FFFFFF', ' opacity=".16"')
+          + shield(top + 4.4, top + 6.4, 2.6, 3.3) + roof(top + 6.4, bot - 4.8, null, 1.6, 3.3) + rearGlass(bot - 4.8, bot - 3.0, 3.1, 2.6) + lamps();
+        if (kit === 'ski') { v += R(-2.4, top + 8.0, 4.8, 6.2, 1.6, '#3B4250') + shine(-2.4, top + 8.0, 4.8, 6.2, 1.6) + El(0, top + 8.8, 2.0, 0.7, '#FFFFFF', ' opacity=".92"') + snow(top + 2.6); under = '#3B4250'; }
+        break;
+      case 'beetle': {
+        // round as an egg, four fenders bulging out, round lamps; a daisy on the bonnet
+        v += tyres(2.9, 1.5, 2.6, top + 2.2, bot - 4.9)
+          + C(-2.9, top + 4.6, 2.0, col) + C(2.9, top + 4.6, 2.0, col) + C(-2.8, bot - 4.6, 2.15, col) + C(2.8, bot - 4.6, 2.15, col)
+          + P('M0 ' + (top + 0.6) + 'C3.5 ' + (top + 0.6) + ' 3.6 ' + (top + 5) + ' 3.5 0C3.4 ' + (bot - 4) + ' 3.6 ' + (bot - 0.6) + ' 0 ' + (bot - 0.6) + 'C-3.6 ' + (bot - 0.6) + ' -3.4 ' + (bot - 4) + ' -3.5 0C-3.6 ' + (top + 5) + ' -3.5 ' + (top + 0.6) + ' 0 ' + (top + 0.6) + 'Z', col)
+          + El(0, top + 3.4, 2.4, 1.6, '#FFFFFF', ' opacity=".16"')
+          + P('M-2.6 ' + (top + 7.0) + 'Q0 ' + (top + 5.4) + ' 2.6 ' + (top + 7.0) + 'L2.2 ' + (top + 8.2) + 'Q0 ' + (top + 7.1) + ' -2.2 ' + (top + 8.2) + 'Z', glass)
+          + El(0, 1.4, 2.8, 4.4, 'rgba(0,0,0,0.13)') + P('M-1.8 ' + (bot - 3.6) + 'Q0 ' + (bot - 3.0) + ' 1.8 ' + (bot - 3.6), 'none', ' stroke="' + glass + '" stroke-width="0.9"')
+          + C(-3.0, top + 2.8, 0.85, '#FFF4BE') + C(3.0, top + 2.8, 0.85, '#FFF4BE') + R(-3.6, bot - 2.2, 1.2, 0.8, 0.4, '#FF4D4D') + R(2.4, bot - 2.2, 1.2, 0.8, 0.4, '#FF4D4D');
+        if (kit === 'ski') v += snow(top + 2.6);
+        else for (let k = 0; k < 5; k++) { const a = (k * Math.PI * 2) / 5; v += C(Math.cos(a) * 0.75, top + 3.6 + Math.sin(a) * 0.75, 0.55, '#FFFFFF'); }
+        if (kit !== 'ski') v += C(0, top + 3.6, 0.42, '#FFC93C');
+        arrowY = 1.4;
+        break;
+      }
+      case 'sports': {
+        // a wedge: a pointed nose, wide hips, a bubble of glass far back, a big wing, a number
+        const num = String(1 + (c.color * 3) % 9);
+        v += tyres(3.2, 1.8, 3.0, top + 3.0, bot - 4.6)
+          + P('M0 ' + (top + 0.4) + 'C2.0 ' + (top + 0.5) + ' 3.3 ' + (top + 2.6) + ' 3.5 ' + (top + 6) + 'L4.1 ' + (bot - 3.6) + 'Q4.1 ' + (bot - 0.9) + ' 2.8 ' + (bot - 0.9) + 'H-2.8Q-4.1 ' + (bot - 0.9) + ' -4.1 ' + (bot - 3.6) + 'L-3.5 ' + (top + 6) + 'C-3.3 ' + (top + 2.6) + ' -2.0 ' + (top + 0.5) + ' 0 ' + (top + 0.4) + 'Z', col)
+          + R(-1.3, top + 0.9, 0.8, L - 2.2, 0.3, '#FFFFFF', ' opacity=".92"') + R(0.5, top + 0.9, 0.8, L - 2.2, 0.3, '#FFFFFF', ' opacity=".92"')
+          + El(0, 1.8, 2.35, 3.6, glass) + El(-0.8, 0.4, 0.6, 1.4, '#FFFFFF', ' opacity=".22"')
+          + C(0, top + 5.4, 1.75, '#FFFFFF') + '<text x="0" y="' + (top + 6.25).toFixed(2) + '" text-anchor="middle" font-family="Lexend, system-ui, sans-serif" font-size="2.4" font-weight="800" fill="#1F2128">' + num + '</text>'
+          + R(-4.7, bot - 2.4, 9.4, 1.2, 0.5, '#1F2128') + R(-4.7, bot - 3.4, 0.9, 2.6, 0.4, '#1F2128') + R(3.8, bot - 3.4, 0.9, 2.6, 0.4, '#1F2128')
+          + El(-3.3, 1.4, 0.35, 1.2, '#1F2128') + El(3.3, 1.4, 0.35, 1.2, '#1F2128');
+        arrowY = top + 9.4; roofy = true;
+        break;
+      }
+      case 'convertible':
+        // open top: two people in front, a folded hood behind them; a board at the beach
+        v += wheels() + box(-4.0, top + 0.9, 8.0, L - 1.8, 3.0, col) + R(-3.5, top + 5.6, 7.0, 0.8, 0.4, '#2A2E38')
+          + R(-3.1, top + 6.4, 6.2, L - 10.6, 1.6, '#3A3532') + R(-2.8, top + 7.4, 2.4, 2.4, 0.7, '#D9B48A') + R(0.4, top + 7.4, 2.4, 2.4, 0.7, '#D9B48A') + R(-2.8, bot - 5.9, 5.6, 1.6, 0.6, '#D9B48A')
+          + head(-1.6, top + 8.3, hair, '#FFFFFF') + head(1.6, top + 8.3, OB_HAIR[(c.color + 3) % OB_HAIR.length], '#FF9EC0')
+          + R(-3.4, bot - 4.0, 6.8, 1.7, 0.85, '#2A2E38') + lamps()
+          + (kit === 'beach' ? board(3.0, 2.6, 6.4, OB_BOARDS[c.color % OB_BOARDS.length]) : '');
+        arrowY = 2.2; roofy = true;
         break;
       case 'mini': {
-        // a round little car with a roof in another color and stripes on the bonnet
-        const top2 = obLight(col) ? '#1F2128' : '#F4F5F7';
-        v += wheels(1.5, 2.6) + body(3.9) + R(-1.5, top + 1.2, 0.7, 3.3, 0.3, top2) + R(0.8, top + 1.2, 0.7, 3.3, 0.3, top2)
-          + shield(top + 4.2, top + 5.6, 2.7, 3.1) + R(-3.2, top + 5.6, 6.4, L - 10.0, 2.0, top2) + rearGlass(bot - 4.4, bot - 3.1, 2.9, 2.5) + lamps();
-        under = top2;
+        // short bonnet, a big roof in another color with a chequered flag on it
+        const rc = obLight(col) ? '#1F2128' : '#F4F5F7', sq = obLight(col) ? '#F4F5F7' : '#1F2128';
+        let chk = '';
+        for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) if ((r + k) % 2) chk += R(-2.1 + k * 1.4, -1.6 + r * 1.4, 1.4, 1.4, 0, sq);
+        v += tyres(3.0, 1.6, 2.6, top + 2.2, bot - 4.8) + box(-3.8, top + 0.9, 7.6, L - 1.8, 3.6, col)
+          + R(-1.6, top + 1.1, 0.7, 2.8, 0.3, rc) + R(0.9, top + 1.1, 0.7, 2.8, 0.3, rc)
+          + shield(top + 3.8, top + 5.2, 2.6, 3.0) + R(-3.2, top + 5.2, 6.4, L - 8.8, 2.0, rc) + chk
+          + El(-4.1, top + 5.0, 0.45, 0.65, col) + El(4.1, top + 5.0, 0.45, 0.65, col) + rearGlass(bot - 3.4, bot - 2.2, 2.8, 2.4)
+          + C(-2.6, top + 1.9, 0.8, '#FFF4BE') + C(2.6, top + 1.9, 0.8, '#FFF4BE') + R(-3.3, bot - 1.8, 1.2, 0.7, 0.35, '#FF4D4D') + R(2.1, bot - 1.8, 1.2, 0.7, 0.35, '#FF4D4D');
+        arrowY = 0.4; roofy = true;
         break;
       }
-      case 'beetle': {
-        // a round car with a domed roof and round lamps
-        v += wheels(1.6, 2.8) + body(4.1) + '<ellipse cx="0" cy="' + (top + 3.1) + '" rx="3.1" ry="1.6" fill="rgba(255,255,255,0.14)"/>'
-          + shield(top + 5.0, top + 6.6, 2.4, 3.0) + '<ellipse cx="0" cy="0.9" rx="3.2" ry="4.4" fill="rgba(0,0,0,0.12)"/>'
-          + rearGlass(bot - 5.0, bot - 3.9, 2.2, 1.8)
-          + '<circle cx="-2.7" cy="' + (top + 1.9) + '" r="0.85" fill="#FFF4BE"/><circle cx="2.7" cy="' + (top + 1.9) + '" r="0.85" fill="#FFF4BE"/>'
-          + R(-3.4, bot - 1.9, 1.3, 0.8, 0.4, '#FF4D4D') + R(2.1, bot - 1.9, 1.3, 0.8, 0.4, '#FF4D4D');
-        arrowY = 0.9;
-        if (kit === 'ski') v += snowCap(top + 2.4);
+      case 'jeep': {
+        // boxy and narrow, fat tyres out at the sides, a bull bar, the spare wheel on the back
+        v += tyres(3.1, 1.9, 3.6, top + 1.6, bot - 5.2) + box(-3.4, top + 1.2, 6.8, L - 2.6, 1.0, col)
+          + R(-3.9, top + 0.3, 7.8, 1.0, 0.45, '#2A2E38') + line('M-3 ' + (top + 0.8) + 'V' + (top + 2.0) + 'M3 ' + (top + 0.8) + 'V' + (top + 2.0), '#2A2E38', 0.5)
+          + C(-2.4, top + 2.2, 0.75, '#FFF4BE') + C(2.4, top + 2.2, 0.75, '#FFF4BE') + R(-3.0, top + 4.4, 6.0, 0.8, 0.3, glass)
+          + C(0, bot - 0.6, 1.75, tyre) + C(0, bot - 0.6, 0.65, '#8E96A3');
+        if (kit === 'beach') v += R(-2.8, top + 5.6, 5.6, L - 8.8, 0.8, '#3A3532') + R(-2.5, top + 6.2, 2.2, 2.2, 0.6, '#D9B48A') + R(0.3, top + 6.2, 2.2, 2.2, 0.6, '#D9B48A') + head(-1.4, top + 7.0, hair, '#FFC93C') + line('M-3.5 ' + (top + 10.2) + 'H3.5', '#D9DCE3', 0.7) + board(2.7, 1.6, 6.0, OB_BOARDS[c.color % OB_BOARDS.length]);
+        else if (kit === 'ski') v += roof(top + 5.4, bot - 3.0, 'rgba(255,255,255,0.12)', 0.8, 2.9) + El(0, 0, 2.4, 5.6, '#FFFFFF', ' opacity=".92"') + snow(top + 2.8);
+        // elsewhere a canoe on the roof rack, longer than the jeep
+        else v += roof(top + 5.4, bot - 3.0, 'rgba(255,255,255,0.12)', 0.8, 2.9) + line('M-3.2 ' + (top + 6.8) + 'H3.2M-3.2 ' + (bot - 4.4) + 'H3.2', '#2A2E38', 0.5)
+          + P('M0 ' + (top - 0.4) + 'C1.9 ' + (top + 3) + ' 1.9 ' + (bot - 3) + ' 0 ' + (bot + 0.4) + 'C-1.9 ' + (bot - 3) + ' -1.9 ' + (top + 3) + ' 0 ' + (top - 0.4) + 'Z', ['#F2564D', '#FFC93C', '#22BFB0'][c.color % 3])
+          + El(0, 0.6, 0.9, 3.2, '#2A2E38', ' opacity=".55"');
+        arrowY = kit === 'beach' ? -0.6 : 0.6; roofy = true;
         break;
       }
-      case 'sports':
-        // low and narrow, two stripes down its length, a spoiler on the back
-        v += wheels(1.7, 2.9) + '<path d="M-3.8 ' + (top + 4) + 'Q-3.6 ' + (top + 0.8) + ' 0 ' + (top + 0.8) + 'Q3.6 ' + (top + 0.8) + ' 3.8 ' + (top + 4) + 'V' + (bot - 1.4) + 'Q3.8 ' + (bot - 0.8) + ' 3.2 ' + (bot - 0.8) + 'H-3.2Q-3.8 ' + (bot - 0.8) + ' -3.8 ' + (bot - 1.4) + 'Z" fill="' + col + '"/>'
-          + R(-1.4, top + 1.0, 0.85, L - 2.4, 0.3, '#FFFFFF', ' opacity=".9"') + R(0.55, top + 1.0, 0.85, L - 2.4, 0.3, '#FFFFFF', ' opacity=".9"')
-          + shield(top + 6.2, top + 8.2, 2.2, 2.9) + roof(top + 8.2, bot - 6.8, 'rgba(0,0,0,0.2)', 1.0) + rearGlass(bot - 6.8, bot - 5.6, 2.8, 2.3)
-          + R(-4.4, bot - 2.0, 8.8, 0.9, 0.4, '#1F2128') + R(-3.5, top + 1.2, 1.4, 0.7, 0.35, '#FFF4BE') + R(2.1, top + 1.2, 1.4, 0.7, 0.35, '#FFF4BE');
-        roofy = true;
-        break;
-      case 'convertible':
-        // open top: the windscreen's frame, the seats, the folded hood behind them
-        v += wheels(1.6, 2.7) + body(3) + R(-3.4, top + 6.2, 6.8, 0.75, 0.35, '#2A2E38') + R(-3.1, top + 7.0, 6.2, L - 11.6, 1.2, '#3A3532')
-          + R(-2.8, top + 7.5, 2.4, 2.3, 0.7, '#D9B48A') + R(0.4, top + 7.5, 2.4, 2.3, 0.7, '#D9B48A') + R(-2.8, bot - 7.3, 5.6, 1.9, 0.7, '#D9B48A')
-          + R(-3.4, bot - 4.6, 6.8, 1.6, 0.8, '#2A2E38') + lamps()
-          + (kit === 'beach' && c.color % 2 ? '<g transform="rotate(-4 2.75 0.4)"><ellipse cx="2.75" cy="0.4" rx="1.15" ry="7.4" fill="' + OB_BOARDS[c.color % OB_BOARDS.length] + '"/><ellipse cx="2.75" cy="0.4" rx="0.24" ry="6.8" fill="#FFFFFF" opacity=".85"/></g>' : '');
-        arrowY = 0.2;
-        roofy = true;
-        break;
-      case 'estate':
-        // a long roof to the back with rails, and skis on it at the ski lodge
-        v += wheels(1.6, 2.7) + body(2.6) + shield(top + 3.0, top + 5.3, 2.6, 3.2) + roof(top + 5.3, bot - 2.2, null, 1.2) + rails(top + 6.2, bot - 3.0)
-          + R(-2.9, bot - 2.1, 5.8, 0.9, 0.4, glass, ' opacity=".85"') + lamps();
-        if (kit === 'ski') { v += R(1.6, top + 5.6, 0.95, L - 9.6, 0.45, '#F2564D') + R(-0.45, top + 5.9, 0.95, L - 10.2, 0.45, '#FFFFFF') + snowCap(top + 2.2); roofy = true; }
-        break;
-      case 'suv':
-        // boxy, high, roof rails and a roof box
-        v += wheels(1.9, 3.0) + body(1.8) + shield(top + 3.1, top + 5.6, 2.9, 3.4) + roof(top + 5.6, bot - 2.4, 'rgba(255,255,255,0.1)', 1.0) + rails(top + 6.4, bot - 3.2)
-          + R(-2.2, top + 7.6, 4.4, L - 13.4, 1.6, '#3B4250') + R(-2.2, top + 7.6, 4.4, L - 13.4, 1.6, g('g')) + lamps();
-        if (kit === 'ski') v += snowCap(top + 2.2) + '<ellipse cx="0" cy="' + (top + 8.4) + '" rx="1.8" ry="0.7" fill="#FFFFFF" opacity=".9"/>';
-        arrowY = 0.6;
-        under = '#3B4250';
+      case 'buggy':
+        // a dune buggy: a bonnet and side pods, the frame open, a roll cage, a driver in a helmet
+        v += tyres(3.0, 2.0, 3.4, top + 1.2, bot - 4.6) + box(-3.0, top + 0.8, 6.0, 5.2, 2.4, col) + R(-3.6, top + 5.4, 1.1, L - 7.6, 0.5, col) + R(2.5, top + 5.4, 1.1, L - 7.6, 0.5, col)
+          + R(-2.5, top + 5.8, 5.0, L - 8.4, 0.8, '#2E2B2A') + '<rect x="-2.9" y="' + (top + 5.6) + '" width="5.8" height="' + (L - 9.8) + '" rx="1" fill="none" stroke="#D9DCE3" stroke-width="0.6"/>'
+          + helmet(0, top + 8.4, '#FFFFFF', col) + R(-2.0, bot - 3.6, 4.0, 2.4, 0.6, '#5E6676') + C(-0.9, bot - 2.4, 0.5, '#2A2E38') + C(0.9, bot - 2.4, 0.5, '#2A2E38')
+          + C(-2.0, top + 1.7, 0.7, '#FFF4BE') + C(2.0, top + 1.7, 0.7, '#FFF4BE');
+        arrowY = 2.2; roofy = true;
         break;
       case 'pickup': {
-        // a cab in front, an open bed behind: boards at the beach, snow at the ski lodge, crates on the ferry
-        v += wheels(1.7, 2.8) + body(2.2) + shield(top + 2.9, top + 5.0, 2.6, 3.2) + roof(top + 5.0, top + 8.8, null, 1.0) + R(-2.9, top + 8.8, 5.8, 0.7, 0.3, glass)
-          + R(-3.5, top + 10.2, 7.0, L - 11.8, 0.6, 'rgba(0,0,0,0.3)') + '<path d="M-1.8 ' + (top + 10.6) + 'V' + (bot - 2) + 'M0 ' + (top + 10.6) + 'V' + (bot - 2) + 'M1.8 ' + (top + 10.6) + 'V' + (bot - 2) + '" stroke="rgba(0,0,0,0.25)" stroke-width="0.35"/>' + lamps();
-        if (kit === 'beach') v += '<ellipse cx="-1.4" cy="' + (bot - 4.6) + '" rx="0.9" ry="3.6" fill="' + OB_BOARDS[(c.color + 1) % OB_BOARDS.length] + '"/><ellipse cx="1.3" cy="' + (bot - 4.6) + '" rx="0.9" ry="3.6" fill="' + OB_BOARDS[(c.color + 3) % OB_BOARDS.length] + '"/>';
-        if (kit === 'ski') v += R(-3.3, top + 10.4, 6.6, L - 12.2, 0.8, '#FFFFFF', ' opacity=".95"') + snowCap(top + 2.2);
-        if (kit === 'ferry') v += R(-3.1, top + 11.0, 2.8, 2.8, 0.3, '#B98A55') + R(0.3, top + 11.0, 2.8, 2.8, 0.3, '#A57844') + R(-1.4, top + 14.3, 2.8, 2.6, 0.3, '#B98A55');
-        arrowY = top + 6.9;
+        // a cab in front and an open bed behind: boards at the beach, snow and a sled at the ski lodge, crates on the ferry
+        v += tyres(3.2, 1.7, 2.8, top + 2.0, bot - 4.6) + box(-4.0, top + 0.9, 8.0, 8.6, 2.4, col) + shield(top + 3.2, top + 5.0, 2.6, 3.2) + roof(top + 5.0, top + 8.6, null, 1.0)
+          + R(-4.0, top + 9.9, 8.0, L - 10.8, 0.6, col) + R(-3.3, top + 10.5, 6.6, L - 12.0, 0.4, 'rgba(0,0,0,0.32)') + lamps();
+        if (kit === 'beach') v += El(-1.4, bot - 4.6, 0.95, 3.5, OB_BOARDS[(c.color + 1) % OB_BOARDS.length]) + El(1.3, bot - 4.6, 0.95, 3.5, OB_BOARDS[(c.color + 3) % OB_BOARDS.length]);
+        else if (kit === 'ski') v += R(-3.1, top + 10.7, 6.2, L - 12.4, 0.8, '#FFFFFF', ' opacity=".95"') + R(-1.4, top + 11.4, 2.8, 4.6, 0.8, '#E2453C') + snow(top + 2.6);
+        else v += R(-3.0, top + 11.0, 2.8, 2.8, 0.3, '#B98A55') + R(0.2, top + 11.0, 2.8, 2.8, 0.3, '#A57844') + R(-1.4, top + 14.2, 2.8, 2.6, 0.3, '#B98A55');
+        arrowY = top + 6.8;
         break;
       }
-      case 'jeep':
-        v += wheels(1.9, 3.1) + body(1.8) + R(-3.6, top + 4.8, 7.2, 0.9, 0.4, '#2A2E38') + R(-3.3, top + 6.1, 6.6, L - 9.4, 1.0, '#3A3532')
-          + R(-2.9, top + 6.6, 2.5, 2.4, 0.7, '#D9B48A') + R(0.4, top + 6.6, 2.5, 2.4, 0.7, '#D9B48A') + R(-2.9, bot - 5.6, 5.8, 2.0, 0.7, '#D9B48A')
-          + '<path d="M-3.9 ' + (top + 9.8) + 'H3.9" stroke="#D9DCE3" stroke-width="0.7" stroke-linecap="round"/>'
-          + '<circle cx="0" cy="' + (bot - 1.5) + '" r="1.3" fill="' + tyre + '"/><circle cx="0" cy="' + (bot - 1.5) + '" r="0.5" fill="#8E96A3"/>'
-          + '<circle cx="-2.6" cy="' + (top + 1.6) + '" r="0.75" fill="#FFF4BE"/><circle cx="2.6" cy="' + (top + 1.6) + '" r="0.75" fill="#FFF4BE"/>'
-          + (c.color % 2 ? '' : '<g transform="rotate(-4 2.75 0.4)"><ellipse cx="2.75" cy="0.4" rx="1.15" ry="7.4" fill="' + OB_BOARDS[c.color % OB_BOARDS.length] + '"/><ellipse cx="2.75" cy="0.4" rx="0.24" ry="6.8" fill="#FFFFFF" opacity=".85"/></g>');
-        arrowY = 0.6;
-        roofy = true;
-        break;
-      case 'buggy':
-        // a dune buggy: a bonnet and side pods in its color, the frame open, a roll cage, the engine behind
-        v += wheels(2.0, 3.4) + body(2.4, null, null, top + 0.8, 5.4) + R(-4.2, top + 5.6, 1.3, L - 8.2, 0.6, col) + R(2.9, top + 5.6, 1.3, L - 8.2, 0.6, col)
-          + R(-2.9, top + 5.8, 5.8, L - 8.6, 0.8, '#2E2B2A') + R(-2.6, top + 6.6, 2.3, 2.3, 0.7, '#E2C29A') + R(0.3, top + 6.6, 2.3, 2.3, 0.7, '#E2C29A')
-          + '<rect x="-3.3" y="' + (top + 5.9) + '" width="6.6" height="' + (L - 10.4) + '" rx="1" fill="none" stroke="#D9DCE3" stroke-width="0.6"/><path d="M-3.3 ' + (top + 9.9) + 'H3.3" stroke="#D9DCE3" stroke-width="0.6"/>'
-          + R(-2.2, bot - 3.6, 4.4, 2.4, 0.6, '#5E6676') + '<circle cx="-1" cy="' + (bot - 2.4) + '" r="0.55" fill="#2A2E38"/><circle cx="1" cy="' + (bot - 2.4) + '" r="0.55" fill="#2A2E38"/>'
-          + '<circle cx="-2.4" cy="' + (top + 1.7) + '" r="0.7" fill="#FFF4BE"/><circle cx="2.4" cy="' + (top + 1.7) + '" r="0.7" fill="#FFF4BE"/>';
-        arrowY = 1.4;
-        roofy = true;
-        break;
-      case 'taxi': {
-        let chk = '';
-        if (col === '#FFC93C') for (let k = 0; k < 6; k++) chk += R(-4.2, top + 7 + k, 0.7, 1.0, 0, k % 2 ? '#1F2128' : '#FFFFFF') + R(3.5, top + 7 + k, 0.7, 1.0, 0, k % 2 ? '#FFFFFF' : '#1F2128');
-        v += hatch() + chk + R(-2.1, top + 5.4, 4.2, 1.7, 0.6, '#FFF3A6', ' opacity=".35"') + R(-1.6, top + 5.7, 3.2, 1.1, 0.45, '#FFF2A6') + lamps();
-        arrowY = 1.4;
+      case 'taxi': case 'sedan': case 'police': {
+        // a saloon: bonnet, cabin and boot; the taxi with a big lit sign, the police car with its light bar
+        v += wheels() + box(-4.0, top + 0.9, 8.0, L - 1.8, 2.4, col);
+        if (model === 'police') v += R(-4.0, top + 0.9, 8.0, 4.4, 2.4, '#1F2128') + R(-4.0, bot - 4.6, 8.0, 3.7, 2.4, '#1F2128');
+        v += R(-3.4, top + 1.4, 6.8, 3.6, 1.4, 'rgba(255,255,255,0.14)') + shield(top + 5.0, top + 7.0, 2.5, 3.1) + roof(top + 7.0, bot - 6.4, 'rgba(0,0,0,0.14)', 1.0)
+          + rearGlass(bot - 6.4, bot - 4.8, 3.0, 2.5) + lamps();
+        if (model === 'taxi') {
+          let chk = '';
+          if (col === '#FFC93C') for (let k = 0; k < 6; k++) chk += R(-4.0, top + 7.2 + k, 0.7, 1.0, 0, k % 2 ? '#1F2128' : '#FFFFFF') + R(3.3, top + 7.2 + k, 0.7, 1.0, 0, k % 2 ? '#FFFFFF' : '#1F2128');
+          v += chk + R(-3.0, top + 7.4, 6.0, 2.8, 0.7, '#FFF3A6', ' opacity=".35"') + R(-2.6, top + 7.7, 5.2, 2.2, 0.5, '#FFE27A')
+            + '<text x="0" y="' + (top + 9.35).toFixed(2) + '" text-anchor="middle" font-family="Lexend, system-ui, sans-serif" font-size="1.7" font-weight="800" fill="#1F2128">TAXI</text>';
+          arrowY = 2.4;
+        } else if (model === 'police') {
+          v += C(-1.6, top + 8.4, 2.3, '#FF3B3B', ' opacity=".3"') + C(1.6, top + 8.4, 2.3, '#2F7BFF', ' opacity=".3"') + R(-3.0, top + 7.7, 3.0, 1.4, 0.5, '#FF3B3B') + R(0, top + 7.7, 3.0, 1.4, 0.5, '#2F7BFF')
+            + R(-4.0, -0.4, 0.7, 3.2, 0.2, '#2F6FD8') + R(3.3, -0.4, 0.7, 3.2, 0.2, '#2F6FD8');
+          arrowY = 2.4; under = '#F4F5F7';
+        } else {
+          v += line('M-3.9 ' + (top + 5) + 'V' + (bot - 5) + 'M3.9 ' + (top + 5) + 'V' + (bot - 5), '#FFFFFF', 0.25, ' opacity=".6"');
+          arrowY = 0.6;
+        }
         break;
       }
-      // the long ones
-      case 'truck':
-        v += wheels(1.6, 2.7) + body(3) + shield(top + 2.6, top + 4.8, 2.6, 3.2) + R(-3.2, top + 4.8, 6.4, 3.4, 1.1, 'rgba(0,0,0,0.14)') + R(-3.8, top + 9.4, 7.6, L - 11, 1.4, 'rgba(255,255,255,0.3)')
-          + '<path d="M-3 ' + (top + 14) + 'H3M-3 ' + (top + 18) + 'H3M-3 ' + (top + 22) + 'H3" stroke="rgba(0,0,0,0.16)" stroke-width="0.6" fill="none"/>' + lamps();
-        arrowY = top + 9.4 + (L - 11) / 2;
+      case 'estate':
+        // a long roof to the back with rails: luggage on it on the ferry, skis at the ski lodge
+        v += wheels() + box(-4.0, top + 0.9, 8.0, L - 1.8, 2.6, col) + shield(top + 3.2, top + 5.4, 2.6, 3.2) + roof(top + 5.4, bot - 2.2, null, 1.2)
+          + line('M-2.7 ' + (top + 6.2) + 'V' + (bot - 3.0) + 'M2.7 ' + (top + 6.2) + 'V' + (bot - 3.0), '#2A2E38', 0.45) + R(-2.9, bot - 2.1, 5.8, 0.9, 0.4, glass, ' opacity=".85"') + lamps();
+        if (kit === 'ski') v += R(-3.3, top + 5.8, 1.0, L - 9.0, 0.5, '#F2564D') + R(-2.1, top + 6.2, 1.0, L - 9.6, 0.5, '#FFFFFF') + R(1.2, top + 5.8, 1.0, L - 9.0, 0.5, '#3D8BFD') + R(2.4, top + 6.2, 1.0, L - 9.6, 0.5, '#FFC93C') + snow(top + 2.6);
+        else v += bag(-2.4, top + 7.0, 2.2, 4.0, '#B5532E') + bag(0.3, top + 7.4, 2.2, 3.4, '#2F6FD8') + bag(-1.6, top + 11.8, 3.2, 2.4, '#7A5BD8');
+        arrowY = kit === 'ski' ? 0.6 : 2.4; roofy = true;
         break;
+      // ---------------------------------------------------------------- three spaces
+      case 'mixer': {
+        // a cement mixer: the cab, and a big drum with a spiral stripe
+        // stripes round the drum, each as wide as the drum is where it crosses
+        const dcy = top + 9.6 + (L - 11.4) / 2, dry = (L - 11.4) / 2;
+        let st = '';
+        for (let k = 0; k < 5; k++) { const ym = top + 11.6 + k * 3.2, hw = 3.5 * Math.sqrt(Math.max(0, 1 - ((ym - dcy) / dry) ** 2)) * 0.88; st += line('M' + (-hw).toFixed(2) + ' ' + (ym + 0.7).toFixed(2) + 'L' + hw.toFixed(2) + ' ' + (ym - 0.7).toFixed(2), '#E2453C', 0.9); }
+        v += wheels(true) + box(-4.0, top + 0.9, 8.0, 7.6, 2.0, col) + shield(top + 2.6, top + 4.6, 2.6, 3.2) + roof(top + 4.6, top + 7.8, null, 1.0)
+          + R(-3.6, top + 9.0, 7.2, L - 10.2, 1.0, '#5E6676') + El(0, top + 9.6 + (L - 11.4) / 2, 3.5, (L - 11.4) / 2, '#E9ECEF') + shine(-3.5, top + 9.6, 7.0, L - 11.4, 3.5) + st
+          + lamps();
+        arrowY = top + 9.6 + (L - 11.4) / 2; under = '#E9ECEF';
+        break;
+      }
       case 'delivery': {
-        // a box van: the cab in its color, a white box with a band of the same color
-        v += wheels(1.6, 2.7, true) + body(2.4, null, null, top + 0.8, 9.0) + shield(top + 2.8, top + 5.0, 2.6, 3.2) + roof(top + 5.0, top + 8.4, null, 1.0)
-          + body(0.9, -4.3, 8.6, top + 9.2, L - 10.0, '#F4F5F7') + R(-4.3, top + 9.2, 0.9, L - 10.0, 0.3, col) + R(3.4, top + 9.2, 0.9, L - 10.0, 0.3, col)
-          + '<path d="M-3.4 ' + (bot - 2.2) + 'H3.4" stroke="rgba(0,0,0,0.18)" stroke-width="0.4"/>' + lamps();
-        arrowY = top + 9.2 + (L - 10.0) / 2;
-        under = '#F4F5F7';
+        // a box van: a white box with a big sign on its roof, a parcel or a pizza
+        v += wheels(true) + box(-4.0, top + 0.9, 8.0, 9.0, 2.4, col) + shield(top + 2.8, top + 5.0, 2.6, 3.2) + roof(top + 5.0, top + 8.4, null, 1.0)
+          + box(-4.3, top + 9.2, 8.6, L - 10.0, 0.9, '#F4F5F7') + R(-4.3, top + 9.2, 0.9, L - 10.0, 0.3, col) + R(3.4, top + 9.2, 0.9, L - 10.0, 0.3, col) + lamps();
+        if (kit === 'city') v += P('M0 ' + (top + 12.2) + 'L3.0 ' + (bot - 4.2) + 'Q0 ' + (bot - 2.8) + ' -3.0 ' + (bot - 4.2) + 'Z', '#FFC93C') + R(-3.2, bot - 4.7, 6.4, 1.1, 0.5, '#E2A33A') + C(-0.8, bot - 7.2, 0.6, '#E2453C') + C(0.9, bot - 8.8, 0.55, '#E2453C') + C(0.3, bot - 6.2, 0.5, '#E2453C');
+        else v += R(-2.6, top + 13.0, 5.2, 5.2, 0.5, '#C9935A') + R(-0.35, top + 13.0, 0.7, 5.2, 0, '#E8C890') + R(-2.6, top + 15.25, 5.2, 0.7, 0, '#E8C890');
+        arrowY = kit === 'city' ? top + 10.6 : bot - 4.0; under = '#F4F5F7';
         break;
       }
       case 'fire': {
-        // a fire engine: red, a ladder down its back, lights on the cab
+        // a fire engine: red, a long ladder, the lights on the cab, a hose reel
         let rungs = '';
-        for (let y = top + 10.5; y < bot - 2.2; y += 1.6) rungs += 'M-1.6 ' + y.toFixed(1) + 'H1.6';
-        v += wheels(1.6, 2.7, true) + body(2.2) + shield(top + 2.6, top + 4.8, 2.6, 3.2) + R(-3.3, top + 4.8, 6.6, 3.4, 1.0, 'rgba(0,0,0,0.14)')
-          + R(-2.6, top + 5.4, 2.2, 1.0, 0.4, '#3D8BFD') + R(0.4, top + 5.4, 2.2, 1.0, 0.4, '#FF4D4D')
-          + R(-4.2, top + 9.0, 0.8, L - 10.4, 0.3, '#FFFFFF', ' opacity=".8"') + R(3.4, top + 9.0, 0.8, L - 10.4, 0.3, '#FFFFFF', ' opacity=".8"')
-          + '<path d="M-1.6 ' + (top + 10) + 'V' + (bot - 2) + 'M1.6 ' + (top + 10) + 'V' + (bot - 2) + rungs + '" stroke="#D9DCE3" stroke-width="0.5" fill="none"/>' + lamps();
-        arrowY = 0.6;
-        roofy = true;
+        for (let y = top + 10.5; y < bot - 2.2; y += 1.6) rungs += 'M-1.7 ' + y.toFixed(1) + 'H1.7';
+        v += wheels(true) + box(-4.0, top + 0.9, 8.0, L - 1.8, 2.2, col) + shield(top + 2.6, top + 4.8, 2.6, 3.2) + R(-3.3, top + 4.8, 6.6, 3.4, 1.0, 'rgba(0,0,0,0.14)')
+          + R(-2.6, top + 5.4, 2.2, 1.0, 0.4, '#3D8BFD') + R(0.4, top + 5.4, 2.2, 1.0, 0.4, '#FF4D4D') + C(-2.6, top + 12, 1.3, '#F4F5F7') + C(-2.6, top + 12, 0.6, '#2A2E38')
+          + '<path d="M-1.7 ' + (top + 10) + 'V' + (bot - 2) + 'M1.7 ' + (top + 10) + 'V' + (bot - 2) + rungs + '" stroke="#E9ECEF" stroke-width="0.55" fill="none"/>'
+          + R(-4.0, top + 9.0, 0.7, L - 10.4, 0.3, '#FFFFFF', ' opacity=".75"') + R(3.3, top + 9.0, 0.7, L - 10.4, 0.3, '#FFFFFF', ' opacity=".75"') + lamps();
+        arrowY = 0.6; roofy = true;
         break;
       }
       case 'camper':
-        v += wheels(1.6, 2.7) + body(3.4)
-          + '<path d="M-3.4 ' + (top + 4.4) + 'Q0 ' + (top + 1.2) + ' 3.4 ' + (top + 4.4) + 'L2.8 ' + (top + 2.0) + 'Q0 ' + (top + 0.9) + ' -2.8 ' + (top + 2.0) + 'Z" fill="' + glass + '"/>'
-          + R(-3.5, top + 5.0, 7.0, L - 7.4, 2.4, '#FBF5E8') + '<path d="M-3 ' + (top + 9) + 'H3M-3 ' + (top + 15.5) + 'H3M-3 ' + (bot - 6.5) + 'H3" stroke="#9AA0AA" stroke-width="0.55"/>'
-          + R(-2.9, bot - 4.4, 3.4, 2.0, 0.6, 'rgba(36,51,74,0.55)')
-          + '<g transform="rotate(-4 2.35 1)"><ellipse cx="2.35" cy="1" rx="1.15" ry="9.2" fill="' + OB_BOARDS[c.color % OB_BOARDS.length] + '"/><ellipse cx="2.35" cy="1" rx="0.24" ry="8.6" fill="#FFFFFF" opacity=".85"/></g>' + lamps();
-        arrowY = 0.6;
-        under = '#FBF5E8';
+        // a camper van: cream over its color, a striped pop-up roof, a board
+        v += wheels() + box(-4.2, top + 0.8, 8.4, L - 1.6, 3.4, col)
+          + P('M-3.4 ' + (top + 4.4) + 'Q0 ' + (top + 1.2) + ' 3.4 ' + (top + 4.4) + 'L2.8 ' + (top + 2.0) + 'Q0 ' + (top + 0.9) + ' -2.8 ' + (top + 2.0) + 'Z', glass)
+          + R(-3.5, top + 5.0, 7.0, L - 7.4, 2.4, '#FBF5E8');
+        for (let k = 0; k < 5; k++) v += R(-3.0 + k * 1.2, top + 7.0, 1.2, 8.0, 0, k % 2 ? '#F2564D' : '#FFFFFF');
+        v += R(-3.0, top + 7.0, 6.0, 8.0, 0.6, 'none', ' stroke="#9AA0AA" stroke-width="0.4"') + board(2.35, 6.2, 6.6, OB_BOARDS[c.color % OB_BOARDS.length]) + lamps();
+        arrowY = 4.2; under = '#FBF5E8'; roofy = true;
         break;
       case 'icecream':
-        // an ice cream van: white with a pastel band, a big cone on the roof
-        v += wheels(1.6, 2.7) + body(3, null, null, null, null, '#FBF7F2') + R(-4.2, top + 6, 0.9, L - 8, 0.3, '#FF9EC0') + R(3.3, top + 6, 0.9, L - 8, 0.3, '#9EDCF0')
+        // an ice cream van: white with pastel bands and a giant cone on the roof
+        v += wheels() + box(-4.2, top + 0.8, 8.4, L - 1.6, 3.0, '#FBF7F2') + R(-4.2, top + 6, 0.9, L - 8, 0.3, '#FF9EC0') + R(3.3, top + 6, 0.9, L - 8, 0.3, '#9EDCF0')
           + shield(top + 2.6, top + 4.9, 2.6, 3.2) + R(-3.2, top + 5.6, 6.4, 1.0, 0.4, '#FF9EC0')
-          + '<path d="M-1.4 ' + (bot - 8.6) + 'L1.4 ' + (bot - 8.6) + 'L0 ' + (bot - 3.6) + 'Z" fill="#E8B66A"/><circle cx="0" cy="' + (bot - 9.4) + '" r="1.9" fill="#FF9EC0"/><circle cx="0.4" cy="' + (bot - 10.6) + '" r="0.5" fill="#E2453C"/>'
-          + lamps();
-        arrowY = -1.2;
-        under = '#FBF7F2';
+          + P('M-2.3 ' + (bot - 12.0) + 'L2.3 ' + (bot - 12.0) + 'L0 ' + (bot - 2.6) + 'Z', '#E8B66A') + line('M-1.5 ' + (bot - 9.8) + 'L1.2 ' + (bot - 7.2) + 'M1.5 ' + (bot - 9.8) + 'L-1.2 ' + (bot - 7.2), '#C9934A', 0.3)
+          + C(0, bot - 13.0, 2.7, '#FF9EC0') + C(-1.1, bot - 14.4, 1.3, '#9EDCF0') + C(1.1, bot - 14.6, 1.2, '#FFF3A6') + C(0.5, bot - 15.6, 0.6, '#E2453C') + lamps();
+        arrowY = top + 8.0; under = '#FBF7F2';
         break;
       case 'bus': {
         let win = '';
         for (let y = top + 5.2; y < bot - 3.2; y += 2.6) win += R(-4.25, y, 0.9, 1.9, 0.3, '#FFE58A') + R(3.35, y, 0.9, 1.9, 0.3, '#FFE58A');
-        v += wheels(1.6, 2.7, true) + body(1.8, -4.3, 8.6) + win + R(-3.6, top + 1.2, 7.2, 1.8, 0.6, glass) + R(-2.3, top + 3.2, 4.6, 0.85, 0.3, '#FFB02E')
-          + R(-2.6, top + 9.5, 5.2, 3.0, 0.6, 'rgba(255,255,255,0.28)') + R(-2.6, bot - 8.5, 5.2, 3.0, 0.6, 'rgba(255,255,255,0.28)')
+        v += wheels(true) + box(-4.3, top + 0.8, 8.6, L - 1.6, 1.8, col) + win + R(-3.6, top + 1.2, 7.2, 1.8, 0.6, glass) + R(-2.3, top + 3.2, 4.6, 0.85, 0.3, '#FFB02E')
+          + R(-2.6, top + 9.5, 5.2, 3.0, 0.6, 'rgba(255,255,255,0.3)') + R(-2.6, bot - 8.5, 5.2, 3.0, 0.6, 'rgba(255,255,255,0.3)')
           + R(-3.5, top + 1.0, 1.4, 0.7, 0.35, '#FFF4BE') + R(2.1, top + 1.0, 1.4, 0.7, 0.35, '#FFF4BE') + R(-3.6, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D') + R(2.2, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D');
         break;
       }
       case 'limo':
-        // a long car: a long roof with a sunroof
-        v += wheels(1.6, 2.7, true) + body(2.8, -4.0, 8.0) + shield(top + 4.8, top + 7.2, 2.5, 3.1) + roof(top + 7.2, bot - 6.6, 'rgba(0,0,0,0.16)', 1.2)
-          + R(-1.6, top + 10.0, 3.2, 3.4, 0.6, glass, ' opacity=".7"') + rearGlass(bot - 6.6, bot - 4.8, 3.0, 2.5) + lamps();
-        arrowY = 1.8;
+        // a long, narrow car: a long bonnet, a long roof with a sunroof, two little flags in front
+        v += wheels(true) + box(-3.7, top + 0.9, 7.4, L - 1.8, 3.0, col) + shield(top + 6.4, top + 8.6, 2.3, 2.9) + roof(top + 8.6, bot - 6.6, 'rgba(0,0,0,0.16)', 1.2, 2.9)
+          + R(-1.5, top + 11.0, 3.0, 3.6, 0.6, glass, ' opacity=".7"') + rearGlass(bot - 6.6, bot - 4.8, 2.8, 2.3) + line('M-3.6 ' + (top + 3) + 'V' + (bot - 3) + 'M3.6 ' + (top + 3) + 'V' + (bot - 3), '#E9ECEF', 0.3, ' opacity=".7"')
+          + line('M-2.8 ' + (top + 1.6) + 'V' + (top - 0.6) + 'M2.8 ' + (top + 1.6) + 'V' + (top - 0.6), '#C9D4E0', 0.25) + R(-2.8, top - 0.6, 1.4, 0.9, 0.1, '#E2453C') + R(2.8, top - 0.6, 1.4, 0.9, 0.1, '#2F6FD8') + lamps();
+        arrowY = 2.0;
         break;
       case 'plough':
-        v += wheels(1.7, 2.8, true) + body(1.4, -3.9, 7.8, top + 3.2, L - 4.0)
-          + '<path d="M-4.9 ' + (top + 0.4) + 'L4.9 ' + (top + 1.6) + 'L4.9 ' + (top + 3.0) + 'L-4.9 ' + (top + 1.8) + 'Z" fill="#5E6676"/>'
-          + '<path d="M-4.6 ' + (top + 1.0) + 'L4.6 ' + (top + 2.15) + '" stroke="#FFC23A" stroke-width="0.45" stroke-dasharray="1.2 1"/>'
-          + shield(top + 4.6, top + 7.0, 2.5, 3.0) + '<circle cx="0" cy="' + (top + 8.3) + '" r="2" fill="#FFB02E" opacity=".3"/><circle cx="0" cy="' + (top + 8.3) + '" r="0.85" fill="#FFB02E"/>'
-          + R(-3.6, top + 11.0, 7.2, L - 12.6, 0.9, '#7C746B')
-          + scatter(14, (c.x * 7 + c.y * 13 + 3) >>> 0, -3.2, top + 11.6, 3.2, bot - 2.2).map(([x, y]) => '<circle cx="' + x.toFixed(2) + '" cy="' + y.toFixed(2) + '" r="0.32" fill="#D9D3CA"/>').join('')
+        v += wheels(true) + box(-3.9, top + 3.2, 7.8, L - 4.0, 1.4, col)
+          + P('M-4.9 ' + (top + 0.4) + 'L4.9 ' + (top + 1.6) + 'L4.9 ' + (top + 3.0) + 'L-4.9 ' + (top + 1.8) + 'Z', '#5E6676') + line('M-4.6 ' + (top + 1.0) + 'L4.6 ' + (top + 2.15), '#FFC23A', 0.45, ' stroke-dasharray="1.2 1"')
+          + shield(top + 4.6, top + 7.0, 2.5, 3.0) + C(0, top + 8.3, 2, '#FFB02E', ' opacity=".3"') + C(0, top + 8.3, 0.85, '#FFB02E') + R(-3.6, top + 11.0, 7.2, L - 12.6, 0.9, '#7C746B')
+          + scatter(14, (c.x * 7 + c.y * 13 + 3) >>> 0, -3.2, top + 11.6, 3.2, bot - 2.2).map(([x, y]) => C(x, y, 0.32, '#D9D3CA')).join('')
           + R(-3.6, bot - 1.5, 1.3, 0.6, 0.3, '#FF4D4D') + R(2.3, bot - 1.5, 1.3, 0.6, 0.3, '#FF4D4D');
         arrowY = top + 11 + (L - 12.6) / 2;
         break;
       case 'snowcat': {
-        // a snowcat: wide tracks down both sides, the cab between them, a light on top
         let tread = '';
         for (let y = top + 1.6; y < bot - 1; y += 1.4) tread += 'M-4.7 ' + y.toFixed(1) + 'h1.6M3.1 ' + y.toFixed(1) + 'h1.6';
-        v += R(-4.9, top + 0.8, 1.9, L - 1.6, 0.8, '#2A2E38') + R(3.0, top + 0.8, 1.9, L - 1.6, 0.8, '#2A2E38')
-          + '<path d="' + tread + '" stroke="#5E6676" stroke-width="0.45"/>' + body(1.6, -3.0, 6.0, top + 2.0, L - 3.6)
-          + shield(top + 3.2, top + 6.0, 2.1, 2.6) + roof(top + 6.0, top + 13.0, null, 1.0) + R(-2.4, top + 14.0, 4.8, L - 16.4, 0.8, 'rgba(0,0,0,0.2)')
-          + '<circle cx="0" cy="' + (top + 9.5) + '" r="1.8" fill="#FFB02E" opacity=".3"/><circle cx="0" cy="' + (top + 9.5) + '" r="0.8" fill="#FFB02E"/>';
+        v += R(-4.9, top + 0.8, 1.9, L - 1.6, 0.8, '#2A2E38') + R(3.0, top + 0.8, 1.9, L - 1.6, 0.8, '#2A2E38') + '<path d="' + tread + '" stroke="#5E6676" stroke-width="0.45"/>'
+          + box(-3.0, top + 2.0, 6.0, L - 3.6, 1.6, col) + shield(top + 3.2, top + 6.0, 2.1, 2.6) + roof(top + 6.0, top + 13.0, null, 1.0, 2.6)
+          + R(-2.4, top + 14.0, 4.8, L - 16.4, 0.8, 'rgba(0,0,0,0.2)') + C(0, top + 9.5, 1.8, '#FFB02E', ' opacity=".3"') + C(0, top + 9.5, 0.8, '#FFB02E');
         arrowY = 2.6;
         break;
       }
       case 'lorry': {
-        const box = OB_BOX[c.color % OB_BOX.length];
-        v += wheels(1.6, 2.7, true) + body(2.2, -4.1, 8.2, top + 0.9, 7.4) + shield(top + 2.4, top + 4.6, 2.6, 3.2)
-          + R(-1.4, top + 8.1, 2.8, 1.2, 0.3, '#2A2E38') + body(0.8, -4.3, 8.6, top + 9.0, L - 10.2, box)
-          + '<path d="' + Array.from({ length: 6 }, (_, k) => 'M-4 ' + (top + 11 + k * 3.2).toFixed(1) + 'H4').join('') + '" stroke="rgba(0,0,0,0.18)" stroke-width="0.45"/>'
+        const bx = OB_BOX[c.color % OB_BOX.length];
+        v += wheels(true) + box(-4.1, top + 0.9, 8.2, 7.4, 2.2, col) + shield(top + 2.4, top + 4.6, 2.6, 3.2) + R(-1.4, top + 8.1, 2.8, 1.2, 0.3, '#2A2E38')
+          + box(-4.3, top + 9.0, 8.6, L - 10.2, 0.8, bx) + R(-4.3, top + 13.0, 8.6, 2.0, 0, '#FFFFFF', ' opacity=".85"') + R(-4.3, bot - 6.0, 8.6, 2.0, 0, '#FFFFFF', ' opacity=".85"')
           + R(-3.6, top + 1.0, 1.6, 0.9, 0.45, '#FFF4BE') + R(2.0, top + 1.0, 1.6, 0.9, 0.45, '#FFF4BE') + R(-3.8, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D') + R(2.4, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D');
         arrowY = top + 9 + (L - 10.2) / 2;
         break;
       }
       case 'motorhome':
-        // a motorhome: cream with a band of its color, a bunk over the cab, skylights and a solar panel
-        v += wheels(1.6, 2.7, true) + body(2.6, null, null, null, null, '#F2EFE6') + R(-4.2, top + 4, 0.9, L - 6, 0.3, col) + R(3.3, top + 4, 0.9, L - 6, 0.3, col)
-          + shield(top + 1.4, top + 3.4, 2.8, 3.3) + R(-3.4, top + 4.0, 6.8, 3.0, 1.4, 'rgba(0,0,0,0.08)')
-          + R(-2.6, bot - 9.0, 5.2, 3.6, 0.4, '#2B3A66') + '<path d="M-2.6 ' + (bot - 7.2) + 'H2.6M0 ' + (bot - 9) + 'V' + (bot - 5.4) + '" stroke="#5B7AC2" stroke-width="0.3"/>'
-          + R(-1.2, top + 9.4, 2.4, 1.6, 0.4, '#C9D4E0') + R(-1.0, bot - 3.6, 2.0, 1.2, 0.4, '#C9D4E0') + lamps();
-        arrowY = 0.6;
-        under = '#F2EFE6';
+        // a motorhome: cream with a band of its color, a solar panel, two bikes on the back
+        v += wheels(true) + box(-4.2, top + 0.8, 8.4, L - 1.6, 2.6, '#F2EFE6') + R(-4.2, top + 4, 0.9, L - 6, 0.3, col) + R(3.3, top + 4, 0.9, L - 6, 0.3, col)
+          + shield(top + 1.4, top + 3.4, 2.8, 3.3) + R(-3.4, top + 4.0, 6.8, 3.0, 1.4, 'rgba(0,0,0,0.08)') + R(-2.6, top + 9.2, 5.2, 4.4, 0.4, '#2B3A66')
+          + '<path d="M-2.6 ' + (top + 11.4) + 'H2.6M0 ' + (top + 9.2) + 'V' + (top + 13.6) + '" stroke="#5B7AC2" stroke-width="0.3"/>'
+          + line('M-1.6 ' + (bot - 4.6) + 'V' + (bot - 0.6), tyre, 0.7) + line('M1.6 ' + (bot - 4.6) + 'V' + (bot - 0.6), tyre, 0.7) + line('M-3 ' + (bot - 2.6) + 'H3', col, 0.5) + lamps();
+        arrowY = 2.6; under = '#F2EFE6';
         break;
       default:
-        v += hatch() + lamps();
+        v += wheels() + box(-4.0, top + 0.9, 8.0, L - 1.8, 3.2, col) + lamps();
     }
     // the night throws light ahead; the low sun warms the glass
-    if (kit === 'city') v = '<path d="M-3 ' + (top + 1) + 'L-4.4 ' + (top - 4.2) + 'L-0.6 ' + (top - 4.2) + 'L-1.5 ' + (top + 1) + 'ZM3 ' + (top + 1) + 'L4.4 ' + (top - 4.2) + 'L0.6 ' + (top - 4.2) + 'L1.5 ' + (top + 1) + 'Z" fill="#FFF6C8" opacity=".24"/>' + v;
-    if (kit === 'ferry' && c.len === 2) v += R(-3.2, top + 5.4, 6.4, L - 10.8, 1.4, 'rgba(255,160,110,0.18)');
-    if (kit === 'ski' && c.len === 2 && !/^(estate|suv|pickup|beetle)$/.test(model)) v += snowCap(top + 2.3);
-    return { v, col: under || col, arrowY, roofy };
+    if (kit === 'city' && c.len > 1) v = '<path d="M-3 ' + (top + 1) + 'L-4.4 ' + (top - 4.2) + 'L-0.6 ' + (top - 4.2) + 'L-1.5 ' + (top + 1) + 'ZM3 ' + (top + 1) + 'L4.4 ' + (top - 4.2) + 'L0.6 ' + (top - 4.2) + 'L1.5 ' + (top + 1) + 'Z" fill="#FFF6C8" opacity=".24"/>' + v;
+    if (kit === 'city' && c.len === 1) v = '<path d="M-0.6 ' + (top + 0.8) + 'L-2 ' + (top - 3.6) + 'L2 ' + (top - 3.6) + 'L0.6 ' + (top + 0.8) + 'Z" fill="#FFF6C8" opacity=".24"/>' + v;
+    if (kit === 'ferry' && c.len === 2 && !/^(jeep|estate|pickup)$/.test(model)) v += R(-3.0, top + 5.6, 6.0, L - 11.2, 1.4, 'rgba(255,160,110,0.16)');
+    return { v, col: under || col, arrowY, roofy, small, h: OB_HEIGHT[model] || 1 };
   }
   class OutboundCard extends Card {
     pos(v) { return v === E.EXIT ? 'exit' : v == null ? '' : v; }
@@ -1891,15 +1964,24 @@
       const L = c.len * 10, top = -L / 2;
       const model = obModel(this.kit, c, i, this.p.seed), V = obVehicle(this.kit, c, this.uid, model), dark = obLight(V.col);
       const g = s('g', { class: 'car', tabindex: '0', role: 'button', 'aria-label': OB_MODEL_NAMES[model] + ' facing ' + DIRNAME[c.dir] });
+      // the shadow falls the same way whichever way the vehicle faces, longer for tall ones
+      const sw = c.len === 1 ? 3.6 : 8.2, sh = s('g', { transform: 'translate(' + (0.35 + V.h * 0.35).toFixed(2) + ' ' + (0.5 + V.h * 0.55).toFixed(2) + ')' });
+      sh.append(s('g', { transform: 'rotate(' + ANGLE[c.dir] + ')' }, s('rect', { x: -sw / 2, y: top + 0.9, width: sw, height: L - 1.8, rx: c.len === 1 ? 1.6 : 3, fill: 'rgba(10,12,20,0.45)', filter: 'url(#' + this.uid + 'b)' })));
+      g.append(sh);
       const rot = s('g', { transform: 'rotate(' + ANGLE[c.dir] + ')' });
       const anim = s('g', { class: 'anim' });
-      anim.innerHTML = V.v;
+      anim.append(s('rect', { class: 'hit', x: -5, y: top, width: 10, height: L, fill: 'transparent' }));
+      const art = s('g');
+      art.innerHTML = V.v;
+      anim.append(art);
       const cy = V.arrowY;
       const chevron = 'M-1.9 ' + (cy + 1.1) + ' L0 ' + (cy - 0.9) + ' L1.9 ' + (cy + 1.1);
-      // where the roof carries something, the arrow gets a dark edge so it reads on anything
-      if (V.roofy) anim.append(s('path', { d: chevron, fill: 'none', stroke: 'rgba(20,22,30,0.55)', 'stroke-width': 2.1, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-      anim.append(s('path', { d: chevron, fill: 'none', stroke: dark && !V.roofy ? 'rgba(30,30,30,0.72)' : 'rgba(255,255,255,0.95)', 'stroke-width': 1.05, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-      anim.append(s('rect', { class: 'halo', x: -5.4, y: top - 0.1, width: 10.8, height: L + 0.2, rx: 3.8 }));
+      const arrow = s('g', V.small ? { transform: 'translate(0 ' + cy + ') scale(0.72) translate(0 ' + -cy + ')' } : null);
+      // where the top is busy, the arrow gets a dark edge so it reads on anything
+      if (V.roofy) arrow.append(s('path', { d: chevron, fill: 'none', stroke: 'rgba(20,22,30,0.6)', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+      arrow.append(s('path', { d: chevron, fill: 'none', stroke: dark && !V.roofy ? 'rgba(30,30,30,0.72)' : 'rgba(255,255,255,0.95)', 'stroke-width': 1.05, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+      anim.append(arrow);
+      anim.append(s('rect', { class: 'halo', x: -5.4, y: top - 0.1, width: 10.8, height: L + 0.2, rx: c.len === 1 ? 3 : 3.8 }));
       rot.append(anim);
       g.append(rot);
       g.anim = anim;
@@ -8376,7 +8458,7 @@
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them. Words on the board (what the colors of a try mean, Wrong color, Not here) come in practice and at L1 only, until six codes are cracked (from app 2.29; until then at every level); from L2 the board helps without words.', '',
-        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 small cars, trucks and fire engines in the town lot, L2 jeeps, buggies and camper vans on the beach, L3 taxis, other cars, buses and limousines in the city at night, L4 cars with skis, snowploughs and snowcats at the ski lodge, L5 cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds of car in each place, taken in turn so neighbours differ, the kind named in the car\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse trips', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),
