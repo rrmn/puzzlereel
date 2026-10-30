@@ -111,3 +111,4 @@ A puzzle's seed is `fnv1a(sessionSeed | block | game | level | occurrence)`, and
 ## Data
 
 Logs stay in the browser's local storage until exported from the Data panel as CSV (moves and looks, puzzles and rounds) or JSON. The in-app codebook ("What the columns mean", or Save codebook) documents every column and move label, the Glimpse levels and its timing method.
+
