@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.26.0';
+  const APP_VERSION = '2.27.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -106,6 +106,7 @@
     flame: '<path fill="currentColor" stroke="none" d="M12.6 2.4c.7 3.3 5 5.5 5 10.4a5.6 5.6 0 0 1-11.2 0c0-2.8 1.5-4.4 2.8-5.6.2 1.8 1 3 2.3 3.7-.6-3.3.3-6.1 1.1-8.5z"/>',
     eye: '<path class="df" d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z"/><path d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z"/><circle cx="12" cy="12" r="3.1"/>',
     bolt: '<path fill="currentColor" stroke="none" d="M13.6 2.2 4.8 13.4h6.1l-1.4 8.4 8.8-11.2h-6.1z"/>',
+    camera: '<path class="df" d="M3.5 9a2 2 0 0 1 2-2h2.4l1.7-2.4h4.8L16.1 7h2.4a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M3.5 9a2 2 0 0 1 2-2h2.4l1.7-2.4h4.8L16.1 7h2.4a2 2 0 0 1 2 2v8.6a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><circle cx="12" cy="13.2" r="3.4"/>',
     stack: '<path class="df" d="M6 15h12a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2zM8 9.5h8a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2zM10 4h4a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><rect x="4" y="15" width="16" height="5" rx="2"/><rect x="6" y="9.5" width="12" height="5" rx="2"/><rect x="8" y="4" width="8" height="5" rx="2"/>',
     person: '<circle class="df" cx="12" cy="8.2" r="3.7"/><path class="df" d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0z"/><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.5a7.2 7.2 0 0 1 14.4 0"/>',
     grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
@@ -113,6 +114,7 @@
     gauge: '<path class="df" d="M4.2 17a8.2 8.2 0 1 1 15.6 0z"/><path d="M4.2 17a8.2 8.2 0 1 1 15.6 0"/><path d="m12 14.6 3.6-4.4"/><circle cx="12" cy="15" r="1.3"/>',
     sign: '<path class="df" d="M12 3.6 21 19.4H3z"/><path d="M12 3.6 21 19.4H3z"/><path d="M12 9.6v4.2"/><path d="M12 16.6v.1"/>',
     road: '<path d="M8.4 3.5 4.8 20.5M15.6 3.5l3.6 17"/><path d="M12 4.5v2.6M12 10.6v2.8M12 17v3"/>',
+    fork: '<path d="M12 20.5v-6.2L6.8 8.4M12 14.3l5.2-5.9"/><path d="M5.8 13V7.4h5.4M18.2 13V7.4h-5.4"/>',
     basket: '<path class="df" d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M3.6 10.4h16.8l-1.7 8.6a2.2 2.2 0 0 1-2.2 1.8H7.5a2.2 2.2 0 0 1-2.2-1.8z"/><path d="M7.6 10.4 11 4.6M16.4 10.4 13 4.6"/><path d="M9.4 14v3.4M14.6 14v3.4"/>',
     day: '<path class="df" d="M7 5.2h10a3.2 3.2 0 0 1 3.2 3.2V10H3.8V8.4A3.2 3.2 0 0 1 7 5.2z"/><rect x="3.8" y="5.2" width="16.4" height="15.4" rx="3.2"/><path d="M3.8 10h16.4M8.4 3.2v4M15.6 3.2v4"/><path d="M8 14.2h.1M12 14.2h.1M16 14.2h.1M8 17.4h.1M12 17.4h.1"/>',
     rise: '<path d="M3.5 17.5 9.5 11.5l4 4 7-7.5"/><path d="M15 8h5.5v5.5"/>',
@@ -252,7 +254,7 @@
     conduit: { lower: true, fmt: tsec, what: 'fastest solve' },
     stacks: { lower: true, fmt: tsec, what: 'fastest solve' },
     tumbler: { lower: true, fmt: (v) => v + (v === 1 ? ' try' : ' tries'), what: 'fewest tries' },
-    glimpse: { lower: true, fmt: (v) => secs(v) + ' s', what: 'shortest flash' },
+    glimpse: { lower: true, fmt: (v) => secs(v) + ' s', what: 'fastest photo' },
     switchback: { lower: false, fmt: (v) => v + ' km/h', what: 'best average speed' },
     keepsake: { lower: true, fmt: (v) => secs(v) + ' s', what: 'shortest look, all right' },
   };
@@ -308,7 +310,7 @@
     conduit: ['the herb garden', 'the vegetable patch', 'the greenhouse', 'the desert oasis', 'the palace garden at night'],
     tumbler: ['the bike lock', 'the school locker', 'the front door', 'the safe', 'the vault'],
     keepsake: ['the park in spring', 'the park in summer', 'the park in autumn', 'the park in winter', 'the park at night'],
-    glimpse: ['the meadow', 'the meadow at dusk', 'the sea', 'the sea at night', 'the sunset sky'],
+    glimpse: ['the meadow', 'the pond', 'the forest', 'the jungle', 'the night walk'],
     stacks: ['the river stones', 'the station', 'the harbor', 'the bakery', 'the ice cream parlor'],
   };
   const lookName = (g, lv) => (LOOK_NAMES[g] ? LOOK_NAMES[g][lv - 1] || '' : '');
@@ -392,8 +394,7 @@
       5: () => starsSvg(60, 47, 800, 0.85) + moonSvg(348, 712, 15),
     },
     glimpse: {
-      2: () => starsSvg(14, 51, 260, 0.6),
-      4: () => starsSvg(60, 53, 800, 0.85) + moonSvg(70, 690, 16),
+      5: () => starsSvg(60, 53, 800, 0.85) + moonSvg(70, 690, 16),
     },
   };
   function decor(g, lv) {
@@ -629,6 +630,7 @@
     hint: (S) => { S.tone(1320, 1320, 0.12, 'sine', 0.12); S.tone(1760, 1760, 0.18, 'sine', 0.1, 0.08); },
     lose: (S) => S.tone(700, 520, 0.12, 'sine', 0.08),
     look: (S) => { S.tone(380, 620, 0.1, 'sine', 0.12); S.noise(0.06, 2400, 1600, 2, 0.04); },
+    shutter: (S) => { S.noise(0.035, 3200, 2400, 3, 0.09); S.noise(0.05, 1800, 900, 2, 0.07, 0.05); S.tone(1500, 900, 0.03, 'square', 0.025, 0.05); },
     pick: (S, k) => S.tone(600 + (k || 0) * 90, 660 + (k || 0) * 90, 0.07, 'triangle', 0.16),
     yes: (S) => { S.tone(880, 880, 0.09, 'sine', 0.16); S.tone(1320, 1320, 0.16, 'sine', 0.14, 0.07); S.tone(2600, 3400, 0.05, 'sine', 0.04, 0.12); },
     no: (S) => S.tone(320, 230, 0.2, 'triangle', 0.13),
@@ -2424,10 +2426,11 @@
   }
 
   // ------------------------------------------------------------- Glimpse
-  // All shapes share one 100 x 100 box, so the flash, the mask and the answer
-  // buttons draw exactly the same silhouettes. Everything shown during a look
-  // is drawn on one canvas inside requestAnimationFrame callbacks, so the
-  // flash and the mask change on whole screen frames.
+  // A photo trip. All shapes share one 100 x 100 box, so the photo, the closed
+  // shutter's pattern and the answer buttons draw exactly the same animals.
+  // Everything shown during a look is drawn on one canvas inside
+  // requestAnimationFrame callbacks, so the photo and the closed shutter
+  // change on whole screen frames.
   const GL_PATHS = {
     rabbit: 'M35.18 8.33A8.5 22 -10 1 1 42.82 51.67A8.5 22 -10 1 1 35.18 8.33Z M64.82 8.33A8.5 22 10 1 1 57.18 51.67A8.5 22 10 1 1 64.82 8.33Z M50 39A25 25 0 1 1 50 89A25 25 0 1 1 50 39Z',
     cat: 'M50 33A31 27 0 1 1 50 87A31 27 0 1 1 50 33Z M21 50L25 13L48 35Z M79 50L52 35L75 13Z',
@@ -2450,25 +2453,46 @@
     kite: 'M50 5L79 38L50 76L21 38Z M47 74L53 74Q58 82 53 88Q49 93 53 98L47 98Q43 93 47 88Q52 82 47 74Z M40 81L50 86L40 91Z M60 81L60 91L50 86Z',
     rocket: 'M50 5Q65 18 65 46L65 72L35 72L35 46Q35 18 50 5Z M50 33A7 7 0 1 0 50 47A7 7 0 1 0 50 33Z M35 52L35 72L20 85L20 74Z M65 52L80 74L80 85L65 72Z M41 72L59 72L50 95Z',
     cloud: 'M20 72A15 15 0 0 1 21 43A17 17 0 0 1 46 28A19 19 0 0 1 78 38A16 16 0 0 1 82 72Z',
+  };  // the trips' animals in color: layer 0 is the whole silhouette, the layers after it details on top
+  const GL_ART = {
+    rabbit: [['#B79C82', 'M30.63 31.48A8.5 22 -10 1 1 47.37 28.52A8.5 22 -10 1 1 30.63 31.48ZM52.63 28.52A8.5 22 10 1 1 69.37 31.48A8.5 22 10 1 1 52.63 28.52ZM25 64A25 25 0 1 1 75 64A25 25 0 1 1 25 64Z'], ['#F2B6BF', 'M34.86 30.73A4.2 15 -10 1 1 43.14 29.27A4.2 15 -10 1 1 34.86 30.73ZM56.86 29.27A4.2 15 10 1 1 65.14 30.73A4.2 15 10 1 1 56.86 29.27Z'], ['#EFE4D6', 'M37 74A13 10 0 1 1 63 74A13 10 0 1 1 37 74Z'], ['#2A1E16', 'M37.6 59A3.4 3.4 0 1 1 44.4 59A3.4 3.4 0 1 1 37.6 59ZM55.6 59A3.4 3.4 0 1 1 62.4 59A3.4 3.4 0 1 1 55.6 59Z'], ['#E58A9A', 'M46.5 68L53.5 68L50 72.5Z']],
+    hedgehog: [['#8A6242', 'M11.1 76.5L13.9 70.2L8.3 62.6L17.1 58.8L15.1 49.8L24.8 49.5L26.7 40.5L35.7 43.8L41.2 36.2L48.1 42.6L56.3 37.6L60 46.1L69.6 44.6L69.5 53.8L79 55.9L75.1 64.3L82.9 69.8L78.9 76.5L84 62Q92 64 97 70Q92 75 84 76L80 78L9 78Z M22 76L32 76L32 86Q27 89 22 86Z M56 76L66 76L66 86Q61 89 56 86Z'], ['#E6C79E', 'M70 60Q80 57 88 63Q94 67 97 70Q92 75 84 76L72 77Q66 70 70 60Z'], ['#6E4A30', 'M24 58L28 64L20 64ZM38 50L42 57L34 56ZM52 46L56 53L48 52ZM44 64L48 70L40 70ZM58 60L62 66L54 66Z'], ['#2A1E16', 'M79.7 65A2.3 2.3 0 1 1 84.3 65A2.3 2.3 0 1 1 79.7 65ZM93.8 70A2.4 2.4 0 1 1 98.6 70A2.4 2.4 0 1 1 93.8 70Z']],
+    bird: [['#3D8BFD', 'M44 36A30 22 0 1 1 44 80A30 22 0 1 1 44 36Z M70 25A15 15 0 1 1 70 55A15 15 0 1 1 70 25Z M84 35L97 41L84 47Z M22 50L8 59L2 33Z'], ['#A9D0FF', 'M33 66A19 10 0 1 1 71 66A19 10 0 1 1 33 66Z'], ['#2563C8', 'M21.37 58.53A17 9 -12 1 1 54.63 51.47A17 9 -12 1 1 21.37 58.53Z'], ['#FFB81F', 'M84 35L97 41L84 47Z'], ['#FFFFFF', 'M69 37A4 4 0 1 1 77 37A4 4 0 1 1 69 37Z'], ['#14213D', 'M71.8 37A2.2 2.2 0 1 1 76.2 37A2.2 2.2 0 1 1 71.8 37Z']],
+    frog: [['#5DB84A', 'M16 66A34 23 0 1 1 84 66A34 23 0 1 1 16 66ZM18.5 38A12.5 12.5 0 1 1 43.5 38A12.5 12.5 0 1 1 18.5 38ZM56.5 38A12.5 12.5 0 1 1 81.5 38A12.5 12.5 0 1 1 56.5 38ZM16 88A11 5.5 0 1 1 38 88A11 5.5 0 1 1 16 88ZM62 88A11 5.5 0 1 1 84 88A11 5.5 0 1 1 62 88Z'], ['#B9E28C', 'M30 75A20 13 0 1 1 70 75A20 13 0 1 1 30 75Z'], ['#FFFFFF', 'M23 38A8 8 0 1 1 39 38A8 8 0 1 1 23 38ZM61 38A8 8 0 1 1 77 38A8 8 0 1 1 61 38Z'], ['#1B2A16', 'M26.4 39A4.6 4.6 0 1 1 35.6 39A4.6 4.6 0 1 1 26.4 39ZM64.4 39A4.6 4.6 0 1 1 73.6 39A4.6 4.6 0 1 1 64.4 39Z'], ['#2F7426', 'M33 58Q50 70 67 58Q50 65 33 58Z']],
+    duck: [['#F7F3E8', 'M10 64A34 19 0 1 1 78 64A34 19 0 1 1 10 64ZM58 34A14 14 0 1 1 86 34A14 14 0 1 1 58 34ZM61 40L80 42L76 60L58 58ZM10 58L2 44L18 54Z'], ['#E3DCCB', 'M22.18 64.51A18 9 -8 1 1 57.82 59.49A18 9 -8 1 1 22.18 64.51Z'], ['#F29A2E', 'M83 32L98 36L98 41L84 43Z'], ['#1B2433', 'M72.4 31A2.6 2.6 0 1 1 77.6 31A2.6 2.6 0 1 1 72.4 31Z']],
+    dragonfly: [['#CBEAF4', 'M7.22 34.2A23 7 -8 1 1 52.78 27.8A23 7 -8 1 1 7.22 34.2ZM47.22 27.8A23 7 8 1 1 92.78 34.2A23 7 8 1 1 47.22 27.8ZM10.32 40.35A21 6.5 10 1 1 51.68 47.65A21 6.5 10 1 1 10.32 40.35ZM48.32 47.65A21 6.5 -10 1 1 89.68 40.35A21 6.5 -10 1 1 48.32 47.65ZM43 15A7 7 0 1 1 57 15A7 7 0 1 1 43 15ZM44 31A6 9 0 1 1 56 31A6 9 0 1 1 44 31ZM46.2 64A3.8 30 0 1 1 53.8 64A3.8 30 0 1 1 46.2 64Z'], ['#9ED3E6', 'M13.14 32.95A14 2.4 -8 1 1 40.86 29.05A14 2.4 -8 1 1 13.14 32.95ZM59.14 29.05A14 2.4 8 1 1 86.86 32.95A14 2.4 8 1 1 59.14 29.05ZM16.18 41.92A12 2.2 10 1 1 39.82 46.08A12 2.2 10 1 1 16.18 41.92ZM60.18 46.08A12 2.2 -10 1 1 83.82 41.92A12 2.2 -10 1 1 60.18 46.08Z'], ['#1C8FA6', 'M44 31A6 9 0 1 1 56 31A6 9 0 1 1 44 31ZM46.2 64A3.8 30 0 1 1 53.8 64A3.8 30 0 1 1 46.2 64Z'], ['#0F6B7E', 'M43 15A7 7 0 1 1 57 15A7 7 0 1 1 43 15Z'], ['#BDF3FF', 'M43.9 13.5A2.6 2.6 0 1 1 49.1 13.5A2.6 2.6 0 1 1 43.9 13.5ZM50.9 13.5A2.6 2.6 0 1 1 56.1 13.5A2.6 2.6 0 1 1 50.9 13.5Z']],
+    deer: [['#B8773E', 'M19 54A27 14 0 1 1 73 54A27 14 0 1 1 19 54ZM62 50L70 24L82 22L76 52ZM69.54 19.6A11 7 18 1 1 90.46 26.4A11 7 18 1 1 69.54 19.6ZM24 58L29 58L30 93L25 93ZM34 60L39 60L38 93L33 93ZM56 60L61 60L62 93L57 93ZM64 58L69 58L71 93L66 93ZM16 48L22 44L24 52ZM74 18L70 6L73 5L77 16ZM79 16L80 4L83 4L82 16Z'], ['#F3E2CB', 'M27 63A17 4.5 0 1 1 61 63A17 4.5 0 1 1 27 63ZM16 49A3 3 0 1 1 22 49A3 3 0 1 1 16 49Z'], ['#7A4A24', 'M70 6L66 2L68 1L72 5ZM80 4L84 0L86 1L82 5Z'], ['#2A1A10', 'M82.2 21A1.8 1.8 0 1 1 85.8 21A1.8 1.8 0 1 1 82.2 21ZM88.7 25.5A1.8 1.8 0 1 1 92.3 25.5A1.8 1.8 0 1 1 88.7 25.5Z']],
+    fox: [['#E8743A', 'M50 30L58 30L80 7Q85 23 83 40Q91 50 89 58Q79 71 64 77Q56 88 50 93Q44 88 36 77Q21 71 11 58Q9 50 17 40Q15 23 20 7L42 30Z'], ['#FFF3E4', 'M50 93Q44 88 36 77Q21 71 11 58Q24 61 35 64Q44 69 50 77Q56 69 65 64Q76 61 89 58Q79 71 64 77Q56 88 50 93Z'], ['#7A3418', 'M22 12L36 30L25 36ZM78 12L75 36L64 30Z'], ['#22160F', 'M34 50A3 4.2 0 1 1 40 50A3 4.2 0 1 1 34 50ZM60 50A3 4.2 0 1 1 66 50A3 4.2 0 1 1 60 50ZM46 86A4 3 0 1 1 54 86A4 3 0 1 1 46 86Z']],
+    owl: [['#8B6446', 'M20 58A30 36 0 1 1 80 58A30 36 0 1 1 20 58ZM22 28L28 8L40 24ZM60 24L72 8L78 28Z'], ['#C7A27A', 'M32 76A18 16 0 1 1 68 76A18 16 0 1 1 32 76Z'], ['#EAD3AE', 'M25 43A13 13 0 1 1 51 43A13 13 0 1 1 25 43ZM49 43A13 13 0 1 1 75 43A13 13 0 1 1 49 43Z'], ['#F5C344', 'M30 43A8 8 0 1 1 46 43A8 8 0 1 1 30 43ZM54 43A8 8 0 1 1 70 43A8 8 0 1 1 54 43Z'], ['#1A140F', 'M33.8 43A4.2 4.2 0 1 1 42.2 43A4.2 4.2 0 1 1 33.8 43ZM57.8 43A4.2 4.2 0 1 1 66.2 43A4.2 4.2 0 1 1 57.8 43Z'], ['#E0952E', 'M45 52L55 52L50 62Z']],
+    monkey: [['#7B5434', 'M22 50A28 28 0 1 1 78 50A28 28 0 1 1 22 50ZM6 50A12 12 0 1 1 30 50A12 12 0 1 1 6 50ZM70 50A12 12 0 1 1 94 50A12 12 0 1 1 70 50Z'], ['#E8C79A', 'M30.5 45A10.5 10.5 0 1 1 51.5 45A10.5 10.5 0 1 1 30.5 45ZM48.5 45A10.5 10.5 0 1 1 69.5 45A10.5 10.5 0 1 1 48.5 45ZM34 64A16 12 0 1 1 66 64A16 12 0 1 1 34 64ZM11.5 50A6.5 6.5 0 1 1 24.5 50A6.5 6.5 0 1 1 11.5 50ZM75.5 50A6.5 6.5 0 1 1 88.5 50A6.5 6.5 0 1 1 75.5 50Z'], ['#1E140C', 'M38.6 46A3.4 3.4 0 1 1 45.4 46A3.4 3.4 0 1 1 38.6 46ZM54.6 46A3.4 3.4 0 1 1 61.4 46A3.4 3.4 0 1 1 54.6 46ZM44.4 61A1.6 1.2 0 1 1 47.6 61A1.6 1.2 0 1 1 44.4 61ZM52.4 61A1.6 1.2 0 1 1 55.6 61A1.6 1.2 0 1 1 52.4 61Z'], ['#8E5A3A', 'M42 68Q50 74 58 68Q50 71 42 68Z']],
+    tiger: [['#F08C2A', 'M15 56A35 31 0 1 1 85 56A35 31 0 1 1 15 56ZM12.5 28A10.5 10.5 0 1 1 33.5 28A10.5 10.5 0 1 1 12.5 28ZM66.5 28A10.5 10.5 0 1 1 87.5 28A10.5 10.5 0 1 1 66.5 28Z'], ['#FFF4E4', 'M17.5 28A5.5 5.5 0 1 1 28.5 28A5.5 5.5 0 1 1 17.5 28ZM71.5 28A5.5 5.5 0 1 1 82.5 28A5.5 5.5 0 1 1 71.5 28ZM26 70A13 11 0 1 1 52 70A13 11 0 1 1 26 70ZM48 70A13 11 0 1 1 74 70A13 11 0 1 1 48 70Z'], ['#1E1712', 'M46 26L50 25L54 26L52 38L48 38ZM36 30L40 29L43 38L39 39ZM60 29L64 30L61 39L57 38ZM15 52L28 54L27 57L16 57ZM15 62L27 61L26 64L17 66ZM85 52L84 57L73 57L72 54ZM85 62L83 66L74 64L73 61ZM36 50A3 4 0 1 1 42 50A3 4 0 1 1 36 50ZM58 50A3 4 0 1 1 64 50A3 4 0 1 1 58 50Z'], ['#D9617A', 'M45 62L55 62L50 68Z']],
+    parrot: [['#E23B36', 'M29.83 52.75A17 28 18 1 1 62.17 63.25A17 28 18 1 1 29.83 52.75ZM44 27A14 14 0 1 1 72 27A14 14 0 1 1 44 27ZM48 82L33 99L24 99L40 78ZM66 18Q82 17 81 33Q78 40 72 36Q74 28 66 26Z'], ['#2E7CD6', 'M30.49 54.91A10 21 18 1 1 49.51 61.09A10 21 18 1 1 30.49 54.91ZM42 76L33 92L27 92L34 72Z'], ['#F5C83A', 'M37.29 44.15A6 9 18 1 1 48.71 47.85A6 9 18 1 1 37.29 44.15Z'], ['#F3E6CC', 'M66 18Q82 17 81 33Q78 40 72 36Q74 28 66 26Z'], ['#FFFFFF', 'M56.4 24A4.6 4.6 0 1 1 65.6 24A4.6 4.6 0 1 1 56.4 24Z'], ['#14110F', 'M59.7 24A2.3 2.3 0 1 1 64.3 24A2.3 2.3 0 1 1 59.7 24Z']],
+    leaf: [['#4F9A4C', 'M50 5C81 22 83 68 50 94C17 68 19 22 50 5Z M48 88L52 88L52 99L48 99Z'], ['#7CC07A', 'M49.3 16L50.7 16L50.7 86L49.3 86Z']],
+    badger: [['#8E8E8E', 'M20 54A30 33 0 1 1 80 54A30 33 0 1 1 20 54ZM18 27A8 8 0 1 1 34 27A8 8 0 1 1 18 27ZM66 27A8 8 0 1 1 82 27A8 8 0 1 1 66 27Z'], ['#F4F1EA', 'M38 56A12 32 0 1 1 62 56A12 32 0 1 1 38 56ZM20 66A9 12 0 1 1 38 66A9 12 0 1 1 20 66ZM62 66A9 12 0 1 1 80 66A9 12 0 1 1 62 66Z'], ['#242424', 'M30.66 53.56A7.5 25 -12 1 1 45.34 50.44A7.5 25 -12 1 1 30.66 53.56ZM54.66 50.44A7.5 25 12 1 1 69.34 53.56A7.5 25 12 1 1 54.66 50.44ZM45.4 85A4.6 4.6 0 1 1 54.6 85A4.6 4.6 0 1 1 45.4 85Z'], ['#FFFFFF', 'M35.1 52A2.4 2.4 0 1 1 39.9 52A2.4 2.4 0 1 1 35.1 52ZM60.1 52A2.4 2.4 0 1 1 64.9 52A2.4 2.4 0 1 1 60.1 52Z']],
+    bat: [['#4B3E5E', 'M46 44Q30 30 6 33Q12 44 10 55Q18 50 24 58Q30 52 36 62Q40 54 46 58ZM54 44Q70 30 94 33Q88 44 90 55Q82 50 76 58Q70 52 64 62Q60 54 54 58ZM40 53A10 16 0 1 1 60 53A10 16 0 1 1 40 53ZM41 35A9 9 0 1 1 59 35A9 9 0 1 1 41 35ZM42 31L43 17L48 28ZM52 28L57 17L58 31Z'], ['#6A5B80', 'M44 56A6 10 0 1 1 56 56A6 10 0 1 1 44 56Z'], ['#FFE9A8', 'M44.7 35A1.8 1.8 0 1 1 48.3 35A1.8 1.8 0 1 1 44.7 35ZM51.7 35A1.8 1.8 0 1 1 55.3 35A1.8 1.8 0 1 1 51.7 35Z']],
+    moth: [['#E3D5B2', 'M10.6 49.24A22 13 -22 1 1 51.4 32.76A22 13 -22 1 1 10.6 49.24ZM48.6 32.76A22 13 22 1 1 89.4 49.24A22 13 22 1 1 48.6 32.76ZM23.02 56.76A14 10 22 1 1 48.98 67.24A14 10 22 1 1 23.02 56.76ZM51.02 67.24A14 10 -22 1 1 76.98 56.76A14 10 -22 1 1 51.02 67.24ZM45 51A5 19 0 1 1 55 51A5 19 0 1 1 45 51ZM48 34Q42 22 34 17L35 15.5Q44 20 50.5 33ZM52 34Q58 22 66 17L65 15.5Q56 20 49.5 33Z'], ['#C9B48A', 'M23 42A5 5 0 1 1 33 42A5 5 0 1 1 23 42ZM67 42A5 5 0 1 1 77 42A5 5 0 1 1 67 42ZM34.5 63A3.5 3.5 0 1 1 41.5 63A3.5 3.5 0 1 1 34.5 63ZM58.5 63A3.5 3.5 0 1 1 65.5 63A3.5 3.5 0 1 1 58.5 63Z'], ['#8C6F45', 'M45 51A5 19 0 1 1 55 51A5 19 0 1 1 45 51ZM48 34Q42 22 34 17L35 15.5Q44 20 50.5 33ZM52 34Q58 22 66 17L65 15.5Q56 20 49.5 33Z']],
   };
-
-  // per scene: field, ink (the silhouettes), and the scene background
-  const GL_STYLE = {
-    meadow: { field: '#F7FBF2', ink: '#18291F', bg1: '#3A86EE', bg2: '#152C78' },
-    sea: { field: '#EEF8FB', ink: '#0B2C3F', bg1: '#1FB2C6', bg2: '#0A3961' },
-    sky: { field: '#FFF6EE', ink: '#2A1846', bg1: '#FF9A6A', bg2: '#5A2A88' },
-    'meadow-2': { field: '#FBF4FF', ink: '#2A1840', bg1: '#B98AE0', bg2: '#3B2275' },
-    'sea-4': { field: '#E4EEFA', ink: '#0B1A33', bg1: '#2B4A8C', bg2: '#070D26' },
+  const glShape = (name) => (GL_ART[name] ? GL_ART[name][0][1] : GL_PATHS[name]);
+  // each trip: the card's colors around the photo
+  const GL_TRIP = {
+    meadow: { bg1: '#5AB0F5', bg2: '#2364C8' },
+    pond: { bg1: '#3CC2B9', bg2: '#0F6476' },
+    forest: { bg1: '#5DAE6C', bg2: '#1C5236' },
+    jungle: { bg1: '#8CC84B', bg2: '#2A6A2C' },
+    night: { bg1: '#4152A6', bg2: '#0C1236' },
   };
-  // the thing that was there, shown afterwards as a bright sticker
-  const GL_STICKER = { bird: '#3D8BFD', butterfly: '#FF6FA7', snail: '#FF9F1C', star: '#FFB81F', sailboat: '#FF5D5D', jellyfish: '#A774FF', kite: '#FF5D5D', rocket: '#3D8BFD' };
   const GL_DIRS = ['up', 'up right', 'right', 'down right', 'down', 'down left', 'left', 'up left'];
   const GL_NUMPAD = { 8: 0, 9: 1, 6: 2, 3: 3, 2: 4, 1: 5, 4: 6, 7: 7 };
-  const GL_P2D = {};
+  const GL_P2D = {}, GL_A2D = {};
   function glPath(name) {
-    if (!(name in GL_P2D)) { try { GL_P2D[name] = new Path2D(GL_PATHS[name]); } catch (e) { GL_P2D[name] = null; } }
+    if (!(name in GL_P2D)) { try { GL_P2D[name] = new Path2D(glShape(name)); } catch (e) { GL_P2D[name] = null; } }
     return GL_P2D[name];
   }
+  function glArt(name) {
+    if (!(name in GL_A2D)) { try { GL_A2D[name] = (GL_ART[name] || [['#2A2E37', GL_PATHS[name]]]).map(([c, d]) => [c, new Path2D(d)]); } catch (e) { GL_A2D[name] = null; } }
+    return GL_A2D[name];
+  }
+  // one silhouette in the current fill (Switchback's signs)
   function glDraw(ctx, name, x, y, size, rot, flip) {
     const p = glPath(name);
     if (!p) return;
@@ -2481,26 +2505,119 @@
     ctx.fill(p);
     ctx.restore();
   }
+  // an animal in color, with a thin light rim so it stands out on any ground
+  function glDrawArt(ctx, name, x, y, size, rot, flip, rim) {
+    const L = glArt(name);
+    if (!L) return;
+    const k = size / 100;
+    ctx.save();
+    ctx.translate(x, y);
+    if (rot) ctx.rotate((rot * Math.PI) / 180);
+    ctx.scale(flip ? -k : k, k);
+    ctx.translate(-50, -50);
+    if (rim) { ctx.strokeStyle = rim; ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.stroke(L[0][1]); }
+    for (const [c, p] of L) { ctx.fillStyle = c; ctx.fill(p); }
+    ctx.restore();
+  }
   function glSvg(name) {
-    return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, s('path', { d: GL_PATHS[name] }));
+    return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, s('path', { d: glShape(name) }));
+  }
+  function glArtSvg(name) {
+    return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, (GL_ART[name] || [['currentColor', GL_PATHS[name]]]).map(([c, d]) => s('path', { d, fill: c })));
   }
   function glXY(G, R, slot) {
     const sl = G.slots[slot], a = (sl.a * Math.PI) / 180;
     return [R + Math.sin(a) * sl.r * R, R - Math.cos(a) * sl.r * R];
   }
-  // the middle item at 0.34 R, the target and distractors at 0.2 R, all in one ink on the pale field
-  const GL_CENTER = 0.34, GL_ITEM = 0.2;
-  function glStim(ctx, R, p, t, G, ink) {
-    ctx.fillStyle = ink;
-    glDraw(ctx, p.pair[t.c], R, R, GL_CENTER * R, 0, false);
+  // the ground each trip's photos are taken on: soft and plain where the animals can be, with
+  // the details out at the rim
+  function glScene(ctx, R, trip) {
+    const D = 2 * R;
+    ctx.save();
+    const lin = (y0, y1, stops) => { const g = ctx.createLinearGradient(0, y0, 0, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+    const blob = (x, y, rx, ry, c, a, rot) => { ctx.globalAlpha = a == null ? 1 : a; ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x * R, y * R, rx * R, ry * R, rot || 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; };
+    // a ground line across the photo from y0 at the left to y1 at the right, gently waved
+    const ground = (y0, y1, wave, fill) => {
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.moveTo(0, y0 * R);
+      for (let i = 1; i <= 8; i++) { const x = (i / 8) * D, y = (y0 + (y1 - y0) * (i / 8)) * R + Math.sin(i * 1.7) * wave * R; ctx.quadraticCurveTo(x - D / 16, y - wave * R, x, y); }
+      ctx.lineTo(D, D);
+      ctx.lineTo(0, D);
+      ctx.closePath();
+      ctx.fill();
+    };
+    const cloud = (x, y, k, a) => { blob(x, y, 0.13 * k, 0.06 * k, '#FFFFFF', a); blob(x - 0.07 * k, y + 0.015 * k, 0.07 * k, 0.045 * k, '#FFFFFF', a); blob(x + 0.04 * k, y - 0.03 * k, 0.07 * k, 0.05 * k, '#FFFFFF', a); };
+    if (trip === 'pond') {
+      ctx.fillStyle = lin(0, D, [[0, '#A9DEDD'], [1, '#5FB4BF']]);
+      ctx.fillRect(0, 0, D, D);
+      ground(0.3, 0.26, 0.012, '#9ED08A');
+      ctx.fillStyle = lin(0.3 * R, D, [[0, '#9FD8DA'], [1, '#5CB0BD']]);
+      ctx.beginPath(); ctx.rect(0, 0.36 * R, D, D); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.45)';
+      ctx.lineWidth = Math.max(1, 0.008 * R);
+      for (const [y, rx] of [[1.2, 0.36], [1.27, 0.55], [1.36, 0.74]]) { ctx.beginPath(); ctx.ellipse(R, y * R, rx * R, rx * 0.16 * R, 0, 0, Math.PI * 2); ctx.stroke(); }
+      for (const [x, y, k] of [[0.18, 1.62, 1], [1.84, 1.38, 0.8], [1.5, 1.9, 0.9], [0.5, 1.92, 0.7]]) { blob(x, y, 0.13 * k, 0.05 * k, '#5E9F57'); blob(x, y - 0.006, 0.11 * k, 0.04 * k, '#73B66A'); }
+      ctx.strokeStyle = '#5E8F4C';
+      ctx.lineWidth = Math.max(1, 0.01 * R);
+      for (const x of [0.12, 0.17, 0.22, 1.78, 1.84, 1.9]) { ctx.beginPath(); ctx.moveTo(x * R, 0.4 * R); ctx.quadraticCurveTo((x + 0.02) * R, 0.24 * R, (x - 0.01) * R, 0.12 * R); ctx.stroke(); }
+    } else if (trip === 'forest') {
+      ctx.fillStyle = lin(0, D, [[0, '#E7F2DC'], [1, '#D3E6C3']]);
+      ctx.fillRect(0, 0, D, D);
+      for (const [x, w] of [[0.06, 0.14], [0.3, 0.07], [1.64, 0.09], [1.9, 0.15]]) { ctx.fillStyle = 'rgba(176,150,112,.55)'; ctx.fillRect((x - w / 2) * R, 0, w * R, D); }
+      for (const [x, y, k] of [[0.1, 0.1, 1.3], [0.4, 0.04, 0.9], [1.6, 0.06, 1], [1.95, 0.14, 1.3]]) blob(x, y, 0.22 * k, 0.12 * k, '#B9D99F', 0.9);
+      ctx.fillStyle = 'rgba(255,255,255,.22)';
+      ctx.beginPath(); ctx.moveTo(0.9 * R, 0); ctx.lineTo(1.1 * R, 0); ctx.lineTo(0.75 * R, D); ctx.lineTo(0.5 * R, D); ctx.closePath(); ctx.fill();
+      ground(1.14, 1.1, 0.02, lin(1.1 * R, D, [[0, '#BAD79B'], [1, '#9AC47D']]));
+    } else if (trip === 'jungle') {
+      ctx.fillStyle = lin(0, D, [[0, '#D6EFBE'], [1, '#B2DD95']]);
+      ctx.fillRect(0, 0, D, D);
+      ctx.strokeStyle = 'rgba(70,130,60,.35)';
+      ctx.lineWidth = Math.max(1.5, 0.014 * R);
+      for (const x of [0.32, 0.62, 1.42, 1.7]) { ctx.beginPath(); ctx.moveTo(x * R, 0); ctx.quadraticCurveTo((x + 0.08) * R, 0.2 * R, (x - 0.02) * R, 0.36 * R); ctx.stroke(); }
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2 + 0.2;
+        blob(1 + Math.cos(a) * 1.05, 1 + Math.sin(a) * 1.05, 0.2, 0.08, i % 2 ? '#7DBF6A' : '#6AAE5B', 0.75, a + Math.PI / 2);
+      }
+      ground(1.18, 1.14, 0.02, lin(1.1 * R, D, [[0, '#A2D483'], [1, '#86C26C']]));
+    } else if (trip === 'night') {
+      ctx.fillStyle = lin(0, D, [[0, '#2E3D78'], [1, '#4A5FA3']]);
+      ctx.fillRect(0, 0, D, D);
+      scatter(22, 71, 0.1, 0.1, 1.9, 0.95).forEach(([x, y, k]) => blob(x, y, 0.006 + k * 0.006, 0.006 + k * 0.006, '#FFFFFF', 0.4 + k * 0.5));
+      blob(0.36, 0.3, 0.16, 0.16, '#FFF3C8', 0.18);
+      blob(0.36, 0.3, 0.085, 0.085, '#FFF3C8');
+      ground(1.1, 1.06, 0.02, lin(1.05 * R, D, [[0, '#4B7F69'], [1, '#356154']]));
+      // what the flash lights up
+      const g = ctx.createRadialGradient(R, R, 0.1 * R, R, R, R);
+      g.addColorStop(0, 'rgba(255,255,240,.18)');
+      g.addColorStop(1, 'rgba(255,255,240,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, D, D);
+    } else {
+      ctx.fillStyle = lin(0, R, [[0, '#BDE3FF'], [1, '#EAF6FF']]);
+      ctx.fillRect(0, 0, D, D);
+      cloud(0.45, 0.3, 1, 0.9);
+      cloud(1.5, 0.2, 0.8, 0.85);
+      ground(0.82, 0.78, 0.03, '#C3E3AE');
+      ground(0.94, 0.9, 0.02, lin(0.9 * R, D, [[0, '#AEDC90'], [1, '#88C66E']]));
+      for (const [x, y, c] of [[0.3, 1.82, '#FFFFFF'], [0.42, 1.9, '#FFD54A'], [1.56, 1.86, '#FFFFFF'], [1.7, 1.76, '#FF9EC0'], [1.12, 1.95, '#FFD54A']]) blob(x, y, 0.016, 0.016, c);
+    }
+    ctx.restore();
+  }
+  // the middle animal at 0.34 R, the thing to find and what is in its way at 0.2 R
+  const GL_CENTER = 0.34, GL_ITEM = 0.2, GL_RIM = 'rgba(255,255,255,.92)';
+  function glStim(ctx, R, p, t, G) {
+    glScene(ctx, R, p.theme);
+    glDrawArt(ctx, p.pair[t.c], R, R, GL_CENTER * R, 0, false, GL_RIM);
     if (!p.periph) return;
     const size = GL_ITEM * R;
+    for (const d of t.d) { const q = glXY(G, R, d[0]); glDrawArt(ctx, p.distractor || 'leaf', q[0], q[1], size, d[1], false, GL_RIM); }
     const b = glXY(G, R, G.slotOf(t.ring, t.dir));
-    glDraw(ctx, t.tg || 'bird', b[0], b[1], size, 0, !!t.flip);
-    for (const d of t.d) { const q = glXY(G, R, d[0]); glDraw(ctx, p.distractor || 'leaf', q[0], q[1], size, d[1], false); }
+    glDrawArt(ctx, t.tg || p.target || 'bird', b[0], b[1], size, 0, !!t.flip, GL_RIM);
   }
-  // pattern mask: outlines of the scene's own shapes on every position an item can take
-  // (the 48 ring spots and the middle), then a scatter of outlines and short strokes
+  // pattern mask: outlines of the trip's own shapes on every position an item can take
+  // (the 48 ring spots and the middle), then a scatter of outlines and short strokes,
+  // drawn in light lines over the closed shutter
   function glMask(ctx, R, seed, names, ink, G) {
     const rng = E.makeRng(seed);
     const pt = (maxR) => { const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * maxR; return [R + Math.cos(a) * r, R + Math.sin(a) * r]; };
@@ -2518,9 +2635,6 @@
       ctx.restore();
     };
     ctx.save();
-    ctx.beginPath();
-    ctx.arc(R, R, R, 0, Math.PI * 2);
-    ctx.clip();
     ctx.strokeStyle = ink;
     ctx.fillStyle = ink;
     ctx.lineCap = 'round';
@@ -2528,9 +2642,9 @@
     const jit = () => (rng() - 0.5) * 0.08 * R;
     for (let k = 0; k < G.slots.length; k++) { const q = glXY(G, R, k); outline(q[0] + jit(), q[1] + jit(), (0.18 + rng() * 0.1) * R); }
     for (let k = 0; k < 3; k++) outline(R + jit(), R + jit(), (0.26 + rng() * 0.14) * R);
-    for (let i = 0; i < 18; i++) { const q = pt(1.02 * R); outline(q[0], q[1], (0.14 + rng() * 0.18) * R); }
-    for (let i = 0; i < 110; i++) {
-      const q = pt(1.05 * R);
+    for (let i = 0; i < 26; i++) { const q = pt(1.3 * R); outline(q[0], q[1], (0.14 + rng() * 0.18) * R); }
+    for (let i = 0; i < 150; i++) {
+      const q = pt(1.35 * R);
       const len = (0.035 + rng() * 0.1) * R, a = rng() * Math.PI * 2;
       ctx.lineWidth = (0.008 + rng() * 0.014) * R;
       ctx.beginPath();
@@ -2540,20 +2654,36 @@
     }
     ctx.restore();
   }
-  // fixation: a dot inside a ring that closes in over the first GL_RING_MS;
-  // every look gets GL_LEAD_MS more fixation, with the ring closing slowly over it
+  // the closed shutter: the camera's dark screen, with the faint grid a camera shows
+  function glIris(ctx, R) {
+    const D = 2 * R;
+    const g = ctx.createRadialGradient(R, 0.8 * R, 0.1 * R, R, R, 1.45 * R);
+    g.addColorStop(0, '#3A3F4A');
+    g.addColorStop(1, '#1B1E24');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, D, D);
+    ctx.strokeStyle = 'rgba(255,255,255,.1)';
+    ctx.lineWidth = Math.max(1, 0.006 * R);
+    ctx.beginPath();
+    for (const k of [1, 2]) { ctx.moveTo((k * D) / 3, 0); ctx.lineTo((k * D) / 3, D); ctx.moveTo(0, (k * D) / 3); ctx.lineTo(D, (k * D) / 3); }
+    ctx.stroke();
+  }
+  // focusing: a yellow square, as a phone camera shows, settles round the middle over the first
+  // GL_RING_MS; every look gets GL_LEAD_MS more, with the square settling slowly over it
   const GL_RING_MS = 260, GL_LEAD_MS = 800;
-  function glFix(ctx, R, k, ink) {
+  function glFocus(ctx, R, k) {
     const e = k == null ? 1 : 1 - Math.pow(1 - Math.min(1, k), 3);
-    ctx.fillStyle = ink;
-    ctx.strokeStyle = ink;
+    const half = (0.15 + 0.13 * (1 - e)) * R, r = 0.035 * R;
+    ctx.strokeStyle = '#FFD23F';
+    ctx.lineWidth = Math.max(2, 0.012 * R);
+    ctx.globalAlpha = 0.45 + 0.55 * e;
     ctx.beginPath();
-    ctx.arc(R, R, Math.max(3, 0.022 * R), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 0.35 + 0.65 * e;
-    ctx.lineWidth = Math.max(1.5, 0.009 * R);
-    ctx.beginPath();
-    ctx.arc(R, R, (0.075 + 0.2 * (1 - e)) * R, 0, Math.PI * 2);
+    ctx.moveTo(R - half + r, R - half);
+    ctx.arcTo(R + half, R - half, R + half, R + half, r);
+    ctx.arcTo(R + half, R + half, R - half, R + half, r);
+    ctx.arcTo(R - half, R + half, R - half, R - half, r);
+    ctx.arcTo(R - half, R - half, R + half, R - half, r);
+    ctx.closePath();
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
@@ -2595,29 +2725,31 @@
       const p = this.p;
       this.phase = this.summary ? 'done' : 'ready';
       this.D = 0; this.R = 0; this.dpr = 1;
-      const look = GL_STYLE[(p.theme || 'meadow') + '-' + this.lookLv] || GL_STYLE[p.theme] || GL_STYLE.meadow;
-      this.ink = look.ink;
-      this.maskShapes = p.pair.concat(p.targetSet || ['bird'], [p.distractor || 'leaf']);
+      const trip = GL_TRIP[p.theme] || GL_TRIP.meadow;
+      this.tg = p.target || (p.targetSet && p.targetSet[0]) || 'bird';
+      this.maskShapes = p.pair.concat([this.tg], [p.distractor || 'leaf']);
       this.el.dataset.theme = p.theme || 'meadow';
-      this.el.style.setProperty('--bg1', look.bg1);
-      this.el.style.setProperty('--bg2', look.bg2);
+      this.el.style.setProperty('--bg1', trip.bg1);
+      this.el.style.setProperty('--bg2', trip.bg2);
+      this.album = [];
       this.lens = h('div', { class: 'gl-lens' });
-      this.lens.style.setProperty('--gl-ink', look.ink);
-      this.lens.style.setProperty('--gl-field', look.field);
       this.canvas = h('canvas', { class: 'gl-canvas', 'aria-hidden': 'true' });
       this.stimC = document.createElement('canvas');
       this.maskC = document.createElement('canvas');
-      this.goBtn = h('button', { class: 'gl-go', type: 'button', 'aria-label': 'Look' }, icon('eye'));
+      this.irisC = document.createElement('canvas');
+      // the line over the photo: what to find, then each question in words
+      this.qEl = h('p', { class: 'gl-q', 'aria-live': 'polite' });
+      this.goBtn = h('button', { class: 'gl-go', type: 'button', 'aria-label': 'Take a photo' }, icon('camera'));
       this.goBtn.addEventListener('click', () => this.begin());
-      this.choiceEl = h('div', { class: 'gl-choices', role: 'group', 'aria-label': 'Which animal', hidden: true });
+      this.choiceEl = h('div', { class: 'gl-choices', role: 'group', 'aria-label': 'Who was in the middle', hidden: true });
       this.choiceBtns = p.pair.map((name, k) => {
-        const b = h('button', { class: 'gl-choice', type: 'button', 'aria-label': name }, glSvg(name));
+        const b = h('button', { class: 'gl-choice', type: 'button', 'aria-label': name }, glArtSvg(name));
         b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.pick(k); });
         b.addEventListener('click', () => this.pick(k));
         this.choiceEl.append(b);
         return b;
       });
-      this.spotsEl = h('div', { class: 'gl-spots', role: 'group', 'aria-label': 'Where the bird was', hidden: true });
+      this.spotsEl = h('div', { class: 'gl-spots', role: 'group', 'aria-label': 'Where the ' + this.tg + ' was', hidden: true });
       this.spotBtns = GL_DIRS.map((name, d) => {
         const b = h('button', { class: 'gl-spot', type: 'button', 'aria-label': name });
         b.addEventListener('click', () => this.where(d));
@@ -2625,12 +2757,14 @@
         return b;
       });
       this.lens.addEventListener('pointerdown', (e) => this.lensDown(e));
-      this.dotsEl = h('div', { class: 'gl-dots', 'aria-hidden': 'true' });
-      // the question, drawn where it is asked: a "?" where the animal was, then the thing to find
+      // the album: one frame a photo, filled in as the trip goes
+      this.dotsEl = h('div', { class: 'gl-album', 'aria-hidden': 'true' });
+      // "?" where the animal was
       this.askEl = h('div', { class: 'gl-ask', 'aria-hidden': 'true', hidden: true });
       this.lens.append(this.canvas, this.askEl, this.spotsEl, this.choiceEl, this.goBtn);
       this.area.classList.add('gl-area');
-      this.area.append(h('div', { class: 'gl-wrap' }, this.lens, this.dotsEl));
+      this.area.append(h('div', { class: 'gl-wrap' }, this.qEl, this.lens, this.dotsEl));
+      this.line('find');
       if (this.phase === 'done') this.goBtn.hidden = true;
       else if (this.run.i >= p.n) this.later(() => this.resolve('complete'), 0);
       this.renderDots();
@@ -2651,13 +2785,25 @@
       if (this.onWinResize) window.removeEventListener('resize', this.onWinResize);
       this.app.steady(false);
     }
+    // the words over the photo
+    line(kind) {
+      const q = this.qEl, tg = this.tg;
+      q.textContent = '';
+      q.className = 'gl-q ' + kind;
+      if (kind === 'find') q.append(h('span', { class: 'gl-q-art' }, glArtSvg(tg)), 'Find the ' + tg);
+      else if (kind === 'what') q.append('Who was in the middle?');
+      else if (kind === 'where') q.append('Where was the ' + tg + '?');
+      else if (kind === 'ok') q.append('Got it!');
+      else if (kind === 'center') q.append('It was the ' + this.p.pair[this.p.trials[Math.max(0, this.run.i - 1)].c]);
+      else if (kind === 'spot') q.append('The ' + tg + ' was here');
+    }
     // ---- layout
     onResize() {
       const changed = this.layout();
       if (changed) this.abort('resize');
     }
     layout() {
-      const aw = this.area.clientWidth - 28, ah = this.area.clientHeight - 24 - 26;
+      const aw = this.area.clientWidth - 28, ah = this.area.clientHeight - 24 - 26 - 64;
       if (aw <= 0 || ah <= 0) return false;
       let D = Math.floor(Math.min(aw, ah, 720));
       D = Math.max(180, D - (D % 2));
@@ -2670,10 +2816,14 @@
       this.lens.style.setProperty('--R', this.R + 'px');
       this.dpr = Math.min(3, window.devicePixelRatio || 1);
       const px = Math.round(D * this.dpr);
-      [this.canvas, this.stimC, this.maskC].forEach((c) => { c.width = px; c.height = px; });
+      [this.canvas, this.stimC, this.maskC, this.irisC].forEach((c) => { c.width = px; c.height = px; });
       this.ctx = this.canvas.getContext('2d');
+      const ic = this.irisC.getContext('2d');
+      ic.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      glIris(ic, this.R);
       this.placeSpots();
       this.clearReveal();
+      if (this.phase === 'ready' || this.phase === 'done') this.paint(null, 1, true);
       return true;
     }
     placeSpots() {
@@ -2690,31 +2840,32 @@
         b.style.margin = -size / 2 + 'px 0 0 ' + -size / 2 + 'px';
       });
     }
-    // ---- drawing
-    blit(src, alpha) {
+    // ---- drawing: the closed shutter with something over it (the focus marks, the pattern), or the photo
+    paint(src, alpha, shut) {
       const c = this.ctx;
       if (!c) return;
       c.setTransform(1, 0, 0, 1, 0, 0);
       c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      if (shut) c.drawImage(this.irisC, 0, 0);
       if (src) { c.globalAlpha = alpha == null ? 1 : alpha; c.drawImage(src, 0, 0); c.globalAlpha = 1; }
     }
-    // after the mask, the crowd fades but stays faintly behind the questions: the thing was in there
+    // after the shutter closes, its pattern fades but stays faintly behind the questions
     fadeMask() {
       caf(this.fadeId);
-      const t0 = now(), ms = 280, floor = 0.14;
+      const t0 = now(), ms = 280, floor = 0.18;
       const step = () => {
-        if (this.phase !== 'what' && this.phase !== 'where' && this.phase !== 'fb') return;
+        if (this.phase !== 'what' && this.phase !== 'where') return;
         const k = Math.min(1, (now() - t0) / ms);
-        this.blit(this.maskC, 1 - (1 - floor) * k);
+        this.paint(this.maskC, 1 - (1 - floor) * k, true);
         if (k < 1) this.fadeId = raf(step);
       };
       this.fadeId = raf(step);
     }
     drawFix(k) {
-      this.blit(null);
+      this.paint(null, 1, true);
       if (!this.ctx) return;
       this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-      glFix(this.ctx, this.R, k, this.ink);
+      glFocus(this.ctx, this.R, k);
     }
     prepare() {
       const t = this.p.trials[this.run.i], W = this.canvas.width, k = this.dpr;
@@ -2722,14 +2873,14 @@
       sc.setTransform(1, 0, 0, 1, 0, 0);
       sc.clearRect(0, 0, W, W);
       sc.setTransform(k, 0, 0, k, 0, 0);
-      glStim(sc, this.R, this.p, t, this.G, this.ink);
+      glStim(sc, this.R, this.p, t, this.G);
       const mc = this.maskC.getContext('2d');
       mc.setTransform(1, 0, 0, 1, 0, 0);
       mc.clearRect(0, 0, W, W);
       mc.setTransform(k, 0, 0, k, 0, 0);
-      glMask(mc, this.R, t.mask, this.maskShapes, this.ink, this.G);
+      glMask(mc, this.R, t.mask, this.maskShapes, 'rgba(214,222,236,.62)', this.G);
     }
-    // ---- one look: fixation, flash, mask, then the two answers
+    // ---- one photo: focusing, the photo, the shutter closing, then the two answers
     begin() {
       if (this.summary || this.phase !== 'ready' || this.run.i >= this.p.n) return;
       Sound.unlock();
@@ -2741,6 +2892,7 @@
       if (!this.R) this.layout();
       if (!this.ctx) { this.phase = 'ready'; return; }
       this.prepare();
+      this.line('find');
       this.goBtn.classList.add('away');
       this.goBtn.disabled = true;
       this.app.steady(true);
@@ -2769,7 +2921,7 @@
             st.T = frameEstimate(st.deltas, this.app.frameMs);
             this.app.frameMs = st.T;
             st.plan = this.G.plan(p, this.run, st.T);
-            this.blit(this.stimC);
+            this.paint(this.stimC);
             st.onset = ts;
             this.phase = 'stim';
             if (this.practice && this.run.i === 0) this.showMarks(t);
@@ -2777,9 +2929,10 @@
         } else if (this.phase === 'stim') {
           if (ts - st.onset >= (st.plan.frames - 0.5) * st.T) {
             if (this.practice) this.hideMarks();
-            this.blit(this.maskC);
+            this.paint(this.maskC, 1, true);
             st.offset = ts;
             this.phase = 'mask';
+            Sound.play('shutter');
           }
         } else if (this.phase === 'mask') {
           if (ts - st.offset >= p.maskMs - st.T / 2) {
@@ -2800,7 +2953,7 @@
       caf(this.rafId);
       this.rafId = null;
       this.st = null;
-      this.blit(null);
+      this.paint(null, 1, true);
       this.app.steady(false);
       this.hideMarks();
       this.log('interrupted', { move_no: this.run.i + 1, detail: ph + ', ' + reason });
@@ -2809,16 +2962,14 @@
       this.goBtn.classList.remove('away');
     }
     onHidden() { this.abort('page hidden'); }
-    ask(kind) {
-      this.askEl.textContent = '';
-      this.askEl.className = 'gl-ask ' + kind;
-      this.askEl.append(h('b', { text: '?' }));
-      this.askEl.hidden = false;
-    }
     askWhat() {
       this.phase = 'what';
       this.ans = {};
-      this.ask('what');
+      this.line('what');
+      this.askEl.textContent = '';
+      this.askEl.className = 'gl-ask what';
+      this.askEl.append(h('b', { text: '?' }));
+      this.askEl.hidden = false;
       this.choiceBtns.forEach((b) => { b.className = 'gl-choice'; b.disabled = false; });
       this.choiceEl.classList.remove('gone');
       this.choiceEl.hidden = false;
@@ -2835,11 +2986,11 @@
       this.choiceBtns[k].classList.add('picked');
       this.hideHand();
       // with feedback on (free play, practice) a wrong animal ends the look at once: the second
-      // question could no longer save it. Without feedback (research) both answers are kept.
+      // question could no longer save it. Without feedback both answers are kept.
       const t = this.p.trials[this.run.i];
       if (this.p.periph && !(k !== t.c && (this.o.feedback || this.practice))) this.askWhere(); else this.finishLook();
     }
-    // during the first practice flash, soft rings round the two things to remember
+    // during the first practice photo, soft rings round the two things to remember
     // (a hand would say "tap", and this is the moment to look)
     showMarks(t) {
       this.hideMarks();
@@ -2857,12 +3008,10 @@
     askWhere() {
       this.phase = 'where';
       this.choiceEl.classList.add('gone');
-      const t = this.p.trials[this.run.i], tg = t.tg || 'bird';
-      // the thing was out there, in one of these places: a faint outline of it in each spot
-      this.ask('where');
-      this.spotsEl.setAttribute('aria-label', 'Where the ' + tg + ' was');
+      this.askEl.hidden = true;
+      this.line('where');
       this.placeSpots();
-      this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; b.textContent = ''; b.append(glSvg(tg)); });
+      this.spotBtns.forEach((b) => { b.className = 'gl-spot'; b.disabled = false; b.textContent = ''; b.append(glSvg(this.tg)); });
       this.spotsEl.classList.add('asking');
       this.spotsEl.hidden = false;
       this.whereAt = now();
@@ -2909,7 +3058,7 @@
         cls: correct ? 'correct' : !cOk && asked && !dOk ? 'both_wrong' : !cOk ? 'center_wrong' : 'where_wrong',
         refresh_ms: r4(st.T), frames: st.plan.frames, flash_ms: r4(planned), flash_measured_ms: r4(measured), frame_drop: drop ? 1 : 0,
         fix_ms: Math.round(st.onset - st.start), mask_ms: Math.round(st.end - st.offset),
-        target: p.periph ? t.tg || 'bird' : '', shown: p.pair[t.c], chosen: p.pair[a.c],
+        target: p.periph ? t.tg || this.tg : '', shown: p.pair[t.c], chosen: p.pair[a.c],
         ring: p.periph ? t.ring : '', dir: p.periph ? t.dir : '', dir_chosen: asked ? a.d : '', n_distract: p.periph ? t.d.length : '',
         rt_center_ms: a.rtC, rt_where_ms: asked ? a.rtW : '',
         stair_next_ms: rec.next == null ? '' : rec.next, reversal: p.fixedMs ? '' : rec.rev,
@@ -2920,32 +3069,35 @@
       this.renderDots();
       this.updateStatus();
       this.app.touch();
-      this.later(() => this.nextLook(), show ? 1100 : 300);
+      this.later(() => this.nextLook(), show ? 1500 : 300);
     }
+    // the shutter opens on the photo: green rings round what was right, red where a tap went wrong;
+    // then the photo goes into the album
     feedback(correct, cOk, dOk, t, a, show) {
-      if (!show) { Sound.play('tick'); return; }
-      let spark = null;
-      // what was there: the animal in the middle, ringed green or red
+      if (!show) { Sound.play('tick'); this.choiceEl.hidden = true; this.spotsEl.hidden = true; this.paint(null, 1, true); return; }
       this.choiceEl.hidden = true;
-      const ans = h('div', { class: 'gl-answer ' + (cOk ? 'ok' : 'bad'), 'aria-hidden': 'true' }, glSvg(this.p.pair[t.c]));
-      this.lens.append(ans);
-      this.answerEl = ans;
+      this.spotsEl.hidden = true;
+      this.paint(this.stimC);
+      this.rings = [];
+      const ring = (x, y, d, cls) => {
+        const m = h('i', { class: 'gl-ring ' + cls, 'aria-hidden': 'true' });
+        const size = Math.round(d * this.R);
+        m.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + size + 'px;height:' + size + 'px;margin:' + -size / 2 + 'px 0 0 ' + -size / 2 + 'px';
+        this.lens.append(m);
+        this.rings.push(m);
+      };
+      ring(this.R, this.R, 0.48, cOk ? 'ok' : 'show');
+      let spark = null;
       if (this.p.periph) {
-        this.spotBtns.forEach((b, d) => { b.disabled = true; b.textContent = ''; b.classList.toggle('fade', d !== t.dir && d !== a.d); });
-        if (a.d != null) {
-          this.spotBtns[t.dir].classList.add('ok');
-          if (!dOk) this.spotBtns[a.d].classList.add('bad');
-        }
         const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
-        const size = Math.round(0.24 * this.R);
-        const tg = t.tg || 'bird';
-        const bird = h('div', { class: 'gl-bird' + (t.flip ? ' flip' : ''), 'aria-hidden': 'true' },
-          s('svg', { viewBox: '-6 -6 112 112' }, s('path', { d: GL_PATHS[tg], fill: GL_STICKER[tg] || '#3D8BFD', stroke: '#FFFFFF', 'stroke-width': 9, 'stroke-linejoin': 'round', 'paint-order': 'stroke' })));
-        bird.style.cssText = 'left:' + q[0] + 'px;top:' + q[1] + 'px;width:' + size + 'px;height:' + size + 'px;margin:' + -size / 2 + 'px 0 0 ' + -size / 2 + 'px';
-        this.lens.append(bird);
-        this.revealEl = bird;
+        ring(q[0], q[1], 0.32, a.d == null ? 'show' : dOk ? 'ok' : 'show');
+        if (a.d != null && !dOk) {
+          const rr = this.G.ringR[t.ring - 1] * this.R, an = (a.d * Math.PI) / 4;
+          ring(this.R + Math.sin(an) * rr, this.R - Math.cos(an) * rr, 0.24, 'bad');
+        }
         spark = q;
       }
+      this.line(correct ? 'ok' : !cOk ? 'center' : 'spot');
       Sound.play(correct ? 'yes' : 'no');
       buzz(correct ? 12 : [24, 40, 24]);
       if (correct) {
@@ -2953,10 +3105,17 @@
         const q = spark || [this.R, this.R];
         sparks(this, L.x - this.R + q[0], L.y - this.R + q[1], ['#FFC83A', '#FFFFFF', '#7CE3B0'], 12);
       }
+      // a small copy of the photo for the album
+      try {
+        const th = document.createElement('canvas');
+        th.width = th.height = 96;
+        th.getContext('2d').drawImage(this.stimC, 0, 0, this.stimC.width, this.stimC.height, 0, 0, 96, 96);
+        this.album[this.run.i - 1] = { url: th.toDataURL('image/png'), ok: correct };
+      } catch (e) { /* the album is only a picture */ }
     }
     clearReveal() {
-      if (this.revealEl) { this.revealEl.remove(); this.revealEl = null; }
-      if (this.answerEl) { this.answerEl.remove(); this.answerEl = null; }
+      (this.rings || []).forEach((m) => m.remove());
+      this.rings = null;
     }
     nextLook() {
       if (this.summary) return;
@@ -2967,7 +3126,7 @@
       this.placeSpots();
       this.startLook();
     }
-    // ---- status
+    // ---- status: the speed of the camera
     nextMs() {
       if (this.p.fixedMs) return this.p.fixedMs[Math.min(this.run.i, this.p.n - 1)];
       return this.run.ms;
@@ -2980,23 +3139,26 @@
         this.goalTxt = txt;
         this.goalMs = ms;
         this.goalEl.textContent = '';
-        this.goalEl.append(icon('bolt'), h('span', { text: txt }));
+        this.goalEl.append(icon('camera'), h('span', { text: txt }));
         if (faster) { this.goalEl.classList.remove('bump'); void this.goalEl.offsetWidth; this.goalEl.classList.add('bump'); }
       }
       this.goalEl.classList.add('speed');
       this.goalEl.hidden = !(this.o.counter || this.practice);
-      this.goalEl.setAttribute('aria-label', 'Next flash ' + txt);
+      this.goalEl.setAttribute('aria-label', 'Next photo shows for ' + txt);
     }
     updateStatus() {
       super.updateStatus();
       this.meterEl.hidden = true;
     }
+    // the album: a frame for every photo of the round, the photo in it once taken
     renderDots() {
       const n = this.p.n, res = this.run.res, show = this.o.feedback || this.practice;
       this.dotsEl.textContent = '';
       for (let i = 0; i < n; i++) {
-        const r = res[i];
-        this.dotsEl.append(h('i', { class: r ? (show ? (r.ok ? 'ok' : 'bad') : 'done') : i === res.length && !this.summary ? 'now' : '' }));
+        const r = res[i], ph = this.album[i];
+        const fr = h('i', { class: r ? (show ? (r.ok ? 'ok' : 'bad') : 'done') : i === res.length && !this.summary ? 'now' : '' });
+        if (ph && show) fr.append(h('img', { src: ph.url, alt: '' }));
+        this.dotsEl.append(fr);
       }
     }
     guideTarget() {
@@ -3013,7 +3175,7 @@
       caf(this.rafId);
       this.rafId = null;
       this.st = null;
-      this.blit(null);
+      this.paint(null, 1, true);
       this.app.steady(false);
       this.phase = 'done';
       this.goBtn.hidden = true;
@@ -3056,12 +3218,19 @@
       if (sm.gl.correct === sm.gl.n) return 'Perfect!';
       return sm.stars === 3 ? 'Great!' : sm.stars === 2 ? 'Nice!' : 'Done!';
     }
+    // the round's photos as an album page, and the fastest the camera got
     resultStats(sm) {
       const g = sm.gl;
       if (!g || !g.n) return null;
-      return h('div', { class: 'res-stats' },
-        h('span', { 'aria-label': 'Shortest flash reached' }, icon('bolt'), h('b', { text: g.reach_ms != null ? secs(g.reach_ms) + ' s' : '–' })),
-        h('span', { 'aria-label': 'Looks right' }, icon('eye'), h('b', { text: g.correct + '/' + g.n })));
+      const fr = document.createDocumentFragment();
+      const shots = this.album.filter(Boolean);
+      if (shots.length && (this.o.feedback || this.practice)) {
+        fr.append(h('div', { class: 'res-album', 'aria-hidden': 'true' }, shots.map((ph) => h('i', { class: ph.ok ? 'ok' : 'bad' }, h('img', { src: ph.url, alt: '' })))));
+      }
+      fr.append(h('div', { class: 'res-stats' },
+        h('span', { 'aria-label': 'Fastest photo' }, icon('camera'), h('b', { text: g.reach_ms != null ? secs(g.reach_ms) + ' s' : '–' })),
+        h('span', { 'aria-label': 'Photos right' }, icon('check'), h('b', { text: g.correct + '/' + g.n }))));
+      return fr;
     }
     onKey(e) {
       if (this.summary) return false;
@@ -3818,6 +3987,11 @@
   const SB_FAR = 60;        // the landmark stays this far off, on the skyline, until the end of the drive comes near
   const SB_TO_LINE = 8;     // the finish line stands this far before the landmark
   const SB_PAST = 4.5;      // the car rolls to a stop this far past the line
+  // a fork (level 3 on): the road widens to two lanes over SB_WIDE, splits at the nose,
+  // the lane to the landmark comes back to the middle over SB_SPLIT while the other one
+  // bends away, out of sight by SB_AWAY; the arrow board stands just past the nose
+  const SB_WIDE = 7, SB_SPLIT = 14, SB_AWAY = 16, SB_BEND = 9, SB_LEAD = 1.0;
+  const SB_DARK = 380;      // ms a sign stays dark at night until the headlights catch it (900 the first time)
   const SB_COL = {
     sky: ['#79B3F0', '#BCDDF7', '#FFE4C4'], far: '#A9BFDB', hill: ['#8CC57C', '#7BB86E'],
     grass: ['#95D17F', '#8AC774'], rumble: ['#E5564D', '#F8F3EA'], road: ['#737886', '#6E7381'], lane: '#F8F3E6',
@@ -4067,6 +4241,23 @@
       g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
     }
     return (SB_GLOWS[rgb] = c);
+  }
+  // a sign's plate before the headlights catch it: its shape, dark; cut once per sign and size
+  const SB_DARKS = {};
+  function sbPlateDark(shape, glyph, P) {
+    const key = shape + '|' + glyph + '|' + Math.round(P);
+    if (SB_DARKS[key]) return SB_DARKS[key];
+    const S = Math.ceil(P * 1.4), c = document.createElement('canvas');
+    c.width = c.height = S * 2;
+    const g = c.getContext('2d');
+    if (g) {
+      g.setTransform(2, 0, 0, 2, 0, 0);
+      sbPlate(g, shape, glyph, S / 2, S / 2, P);
+      g.globalCompositeOperation = 'source-atop';
+      g.fillStyle = '#1C2440';
+      g.fillRect(0, 0, S, S);
+    }
+    return (SB_DARKS[key] = { c, S });
   }
   // the moon at dusk: a crescent, cut once
   let SB_MOON = null;
@@ -4379,7 +4570,8 @@
   }
   // the land beside the road, one segment at a time: fields in rows, the sea and its
   // shore, hedgerows across the pasture
-  function sbLand(ctx, PL, i, zB, xA, yA, xB, yB, yT, sA, sB, half, t, salt, W) {
+  // ex: near a fork, how far the road's edges have moved out [left, right at the near end, left, right at the far end]
+  function sbLand(ctx, PL, i, zB, xA, yA, xB, yB, yT, sA, sB, half, t, salt, W, ex) {
     const e0 = half * 1.16;
     const quad = (ax, ay, bx, by, cx, cy, ex, ey) => { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); ctx.closePath(); };
     if (PL.land === 'crops') {
@@ -4442,11 +4634,15 @@
       // ploughed snow banked up along both edges: a shaded face toward the road, a white top
       if (zB > 40) return;
       for (const sd of [-1, 1]) {
+        // near a fork the banks move out with the road's edge, and stop beside the lane that bends away
+        const ea = ex ? ex[sd < 0 ? 0 : 1] : 0, eb = ex ? ex[sd < 0 ? 2 : 3] : 0;
+        if (ea > 1.2 || eb > 1.2) continue;
         const a = e0 + 0.03, a2 = e0 + 0.09, b = e0 + 0.36, hA = 0.06 * sA, hB = 0.06 * sB;
+        const XA = (L) => xA + sd * (L + ea) * sA, XB = (L) => xB + sd * (L + eb) * sB;
         ctx.fillStyle = '#B9CADF';
-        ctx.beginPath(); quad(xA + sd * a * sA, yA, xB + sd * a * sB, yB, xB + sd * a2 * sB, yT - hB, xA + sd * a2 * sA, yA - hA); ctx.fill();
+        ctx.beginPath(); quad(XA(a), yA, XB(a), yB, XB(a2), yT - hB, XA(a2), yA - hA); ctx.fill();
         ctx.fillStyle = '#F2F7FC';
-        ctx.beginPath(); quad(xA + sd * a2 * sA, yA - hA, xB + sd * a2 * sB, yT - hB, xB + sd * b * sB, yT, xA + sd * b * sA, yA); ctx.fill();
+        ctx.beginPath(); quad(XA(a2), yA - hA, XB(a2), yT - hB, XB(b), yT, XA(b), yA); ctx.fill();
       }
       return;
     }
@@ -5676,13 +5872,16 @@
       // the animal on the road, braking for it, the things collected on their way to the counter
       this.beast = null; this.brakeTo = 0; this.braked = false; this.itemK = this.run.items.length; this.flyers = []; this.streak = 0; this.streakAt = 0;
       this.got = this.run.items.filter((x) => x).length; this.gotAt = -1e9;
+      // a fork in the road (level 3 on), the new animal from halfway (level 4 on), the first
+      // time something new comes up (demo), the car waiting for the player during one (hold)
+      this.fork = null; this.turned = !!(p.turn && this.tt >= p.turn.t); this.demo = null; this.hold = false;
       this.wrap = h('div', { class: 'sb-wrap' });
       this.canvas = h('canvas', { class: 'sb-canvas', 'aria-hidden': 'true' });
       this.goBtn = h('button', { class: 'sb-go', type: 'button', 'aria-label': this.phase === 'paused' ? 'Drive on' : 'Drive' }, icon('play'));
       this.goBtn.addEventListener('click', () => this.begin());
       this.wheelEl = h('div', { class: 'sb-wheel', 'aria-hidden': 'true' }, sbWheelSvg());
       this.btnCanvas = h('canvas', { 'aria-hidden': 'true' });
-      this.signBtn = h('button', { class: 'sb-btn cue', type: 'button', 'aria-label': 'Tap when this sign shows: ' + p.target + ' crossing' }, this.btnCanvas);
+      this.signBtn = h('button', { class: 'sb-btn cue', type: 'button', 'aria-label': 'Tap when this sign shows: ' + this.target() + ' crossing' }, this.btnCanvas);
       this.signBtn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.respond(e, 'button'); });
       this.signBtn.addEventListener('click', (e) => { if (e.detail === 0) this.respond(e, 'key'); });
       // what counts, on screen for the whole drive: this place's sign and one dot per
@@ -5752,20 +5951,69 @@
       }) : null;
       this.steerRange = Math.max(56, Math.min(110, W * 0.2));
       this.plateP = Math.max(60, Math.min(92, W * 0.2));
-      const b = this.signBtn.clientWidth || 84, k = this.dpr;
+      // night: dark beyond the headlights, deepest toward the horizon
+      if (this.p.night) {
+        const ng = cx.createLinearGradient(0, 0, 0, H);
+        ng.addColorStop(0, 'rgba(6, 10, 30, 0.34)'); ng.addColorStop(SB_HORIZON, 'rgba(6, 10, 30, 0.52)');
+        ng.addColorStop(SB_HORIZON + 0.2, 'rgba(6, 10, 30, 0.36)'); ng.addColorStop(1, 'rgba(6, 10, 30, 0.1)');
+        this.nightGrad = ng;
+      }
+      this.paintPlates();
+      this.draw(now());
+    }
+    // the animal whose sign counts: from halfway on levels 4 and 5, the new one
+    target() { return this.turned ? this.p.turn.to : this.p.target; }
+    // that animal's sign on the button and on the tally
+    paintPlates() {
+      const b = this.signBtn.clientWidth || 84, k = this.dpr || 1, tg = this.target();
       this.btnCanvas.width = Math.round(b * 0.72 * k);
       this.btnCanvas.height = Math.round(b * 0.72 * k);
       const bc = this.btnCanvas.getContext('2d');
       if (bc) {
         bc.setTransform(k, 0, 0, k, 0, 0);
         bc.clearRect(0, 0, b, b);
-        sbPlate(bc, 'tri', this.p.target, b * 0.36, b * 0.37, b * 0.62);
+        sbPlate(bc, 'tri', tg, b * 0.36, b * 0.37, b * 0.62);
       }
       const ts = 26, tc = this.tallyCanvas.getContext('2d');
       this.tallyCanvas.width = Math.round(ts * k);
       this.tallyCanvas.height = Math.round(ts * k);
-      if (tc) { tc.setTransform(k, 0, 0, k, 0, 0); tc.clearRect(0, 0, ts, ts); sbPlate(tc, 'tri', this.p.target, ts / 2, ts * 0.53, ts * 0.9); }
-      this.draw(now());
+      if (tc) { tc.setTransform(k, 0, 0, k, 0, 0); tc.clearRect(0, 0, ts, ts); sbPlate(tc, 'tri', tg, ts / 2, ts * 0.53, ts * 0.9); }
+      this.signBtn.setAttribute('aria-label', 'Tap when this sign shows: ' + tg + ' crossing');
+    }
+    // the first time a player meets something new on the road, it comes with a short demo
+    isNew(kind) { return !this.practice && !(store.get('pr1.sbnew', {}) || {})[kind]; }
+    learned(kind) {
+      const s = store.get('pr1.sbnew', {}) || {};
+      if (!s[kind]) { s[kind] = 1; store.set('pr1.sbnew', s); }
+    }
+    // halfway on levels 4 and 5: a card shows the new animal's sign, and the button changes to it
+    turnNow(ts) {
+      const p = this.p, from = p.target, to = p.turn.to;
+      this.turned = true;
+      this.paintPlates();
+      this.tally();
+      this.log('turn', { move_no: this.run.i, target: to, detail: 'from ' + from });
+      Sound.play('hint');
+      buzz([12, 60, 12]);
+      this.signBtn.classList.remove('press', 'ok', 'bad');
+      void this.signBtn.offsetWidth;
+      this.signBtn.classList.add('swap');
+      this.later(() => this.signBtn.classList.remove('swap'), 1400);
+      const big = h('canvas', { 'aria-hidden': 'true' }), small = h('canvas', { 'aria-hidden': 'true' });
+      const k = this.dpr || 1;
+      for (const [c, sz, g] of [[big, 58, to], [small, 26, from]]) {
+        c.width = c.height = Math.round(sz * k);
+        c.style.width = c.style.height = sz + 'px';
+        const x = c.getContext('2d');
+        if (x) { x.setTransform(k, 0, 0, k, 0, 0); sbPlate(x, 'tri', g, sz / 2, sz * 0.53, sz * 0.9); }
+      }
+      if (this.newCard) this.newCard.remove();
+      const card = this.newCard = h('div', { class: 'sb-new', role: 'status' },
+        big, h('div', { class: 'sb-new-txt' },
+          h('b', { text: 'Now tap the ' + to }),
+          h('span', { class: 'sb-new-old' }, h('span', { class: 'sb-new-x' }, small, icon('x')), h('span', { text: 'not the ' + from }))));
+      this.wrap.append(card);
+      this.later(() => { card.classList.add('out'); this.later(() => card.remove(), 320); }, reducedMotion() ? 3200 : 2900);
     }
     // ---- input
     steerDown(e) {
@@ -5804,6 +6052,8 @@
         this.later(() => this.signBtn.classList.remove('press'), 140);
       }
       const S = this.sign;
+      // a tap while a sign is still dark (at night) is noted, without a sound
+      if (S && !S.res && ts < S.on - 1) { this.run.stray++; this.log('stray', { move_no: this.run.i, source, detail: 'sign still dark' }); this.app.touch(); return; }
       if (S && !S.res && ts >= S.on - 1 && ts - S.on <= S.ms + SB_GRACE) { this.score(S, true, Math.max(0, ts - S.on), t, source); return; }
       this.run.stray++;
       this.log('stray', { move_no: this.run.i, source, detail: S && S.res ? 'after ' + S.res : '' });
@@ -5825,12 +6075,30 @@
       B.res = 'shooed';
       B.state = 'off';
       B.off = t;
+      const demo = this.demo === 'animals';
       const rec = this.G.beast(this.p, this.run, { shooed: true, rt: Math.max(0, ts - B.t0) });
-      this.log('beast', { move_no: this.run.i, target: this.p.target, cls: rec.cls, rt_ms: rec.rt, speed_kmh: Math.round(this.kmh), source, detail: B.side < 0 ? 'from left' : 'from right' });
+      this.log('beast', { move_no: this.run.i, target: B.kind, cls: rec.cls, rt_ms: rec.rt, speed_kmh: Math.round(this.kmh), source, detail: (B.side < 0 ? 'from left' : 'from right') + (demo ? ', first time: the car stopped for it' : '') });
       Sound.play('toot');
       buzz(8);
+      if (demo) { this.endDemo(); this.learned('animals'); }
       if (this.practice) this.later(() => this.guide(), 250);
       this.app.touch();
+    }
+    // the first animal on the road ever: the car has stopped short of it, and a hand and
+    // a word show what to do; the drive waits for the tap
+    waitFor() {
+      const B = this.beast;
+      this.hold = true;
+      if (!B || !this.beastXY || !this.beastBox) return;
+      this.demoSay = this.say(this.mark([this.beastXY[0], this.beastBox[1] - 6]), 'Tap the ' + B.kind + ' to shoo it', '', 60000);
+      this.pointAt(this.mark(this.beastXY), 60000);
+    }
+    endDemo() {
+      this.demo = null;
+      this.hold = false;
+      if (this.demoSay) { this.demoSay.remove(); this.demoSay = null; }
+      clearTimeout(this.handTimer);
+      this.hideHand();
     }
     // ---- driving
     begin() {
@@ -5869,6 +6137,7 @@
         this.run.bi = B.k + 1;
       }
       this.beast = null; this.brakeTo = 0;
+      if (this.demo === 'animals') this.endDemo();
       this.ptr = null; this.ptrSteer = 0; this.keySteer = 0;
       this.kmh = 0;
       this.phase = 'paused';
@@ -5897,15 +6166,23 @@
     step(dt, ts) {
       const p = this.p, run = this.run, G = this.G, D = run.drive;
       const driving = this.phase === 'drive';
-      this.tt += dt;
-      // speed: toward the staircase value, slower on the grass, to a stop at the end
-      const onGrass = Math.abs(this.carX) > p.half;
-      // an animal on the road: the car eases off until it is gone, and brakes if it gets close
+      // while the car waits for the player in a demo, the drive's clock stands still
+      if (!this.hold) this.tt += dt;
+      // where the car is: on the road, in one of a fork's lanes, or on the grass
+      const ln = this.fork ? this.lanes(this.pos + SB_CAR_Z) : null, h0 = p.half;
+      const inLane = (c, hw, m) => Math.abs(this.carX - c) + m <= hw;
+      const onGrass = !ln ? Math.abs(this.carX) > h0 : ln.one ? !inLane(0, ln.R, 0) : !inLane(ln.m, h0, 0) && !inLane(ln.b, h0, 0);
+      // an animal on the road: the car eases off until it is gone, and brakes if it gets close;
+      // the first time ever it stops short of it and waits for a tap
       const hard = ts < this.brakeTo, held = !!(this.beast && !this.beast.res);
-      const want = driving ? (hard ? 4 : run.kmh * (onGrass ? 0.8 : 1) * (held ? SB_EASE : 1)) : 0;
+      const wait = held && this.demo === 'animals' && this.beast.w - this.pos <= SB_STOP + 1.3;
+      // the first fork ever: slower, so there is time to follow the arrow
+      const slow = this.fork && this.fork.demo && !this.fork.res ? 0.62 : 1;
+      const want = driving ? (wait ? 0 : hard ? 4 : run.kmh * (onGrass ? 0.8 : 1) * (held ? SB_EASE : 1) * slow) : 0;
       const before = this.kmh;
-      this.kmh += (want - this.kmh) * Math.min(1, dt * (hard ? 7 : held ? 3 : driving ? (this.kmh < want ? 1.3 : 2.2) : 2.6));
-      if (!driving && this.kmh < 1.5) this.kmh = 0;
+      this.kmh += (want - this.kmh) * Math.min(1, dt * (hard || wait ? 7 : held ? 3 : driving ? (this.kmh < want ? 1.3 : 2.2) : 2.6));
+      if ((!driving || wait) && this.kmh < 1.5) this.kmh = 0;
+      if (wait && this.kmh === 0 && !this.hold) this.waitFor(ts);
       this.braking = this.kmh < before - 0.4 * dt * 60;
       // the speed measure leaves out the time from an animal stepping out until the car is nearly back to speed
       if (this.braked && !hard && !held && this.kmh >= run.kmh * 0.9) this.braked = false;
@@ -5922,14 +6199,23 @@
       const tgt = this.ptr != null ? this.ptrSteer : this.keySteer * 0.6;
       this.steer += (tgt - this.steer) * Math.min(1, dt * 16);
       const c = p.road[Math.floor((this.pos + SB_CAR_Z) / G.seg)] || 0, vr = v / 6;
-      const side = this.steer * SB_STEER * vr - c * SB_DRIFT * vr * vr;
-      this.carX = Math.max(-p.half - 0.55, Math.min(p.half + 0.55, this.carX + side * dt));
+      let side = this.steer * SB_STEER * vr - c * SB_DRIFT * vr * vr;
+      const lo = (ln ? ln.L : -h0) - 0.55, hi = (ln ? ln.R : h0) + 0.55;
+      const back = this.fork && this.fork.back && this.fork.back.x0 != null ? this.fork.back : null;
+      if (back) {
+        // after the wrong lane, the car is put back into the right one
+        const f = Math.max(0, Math.min(1, (ts - back.t0) / back.ms)), e = f * f * (3 - 2 * f);
+        const to = this.lanes(this.pos + SB_CAR_Z), x1 = to && !to.one ? to.m : 0, nx = back.x0 + (x1 - back.x0) * e;
+        side = (nx - this.carX) / Math.max(dt, 0.001);
+        this.carX = nx;
+        if (f >= 1) { this.fork.back = null; this.backing = false; }
+      } else this.carX = Math.max(lo, Math.min(hi, this.carX + side * dt));
       const lean = Math.max(-0.09, Math.min(0.09, side * 0.22));
       this.tilt += (lean - this.tilt) * Math.min(1, dt * 10);
       this.bgX += c * v * dt * 26;
       // the road and the speed count once the car is going
-      const on = Math.abs(this.carX) + SB_CAR / 2 <= p.half;
-      if (driving && this.tt > G.warm) {
+      const on = !ln ? inLane(0, h0, SB_CAR / 2) : ln.one ? inLane(0, ln.R, SB_CAR / 2) : inLane(ln.m, h0, SB_CAR / 2) || inLane(ln.b, h0, SB_CAR / 2);
+      if (driving && !this.hold && this.tt > G.warm) {
         D.t += dt;
         if (this.braked) D.brake += dt;
         else { D.vt += this.kmh * dt; D.vs += dt; }
@@ -5948,9 +6234,11 @@
       if (!on && this.kmh > 6 && ts - (this.rumbleAt || 0) > 190) { this.rumbleAt = ts; Sound.play('rumble'); }
       this.signs(ts);
       this.animal(ts, dt);
+      this.forkStep(ts);
+      if (p.turn && !this.turned && driving && this.tt >= p.turn.t) this.turnNow(ts);
       // things to collect: each one counts as the car goes past it
       while (this.itemK < p.items.length && p.items[this.itemK].w - this.pos <= SB_CAR_Z) {
-        const it = p.items[this.itemK], got = Math.abs(this.carX - it.x) <= SB_CAR + 0.08;
+        const it = p.items[this.itemK], got = Math.abs(this.carX - this.itemX(it)) <= SB_CAR + 0.08;
         G.item(p, run, this.itemK, got);
         if (got) this.grab(it, ts);
         this.itemK++;
@@ -5959,7 +6247,7 @@
       // the car meets the finish line in front of it about when the drive is over
       if (driving && this.endW == null && this.tt >= p.duration - (SB_FAR - SB_TO_LINE - SB_CAR_Z) / Math.max(1, run.kmh * G.kmhToUnits)) this.endW = this.pos + SB_FAR;
       const line = this.endW == null ? Infinity : this.endW - SB_TO_LINE;
-      if (driving && this.pos + SB_CAR_Z >= line && run.i >= p.signs.length && !this.sign && !(this.beast && !this.beast.res)) {
+      if (driving && this.pos + SB_CAR_Z >= line && run.i >= p.signs.length && !this.sign && !(this.beast && !this.beast.res) && !this.fork) {
         this.phase = 'finish';
         this.stopW = Math.max(line + SB_PAST, this.pos + SB_CAR_Z + 2.5);
         this.brakeD = this.stopW - this.pos - SB_CAR_Z;
@@ -5973,8 +6261,16 @@
       if (S && S.res && ts - S.done > 480) this.sign = null;
       if (this.phase !== 'drive') return;
       const k = run.i;
-      if (k < p.signs.length && this.tt >= p.signs[k].t && (!this.sign || this.sign.res)) {
-        this.sign = { k, on: ts, ms: this.G.windowMs(p, run, k), res: null, done: null, kmh: Math.round(this.kmh), d0: { t: run.drive.t, on: run.drive.on } };
+      const FK = this.fork, zb = FK && FK.shown ? FK.w0 + 2.6 - this.pos : -1;
+      if (k < p.signs.length && this.tt >= p.signs[k].t && (!this.sign || this.sign.res) && !this.backing && !(zb > 0.5 && zb < SB_SIGN_Z + 3)) {
+        // at night a sign stands dark until the headlights catch it; its time up starts then
+        // (longer the first time, with a word about it)
+        const first = p.night && this.isNew('night'), dark = p.night ? (first ? 900 : SB_DARK) : 0;
+        this.sign = { k, at: ts, on: ts + dark, ms: this.G.windowMs(p, run, k), res: null, done: null, kmh: Math.round(this.kmh), d0: { t: run.drive.t, on: run.drive.on } };
+        if (first) {
+          this.learned('night');
+          this.later(() => { if (this.sign && this.sign.k === k && this.signXY) this.say(this.mark([this.signXY[0], this.signXY[1] - this.plateP * 0.62]), 'At night, signs light up late', '', 2600); }, 60);
+        }
         if (this.practice) this.guide();
       }
     }
@@ -5988,7 +6284,9 @@
         const sp = p.beasts[run.bi], v = Math.max(this.kmh, run.kmh * 0.9) * this.G.kmhToUnits;
         const z0 = Math.max(12, Math.min(18, SB_STOP + v * 1.6));
         this.braked = true;
-        B = this.beast = { k: run.bi, w: this.pos + z0, side: sp.side, dir: -sp.side, t0: ts, off: 0, x0: sp.side * (p.half + 0.7), x: sp.side * (p.half + 0.7), x1: -sp.side * 0.04, state: 'in', res: null };
+        // the animal of the sign that counts (from halfway on levels 4 and 5, the new one)
+        B = this.beast = { k: run.bi, kind: this.target(), w: this.pos + z0, side: sp.side, dir: -sp.side, t0: ts, off: 0, x0: sp.side * (p.half + 0.7), x: sp.side * (p.half + 0.7), x1: -sp.side * 0.04, state: 'in', res: null };
+        if (this.isNew('animals')) this.demo = 'animals';
         if (this.practice) this.guide();
       }
       if (!B) return;
@@ -5997,18 +6295,83 @@
         B.x = B.x0 + (B.x1 - B.x0) * (1 - (1 - f) * (1 - f));
         if (f >= 1) B.state = 'stand';
       } else if (B.state === 'off') B.x += B.dir * SB_RUN * dt;
-      if (!B.res && this.phase === 'drive' && B.w - this.pos <= SB_STOP) {
+      if (!B.res && this.phase === 'drive' && B.w - this.pos <= SB_STOP && this.demo !== 'animals') {
         B.res = 'braked';
         B.state = 'off';
         B.off = ts;
         this.brakeTo = ts + 900;
         this.braked = true;
         const rec = this.G.beast(p, run, { shooed: false });
-        this.log('beast', { move_no: run.i, target: p.target, cls: rec.cls, speed_kmh: Math.round(this.kmh), detail: B.side < 0 ? 'from left' : 'from right' });
+        this.log('beast', { move_no: run.i, target: B.kind, cls: rec.cls, speed_kmh: Math.round(this.kmh), detail: B.side < 0 ? 'from left' : 'from right' });
         Sound.play('screech');
         buzz([30, 30, 30]);
       }
       if (Math.abs(B.x) > p.half + 1.4 || B.w - this.pos < 0.5) { this.beast = null; this.beastBox = null; }
+    }
+    // ---- forks
+    // The road at distance w where a fork is near, across it from its middle (null where the
+    // road is plain): before the nose one wide road (L to R); past it two lanes, the one to the
+    // landmark (m: its middle, back to 0 over SB_SPLIT) and the other one (b) bending away.
+    // path: where to drive; q: how far the drive line has moved over (0 to 1).
+    lanes(w) {
+      const F = this.fork;
+      if (!F) return null;
+      const d = w - F.w0, h = this.p.half, s = F.side, ap = F.ap;
+      if (d < -SB_WIDE || d > 40) return null;
+      const sm = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+      if (d < 0) {
+        const e = sm((d + SB_WIDE) / SB_WIDE) * ap, hw = h * (1 + e);
+        return { one: true, L: -hw, R: hw, path: s * h * e, q: e };
+      }
+      const r = 1 - sm(d / SB_SPLIT), m = s * h * r * ap, b = -s * (h + SB_BEND * (d / SB_AWAY) ** 2) * ap;
+      return { one: false, m, b, path: m, q: r * ap, L: Math.min(m, b) - h, R: Math.max(m, b) + h };
+    }
+    // things to collect near a fork lie in the lane to the landmark
+    itemX(it) {
+      const ln = this.fork ? this.lanes(it.w) : null;
+      return ln ? ln.path + it.x * (1 - 0.5 * ln.q) : it.x;
+    }
+    // the fork comes into sight a little before its arrow board; as the car's nose passes the
+    // split, the lane it is in counts; the wrong one: it brakes and is put back in the right one
+    forkStep(ts) {
+      const p = this.p, run = this.run, fk = p.forks || [];
+      let F = this.fork;
+      if (!F && this.phase === 'drive' && run.fi < fk.length && this.tt >= fk[run.fi].t - SB_LEAD) {
+        const f = fk[run.fi], demo = this.isNew('forks'), v = Math.max(this.kmh, run.kmh * 0.9) * this.G.kmhToUnits * (demo ? 0.75 : 1);
+        F = this.fork = { k: run.fi, side: f.side, t: f.t, w0: this.pos + SB_CAR_Z + Math.max(15, v * (3.2 + Math.max(0, f.t - this.tt))), t0: ts, ap: 0, shown: 0, res: null, back: null, demo };
+      }
+      if (!F) return;
+      F.ap = Math.min(1, (ts - F.t0) / 600);
+      if (!F.shown && this.tt >= F.t && this.phase === 'drive') {
+        F.shown = ts;
+        this.log('fork_sign', { move_no: run.i, detail: F.side < 0 ? 'arrow left' : 'arrow right' });
+        if (F.demo) {
+          this.later(() => { if (this.fork === F && !F.res && this.boardXY) this.say(this.mark([this.boardXY[0], this.boardXY[1] - this.boardXY[2] * 0.6]), F.side < 0 ? 'Follow the arrow: keep left' : 'Follow the arrow: keep right', '', 2600); }, 250);
+        }
+      }
+      const d = this.pos + SB_CAR_Z - F.w0;
+      if (!F.res && d >= 1 && this.phase === 'drive') {
+        const ln = this.lanes(this.pos + SB_CAR_Z), mid = ln && !ln.one ? (ln.m + ln.b) / 2 : 0;
+        const right = F.side * (this.carX - mid) > 0;
+        const rec = this.G.fork(p, run, { right });
+        F.res = rec.cls;
+        this.log('fork', { move_no: run.i, cls: rec.cls, speed_kmh: Math.round(this.kmh), detail: (F.side < 0 ? 'arrow left' : 'arrow right') + ', took ' + ((this.carX - mid < 0) ? 'left' : 'right') + (F.demo ? ', first time: slower' : '') });
+        const show = this.o.feedback || this.practice || F.demo;
+        if (right) {
+          if (show) { Sound.play('yes'); buzz(10); }
+          if (F.demo) this.later(() => this.say(this.mark([this.W / 2, this.H * 0.62]), 'That\'s the way!', 'yes', 1500), 100);
+        } else {
+          // brake, then steer back over into the right lane
+          this.brakeTo = ts + 1100;
+          this.braked = true;
+          this.backing = true;
+          F.back = { t0: ts + 380, ms: 720, x0: null };
+          if (show) { Sound.play('no'); buzz([20, 40, 20]); this.say(this.mark([this.W / 2, this.H * 0.62]), 'Wrong way!', 'no', 1500); }
+        }
+        if (F.demo) this.learned('forks');
+      }
+      if (F.back && F.back.x0 == null && ts >= F.back.t0) F.back.x0 = this.carX;
+      if (d > 26 && !F.back) this.fork = null;
     }
     // a thing collected: a ping that climbs with a run of them, and it flies to the counter
     grab(it, ts) {
@@ -6042,7 +6405,7 @@
             const L = relPos(this, this.wrap);
             sparks(this, L.x - L.w / 2 + this.signXY[0], L.y - L.h / 2 + this.signXY[1], ['#FFC83A', '#FFFFFF', '#7CE3B0'], 12);
           }
-          if (!reducedMotion()) { this.critter = { kind: p.target, t0: ts + 120 }; Sound.play('hop'); }
+          if (!reducedMotion()) { this.critter = { kind: sg.glyph, t0: ts + 120 }; Sound.play('hop'); }
         } else if (rec.cls === 'false_alarm') {
           Sound.play('no');
           buzz([20, 40, 20]);
@@ -6191,6 +6554,10 @@
       const B = this.beast, zBe = B ? B.w - sc : 0;
       let beastDrawn = !B || zBe <= 0.4;
       this.beastBox = null;
+      // a fork: its lanes, and its arrow board in the split
+      const FK = this.fork, zN = FK ? FK.w0 + 2.6 - sc : 0;
+      let boardDrawn = !FK || !FK.shown || zN <= 0.6;
+      this.boardXY = null;
       for (let n = N - 1; n >= 0; n--) {
         const zB = zs[n + 1];
         if (zB <= 0.4) break;
@@ -6200,26 +6567,34 @@
         const wA = (half * F) / zA, wB = (half * F) / zB;
         const i = i0 + n, stripe = Math.floor(i / 3) & 1, s = F / zB;
         const yT = yB - 0.7;
+        // near a fork the road is wider or in two lanes, and what stands beside it moves out
+        const fa = FK ? this.lanes(zA + sc) : null, fb = FK ? this.lanes(zB + sc) : null;
+        const exL = fb ? -fb.L - half : 0, exR = fb ? fb.R - half : 0, ex = (sd) => (sd < 0 ? exL : exR);
+        // beside the lane that bends away, fences stop (their rails would run across the view)
+        const away = (sd) => ex(sd) > 1.2;
         // the land beside the road: fields, the sea, hedgerows
-        if (PL.land) sbLand(ctx, PL, i, zB, xA, yA, xB, yB, yT, F / zA, s, half, t, this.salt, W);
+        if (PL.land) sbLand(ctx, PL, i, zB, xA, yA, xB, yB, yT, F / zA, s, half, t, this.salt, W, fa || fb ? [fa ? -fa.L - half : 0, fa ? fa.R - half : 0, exL, exR] : null);
         // the verge, the road, its edge lines and the dashes down the middle
-        ctx.fillStyle = PL.verge;
-        ctx.beginPath(); quad(xA - wA * 1.16, yA, xA + wA * 1.16, yA, xB + wB * 1.16, yB, xB - wB * 1.16, yB); ctx.fill();
-        ctx.fillStyle = PL.road;
-        ctx.beginPath(); quad(xA - wA, yA, xA + wA, yA, xB + wB, yT, xB - wB, yT); ctx.fill();
-        if (zB < 42) {
-          ctx.fillStyle = '#F6F2E8';
-          ctx.beginPath();
-          quad(xA - wA * 0.965, yA, xA - wA * 0.91, yA, xB - wB * 0.91, yB, xB - wB * 0.965, yB);
-          quad(xA + wA * 0.91, yA, xA + wA * 0.965, yA, xB + wB * 0.965, yB, xB + wB * 0.91, yB);
-          if (!stripe) { const lA = wA * 0.028, lB = wB * 0.028; quad(xA - lA, yA, xA + lA, yA, xB + lB, yB, xB - lB, yB); }
-          ctx.fill();
+        if (fa || fb) this.drawLanes(ctx, fa, fb, xA, yA, xB, yB, yT, F / zA, s, zB, stripe, W);
+        else {
+          ctx.fillStyle = PL.verge;
+          ctx.beginPath(); quad(xA - wA * 1.16, yA, xA + wA * 1.16, yA, xB + wB * 1.16, yB, xB - wB * 1.16, yB); ctx.fill();
+          ctx.fillStyle = PL.road;
+          ctx.beginPath(); quad(xA - wA, yA, xA + wA, yA, xB + wB, yT, xB - wB, yT); ctx.fill();
+          if (zB < 42) {
+            ctx.fillStyle = '#F6F2E8';
+            ctx.beginPath();
+            quad(xA - wA * 0.965, yA, xA - wA * 0.91, yA, xB - wB * 0.91, yB, xB - wB * 0.965, yB);
+            quad(xA + wA * 0.91, yA, xA + wA * 0.965, yA, xB + wB * 0.965, yB, xB + wB * 0.91, yB);
+            if (!stripe) { const lA = wA * 0.028, lB = wB * 0.028; quad(xA - lA, yA, xA + lA, yA, xB + lB, yB, xB - lB, yB); }
+            ctx.fill();
+          }
         }
         // a fence along one side now and then
         if (PL.fence && i % 2 === 0) {
-          const b = Math.floor(i / 24), fr = sbHash((b * 7919) ^ this.salt);
-          if ((fr % 100) < PL.fence * 100 && i % 24 > 1 && s > 2.2) {
-            const sd = coast || fr & 16 ? 1 : -1, fx = W / 2 + (xs[n + 1] + sd * (half * 1.16 + 0.34) - camX) * s, fh = 0.13 * s;
+          const b = Math.floor(i / 24), fr = sbHash((b * 7919) ^ this.salt), sd = coast || fr & 16 ? 1 : -1;
+          if ((fr % 100) < PL.fence * 100 && i % 24 > 1 && s > 2.2 && !away(sd)) {
+            const fx = W / 2 + (xs[n + 1] + sd * (half * 1.16 + 0.34 + ex(sd)) - camX) * s, fh = 0.13 * s;
             ctx.strokeStyle = wood; ctx.fillStyle = wood;
             if (fprev && fprev.b === b) {
               ctx.lineWidth = Math.max(1, 0.016 * s);
@@ -6237,7 +6612,7 @@
         if (PL.posts === 'snow' && i % 6 === 0 && s > 3) {
           const pw = Math.max(1, 0.016 * s), ph = 0.44 * s, lat = e0 + 0.08;
           for (const sd of [-1, 1]) {
-            const px = W / 2 + (xs[n + 1] + sd * lat - camX) * s;
+            const px = W / 2 + (xs[n + 1] + sd * (lat + ex(sd)) - camX) * s;
             if (px < -pw || px > W + pw) continue;
             ctx.fillStyle = '#F06A2E'; ctx.fillRect(px - pw / 2, yB - ph, pw, ph);
             ctx.fillStyle = '#FFE9D8'; ctx.fillRect(px - pw / 2, yB - ph * 0.92, pw, ph * 0.07);
@@ -6247,7 +6622,7 @@
         else if (PL.posts && i % 5 === 0 && s > 6) {
           const pw = Math.max(1, 0.02 * s), ph = 0.14 * s, lat = e0 + 0.07, wood = PL.posts === 'wood';
           for (const sd of [-1, 1]) {
-            const px = W / 2 + (xs[n + 1] + sd * lat - camX) * s;
+            const px = W / 2 + (xs[n + 1] + sd * (lat + ex(sd)) - camX) * s;
             if (px < -pw || px > W + pw) continue;
             ctx.fillStyle = wood ? '#86654A' : '#F7F4EC'; ctx.fillRect(px - pw / 2, yB - ph, pw, ph);
             if (!wood) { ctx.fillStyle = '#2E313B'; ctx.fillRect(px - pw / 2, yB - ph, pw, ph * 0.24); }
@@ -6258,7 +6633,7 @@
         while (qi >= 0 && items[iq[qi]].w - sc > zA) {
           const k = iq[qi--], it = items[k], z = it.w - sc, sI = F / z, sz = 0.22 * sI;
           if (z > zB || sz < 2.5) continue;
-          const ix = W / 2 + (at(z) + it.x - camX) * sI, iy = hy + sI;
+          const ix = W / 2 + (at(z) + this.itemX(it) - camX) * sI, iy = hy + sI;
           ctx.globalAlpha = Math.min(1, (N * seg - z) / 10);
           ctx.fillStyle = 'rgba(20, 24, 40, 0.16)';
           ctx.beginPath(); ctx.ellipse(ix, iy, sz * 0.28, sz * 0.07, 0, 0, Math.PI * 2); ctx.fill();
@@ -6266,12 +6641,13 @@
           ctx.globalAlpha = 1;
         }
         if (!beastDrawn && zBe <= zB && zBe > zA) { this.drawBeast(ctx, B, zBe, at(zBe), camX, W, hy, F, ts); beastDrawn = true; }
+        if (!boardDrawn && zN <= zB && zN > zA) { this.drawBoard(ctx, zN, at(zN), camX, W, hy, F, ts); boardDrawn = true; }
         // the forest and the jungle stand close on both sides
         if (PL.walls && zB < 46 && zB > 0.9 && s > 2.4 && i % ((zB < 14 ? 1 : zB < 28 ? 2 : 3) * (PL.far === 'canopy' ? 2 : 1)) === 0) {
           for (const sd of [-1, 1]) {
             const q = sbHash((i * 2 + (sd > 0 ? 1 : 0)) ^ this.salt);
             if (q % 5 === 4) continue;
-            const tx = W / 2 + (xs[n + 1] + sd * (e0 + 0.24 + (((q >>> 6) % 100) / 100) * 0.75) - camX) * s;
+            const tx = W / 2 + (xs[n + 1] + sd * (e0 + 0.24 + (((q >>> 6) % 100) / 100) * 0.75 + ex(sd)) - camX) * s;
             if (tx < -0.5 * s || tx > W + 0.5 * s) continue;
             sbThing(ctx, PL.walls[(q >>> 12) % PL.walls.length], tx, yB, s * (1.25 + ((q >>> 16) % 45) / 100), q, t, PL);
           }
@@ -6281,7 +6657,8 @@
           if (s > 3 && (zB < 16 || i % 2 === 0)) {
             ctx.strokeStyle = '#DAD4E4'; ctx.fillStyle = '#DAD4E4'; ctx.lineWidth = Math.max(1, 0.01 * s);
             for (const sd of [-1, 1]) {
-              const fx = W / 2 + (xs[n + 1] + sd * (e0 + 0.17) - camX) * s, fh = 0.07 * s, pv = sd < 0 ? pkL : pkR;
+              if (away(sd)) { if (sd < 0) pkL = null; else pkR = null; continue; }
+              const fx = W / 2 + (xs[n + 1] + sd * (e0 + 0.17 + ex(sd)) - camX) * s, fh = 0.07 * s, pv = sd < 0 ? pkL : pkR;
               if (pv) { ctx.beginPath(); ctx.moveTo(pv[0], pv[1] - pv[2] * 0.4); ctx.lineTo(fx, yB - fh * 0.4); ctx.moveTo(pv[0], pv[1] - pv[2] * 0.8); ctx.lineTo(fx, yB - fh * 0.8); ctx.stroke(); }
               const pw = Math.max(1, 0.014 * s);
               ctx.fillRect(fx - pw / 2, yB - fh, pw, fh);
@@ -6290,12 +6667,12 @@
           }
           if (i % 5 === 0 && s > 2.2) {
             const sd = (i / 5) % 2 ? 1 : -1, q = sbHash(i * 7 + 3);
-            const hx = W / 2 + (xs[n + 1] + sd * (e0 + 0.52 + (q % 10) / 50) - camX) * s;
+            const hx = W / 2 + (xs[n + 1] + sd * (e0 + 0.52 + (q % 10) / 50 + ex(sd)) - camX) * s;
             if (hx > -0.6 * s && hx < W + 0.6 * s) sbThing(ctx, 'house', hx, yB, s * 1.7, q, t, PL);
           }
           if (i % 6 === 3 && s > 4) {
             for (const sd of [-1, 1]) {
-              const lx = W / 2 + (xs[n + 1] + sd * (e0 + 0.06) - camX) * s;
+              const lx = W / 2 + (xs[n + 1] + sd * (e0 + 0.06 + ex(sd)) - camX) * s;
               if (lx > -0.3 * s && lx < W + 0.3 * s) sbThing(ctx, 'lamp', lx, yB, s, sd > 0 ? 2 : 0, t, PL);
             }
           }
@@ -6306,12 +6683,12 @@
           const side = coast || r & 8 ? 1 : -1, kind = PL.things[(r >>> 9) % PL.things.length];
           const small = kind === 'flowers' || kind === 'fern' || kind === 'grass';
           const lat = half * 1.16 + (small ? 0.1 + (((r >>> 5) % 97) / 97) * 0.35 : 0.3 + (((r >>> 5) % 97) / 97) * 1.4);
-          const tx = W / 2 + (xs[n + 1] + side * lat - camX) * s;
+          const tx = W / 2 + (xs[n + 1] + side * (lat + ex(side)) - camX) * s;
           if (tx > -0.7 * s && tx < W + 0.7 * s) sbThing(ctx, kind, tx, yB, s * (0.85 + ((r >>> 16) % 30) / 100), r, t, PL);
         }
         if (r % 5 === 2 && s > 16) {
           const side = r & 64 ? 1 : -1, lat = half * 1.16 + 0.05 + (((r >>> 7) % 89) / 89) * 0.5;
-          const tx = W / 2 + (xs[n + 1] + side * lat - camX) * s;
+          const tx = W / 2 + (xs[n + 1] + side * (lat + ex(side)) - camX) * s;
           if (tx > -20 && tx < W + 20) sbThing(ctx, PL.small, tx, yB, s, r, t, PL);
         }
         // the landmark and the finish line, at their depth
@@ -6347,12 +6724,14 @@
           for (let x = ((q * 37) % 70) - 70; x < W; x += 70) ctx.fillRect(x + Math.sin(ph + x * 0.05) * 7, yy, 16 + 10 * Math.sin(ph * 0.7 + x), 1);
         }
       }
+      // a night drive (level 5): dark beyond the headlights
+      if (p.night) { ctx.fillStyle = this.nightGrad; ctx.fillRect(0, 0, W, H); }
       // headlights on the road ahead at night
-      if (PL.lights && this.phase !== 'done') {
+      if ((PL.lights || p.night) && this.phase !== 'done') {
         const zN = 2.3, zF = 10, sN = F / zN, sF = F / zF, yN = hy + sN, yF = hy + sF;
         const xN = W / 2, xF = W / 2 + (at(zF) + this.carX - camX) * sF;
-        const lg = ctx.createLinearGradient(0, yN, 0, yF);
-        lg.addColorStop(0, 'rgba(255, 244, 214, 0.3)'); lg.addColorStop(1, 'rgba(255, 244, 214, 0)');
+        const lg = ctx.createLinearGradient(0, yN, 0, yF), la = p.night ? 0.36 : 0.3;
+        lg.addColorStop(0, 'rgba(255, 244, 214, ' + la + ')'); lg.addColorStop(1, 'rgba(255, 244, 214, 0)');
         ctx.fillStyle = lg;
         ctx.beginPath(); ctx.moveTo(xN - 0.16 * sN, yN); ctx.lineTo(xN + 0.16 * sN, yN); ctx.lineTo(xF + 0.5 * sF, yF); ctx.lineTo(xF - 0.5 * sF, yF); ctx.closePath(); ctx.fill();
       }
@@ -6361,9 +6740,9 @@
       this.signXY = null;
       if (S) {
         const z = SB_SIGN_Z, s = F / z;
-        const gx = W / 2 + (at(z) + half + 0.16 - camX) * s, gy = hy + F / z;
-        const P = this.plateP, age = ts - S.on, cy = gy - H * 0.13 - P * 0.25;
-        let scale = age < 160 ? 1.1 * (1 - Math.pow(1 - Math.max(0, age) / 160, 3)) : 1;
+        const gx = W / 2 + (at(z) + this.edgeR(z) + 0.16 - camX) * s, gy = hy + F / z;
+        const P = this.plateP, age = ts - S.on, age0 = ts - (S.at || S.on), cy = gy - H * 0.13 - P * 0.25;
+        let scale = age0 < 160 ? 1.1 * (1 - Math.pow(1 - Math.max(0, age0) / 160, 3)) : 1;
         let dxs = 0, ring = null;
         if (S.res) {
           const tt = Math.max(0, ts - S.done);
@@ -6379,10 +6758,26 @@
             ctx.strokeStyle = ring; ctx.lineWidth = 5;
             ctx.beginPath(); ctx.arc(gx + dxs, cy, P * 0.62 * scale, 0, Math.PI * 2); ctx.stroke();
           }
+          // at night: dark until the headlights catch it, then a flash as it lights up
+          const sg = p.signs[S.k], lit = age >= 0;
+          if (S.at < S.on && lit && age < 260) {
+            const R = P * (1 + age / 300);
+            ctx.globalAlpha = 1 - age / 260;
+            ctx.drawImage(sbGlow('255, 244, 210'), gx - R, cy - R, R * 2, R * 2);
+            ctx.globalAlpha = 1;
+          }
           ctx.save();
           ctx.translate(gx + dxs, cy);
           ctx.scale(scale, scale);
-          sbPlate(ctx, p.signs[S.k].shape, p.signs[S.k].glyph, 0, 0, P);
+          if (lit) sbPlate(ctx, sg.shape, sg.glyph, 0, 0, P);
+          else {
+            // a faint shine round its edge: something is there
+            ctx.globalAlpha = 0.3;
+            ctx.drawImage(sbGlow('200, 214, 255'), -P * 0.75, -P * 0.75, P * 1.5, P * 1.5);
+            ctx.globalAlpha = 1;
+            const dk = sbPlateDark(sg.shape, sg.glyph, P);
+            ctx.drawImage(dk.c, -dk.S / 2, -dk.S / 2, dk.S, dk.S);
+          }
           ctx.restore();
           this.signXY = [gx, cy];
         }
@@ -6394,7 +6789,7 @@
         if (age > dur) this.critter = null;
         else if (age >= 0) {
           const z = SB_SIGN_Z, s = F / z, gy = hy + F / z, f = age / dur, L = 0.62 * s, A = SB_ANIM[C.kind];
-          const cx0 = W / 2 + (at(z) + half + 0.16 - camX) * s + (0.12 + f * 1.25) * s;
+          const cx0 = W / 2 + (at(z) + this.edgeR(z) + 0.16 - camX) * s + (0.12 + f * 1.25) * s;
           ctx.globalAlpha = Math.max(0, Math.min(1, (1 - f) * 4));
           ctx.fillStyle = 'rgba(30, 50, 30, 0.2)';
           ctx.beginPath(); ctx.ellipse(cx0, gy, L * 0.32, L * 0.05, 0, 0, Math.PI * 2); ctx.fill();
@@ -6406,7 +6801,7 @@
       const carY = hy + F / SB_CAR_Z, carW = (SB_CAR * 2 * F) / SB_CAR_Z, u = carW / 100;
       const bob = this.offEdge && this.kmh > 4 ? Math.sin(this.tt * 70) * 1.6 : 0;
       sbCar(ctx, W / 2, carY, carW, this.tilt, bob, this.braking || this.phase === 'finish');
-      if (PL.moon) for (const sd of [-1, 1]) ctx.drawImage(sbGlow('255, 90, 70'), W / 2 + sd * 36.5 * u - 22 * u, carY - 38.5 * u + bob - 22 * u, 44 * u, 44 * u);
+      if (PL.moon || p.night) for (const sd of [-1, 1]) ctx.drawImage(sbGlow('255, 90, 70'), W / 2 + sd * 36.5 * u - 22 * u, carY - 38.5 * u + bob - 22 * u, 44 * u, 44 * u);
       // the finish line once the car is through it and the camera not yet
       if (zL > 0.6 && zL <= SB_CAR_Z) this.drawLine(ctx, zL, at(zL), camX, W, hy, F, half);
       if (this.phase === 'drive' || this.phase === 'finish') {
@@ -6472,18 +6867,100 @@
       // the wheel follows the steering
       this.wheelEl.style.transform = 'rotate(' + Math.round(this.steer * 110) + 'deg)';
     }
+    // the right edge of the road the car is on, z ahead of the camera (where the signs stand)
+    edgeR(z) {
+      const ln = this.fork ? this.lanes(this.pos + z) : null, h = this.p.half;
+      return !ln ? h : ln.one ? ln.R : ln.m + h;
+    }
+    // one segment of the road near a fork, from its near end (a) to its far end (b): one wide
+    // road with the dashes running on to the nose, or two lanes, the other one bending away
+    drawLanes(ctx, fa, fb, xA, yA, xB, yB, yT, sA, sB, zB, stripe, W) {
+      const PL = this.place, h = this.p.half, sd0 = this.fork.side, v = 0.16 * h, L1 = 0.035 * h, L2 = 0.09 * h;
+      const quad = (ax, ay, bx, by, cx, cy, ex, ey) => { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy); ctx.lineTo(ex, ey); ctx.closePath(); };
+      const plain = { one: true, L: -h, R: h };
+      const A = fa || plain, B = fb || (fa && !fa.one ? { one: false, m: 0, b: fa.b } : plain);
+      const strip = (a0, a1, b0, b1, dash) => {
+        ctx.fillStyle = PL.verge;
+        ctx.beginPath(); quad(xA + (a0 - v) * sA, yA, xA + (a1 + v) * sA, yA, xB + (b1 + v) * sB, yB, xB + (b0 - v) * sB, yB); ctx.fill();
+        ctx.fillStyle = PL.road;
+        ctx.beginPath(); quad(xA + a0 * sA, yA, xA + a1 * sA, yA, xB + b1 * sB, yT, xB + b0 * sB, yT); ctx.fill();
+        if (zB < 42) {
+          ctx.fillStyle = '#F6F2E8';
+          ctx.beginPath();
+          quad(xA + (a0 + L1) * sA, yA, xA + (a0 + L2) * sA, yA, xB + (b0 + L2) * sB, yB, xB + (b0 + L1) * sB, yB);
+          quad(xA + (a1 - L2) * sA, yA, xA + (a1 - L1) * sA, yA, xB + (b1 - L1) * sB, yB, xB + (b1 - L2) * sB, yB);
+          if (dash) { const lA = 0.028 * h * sA, lB = 0.028 * h * sB; quad(xA - lA, yA, xA + lA, yA, xB + lB, yB, xB - lB, yB); }
+          ctx.fill();
+        }
+      };
+      if (A.one && B.one) { strip(A.L, A.R, B.L, B.R, !stripe); return; }
+      // [from, to] across: before the nose each lane is half of the wide road
+      const lane = (ln, main) => {
+        const sd = main ? sd0 : -sd0;
+        if (ln.one) return sd > 0 ? [0, ln.R] : [ln.L, 0];
+        const c = main ? ln.m : ln.b;
+        return [c - h, c + h];
+      };
+      const bA = lane(A, false), bB = lane(B, false), mA = lane(A, true), mB = lane(B, true);
+      const gone = Math.min(xA + bA[0] * sA, xB + bB[0] * sB) > W + 20 || Math.max(xA + bA[1] * sA, xB + bB[1] * sB) < -20;
+      if (!gone) strip(bA[0], bA[1], bB[0], bB[1], false);
+      strip(mA[0], mA[1], mB[0], mB[1], !stripe && !A.one && Math.abs(A.m) < 0.03 && Math.abs(B.m) < 0.03);
+    }
+    // the fork's arrow board: green, high on a post in the split (it passes over the car's
+    // view), a big white arrow toward the lane for the landmark, with its flag; far off it is
+    // drawn larger, so it reads in time
+    drawBoard(ctx, z, xr, camX, W, hy, F, ts) {
+      const FK = this.fork, a = Math.min(1, (ts - FK.shown) / 300) * Math.max(0, Math.min(1, (z - 2.5) / 0.7));
+      if (a <= 0) return;
+      const ln = this.lanes(FK.w0 + 2.6), gx = ln && !ln.one ? (ln.m + ln.b) / 2 : 0, sd = FK.side;
+      const s0 = F / z, s = Math.max(s0, (W * 0.26) / 1.05), x = W / 2 + (xr + gx - camX) * s0, y = hy + s0;
+      const pw = 1.05 * s, ph = 0.7 * s, top = y - 1.58 * s, r = 0.08 * s;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = 'rgba(20, 24, 40, 0.2)';
+      ctx.beginPath(); ctx.ellipse(x, y, 0.1 * s0, 0.025 * s0, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9AA0AE';
+      ctx.fillRect(x - 0.025 * s, top + ph - 1, 0.05 * s, y - top - ph + 1);
+      // the panel: green with a white rim
+      ctx.fillStyle = '#FFFFFF';
+      sbRR(ctx, x - pw / 2, top, pw, ph, r); ctx.fill();
+      ctx.fillStyle = '#1C8A4E';
+      sbRR(ctx, x - pw / 2 + 0.035 * s, top + 0.035 * s, pw - 0.07 * s, ph - 0.07 * s, r * 0.7); ctx.fill();
+      // the arrow: up from the bottom, then over to the side, with a big head
+      const u = s, bx = x - sd * 0.2 * u, by = top + ph - 0.09 * u, kx = bx, ky = top + 0.4 * u, tx = x + sd * 0.07 * u, ty = top + 0.16 * u;
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 0.1 * u; ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+      const ang = Math.atan2(ty - ky, tx - kx), hl = 0.15 * u, hw = 0.13 * u;
+      const ex = tx - Math.cos(ang) * hl * 0.85, ey = ty - Math.sin(ang) * hl * 0.85;
+      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(kx, ky); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx - Math.cos(ang) * hl + Math.sin(ang) * hw, ty - Math.sin(ang) * hl - Math.cos(ang) * hw);
+      ctx.lineTo(tx - Math.cos(ang) * hl - Math.sin(ang) * hw, ty - Math.sin(ang) * hl + Math.cos(ang) * hw);
+      ctx.closePath(); ctx.fill();
+      // the landmark's flag, as at the end of the route bar, on a white tile beside the arrow's head
+      const tw = 0.3 * u, tl = x + sd * 0.33 * u - tw / 2, tt = top + 0.1 * u;
+      ctx.fillStyle = '#FFFFFF';
+      sbRR(ctx, tl, tt, tw, tw, 0.05 * u); ctx.fill();
+      const fx = tl + tw * 0.32, fy = tt + tw * 0.86;
+      ctx.fillStyle = '#5A6070';
+      ctx.fillRect(fx - 0.012 * u, fy - 0.22 * u, 0.024 * u, 0.22 * u);
+      ctx.fillStyle = this.place.flag;
+      ctx.beginPath(); ctx.moveTo(fx + 0.012 * u, fy - 0.22 * u); ctx.lineTo(fx + 0.012 * u + 0.15 * u, fy - 0.165 * u); ctx.lineTo(fx + 0.012 * u, fy - 0.11 * u); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+      this.boardXY = [x, top + ph / 2, pw];
+    }
     // the animal standing on the road at depth z (xr: the road's middle there), with
     // the village duck's ducklings behind her; keeps the box a tap can hit
     drawBeast(ctx, B, z, xr, camX, W, hy, F, ts) {
-      const p = this.p, A = SB_ANIM[p.target], s = F / z, L = A.len * s, y = hy + s, flip = B.dir < 0;
+      const kind = B.kind, A = SB_ANIM[kind], s = F / z, L = A.len * s, y = hy + s, flip = B.dir < 0;
       const moving = B.state !== 'stand', ph = moving ? ((ts - B.t0) / 1000) * A.rate * (B.state === 'off' ? 1.7 : 1) : 0;
-      const kids = p.target === 'duck' ? 3 : 0, b = sbAnimBox(p.target), k = L / 100;
+      const kids = kind === 'duck' ? 3 : 0, b = sbAnimBox(kind), k = L / 100;
       let x0 = Infinity, x1 = -Infinity;
       for (let i = kids; i >= 0; i--) {
-        const x = W / 2 + (xr + B.x - B.dir * (i ? 0.1 + i * 0.13 : 0) - camX) * s, kind = i ? 'duckling' : p.target, bb = i ? sbAnimBox('duckling') : b;
+        const x = W / 2 + (xr + B.x - B.dir * (i ? 0.1 + i * 0.13 : 0) - camX) * s, kd = i ? 'duckling' : kind, bb = i ? sbAnimBox('duckling') : b;
         ctx.fillStyle = 'rgba(20, 24, 40, 0.2)';
         ctx.beginPath(); ctx.ellipse(x, y, ((bb[2] - bb[0]) / 2) * k * 0.85, Math.max(1.5, 0.03 * s), 0, 0, Math.PI * 2); ctx.fill();
-        sbAnimal(ctx, kind, x, y, L, ph + i * 0.3, { flip, still: !moving });
+        sbAnimal(ctx, kd, x, y, L, ph + i * 0.3, { flip, still: !moving });
         x0 = Math.min(x0, flip ? x - bb[2] * k : x + bb[0] * k);
         x1 = Math.max(x1, flip ? x - bb[0] * k : x + bb[2] * k);
       }
@@ -6531,6 +7008,7 @@
       this.tallyEl.setAttribute('aria-label', caught + ' of ' + n + ' target signs caught');
     }
     guide() {
+      if (this.hold) return;   // a demo's hand stays on the animal until it is tapped
       super.guide();
       if (this.hand) this.hand.el.classList.toggle('drag', !this.summary && this.guideTarget() === this.wheelEl);
     }
@@ -6586,14 +7064,19 @@
       if (g) g.drawImage(sbItem(this.place.item), 0, 0, 44, 44);
       // what counts first: the target signs caught, as the tally counted them (taps on other
       // signs beside them), and the road; the things collected are a bonus, below
-      const sg = h('canvas', { class: 'res-sign', width: 48, height: 48, 'aria-hidden': 'true' }), sc = sg.getContext('2d');
-      if (sc) { sc.setTransform(2, 0, 0, 2, 0, 0); sbPlate(sc, 'tri', this.p.target, 12, 12.7, 21.6); }
-      const targets = d.hits + d.misses;
+      // the sign that counted (both, when a new animal came halfway)
+      const plate = (g) => {
+        const c = h('canvas', { class: 'res-sign', width: 48, height: 48, 'aria-hidden': 'true' }), x = c.getContext('2d');
+        if (x) { x.setTransform(2, 0, 0, 2, 0, 0); sbPlate(x, 'tri', g, 12, 12.7, 21.6); }
+        return c;
+      };
+      const targets = d.hits + d.misses, tn = this.p.turn;
       return h('div', { class: 'res-stack' },
         h('div', { class: 'res-stats' },
           h('span', { 'aria-label': d.hits + ' of ' + targets + ' target signs caught' + (d.false_alarms ? ', ' + d.false_alarms + ' taps on other signs' : '') },
-            sg, h('b', { text: d.hits + '/' + targets }), d.false_alarms ? h('small', { class: 'res-wrong' }, icon('x'), String(d.false_alarms)) : null),
+            plate(this.p.target), tn ? plate(tn.to) : null, h('b', { text: d.hits + '/' + targets }), d.false_alarms ? h('small', { class: 'res-wrong' }, icon('x'), String(d.false_alarms)) : null),
           h('span', { 'aria-label': 'On the road' }, icon('road'), h('b', { text: Math.round((d.on_road || 0) * 100) + '%' })),
+          d.forks ? h('span', { 'aria-label': d.right_lanes + ' of ' + d.forks + ' forks in the right lane' }, icon('fork'), h('b', { text: d.right_lanes + '/' + d.forks })) : null,
           d.speed_mean_kmh != null ? h('span', { 'aria-label': 'Average speed' }, icon('gauge'), h('b', { text: Math.round(d.speed_mean_kmh) + ' km/h' })) : null),
         d.items ? h('div', { class: 'res-bonus', 'aria-label': 'Collected ' + d.collected + ' of ' + d.items }, c, h('b', { text: d.collected + '/' + d.items })) : null);
     }
@@ -7158,7 +7641,7 @@
       ['session_kind', 'study, or free for free play'],
       ['session_seed', 'with the plan, this fixes every puzzle'],
       ['event_index', 'order of the event within the session'],
-      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look or Switchback sign stopped before it was scored), drive (Switchback: the car starts or drives on after a pause), sign (one Switchback sign, scored when it is tapped or when its time runs out), stray (a tap on the Switchback sign button with no sign up), speed (Switchback speed change), off_road (the Switchback car left the road), look (Keepsake: the look starts, then ends by timer or early with a tap on the basket), place (Keepsake: one thing put on a stone), repeat_blocked (Tumbler with feedback on: a try identical to an earlier one is not taken; detail has which; from app 2.22), hidden, visible, puzzle_end, level_change, resume, session_end'],
+      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look or Switchback sign stopped before it was scored), drive (Switchback: the car starts or drives on after a pause), sign (one Switchback sign, scored when it is tapped or when its time runs out), stray (a tap on the Switchback sign button with no sign up), speed (Switchback speed change), off_road (the Switchback car left the road), beast (Switchback: the animal on the road, tapped away or braked for), fork_sign (Switchback: the arrow board of a fork comes up; detail has the arrow), fork (Switchback: the nose of the car passes the split; cls right_lane or wrong_lane, detail has the arrow and the lane taken), turn (Switchback L4 and L5: the sign of a new animal takes over halfway; target is the new animal), look (Keepsake: the look starts, then ends by timer or early with a tap on the basket), place (Keepsake: one thing put on a stone), repeat_blocked (Tumbler with feedback on: a try identical to an earlier one is not taken; detail has which; from app 2.22), hidden, visible, puzzle_end, level_change, resume, session_end'],
       ['wall_time / t_session_ms', 'clock time, and ms since the session started'],
       ['seq / block', 'puzzle number in the plan and its block; practice boards have block 0 and seq 0'],
       ['puzzle_id', 'B{block}-{game}-L{level}-{occurrence}, or P-{game} for a practice board'],
@@ -7255,11 +7738,11 @@
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them.', '',
         '## Levels', '', '### Outbound', lv('outbound'), 'L1 and L2 can be cleared by tapping only cars with a clear way out. L3 to L5 contain pinwheels, four cars that each block the next, so one car must first slide part of the way (feature `slides_needed`: 1 at L3 and L4, 2 at L5); L4 adds a planted trap, and L4 and L5 are chosen by the chance that random tapping clears the lot (feature `p_random_solve`). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'L4 and L5 keep the board that needs the most search beyond local edge rules out of 8 candidates. Tiles start turned so that no pipe points off the board and about a quarter sit in their solved turn; every board needs between 0.42 and 0.5 turns per tile. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
-        '## Glimpse scenes', '',
-        Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': middle ' + t.pairs.easy.join(' or ') + ' (harder pair ' + t.pairs.hard.join(' or ') + '), find ' + t.targets.join(', ') + ', among ' + t.distractor + 's'; }).join('\n'),
-        'Every round takes the scene of its level (meadow at L1 and L2, sea at L3 and L4, sky at L5) and takes turns with its three targets, the same in free play and research sessions; practice uses the meadow with the bird. Until app 2.24 fixed blocks used the meadow with the bird and 6 looks at every level. The scene is in `params` and `features`; each look logs its target in `target`.', '',
+        '## Glimpse trips', '',
+        Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),
+        'Glimpse is a photo trip: the flash is a photo of the trip (a drawn scene with the animals in color, each with a thin light rim), the mask is the closed shutter of the lens with the pattern drawn over it, and with feedback on the photo comes back after the answers with rings round what was where and goes into an album of the round. One trip a level, the same in free play and research sessions: the meadow (L1), the pond (L2), the forest (L3), the jungle (L4), the night walk (L5); practice uses the meadow. The thing to find is the same for the whole trip and is shown before each round. Until app 2.27 the field was black shapes on a pale disc, with three scenes and things to find taking turns. The trip is in `params` and `features`; each look logs its target in `target`.', '',
         '## Glimpse timing', '',
-        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do. The first look starts when the player taps the eye; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with a ring closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
+        'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do. The first look starts when the player taps the camera; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with four focus marks closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
         'The staircase carries over between rounds of the same level for the same player: through the whole of a research session, and between visits in free play. A level without a value opens at its own starting point, three steps above its target (the free-play values are kept under a new key from app 2.21, so earlier ones start over; until app 2.25 research sessions started each block fresh and opened a new level three steps slower than the level below it ended). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
         'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
@@ -7267,14 +7750,15 @@
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
         'Both tasks adapt as you drive. Signs: a sign stays up 1500 ms in a fresh round; each target caught makes the next one x0.9 shorter, a missed target makes it 4 steps longer and a tap on another sign 2 steps longer (settles near 80% of targets caught), never under 450 ms and always clear of the next sign or animal. Speed: every 1.5 s of driving, at least 97% of it on the road adds 3 km/h, under 85% takes 6 km/h off, within -10 to +40 km/h of the level\'s speed. Both carry over to the next drive at the same level (through a research session, between visits in free play; until app 2.25 each research block started fresh), starting two sign steps and 6 km/h easier. Signs come up just right of the road ahead, 2 to 2.8 s apart by level; the first is always a target and never more than three of a kind follow each other. Off-road time slows the car to 80%.',
-        'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign for the whole drive and on its road (see `place`). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives through the chequered finish line 8 units before it and brakes evenly to a stop 4.5 units past the line. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
-        'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (once a drive at L1 and L2, twice from L3; never before the third sign or after the last but one), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
+        'Each level has two places at its time of day, and the seed picks one (L1 morning: farm or savanna; L2 noon: fields or desert; L3 afternoon: pine forest or jungle; L4 sunset: coast or outback; L5 dusk or night: village or the north). Each place has one animal, on its target sign and on its road (see `place`); on L4 and L5 another animal takes over halfway (see below). The drive heads for the place\'s landmark: small on the skyline where the road runs out, it comes into reach as a real place in the last seconds of the drive (placed 60 road units ahead when that is about how far the car has left to go); the car drives through the chequered finish line 8 units before it and brakes evenly to a stop 4.5 units past the line. `duration_ms` runs until the car stands still. The road, its lines, the sign shapes and the car are the same everywhere, so the animal and the scenery are a covariate within a level, logged as `place`. Practice is on the farm with the cow.',
+        'Each level brings one new thing to learn, and keeps the ones before (from app 2.27; until then every level only added signs, speed and bends). L1: steer and tap the target sign. L2: the animal on the road (below). L3: the road splits. Twice a drive at L3 (once at L4 and L5) a green arrow board comes up in the split ahead with an arrow and the landmark\'s flag; about 3 s later the road has widened to two lanes and splits around a grass island, and the lane on the arrow\'s side runs on to the landmark while the other one bends away. The lane the car\'s middle is in 1 road unit past the split counts (fork event, right_lane or wrong_lane). In the wrong lane the car brakes and is steered back into the right one over about 1 s (no new sign comes up meanwhile, and that time is left out of the speed measures). No sign comes up while the board is close ahead. L4: halfway (after the middle sign) a card shows another animal\'s sign and the sign button changes to it: from then on that sign is the target and the first animal\'s sign no longer counts; 4 in 10 of the other signs after it show the first animal (turn event; coast: crab then swan; outback: kangaroo then camel; village: duck then rabbit; north: moose then goose). The animal on the road is the one whose sign counts at the time. L5: a drive at night: the scene is dark beyond the headlights, and each sign shows dark for 0.38 s before it lights up; its time up and the reaction time count from when it lights up, and a tap while it is still dark is a stray (detail: sign still dark), without a sound. The first time a player meets something new (on this device), it comes with a short demo: the first animal on the road stops the car short of it and waits for a tap with a hand and a word (the beast event says so; the drive clock stands still meanwhile), the first fork is driven at three quarters of the speed with a word about the arrow and a word after it, and the first sign at night stays dark for 0.9 s with a word. The halfway card is its own demo. Events between two signs never come before the third sign or after the last but one: the board at halfway has a slot of its own (the next sign 3.2 s after it), a fork 4.6 s, an animal 3 s.',
+        'The animal on the road and the things to collect are additions to the published format. The animal steps onto the road ahead between two signs (twice a drive from L2; never at L1 or in practice), in a slot of its own: the next sign comes 3 s after it steps out, and the sign before it is always gone first. It walks to the middle of the road and stands there; the car eases off to 45% of its speed meanwhile. A tap on it (or H) sends it off with a toot (beast event, shooed, with rt_ms); if the car gets within about 4 road units first, the car brakes hard and the animal moves on by itself (beast event, braked). An animal on the road when a drive is paused does not count (interrupted event). Things to collect float over the road in rows of 3 to 5, one kind per place; steering through them picks them up. They are counted, never tapped, and no task measure uses them.',
         'With feedback on, a caught target\'s animal comes off the sign and runs or hops into the field for about 1 s after the tap; with feedback off a tap only gives a soft click. The horn toots when an animal is tapped away whatever the feedback setting, and things collected fly to a counter shown when counters are on.',
         'Levels:', lv('switchback'),
         '## Keepsake', '', 'Object-location memory (the Memory Path format of the concept paper). One park map, always the same, so its landmarks can be learned: a house, a pond, a big tree, a well, a flower bed and a bench along a winding path, with twelve stones placed by hand beside them (at least 20 map units apart on a 100 x 120 map). Each card brings some stones out and puts things on a few of them (the things: ' + E.games.keepsake.items.join(', ') + '). A tap on the eye starts the look; the things pop up on their stones and a timer runs on the basket below; a tap on the basket ends the look early (logged). Then the things hop into the basket, in tray order, which takes about a second, and the player puts each back: drag it onto a stone, or tap it and then a stone. Each thing gets one try and a stone holds one thing. With feedback on, a thing put on the right stone turns green; one put on a wrong stone turns red and then moves to its own stone, which frees the stone it was put on. With feedback off, every thing stays where it was put and nothing is shown. The card ends when every thing is back.',
         'Levels:', lv('keepsake'), '',
         'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alikes of the place\'s animal (village: goose, swan, hen; north: reindeer, deer, bear). Until app 2.10 the target was a rabbit, fox or cat drawn from the seed in every place; from 2.10 it is the place\'s animal.', '',
-        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs one or two higher from L3, with its animals). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
+        '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs about one higher from L2, with its animals: 6, 10, 12, 14, 16). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
         '## Practice', '', 'Each game opens with a practice card (puzzle id P-{game}, fixed content, level 0). It has to be played right before the game goes on: a puzzle solved; Glimpse with at most one look wrong; Switchback with every target caught and no other sign tapped; Keepsake with every thing on its own stone. Otherwise the result says Once more and the same practice comes round again, up to three tries; after the third the game goes on regardless. Practice rows log `success` as that pass (1 or 0) and never change a level. A new player\'s first card after practice is level 1. Rounds of the trial games (Glimpse, Switchback, Keepsake) get confetti only at three stars or a passed practice; two stars get the win chime without confetti, and fewer a soft note.', '',
         '## Adaptive blocks', '', 'Per game within a block, the same in research sessions and free play: one level up per success until the first miss in that game (in the session; in free play, ever on the device), then two successes in a row move up one level; one miss moves down one level (levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Switchback never moves down a level, and Glimpse only after a round with fewer than half the looks right: their display time, sign time and speed already adapt as you play. Until app 2.25 research sessions always needed two in a row and Glimpse never moved down there. In free play the run of successes toward the next level carries over to the next visit, so the first card of a new free session can move a level up. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel, on one tap. Research sessions start with the same options as free play (stars, hints, feedback, skip and sound on; until app 2.26 they were off) and show the same records, level-up screen and way to the next level in adaptive blocks; records and the levels reached are kept on the device, shared with free play.', '']);
     return lines.join('\n');
@@ -7481,6 +7965,7 @@
   // What each level brings, in the game's own terms: for the level-up moment and the profile.
   // Read from the games' settings, so it says what the game does.
   const SB_PLACE_NAME = { north: 'far north' };
+  const SB_NEW = { animals: 'animals walk onto the road', forks: 'the road splits', turn: 'a new animal halfway', night: 'a drive at night' };
   function levelAdds(g, lv) {
     const G = E.games[g], L = G && G.levels && G.levels[lv];
     if (!L) return '';
@@ -7492,8 +7977,8 @@
       return at(L.moves + ' moves' + (L.n ? ' · ' + L.n + ' layers' : '') + (L.cherry != null ? ' · the cherry stays on top' : L.size ? ' · small goes on big' : ''));
     }
     if (g === 'keepsake') return at(L.items + ' things to remember');
-    if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + L.targets + ' signs';
-    if (g === 'glimpse') return at(['', 'close to the middle', 'a little further out', 'near or far', 'a few shells in the way', 'more in the way'][lv] || '');
+    if (g === 'switchback') return L.places.map((x) => SB_PLACE_NAME[x] || x).join(' or ') + ' · ' + (SB_NEW[L.new] || 'tap your animal\'s sign');
+    if (g === 'glimpse') return at(['', 'the bird, close by', 'the dragonfly, further out', 'the owl, near or far', 'the parrot among leaves', 'the bat among moths'][lv] || '');
     return '';
   }
   // Free play: how far a game is toward its next level. Two good cards in a row
@@ -7512,7 +7997,7 @@
   function pfGoal(g, lv) {
     if (g === 'glimpse') {
       const ms = E.games.glimpse.levels[lv].advanceMs;
-      return { chips: [['bolt', secs(ms) + ' s']], text: 'the flash down to ' + secs(ms) + ' s' };
+      return { chips: [['camera', secs(ms) + ' s']], text: 'a photo of ' + secs(ms) + ' s or faster' };
     }
     if (g === 'switchback') {
       const L = E.games.switchback.levels[lv];

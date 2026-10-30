@@ -1249,10 +1249,11 @@
   };
 
   // =====================================================================
-  // GLIMPSE: speed of processing in the useful-field-of-view format.
-  // An animal in the middle (one of two) and, from level 2, a bird around it
-  // flash for a few screen frames, then a mask covers them. The player picks
-  // the animal, then taps where the bird was. Display time adapts every look
+  // GLIMPSE: speed of processing in the useful-field-of-view format, as a
+  // photo trip. A photo flashes for a few screen frames: an animal in the
+  // middle (one of two) and the trip's thing to find around it; then the
+  // shutter closes over it (a mask). The player picks the animal, then taps
+  // where the thing was. Display time adapts every look
   // with a weighted up/down staircase that settles at 80% correct.
   // The generator fixes what is shown; display times depend on the answers.
   // =====================================================================
@@ -1289,15 +1290,17 @@
     }
     return best;
   }
-  // Scenes. Each has an easy and a harder pair for the middle, three things to
-  // find around it and one distractor. Practice uses the meadow with the bird.
+  // Photo trips. Each has two animals that can be in the middle of the photo, one thing to find
+  // around them (the same all trip, shown before the round) and what gets in its way at levels 4
+  // and 5. Practice uses the meadow.
   const GL_THEMES = {
-    meadow: { pairs: { easy: ['rabbit', 'hedgehog'], hard: ['cat', 'fox'] }, targets: ['bird', 'butterfly', 'snail'], distractor: 'leaf' },
-    sea: { pairs: { easy: ['fish', 'turtle'], hard: ['fish', 'whale'] }, targets: ['star', 'sailboat', 'jellyfish'], distractor: 'shell' },
-    sky: { pairs: { easy: ['plane', 'balloon'], hard: ['plane', 'gull'] }, targets: ['kite', 'rocket', 'star'], distractor: 'cloud' },
+    meadow: { pair: ['rabbit', 'hedgehog'], target: 'bird', distractor: 'leaf' },
+    pond: { pair: ['frog', 'duck'], target: 'dragonfly', distractor: 'leaf' },
+    forest: { pair: ['deer', 'fox'], target: 'owl', distractor: 'leaf' },
+    jungle: { pair: ['monkey', 'tiger'], target: 'parrot', distractor: 'leaf' },
+    night: { pair: ['badger', 'hedgehog'], target: 'bat', distractor: 'moth' },
   };
-  const GL_THEME_ORDER = ['meadow', 'sea', 'sky'];
-  const GL_LEVEL_THEME = { 1: 'meadow', 2: 'meadow', 3: 'sea', 4: 'sea', 5: 'sky' };
+  const GL_THEME_ORDER = ['meadow', 'pond', 'forest', 'jungle', 'night'];
   function glMedian(xs) {
     if (!xs.length) return null;
     const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1;
@@ -1326,14 +1329,16 @@
     // itself keeps adapting at every level, so quick players still see it get shorter.
     // Every level asks for the animal and the thing around it, as practice does; level 1 keeps
     // that thing close to the middle (until engines 1.17 level 1 was the middle only).
+    // trip: where the photos are taken, one trip a level (until engines 1.21: three scenes with
+    // things to find taking turns)
     levels: {
-      1: { periph: true, rings: [1], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
-      2: { periph: true, rings: [2], distract: 0, pair: 'easy', advanceMs: 1000, looks: 4 },
-      3: { periph: true, rings: [1, 2, 3], distract: 0, pair: 'easy', advanceMs: 1000, looks: 5 },
-      // things in the way come in small steps: a few shells, then twice as many clouds
+      1: { trip: 'meadow', periph: true, rings: [1], distract: 0, advanceMs: 1000, looks: 4 },
+      2: { trip: 'pond', periph: true, rings: [2], distract: 0, advanceMs: 1000, looks: 4 },
+      3: { trip: 'forest', periph: true, rings: [1, 2, 3], distract: 0, advanceMs: 1000, looks: 5 },
+      // things in the way come in small steps: a few leaves, then twice as many moths
       // (until engines 1.18: 23, then 47 and the harder pair, a cliff for older players)
-      4: { periph: true, rings: [1, 2, 3], distract: 8, pair: 'easy', advanceMs: 1200, looks: 6 },
-      5: { periph: true, rings: [1, 2, 3], distract: 16, pair: 'easy', advanceMs: 1200, looks: 6 },
+      4: { trip: 'jungle', periph: true, rings: [1, 2, 3], distract: 8, advanceMs: 1200, looks: 6 },
+      5: { trip: 'night', periph: true, rings: [1, 2, 3], distract: 16, advanceMs: 1200, looks: 6 },
     },
     // where free play starts a level the first time: three steps slower than its target, so a new
     // level opens slow and easy and three right answers in a row reach the target
@@ -1345,41 +1350,39 @@
     ringR: GL_RING_R,
     slotOf: glSlotOf,
     ladder: glLadder,
-    // p is a puzzle (pair given as names) or a level entry (pair given as 'easy' or 'hard')
+    // p is a puzzle or a level entry
     describe(p) {
-      const pair = Array.isArray(p.pair) ? p.pair.join('/') : p.pair === 'hard' ? 'harder pair' : 'easy pair';
+      const th = GL_THEMES[p.theme || p.trip] || GL_THEMES.meadow;
       const rings = p.rings.length === 1 ? 'ring ' + p.rings[0] : 'rings ' + p.rings[0] + '-' + p.rings[p.rings.length - 1];
-      const find = p.targetSet ? p.targetSet.join('/') : 'target';
-      const among = p.distract ? ', ' + p.distract + ' ' + (p.distractor === 'leaf' ? 'leaves' : p.distractor ? p.distractor + 's' : 'distractors') : '';
-      return (p.theme ? p.theme + ': ' : '') + (p.periph ? 'center + ' + find + ' on ' + rings : 'center only') + among + ', ' + pair;
+      const among = p.distract ? ', among ' + p.distract + ' ' + (th.distractor === 'leaf' ? 'leaves' : th.distractor + 's') : '';
+      return (p.theme || p.trip) + ': ' + th.pair.join(' or ') + ' in the middle, the ' + th.target + ' on ' + rings + among;
     },
-    build(level, seed, L, trials, fixedMs, themeName, targetSet) {
+    build(level, seed, L, trials, fixedMs, themeName) {
       const theme = GL_THEMES[themeName];
-      const pair = theme.pairs[L.pair];
+      const pair = theme.pair;
       return {
         game: 'glimpse', level, seed, theme: themeName,
         n: trials.length, periph: L.periph, rings: L.rings.slice(), distract: L.distract, pair: pair.slice(),
-        distractor: theme.distractor, targetSet: targetSet.slice(),
+        distractor: theme.distractor, target: theme.target, targetSet: [theme.target],
         trials, maskMs: this.maskMs, fixedMs: fixedMs || null, advanceMs: L.advanceMs || null,
         reference: null,
         features: {
           looks: trials.length, theme: themeName, periphery: L.periph ? 1 : 0, rings: L.rings.join(' '), distractors: L.distract,
-          pair: pair.join('/'), targets: L.periph ? targetSet.join('/') : '', distractor: L.distract ? theme.distractor : '',
+          pair: pair.join('/'), targets: theme.target, distractor: L.distract ? theme.distractor : '',
           mask_ms: this.maskMs, target_correct: this.up / (this.up + this.down), advance_ms: L.advanceMs || null,
         },
       };
     },
-    // the same rounds in free play and research sessions: the scene of the level (meadow at 1 and
-    // 2, the sea at 3 and 4, the sky at 5), targets in turn, so moving up a level is also arriving
-    // somewhere new
+    // the same rounds in free play and research sessions: the trip of the level, so moving up a
+    // level is also arriving somewhere new, and one thing to find for the whole trip
     generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
       const n = L.looks || this.trials;
       rng.int(GL_THEME_ORDER.length); // the draw that used to pick the scene, kept so seeds still give the same looks
-      const themeName = GL_LEVEL_THEME[level] || 'meadow';
-      const targetSet = GL_THEMES[themeName].targets;
-      const tgs = rng.shuffle(Array.from({ length: n }, (_, i) => targetSet[i % targetSet.length]));
+      const themeName = L.trip || 'meadow';
+      const target = GL_THEMES[themeName].target;
+      const tgs = rng.shuffle(Array.from({ length: n }, () => target));
       const centers = rng.shuffle(Array.from({ length: n }, (_, i) => i % 2));
       let dirs = [], rings = [];
       if (L.periph) {
@@ -1404,14 +1407,14 @@
         }
         trials.push(t);
       }
-      return this.build(level, seed, L, trials, null, themeName, targetSet);
+      return this.build(level, seed, L, trials, null, themeName);
     },
     // three slow looks at fixed display times: the bird sits on the middle ring
     practice() {
-      const L = { periph: true, rings: [2], distract: 0, pair: 'easy' };
+      const L = { periph: true, rings: [2], distract: 0 };
       const spec = [[0, 1], [1, 5], [0, 6]];
       const trials = spec.map((x, i) => ({ c: x[0], fix: 550, mask: 1000 + i, ring: 2, dir: x[1], tg: 'bird', flip: x[1] >= 4 ? 1 : 0, d: [] }));
-      return this.build(0, 0, L, trials, [2000, 1200, 700], 'meadow', ['bird']);
+      return this.build(0, 0, L, trials, [2000, 1200, 700], 'meadow');
     },
     // start: { ms } carries a staircase on (warmUp steps slower); { at } starts a fresh one exactly
     // there (free play, a level's first round); without either it starts fresh at startMs
@@ -1660,6 +1663,10 @@
   const SB_SEG = 0.4;      // road segment length; the camera rides 1 unit above the road
   const SB_KMH = 0.12;     // world units per second for each km/h shown
   const SB_SLOT = 3.0;     // s from an animal stepping out to the next sign
+  const SB_FORK = 4.6;     // s from a fork's arrow sign to the next sign (the lanes come about 3 s after the arrow)
+  const SB_TURN = 3.2;     // s from the new animal's board to the next sign
+  // the second animal to watch for, from halfway (levels 4 and 5)
+  const SB_SWITCH = { coast: 'swan', outback: 'camel', village: 'rabbit', north: 'goose' };
   // each place's animal: on its target sign and on its road
   const SB_ANIMALS = { farm: 'cow', savanna: 'elephant', fields: 'rabbit', desert: 'camel', forest: 'deer', jungle: 'monkey', coast: 'crab', outback: 'kangaroo', village: 'duck', north: 'moose' };
   // signs that are not the target, from nothing in common (L1) to look-alike animals (L5)
@@ -1729,34 +1736,41 @@
     speedUp: 3, speedDown: 6, speedRange: [-10, 40],
     warm: 2,                // seconds of driving before the road and speed count (the car gets going)
     // places: the seed picks one; beasts: times the place's animal steps onto the road;
+    // forks: times the road splits in two lanes, an arrow sign showing which one to take;
+    // turn: from halfway another animal's sign is the one to tap (and the first animal's no
+    // longer); night: signs light up late in the headlights; new: what the level brings to
+    // learn, each level one more (until engines 1.22 every level only added load);
     // half: road half-width; s: share of bends that run into an S
     levels: {
-      1: { places: ['farm', 'savanna'], beasts: 1, targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
-      2: { places: ['fields', 'desert'], beasts: 1, targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
-      3: { places: ['forest', 'jungle'], beasts: 2, targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
-      4: { places: ['coast', 'outback'], beasts: 2, targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
-      5: { places: ['village', 'north'], beasts: 2, targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
+      1: { places: ['farm', 'savanna'], beasts: 0, forks: 0, targets: 5, foils: 3, foil: 'shape', gap: 2.8, kmh: 40, advanceKmh: 48, advanceMs: 1100, road: { half: 0.42, straight: [30, 60], curve: [0.5, 0.8], ease: 26, hold: [20, 45], s: 0 } },
+      2: { places: ['fields', 'desert'], new: 'animals', beasts: 2, forks: 0, targets: 7, foils: 5, foil: 'color', gap: 2.6, kmh: 46, advanceKmh: 54, advanceMs: 1050, road: { half: 0.4, straight: [22, 48], curve: [0.6, 1.0], ease: 22, hold: [16, 40], s: 0.15 } },
+      3: { places: ['forest', 'jungle'], new: 'forks', beasts: 2, forks: 2, targets: 9, foils: 7, foil: 'symbol', gap: 2.4, kmh: 52, advanceKmh: 60, advanceMs: 1000, road: { half: 0.38, straight: [14, 38], curve: [0.8, 1.2], ease: 18, hold: [12, 34], s: 0.3 } },
+      4: { places: ['coast', 'outback'], new: 'turn', beasts: 2, forks: 1, turn: true, targets: 11, foils: 9, foil: 'animal', gap: 2.2, kmh: 58, advanceKmh: 66, advanceMs: 950, road: { half: 0.36, straight: [10, 28], curve: [0.9, 1.4], ease: 15, hold: [10, 28], s: 0.45 } },
+      5: { places: ['village', 'north'], new: 'night', beasts: 2, forks: 1, turn: true, night: true, targets: 13, foils: 11, foil: 'similar', gap: 2.0, kmh: 64, advanceKmh: 72, advanceMs: 900, road: { half: 0.34, straight: [6, 22], curve: [1.0, 1.5], ease: 13, hold: [8, 24], s: 0.6 } },
     },
+    turnTo: SB_SWITCH,
     // p is a puzzle or a level entry
     describe(p) {
       const n = p.signs ? p.signs.filter((x) => x.go).length : p.targets;
       const f = p.signs ? p.signs.length - n : p.foils;
       const nb = Array.isArray(p.beasts) ? p.beasts.length : p.beasts || 0;
-      const where = p.place ? p.place + ', ' + p.target + ' sign, ' : p.places.map((q) => q + ' (' + SB_ANIMALS[q] + ')').join(' or ') + ', ';
-      return where + n + ' targets and ' + f + ' other sign' + (f === 1 ? '' : 's') + ' (' + p.foil + '), the animal on the road ' + nb + ' time' + (nb === 1 ? '' : 's') + ', from ' + p.kmh + ' km/h';
+      const nf = Array.isArray(p.forks) ? p.forks.length : p.forks || 0;
+      const where = p.place ? p.place + ', ' + p.target + ' sign' + (p.turn ? ' then ' + p.turn.to + ' sign' : '') + ', ' : p.places.map((q) => q + ' (' + SB_ANIMALS[q] + (p.turn ? ' then ' + SB_SWITCH[q] : '') + ')').join(' or ') + ', ';
+      return where + n + ' targets and ' + f + ' other sign' + (f === 1 ? '' : 's') + ' (' + p.foil + '), the animal on the road ' + nb + ' time' + (nb === 1 ? '' : 's') + ', ' + nf + ' fork' + (nf === 1 ? '' : 's') + (p.night ? ', at night' : '') + ', from ' + p.kmh + ' km/h';
     },
-    build(level, seed, L, place, signs, beasts, items, road, duration, fixed) {
+    build(level, seed, L, place, signs, beasts, items, road, duration, fixed, forks, turn) {
       const target = SB_ANIMALS[place];
+      forks = forks || [];
       return {
         game: 'switchback', level, seed, place, target, foil: L.foil,
-        signs, beasts, items, road, half: L.road.half, duration,
+        signs, beasts, forks, turn: turn || null, night: !!L.night, items, road, half: L.road.half, duration,
         kmh: L.kmh, minKmh: L.kmh + this.speedRange[0], maxKmh: L.kmh + this.speedRange[1],
         advanceKmh: L.advanceKmh || null, advanceMs: L.advanceMs || null,
         fixedMs: fixed ? fixed.ms : null, fixedKmh: fixed ? fixed.kmh : null,
         reference: null,
         features: {
           place, target, targets: signs.filter((x) => x.go).length, foils: signs.filter((x) => !x.go).length, foil: L.foil,
-          animals: beasts.length, items: items.length,
+          animals: beasts.length, forks: forks.length, turn_to: turn ? turn.to : '', night: L.night ? 1 : 0, items: items.length,
           gap_s: L.gap, road_half: L.road.half, bends: L.road.curve ? L.road.curve.join('-') : 'practice', s_bends: L.road.s || 0,
           kmh: L.kmh, advance_kmh: L.advanceKmh || null, advance_ms: L.advanceMs || null,
           target_hits: this.up / (this.up + this.down),
@@ -1766,7 +1780,7 @@
     generate(level, seed) {
       const L = this.levels[level];
       const rng = makeRng(seed);
-      const place = L.places[rng.int(L.places.length)], target = SB_ANIMALS[place];
+      const place = L.places[rng.int(L.places.length)], target = SB_ANIMALS[place], target2 = L.turn ? SB_SWITCH[place] : null;
       const foils = SB_FOILS[L.foil === 'similar' ? place : L.foil];
       // the first sign is a target; after it, never more than three of a kind in a row
       let order;
@@ -1777,31 +1791,43 @@
         if (ok) break;
       }
       const fseq = rng.shuffle(Array.from({ length: L.foils }, (_, i) => foils[i % foils.length]));
-      // the animal steps out between two signs, once in each part of the drive,
-      // never before the third sign or after the last but one
-      const after = new Set(), gaps = order.length - 4;
-      for (let b = 0; b < L.beasts; b++) {
-        const a = Math.floor((b * gaps) / L.beasts), z = Math.floor(((b + 1) * gaps) / L.beasts);
-        after.add(2 + a + rng.int(Math.max(1, z - a)));
-      }
-      let t = 2.6, fi = 0;
-      const signs = [], beasts = [];
+      // what happens between two signs: the new animal's board at halfway, and the animal
+      // stepping out and the forks spread over the rest of the drive, never before the third
+      // sign or after the last but one
+      const ev = new Map(), turnK = L.turn ? Math.floor(order.length / 2) - 1 : -1;
+      if (turnK >= 0) ev.set(turnK, 'turn');
+      const kinds = rng.shuffle(Array.from({ length: L.beasts }, () => 'beast').concat(Array.from({ length: L.forks || 0 }, () => 'fork')));
+      const free = [];
+      for (let k = 2; k < order.length - 2; k++) if (k !== turnK && k !== turnK - 1 && k !== turnK + 1) free.push(k);
+      kinds.forEach((kind, j) => {
+        const a = Math.floor((j * free.length) / kinds.length), z = Math.floor(((j + 1) * free.length) / kinds.length);
+        ev.set(free[a + rng.int(Math.max(1, z - a))], kind);
+      });
+      let t = 2.6, fi = 0, turn = null;
+      const signs = [], beasts = [], forks = [];
       order.forEach((go, k) => {
-        const f = go ? ['tri', target] : fseq[fi++];
+        // after the board, the new animal's sign is the one to tap, and some of the other signs
+        // show the first animal, which no longer counts
+        const later = turn != null;
+        let f = go ? ['tri', later ? target2 : target] : fseq[fi++];
+        if (!go && later && rng() < 0.4) f = ['tri', target];
         signs.push({ t: round(t, 2), go, shape: f[0], glyph: f[1] });
         t += L.gap + (rng() - 0.5) * 0.7;
-        if (after.has(k)) { beasts.push({ t: round(t, 2), side: rng() < 0.5 ? -1 : 1 }); t += SB_SLOT; }
+        const e = ev.get(k);
+        if (e === 'beast') { beasts.push({ t: round(t, 2), side: rng() < 0.5 ? -1 : 1 }); t += SB_SLOT; }
+        else if (e === 'fork') { forks.push({ t: round(t, 2), side: rng() < 0.5 ? -1 : 1 }); t += SB_FORK; }
+        else if (e === 'turn') { turn = { t: round(t, 2), to: target2, k: k + 1 }; t += SB_TURN; }
       });
       const duration = round(signs[signs.length - 1].t + L.gap + 1.5, 2);
       const vmax = (L.kmh + this.speedRange[1]) * SB_KMH, v = L.kmh * SB_KMH;
       const road = sbRoad(L.road, rng, Math.ceil((duration * vmax) / SB_SEG) + 260);
       const items = sbItems(rng, L.road.half, 3 * v + 4, road.length * SB_SEG - 40, 7 * v);
-      return this.build(level, seed, L, place, signs, beasts, items, road, duration, null);
+      return this.build(level, seed, L, place, signs, beasts, items, road, duration, null, forks, turn);
     },
-    // a slow drive on the farm at a fixed pace: the cow sign, another sign, a cow on
-    // the road, the cow sign again; a few apples on the way
+    // a slow drive on the farm at a fixed pace: the cow sign, another sign, the cow sign
+    // again; a few apples on the way (the animal on the road comes at level 2)
     practice() {
-      const L = { beasts: 1, targets: 2, foils: 1, foil: 'shape', gap: 3.6, kmh: 36, advanceKmh: null, advanceMs: null, road: { half: 0.44 } };
+      const L = { beasts: 0, targets: 2, foils: 1, foil: 'shape', gap: 3.6, kmh: 36, advanceKmh: null, advanceMs: null, road: { half: 0.44 } };
       const road = [];
       for (let i = 0; i < 80; i++) road.push(0);
       for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * t * t * (3 - 2 * t)); }
@@ -1809,7 +1835,7 @@
       for (let i = 0; i < 30; i++) { const t = (i + 0.5) / 30; road.push(-0.55 * (1 - t * t * (3 - 2 * t))); }
       while (road.length < 720) road.push(0);
       const signs = [{ t: 3.4, go: 1, shape: 'tri', glyph: 'cow' }, { t: 7.6, go: 0, shape: 'round_blue', glyph: 'arrow' }, { t: 14.6, go: 1, shape: 'tri', glyph: 'cow' }];
-      const beasts = [{ t: 10.6, side: 1 }];
+      const beasts = [];
       const items = [];
       for (let k = 0; k < 4; k++) items.push({ w: 24 + k * 1.5, x: 0 });
       for (let k = 0; k < 4; k++) items.push({ w: 64 + k * 1.5, x: round(-0.24 * (k / 3), 3) });
@@ -1824,16 +1850,17 @@
       if (!fixed) kmh = Math.max(p.minKmh, Math.min(p.maxKmh, kmh));
       return {
         i: 0, ms, kmh, start: { ms, kmh }, fresh: !fixed && !carried, last: 0, rev: [], res: [], speed: [], stray: 0,
-        bi: 0, ba: [], items: [],
+        bi: 0, ba: [], fi: 0, fa: [], items: [],
         drive: { t: 0, on: 0, vt: 0, vs: 0, off: 0, brake: 0 },
       };
     },
-    // how long sign k stays up: the staircase, but always clear of the next sign or animal
+    // how long sign k stays up: the staircase, but always clear of what comes next (a sign,
+    // the animal, a fork's arrow, the new animal's board)
     windowMs(p, run, k) {
       if (p.fixedMs) return p.fixedMs[Math.min(k, p.fixedMs.length - 1)];
       const t = p.signs[k].t;
       let next = p.signs[k + 1] ? p.signs[k + 1].t : p.duration;
-      for (const b of p.beasts) if (b.t > t && b.t < next) next = b.t;
+      for (const b of p.beasts.concat(p.forks || [], p.turn ? [p.turn] : [])) if (b.t > t && b.t < next) next = b.t;
       return Math.round(Math.min(run.ms, (next - t - 0.45) * 1000));
     },
     // r: { responded, rt, planned }; one record per sign, in order
@@ -1858,6 +1885,13 @@
       const out = { i: run.bi + 1, cls: r.shooed ? 'shooed' : 'braked', rt: r.shooed ? Math.round(r.rt) : null };
       run.ba.push(out);
       run.bi++;
+      return out;
+    },
+    // a fork: the car took the lane the arrow showed (right) or the other one (wrong)
+    fork(p, run, r) {
+      const out = { i: run.fi + 1, cls: r.right ? 'right_lane' : 'wrong_lane' };
+      run.fa.push(out);
+      run.fi++;
       return out;
     },
     // the car went past thing k (in order along the road), with it or without it
@@ -1899,6 +1933,7 @@
         start_ms: run.start.ms == null ? null : Math.round(run.start.ms), end_ms: p.fixedMs ? null : Math.round(run.ms),
         reversals: run.rev.length,
         animals: run.ba.length, shooed: shoo.length, animal_rt_mean_ms: shoo.length ? Math.round(shoo.reduce((a, x) => a + x, 0) / shoo.length) : null,
+        forks: (run.fa || []).length, right_lanes: (run.fa || []).filter((x) => x.cls === 'right_lane').length,
         items: run.items.length, collected: run.items.filter((x) => x).length,
         on_road: D.t > 0 ? round(D.on / D.t, 4) : null, off_road_episodes: D.off, brake_s: round(D.brake, 2),
         speed_mean_kmh: D.vs > 0 ? round(D.vt / D.vs, 1) : null, speed_start_kmh: run.start.kmh, speed_end_kmh: run.kmh,
@@ -2011,7 +2046,7 @@
   function round(x, k) { const f = Math.pow(10, k); return Math.round(x * f) / f; }
 
   const Engines = {
-    version: '1.20.0',
+    version: '1.22.0',
     fnv1a, makeRng, puzzleSeed,
     games: { outbound: Outbound, conduit: Conduit, tumbler: Tumbler, glimpse: Glimpse, stacks: Stacks, switchback: Switchback, keepsake: Keepsake },
     order: ['outbound', 'conduit', 'tumbler', 'glimpse', 'stacks', 'switchback', 'keepsake'],

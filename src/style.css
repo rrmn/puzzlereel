@@ -543,61 +543,64 @@ button { cursor: pointer; }
 @media (min-width: 700px) {
   .scene[data-game="glimpse"] { width: min(760px, calc(100% - 40px)); margin-left: calc(-0.5 * min(760px, calc(100% - 40px))); }
 }
-.gl-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; height: 100%; }
+.gl-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; width: 100%; height: 100%; }
+/* the words over the photo: what to find, then each question */
+.gl-q { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; margin: 0; padding: 0 16px; text-align: center;
+  font-family: var(--display); font-weight: 700; font-size: 23px; line-height: 1.15; color: #FFFFFF; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.gl-q.what, .gl-q.where, .gl-q.ok, .gl-q.center, .gl-q.spot { animation: pop 0.26s cubic-bezier(.3,1.7,.5,1); }
+.gl-q.ok { color: #C9FFDF; }
+.gl-q-art { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+.gl-q-art svg { width: 80%; height: 80%; }
+/* the camera's screen: the photo shows here */
 .gl-lens {
-  position: relative; flex: none; width: 300px; height: 300px; border-radius: 50%;
-  background: var(--gl-field, #F7FBF2);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.92), 0 0 0 13px rgba(255, 255, 255, 0.12), 0 28px 64px rgba(4, 12, 48, 0.55);
+  position: relative; flex: none; width: 300px; height: 300px; border-radius: 26px; background: #1F2229;
+  box-shadow: 0 0 0 7px #23262E, 0 0 0 9px rgba(255, 255, 255, 0.2), 0 28px 64px rgba(4, 12, 48, 0.5);
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
-.gl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
+.gl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 26px; }
 .gl-go {
-  position: absolute; left: 50%; top: 50%; width: 88px; height: 88px; margin: -44px 0 0 -44px; border-radius: 50%; border: 0; padding: 0;
-  display: grid; place-items: center; background: var(--gl-ink, #1D3C8A); color: #FFFFFF;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3), 0 12px 26px rgba(10, 25, 80, 0.35);
+  position: absolute; left: 50%; top: 50%; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%; border: 0; padding: 0;
+  display: grid; place-items: center; background: #FFFFFF; color: #1F2229;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.25), 0 5px 0 rgba(0, 0, 0, 0.3), 0 12px 26px rgba(0, 0, 0, 0.45);
   transition: transform 0.2s cubic-bezier(.3,1.5,.5,1), opacity 0.16s;
 }
-.gl-go svg { width: 44px; height: 44px; }
-.gl-go::before { content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 3px solid var(--gl-ink, #1D3C8A); opacity: 0; animation: lookpulse 1.7s ease-out infinite; pointer-events: none; }
+.gl-go svg { width: 46px; height: 46px; }
+.gl-go svg .df { fill: #FFD23F; }
+.gl-go::before { content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 3px solid #FFFFFF; opacity: 0; animation: lookpulse 1.7s ease-out infinite; pointer-events: none; }
 .gl-go:active { transform: scale(0.93); }
 .gl-go:focus { outline: none; }
-.gl-go:focus-visible { box-shadow: 0 0 0 4px #FFFFFF, 0 0 0 7px var(--gl-ink, #1D3C8A); }
+.gl-go:focus-visible { box-shadow: 0 0 0 4px #FFD23F, 0 0 0 8px rgba(0, 0, 0, 0.4); }
 .gl-go.away { transform: scale(0.06); opacity: 0; pointer-events: none; transition: transform 0.16s ease-in, opacity 0.16s ease-in; }
 .gl-go.away::before { animation: none; }
 /* the choices sit just under the "?" that marks where the animal was */
 .gl-choices { position: absolute; left: 50%; top: calc(50% + var(--R, 150px) * 0.36); transform: translate(-50%, -50%); display: flex; gap: calc(var(--R, 150px) * 0.1); transition: opacity 0.15s, transform 0.15s; z-index: 1; }
-/* the question, drawn where it is asked: a "?" where the animal was; then the thing to find, with a "?" */
-.gl-ask { position: absolute; left: 50%; top: 50%; z-index: 1; pointer-events: none; display: grid; place-items: center; color: var(--gl-ink, #1D3C8A); animation: pop 0.26s cubic-bezier(.3,1.7,.5,1) both; }
+.gl-ask { position: absolute; left: 50%; top: 50%; z-index: 1; pointer-events: none; display: grid; place-items: center; color: #FFFFFF; animation: pop 0.26s cubic-bezier(.3,1.7,.5,1) both; }
 .gl-ask[hidden] { display: none; }
 .gl-ask b { font-family: var(--display); font-weight: 700; line-height: 1; }
 .gl-ask.what { width: calc(var(--R, 150px) * 0.44); height: calc(var(--R, 150px) * 0.44); margin: calc(var(--R, 150px) * -0.36) 0 0 calc(var(--R, 150px) * -0.22);
-  border-radius: 50%; border: 3px dashed color-mix(in srgb, var(--gl-ink, #1D3C8A) 40%, transparent); }
+  border-radius: 24%; border: 3px dashed rgba(255, 255, 255, 0.55); }
 .gl-ask.what b { font-size: calc(var(--R, 150px) * 0.26); }
-
 .gl-choices.gone { opacity: 0; transform: translate(-50%, -50%) scale(0.9); pointer-events: none; }
 .gl-choice {
   width: clamp(64px, calc(var(--R, 150px) * 0.5), 128px); height: clamp(64px, calc(var(--R, 150px) * 0.5), 128px);
-  border-radius: 28%; border: 0; padding: 0; display: grid; place-items: center; background: #FFFFFF; color: var(--gl-ink, #16224A);
-  box-shadow: 0 4px 0 rgba(22, 34, 74, 0.16), 0 10px 22px rgba(22, 34, 74, 0.2), inset 0 0 0 2px rgba(22, 34, 74, 0.08);
-  transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s, color 0.2s;
+  border-radius: 28%; border: 0; padding: 0; display: grid; place-items: center; background: #FFFFFF;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25), 0 10px 22px rgba(0, 0, 0, 0.3);
+  transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s;
   animation: pop 0.26s cubic-bezier(.3,1.7,.5,1);
 }
-.gl-choice svg { width: 72%; height: 72%; fill: currentColor; }
+.gl-choice svg { width: 78%; height: 78%; }
 .gl-choice:active { transform: scale(0.92); }
 .gl-choice:focus { outline: none; }
-.gl-choice:focus-visible { box-shadow: 0 0 0 4px var(--gl-ink, #1D3C8A); }
-.gl-choice.picked { transform: scale(0.94); box-shadow: 0 0 0 4px var(--gl-ink, #1D3C8A), 0 6px 16px rgba(22, 34, 74, 0.2); }
-.gl-choice.ok { box-shadow: 0 0 0 5px var(--good), 0 0 24px rgba(31, 179, 110, 0.45); color: #0B6A40; }
-.gl-choice.bad { box-shadow: 0 0 0 5px var(--bad); color: #A3231F; animation: rattle 0.45s; }
-.gl-choice.dim { opacity: 0.3; }
+.gl-choice:focus-visible { box-shadow: 0 0 0 4px #FFD23F; }
+.gl-choice.picked { transform: scale(0.94); box-shadow: 0 0 0 4px #FFD23F, 0 6px 16px rgba(0, 0, 0, 0.3); }
 .gl-choice[disabled] { cursor: default; }
 .gl-spots { position: absolute; inset: 0; }
-/* first practice flash: rings round the two things to remember */
-.gl-mark { position: absolute; border-radius: 50%; pointer-events: none; box-shadow: 0 0 0 3px var(--gold), 0 0 0 7px rgba(255, 200, 58, 0.3); animation: markpulse 1s ease-in-out infinite; }
+/* first practice photo: rings round the two things to remember */
+.gl-mark { position: absolute; border-radius: 26%; pointer-events: none; box-shadow: 0 0 0 3px var(--gold), 0 0 0 7px rgba(255, 200, 58, 0.3); animation: markpulse 1s ease-in-out infinite; }
 @keyframes markpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 .gl-spot {
-  position: absolute; border-radius: 50%; border: 0; padding: 0;
-  background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, var(--gl-field, #F7FBF2)); box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--gl-ink, #1D3C8A) 42%, var(--gl-field, #F7FBF2));
+  position: absolute; border-radius: 28%; border: 0; padding: 0; display: grid; place-items: center; color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 2.5px rgba(255, 255, 255, 0.5);
   animation: pop 0.24s cubic-bezier(.3,1.7,.5,1) both;
   transition: background 0.15s, box-shadow 0.15s;
 }
@@ -609,38 +612,32 @@ button { cursor: pointer; }
 .gl-spots.asking .gl-spot:nth-child(4) { animation-delay: 0.06s, 1s; } .gl-spots.asking .gl-spot:nth-child(5) { animation-delay: 0.08s, 1.2s; }
 .gl-spots.asking .gl-spot:nth-child(6) { animation-delay: 0.1s, 1.4s; } .gl-spots.asking .gl-spot:nth-child(7) { animation-delay: 0.12s, 1.6s; }
 .gl-spots.asking .gl-spot:nth-child(8) { animation-delay: 0.14s, 1.8s; }
-@keyframes spotcall { 0%, 55%, 100% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 7%, var(--gl-field, #F7FBF2)); } 25% { background: color-mix(in srgb, var(--gl-ink, #1D3C8A) 30%, var(--gl-field, #F7FBF2)); } }
-.gl-spot { display: grid; place-items: center; color: var(--gl-ink, #1D3C8A); }
-.gl-spot svg { width: 72%; height: 72%; fill: currentColor; opacity: 0.28; pointer-events: none; }
-/* where: a small "?" in the middle; the answers are the spots round it, each with the thing's outline */
-.gl-ask.where { width: calc(var(--R, 150px) * 0.22); height: calc(var(--R, 150px) * 0.22); margin: calc(var(--R, 150px) * -0.11) 0 0 calc(var(--R, 150px) * -0.11);
-  border-radius: 50%; background: var(--gl-ink, #1D3C8A); color: #FFFFFF; box-shadow: 0 4px 12px rgba(22, 34, 74, 0.22); }
-.gl-ask.where b { font-size: calc(var(--R, 150px) * 0.14); }
+@keyframes spotcall { 0%, 55%, 100% { background: rgba(255, 255, 255, 0.08); } 25% { background: rgba(255, 255, 255, 0.3); } }
+.gl-spot svg { width: 72%; height: 72%; fill: currentColor; opacity: 0.45; pointer-events: none; }
 .gl-spot:focus { outline: none; }
-.gl-spot:focus-visible { box-shadow: inset 0 0 0 3px var(--gl-ink, #1D3C8A), 0 0 0 3px rgba(29, 60, 138, 0.3); }
-.gl-spot.picked { background: var(--gl-ink, #1D3C8A); box-shadow: none; }
-.gl-spot.ok { background: var(--good); box-shadow: 0 0 0 5px rgba(31, 179, 110, 0.3); }
-.gl-spot.bad { background: var(--bad); box-shadow: none; animation: rattle 0.45s; }
-.gl-spot.fade { opacity: 0; transition: opacity 0.2s; }
+.gl-spot:focus-visible { box-shadow: inset 0 0 0 3px #FFD23F; }
+.gl-spot.picked { background: #FFD23F; color: #1F2229; box-shadow: none; }
+.gl-spot.picked svg { opacity: 0.8; }
 .gl-spot[disabled] { cursor: default; }
-.gl-answer {
-  position: absolute; left: 50%; top: 50%; z-index: 1; display: grid; place-items: center;
-  width: calc(var(--R, 150px) * 0.32); height: calc(var(--R, 150px) * 0.32); margin: calc(var(--R, 150px) * -0.16) 0 0 calc(var(--R, 150px) * -0.16);
-  border-radius: 30%; background: #FFFFFF; color: var(--gl-ink, #16224A); pointer-events: none;
-  animation: pop 0.28s cubic-bezier(.3,1.7,.5,1);
-}
-.gl-answer svg { width: 76%; height: 76%; fill: currentColor; }
-.gl-answer.ok { color: #0B6A40; box-shadow: 0 0 0 4px var(--good), 0 0 22px rgba(31, 179, 110, 0.45); }
-.gl-answer.bad { color: var(--gl-ink, #16224A); box-shadow: 0 0 0 4px var(--bad), 0 0 18px rgba(239, 79, 74, 0.35); animation: pop 0.28s cubic-bezier(.3,1.7,.5,1), rattle 0.45s 0.28s; }
-.gl-bird { position: absolute; z-index: 2; pointer-events: none; animation: birdin 0.42s cubic-bezier(.3,1.7,.5,1) both; filter: drop-shadow(0 3px 4px rgba(10, 20, 60, 0.3)); }
-.gl-bird svg { display: block; width: 100%; height: 100%; }
-.gl-bird.flip svg { transform: scaleX(-1); }
-.gl-dots { display: flex; gap: 7px; height: 12px; align-items: center; }
-.gl-dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255, 255, 255, 0.26); transition: background 0.3s, transform 0.3s; }
-.gl-dots i.now { background: #FFFFFF; transform: scale(1.3); }
-.gl-dots i.done { background: rgba(255, 255, 255, 0.8); }
-.gl-dots i.ok { background: #6EE7A8; }
-.gl-dots i.bad { background: #FF8A80; }
+/* on the developed photo: green round what was right, red where a tap went wrong, gold where the thing was */
+.gl-ring { position: absolute; z-index: 2; border-radius: 26%; pointer-events: none; animation: ringin 0.36s cubic-bezier(.3,1.6,.5,1) both; }
+.gl-ring.ok { box-shadow: 0 0 0 4px var(--good), 0 0 0 8px rgba(31, 179, 110, 0.35); }
+.gl-ring.bad { box-shadow: 0 0 0 4px var(--bad), 0 0 0 8px rgba(239, 79, 74, 0.3); }
+.gl-ring.show { box-shadow: 0 0 0 4px var(--gold), 0 0 0 8px rgba(255, 200, 58, 0.35); animation: ringin 0.36s cubic-bezier(.3,1.6,.5,1) both, markpulse 1s ease-in-out 0.36s infinite; }
+@keyframes ringin { from { transform: scale(1.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* the album under the lens: a frame for each photo of the round */
+.gl-album { display: flex; gap: 8px; height: 46px; align-items: center; }
+.gl-album i { position: relative; width: 38px; height: 38px; border-radius: 9px; background: rgba(255, 255, 255, 0.14); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35); transition: transform 0.3s; overflow: hidden; }
+.gl-album i.now { box-shadow: inset 0 0 0 3px #FFFFFF; transform: scale(1.12); }
+.gl-album i.done { background: rgba(255, 255, 255, 0.7); }
+.gl-album i.ok { box-shadow: 0 0 0 3px #FFFFFF, 0 3px 8px rgba(0, 0, 0, 0.3); }
+.gl-album i.bad { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5); }
+.gl-album i.bad img { filter: grayscale(1) blur(1.5px); opacity: 0.55; }
+.gl-album img { display: block; width: 100%; height: 100%; animation: pop 0.3s cubic-bezier(.3,1.7,.5,1); }
+.res-album { display: flex; justify-content: center; gap: 8px; margin: 2px 0 10px; }
+.res-album i { width: 46px; height: 46px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 3px #FFFFFF, 0 4px 10px rgba(0, 0, 0, 0.2); }
+.res-album i.bad img { filter: grayscale(1) blur(1.5px); opacity: 0.55; }
+.res-album img { display: block; width: 100%; height: 100%; }
 .goal.speed { min-width: 108px; justify-content: center; font-size: 17px; padding: 0 12px 0 9px; }
 .goal.speed svg { color: var(--gold); filter: drop-shadow(0 1px 0 rgba(0,0,0,.2)); }
 .res-level.best svg { width: 18px; height: 18px; color: var(--gold-deep); }
@@ -703,6 +700,25 @@ button { cursor: pointer; }
 .sb-btn:focus { outline: none; }
 .sb-btn:focus-visible { box-shadow: 0 0 0 4px #FFFFFF, 0 0 0 7px #3A1F14; }
 .sb-anchor { position: absolute; left: 0; top: 0; width: 2px; height: 2px; margin: -1px 0 0 -1px; pointer-events: none; }
+/* halfway on levels 4 and 5: the new animal's sign, and the button turning to it */
+.sb-btn.swap { animation: sbswap 0.7s cubic-bezier(.3,1.4,.5,1) 2; }
+@keyframes sbswap { 0% { transform: scale(1); } 35% { transform: scale(1.18); box-shadow: 0 0 0 6px #FFC83A, 0 10px 26px rgba(0, 0, 0, 0.3); } 100% { transform: scale(1); } }
+.sb-new {
+  position: absolute; left: 50%; top: 34px; z-index: 3; display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 12px;
+  border-radius: 20px; background: #FFFDF7; color: #2A1A12; box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12), 0 16px 34px rgba(30, 14, 6, 0.32);
+  transform: translateX(-50%); animation: sbnewin 0.42s cubic-bezier(.3,1.5,.5,1) both; pointer-events: none; white-space: nowrap;
+}
+.sb-new > canvas { flex: none; }
+.sb-new-txt { display: grid; gap: 3px; }
+.sb-new-txt b { font-family: var(--display); font-size: 21px; font-weight: 700; line-height: 1.1; }
+.sb-new-old { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: #7A6A60; }
+.sb-new-x { position: relative; display: inline-grid; place-items: center; width: 26px; height: 26px; opacity: 0.75; }
+.sb-new-x canvas { grid-area: 1 / 1; }
+.sb-new-x svg { grid-area: 1 / 1; width: 26px; height: 26px; color: var(--bad); stroke-width: 3; }
+.sb-new.out { animation: sbnewout 0.3s ease-in both; }
+@keyframes sbnewin { from { opacity: 0; transform: translate(-50%, -16px) scale(0.85); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes sbnewout { to { opacity: 0; transform: translate(-50%, -10px) scale(0.92); } }
+@media (prefers-reduced-motion: reduce) { .sb-new, .sb-new.out, .sb-btn.swap { animation-duration: 0.01s; } }
 .res-stats .res-item { width: 22px; height: 22px; }
 .res-stats .res-sign { width: 24px; height: 24px; }
 .res-stats .res-wrong { display: inline-flex; align-items: center; gap: 1px; margin-left: 2px; color: var(--bad); font-size: 15px; font-weight: 600; }
@@ -1217,8 +1233,8 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
 [data-scene="keepsake"][data-lv="3"], .scene[data-game="keepsake"][data-lv="3"] { --bg1: #FFE6CC; --bg2: #D9773E; --ink: #44200C; --ink2: rgba(68,32,12,.7); --btn: #44200C; --btn-ink: #FFF1E6; --halo: rgba(255,238,225,.7); }
 [data-scene="keepsake"][data-lv="4"], .scene[data-game="keepsake"][data-lv="4"] { --bg1: #F3F8FF; --bg2: #9FB9DC; --ink: #1E2C46; --ink2: rgba(30,44,70,.7); --chip: rgba(255,255,255,.65); --btn: #1E2C46; --btn-ink: #F3F8FF; --halo: rgba(255,255,255,.85); }
 [data-scene="keepsake"][data-lv="5"], .scene[data-game="keepsake"][data-lv="5"] { --bg1: #2E3D78; --bg2: #0B1030; --ink: #F1F3FF; --ink2: rgba(241,243,255,.74); --chip: rgba(255,255,255,.14); --btn: #FFD23F; --btn-ink: #0B1030; --halo: rgba(140,160,255,.4); }
-/* Glimpse: the meadow at dusk and the sea at night (its scene colors come from the card) */
-[data-scene="glimpse"][data-lv="2"], .scene[data-game="glimpse"][data-lv="2"], [data-scene="glimpse"][data-lv="4"], .scene[data-game="glimpse"][data-lv="4"] { --chip: rgba(255,255,255,.16); }
+/* Glimpse: the night walk is the dark trip (each trip's colors come from the card) */
+[data-scene="glimpse"][data-lv="5"], .scene[data-game="glimpse"][data-lv="5"] { --chip: rgba(255,255,255,.16); }
 /* Stacks: the station, the harbor, the bakery, the ice cream parlor */
 [data-scene="stacks"][data-lv="2"], .scene[data-game="stacks"][data-look="station"] { --bg1: #E6EDF2; --bg2: #8FA5B8; --ink: #1B2A38; --ink2: rgba(27,42,56,.7); --chip: rgba(255,255,255,.6); --btn: #1B2A38; --btn-ink: #F2F6FA; --halo: rgba(240,246,252,.75); }
 [data-scene="stacks"][data-lv="3"] { --bg1: #CFE6F7; --bg2: #6E9CC4; --ink: #14283D; --ink2: rgba(20,40,61,.7); --btn: #14283D; --btn-ink: #F1F7FD; --halo: rgba(235,245,255,.7); }

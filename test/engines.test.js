@@ -565,24 +565,25 @@ test('glimpse: runs survive serialize/restore', () => {
   assert.deepEqual(G.plan(p, back, 1000 / 60), G.plan(p, run, 1000 / 60));
 });
 
-test('glimpse: every round gets the scene of its level and takes turns with its targets', () => {
-  for (const lv of [2, 3, 4, 5]) {
+test('glimpse: every level is a photo trip with its own animals and one thing to find', () => {
+  const trip = { 1: 'meadow', 2: 'pond', 3: 'forest', 4: 'jungle', 5: 'night' };
+  const seen = new Set();
+  for (const lv of [1, 2, 3, 4, 5]) {
     const L = G.levels[lv];
     for (let s = 0; s < 12; s++) {
       const m = G.generate(lv, 300 + s);
-      assert.ok(G.themeOrder.includes(m.theme));
+      assert.equal(m.theme, trip[lv], 'each level has its own trip, so moving up is arriving somewhere new');
       const th = G.themes[m.theme];
-      assert.deepEqual(m.pair, th.pairs[L.pair]);
+      assert.deepEqual(m.pair, th.pair);
       assert.equal(m.distractor, th.distractor);
-      const shares = th.targets.map((tg) => m.trials.filter((t) => t.tg === tg).length);
-      assert.ok(Math.max(...shares) - Math.min(...shares) <= 1, 'targets take turns: ' + shares.join(' '));
+      assert.ok(m.trials.every((t) => t.tg === th.target), 'the same thing to find all trip');
+      assert.equal(m.target, th.target);
       assert.equal(m.n, L.looks);
-      assert.ok(!th.targets.includes(th.distractor), 'a target is never the distractor');
+      assert.ok(th.target !== th.distractor && !th.pair.includes(th.target), 'the thing to find is never what is in its way, nor a middle animal');
     }
+    seen.add(G.themes[trip[lv]].target);
   }
-  // each level has its own scene, so moving up is arriving somewhere new
-  const scene = { 1: 'meadow', 2: 'meadow', 3: 'sea', 4: 'sea', 5: 'sky' };
-  for (const lv of [1, 2, 3, 4, 5]) for (let s = 0; s < 8; s++) assert.equal(G.generate(lv, 50 + s).theme, scene[lv]);
+  assert.equal(seen.size, 5, 'a new thing to find on every trip');
 });
 
 test('conduit: no pipe starts pointing off the board, and every board needs a bounded number of turns', () => {
@@ -767,27 +768,35 @@ test('switchback: place, animal, signs, things and road follow the level', () =>
       assert.equal(p.signs[0].go, 1, 'the first sign is a target');
       let run = 1;
       for (let i = 1; i < p.signs.length; i++) { run = p.signs[i].go === p.signs[i - 1].go ? run + 1 : 1; assert.ok(run <= 3, 'never more than three of a kind in a row'); }
-      for (const sg of p.signs) {
-        if (sg.go) assert.deepEqual([sg.shape, sg.glyph], ['tri', p.target]);
-        else assert.ok(!(sg.shape === 'tri' && sg.glyph === p.target), 'another sign is never the target');
-      }
-      if (L.foil === 'similar') for (const sg of p.signs.filter((x) => !x.go)) assert.ok((p.place === 'village' ? ['goose', 'swan', 'hen'] : ['reindeer', 'deer', 'bear']).includes(sg.glyph));
-      // gaps: the level's gap, or 3 s more where the animal steps out (never before the third sign)
+      // from halfway (levels 4 and 5) the new animal's sign is the one to tap, and the first animal's no longer
+      assert.equal(!!p.turn, !!L.turn);
+      if (p.turn) assert.equal(p.turn.to, B.turnTo[p.place]);
+      p.signs.forEach((sg, k) => {
+        const tg = p.turn && k >= p.turn.k ? p.turn.to : p.target;
+        if (sg.go) assert.deepEqual([sg.shape, sg.glyph], ['tri', tg]);
+        else assert.ok(!(sg.shape === 'tri' && sg.glyph === tg), 'another sign is never the one to tap');
+        if (!sg.go && sg.glyph === p.target) assert.ok(p.turn && k >= p.turn.k, 'the first animal is another sign only after the turn');
+      });
+      if (L.foil === 'similar') for (const sg of p.signs.filter((x) => !x.go)) assert.ok((p.place === 'village' ? ['goose', 'swan', 'hen', 'duck'] : ['reindeer', 'deer', 'bear', 'moose']).includes(sg.glyph));
+      // gaps: the level's gap, plus 3 s where the animal steps out, 4.6 s at a fork and 3.2 s at the new animal (never before the third sign)
       assert.equal(p.beasts.length, L.beasts);
-      assert.ok(p.beasts[0].t > p.signs[2].t);
+      assert.equal(p.forks.length, L.forks);
+      assert.equal(p.night, !!L.night);
+      const events = p.beasts.map((e) => [e.t, 3]).concat(p.forks.map((e) => [e.t, 4.6]), p.turn ? [[p.turn.t, 3.2]] : []);
+      for (const [et] of events) assert.ok(et > p.signs[2].t);
       for (let i = 1; i < p.signs.length; i++) {
-        const a = p.signs[i - 1], b = p.signs[i], beast = p.beasts.find((x) => x.t > a.t && x.t < b.t);
-        if (beast) {
-          assert.ok(Math.abs(b.t - beast.t - 3) < 0.011);
-          assert.ok(beast.t - a.t >= L.gap - 0.36 && beast.t - a.t <= L.gap + 0.36);
+        const a = p.signs[i - 1], b = p.signs[i], e = events.find(([et]) => et > a.t && et < b.t);
+        if (e) {
+          assert.ok(Math.abs(b.t - e[0] - e[1]) < 0.011);
+          assert.ok(e[0] - a.t >= L.gap - 0.36 && e[0] - a.t <= L.gap + 0.36);
         } else assert.ok(b.t - a.t >= L.gap - 0.36 && b.t - a.t <= L.gap + 0.36, 'gap ' + (b.t - a.t));
       }
-      // a sign is always gone before the next sign or the animal
+      // a sign is always gone before whatever comes next
       const run2 = B.newRun(p);
       run2.ms = 99999;
       for (let k = 0; k < p.signs.length; k++) {
         const t = p.signs[k].t, ends = t + B.windowMs(p, run2, k) / 1000;
-        const next = Math.min(p.signs[k + 1] ? p.signs[k + 1].t : p.duration, ...p.beasts.map((e) => e.t).filter((e) => e > t));
+        const next = Math.min(p.signs[k + 1] ? p.signs[k + 1].t : p.duration, ...events.map((e) => e[0]).filter((e) => e > t));
         assert.ok(ends <= next - 0.449, 'sign ' + k + ' clear of what follows');
       }
       // things to collect: in order along the road, on the road
@@ -843,8 +852,10 @@ test('switchback: the sign time and speed staircases', () => {
   assert.ok(B.item(p, rb, 0, true));
   assert.ok(!B.item(p, rb, 0, true), 'each thing counts once');
   assert.ok(B.item(p, rb, 1, false));
+  assert.deepEqual(B.fork(p, rb, { right: true }), { i: 1, cls: 'right_lane' });
+  assert.equal(B.fork(p, rb, { right: false }).cls, 'wrong_lane');
   const sb = B.summary(p, rb);
-  assert.deepEqual([sb.animals, sb.shooed, sb.animal_rt_mean_ms, sb.items, sb.collected], [2, 1, 812, 2, 1]);
+  assert.deepEqual([sb.animals, sb.shooed, sb.animal_rt_mean_ms, sb.items, sb.collected, sb.forks, sb.right_lanes], [2, 1, 812, 2, 1, 2, 1]);
   // speed: up while on the road, down when off it, within the level's range
   const r2 = B.newRun(p);
   B.speedStep(p, r2, 1);
@@ -869,11 +880,11 @@ test('switchback: the sign time and speed staircases', () => {
   B.record(pr, rp, { responded: true, rt: 700, planned: 2600 });
   assert.equal(rp.ms, null);
   assert.equal(B.speedStep(pr, rp, 1), null);
-  // practice: on the farm, the cow sign, another sign, a cow on the road, the cow sign again
+  // practice: on the farm, the cow sign, another sign, the cow sign again (the animal on the road comes at level 2)
   assert.equal(pr.place, 'farm');
   assert.equal(pr.target, 'cow');
   assert.deepEqual(pr.signs.map((x) => x.go), [1, 0, 1]);
-  assert.equal(pr.beasts.length, 1);
+  assert.equal(pr.beasts.length, 0);
   for (let k = 0; k < pr.signs.length; k++) {
     const t = pr.signs[k].t, ends = t + B.windowMs(pr, rp, k) / 1000;
     const next = Math.min(pr.signs[k + 1] ? pr.signs[k + 1].t : pr.duration, ...pr.beasts.map((e) => e.t).filter((e) => e > t));
