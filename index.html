@@ -297,6 +297,12 @@ button { cursor: pointer; }
 .car.q-wasted .halo, .car.q-blocked .halo { stroke: var(--meh); }
 .car.q-dead_end .halo, .car.q-in_dead_end .halo, .car.stuck .halo { stroke: var(--bad); }
 .car.stuck .halo { animation: blink 0.9s ease-in-out infinite; }
+/* every level its own ground: a boardwalk round the sand, the city's neon, packed snow, the ferry's deck */
+.board[data-kit="beach"] { --ob-road: #C99A62; --ob-lot: #EED7A4; --ob-stall: #B88E5A; --ob-stall-o: 0.45; --ob-curb: #8E6436; --ob-curb-w: 1; }
+.board[data-kit="beach"] .road-dash { stroke: #A57844; stroke-width: 4.2; stroke-dasharray: 0.35 1.6; opacity: 0.7; }
+.board[data-kit="beach"] .stall { stroke-dasharray: 0.7 0.5; }
+.board[data-kit="ski"] { --ob-road: #CCD8E7; --ob-lot: #E9F0F8; --ob-dash: #FFFFFF; --ob-stall: #A9BCD3; --ob-stall-o: 0.5; --ob-curb: #FFFFFF; --ob-curb-w: 1.8; }
+.board[data-kit="ferry"] { --ob-road: #26323C; --ob-lot: #3A4A56; --ob-dash: #FFC83A; --ob-stall: #FFC83A; --ob-stall-o: 0.32; --ob-curb: #FFC83A; }
 .car:focus, .car:focus-visible { outline: none; }
 .car:focus-visible .halo { stroke: #7FB0FF; }
 
@@ -342,27 +348,27 @@ button { cursor: pointer; }
 /* pipe shadows are one layer, so where two overlap they do not get darker */
 .shadows { opacity: 0.2; }
 .tshade { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tshade line { stroke: #2A1405; stroke-width: 3.5; stroke-linecap: butt; fill: none; }
-.tshade circle, .tshade rect { fill: #2A1405; }
+.tshade line { stroke: var(--cd-shadow, #2A1405); stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+.tshade circle, .tshade rect { fill: var(--cd-shadow, #2A1405); }
 .tile { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tile .case { stroke: #EADCC4; stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+.tile .case { stroke: var(--cd-case, #EADCC4); stroke-width: 3.5; stroke-linecap: butt; fill: none; }
 /* where a pipe stops: a collar just inside the tile's edge */
-.tile .collar { fill: #D6C29F; }
-.tile .hub { fill: #EADCC4; }
-.tile .water { stroke: #2E9CF2; stroke-width: 3.5; stroke-linecap: butt; fill: none; stroke-dasharray: 3.9 5; opacity: 0; transition: opacity 0.2s; }
-.tile .whub { fill: #2E9CF2; opacity: 0; transition: opacity 0.2s; transform-box: fill-box; transform-origin: center; }
+.tile .collar { fill: var(--cd-collar, #D6C29F); }
+.tile .hub { fill: var(--cd-hub, var(--cd-case, #EADCC4)); }
+.tile .water { stroke: var(--cd-water, #2E9CF2); stroke-width: 3.5; stroke-linecap: butt; fill: none; stroke-dasharray: 3.9 5; opacity: 0; transition: opacity 0.2s; }
+.tile .whub { fill: var(--cd-water, #2E9CF2); opacity: 0; transition: opacity 0.2s; transform-box: fill-box; transform-origin: center; }
 .tile.wet .water, .tile.wet .whub { opacity: 1; transition: none; }
-.tile .core { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.1; stroke-linecap: round; fill: none; }
-.tile .flow { stroke: #D8F1FF; stroke-width: 1.05; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; }
+.tile .core { stroke: var(--cd-core, rgba(255, 255, 255, 0.35)); stroke-width: 1.1; stroke-linecap: round; fill: none; }
+.tile .flow { stroke: var(--cd-flow, #D8F1FF); stroke-width: 1.05; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; }
 .tile.wet .flow { opacity: 1; transition-delay: var(--d, 0ms); animation: flow 0.7s linear infinite; }
 .tile.wet .flow.in { animation-direction: reverse; }
-.board.solved .tile.wet .water { stroke: #22A6FF; }
-.board.solved .tile.wet .whub { fill: #22A6FF; }
+.board.solved .tile.wet .water { stroke: var(--cd-water2, #22A6FF); }
+.board.solved .tile.wet .whub { fill: var(--cd-water2, #22A6FF); }
 /* a coupling across the gap where two pipe ends meet; it fills when the water passes */
-.joints .bridge { fill: #EADCC4; transition: fill 0.2s; transform-box: fill-box; transform-origin: center; }
+.joints .bridge { fill: var(--cd-case, #EADCC4); transition: fill 0.2s; transform-box: fill-box; transform-origin: center; }
 .joints .bridge.snap { animation: cdsnap 0.32s cubic-bezier(.3,1.8,.5,1) 0.17s both; }
-.joints .bridge.wet { fill: #2E9CF2; transition: fill 0.12s linear var(--d, 0ms); }
-.board.solved .joints .bridge.wet { fill: #22A6FF; }
+.joints .bridge.wet { fill: var(--cd-water, #2E9CF2); transition: fill 0.12s linear var(--d, 0ms); }
+.board.solved .joints .bridge.wet { fill: var(--cd-water2, #22A6FF); }
 @keyframes cdsnap { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .cell .ring { fill: none; stroke-width: 1; stroke: transparent; transition: stroke 0.2s; }
 .cell.q-optimal .ring { stroke: var(--good); }
@@ -414,7 +420,7 @@ button { cursor: pointer; }
 @keyframes bflap { from { transform: scaleX(1); } to { transform: scaleX(0.22); } }
 @keyframes bperch { 0%, 55%, 100% { transform: scaleX(1); } 70% { transform: scaleX(0.35); } 85% { transform: scaleX(0.9); } }
 /* the spring */
-.well-pool { fill: #2E9CF2; }
+.well-pool { fill: var(--cd-water, #2E9CF2); }
 .well-rim { fill: none; stroke: #CDEBFF; stroke-width: 0.7; }
 .well-ripple { fill: none; stroke: #CDEBFF; stroke-width: 0.5; transform-box: fill-box; transform-origin: center; animation: cdripple 2.6s ease-out infinite; }
 .well-drop { fill: #FFFFFF; }
@@ -423,13 +429,74 @@ button { cursor: pointer; }
 @keyframes cdripple { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.34); opacity: 0; } }
 @keyframes cdbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.3px); } }
 /* leaks: drops fly from an open end and a puddle spreads where they land */
-.puddle { fill: #55B1F4; transform-box: fill-box; transform-origin: center; animation: cdpuddle 1.4s ease-out var(--ld, 0ms) both; }
+.puddle { fill: var(--cd-puddle, #55B1F4); transform-box: fill-box; transform-origin: center; animation: cdpuddle 1.4s ease-out var(--ld, 0ms) both; }
 .puddle .glint { fill: #A6DBFF; }
-.drip { fill: #6CC2FF; opacity: 0; animation: drip 0.9s ease-in var(--ld, 0ms) infinite; }
+.drip { fill: var(--cd-drip, #6CC2FF); opacity: 0; animation: drip 0.9s ease-in var(--ld, 0ms) infinite; }
 .drip:nth-child(2) { animation-delay: calc(var(--ld, 0ms) + 0.3s); }
 .drip:nth-child(3) { animation-delay: calc(var(--ld, 0ms) + 0.6s); }
 @keyframes cdpuddle { from { transform: scale(0.15); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .plant.wet .sway, .well-ripple, .well-bob, .plant.burst .spark, .board.solved .plant .hopper { animation: none; } .well-ripple { opacity: 0; } }
+/* ---------------------------------------------- Conduit: every level a place of its own */
+/* L2 the farmyard: galvanized pipes over straw; troughs fill and animals come to drink */
+.board.conduit[data-kit="farm"] { --cd-soil: #6A4A2C; --cd-bed: #B58D56; --cd-case: #BCC4CC; --cd-collar: #8C96A1; --cd-core: rgba(255, 255, 255, 0.5); --cd-shadow: #2A1A0A; --cd-water: #3AA0F0; --cd-water2: #28A9FF; --cd-t1: #E8C866; }
+/* L3 the Japanese garden: bamboo pipes, nodes for collars, over raked gravel; ponds with koi */
+.board.conduit[data-kit="japan"] { --cd-soil: #4E524C; --cd-bed: #ECE6D5; --cd-case: #BBCB5E; --cd-collar: #6F8C2A; --cd-core: rgba(255, 255, 235, 0.5); --cd-shadow: #3A3626; --cd-water: #3DB2D8; --cd-water2: #2EBFE8; --cd-flow: #E2F8FF; --cd-puddle: #5CC2E2; --cd-drip: #74CFEA; }
+/* L4 the desert oasis: open stone channels in the sand; palms */
+.board.conduit[data-kit="oasis"] { --cd-soil: #B6874C; --cd-bed: #F4DDAA; --cd-case: #C2935A; --cd-collar: #9C6E3E; --cd-core: rgba(80, 48, 16, 0.45); --cd-shadow: #5A3A14; --cd-water: #22BCD6; --cd-water2: #14C8E2; --cd-puddle: #4FCDE0; --cd-drip: #6ED8E8; }
+.board.conduit[data-kit="oasis"] .tile.wet .core { stroke: rgba(255, 255, 255, 0.4); }
+/* L5 the palace garden at night: marble channels with gold collars on dark marble; fountains */
+.board.conduit[data-kit="palace"] { --cd-soil: #15261D; --cd-bed: #2D3243; --cd-case: #E6E3EE; --cd-collar: #E2B552; --cd-core: rgba(255, 255, 255, 0.6); --cd-shadow: #000000; --cd-water: #45D6FF; --cd-water2: #72E6FF; --cd-flow: #EAFCFF; --cd-puddle: #45D6FF; --cd-drip: #8AE8FF; }
+.board.conduit[data-kit="palace"] .bed-shade { fill: rgba(0, 0, 0, 0.25); }
+.board.conduit .rake { fill: none; stroke: #D2CAB2; stroke-width: 0.28; stroke-linecap: round; }
+.board.conduit .ripple { fill: none; stroke: #E2C38C; stroke-width: 0.3; stroke-linecap: round; }
+.board.conduit .trim { fill: none; stroke: #C9A24A; stroke-opacity: 0.45; stroke-width: 0.25; }
+.board.conduit .straw { fill: none; stroke: #E6C66E; stroke-width: 0.28; stroke-linecap: round; opacity: 0.75; }
+.board.conduit .moss circle { fill: #6E9F57; }
+.board.conduit .moss circle:nth-child(2) { fill: #86B666; }
+.board.conduit .pebbles ellipse { fill: #BE9B6C; }
+.board.conduit .pebbles .p2 { fill: #A88A62; }
+.board.conduit .nightflower circle { fill: #F4F1FF; opacity: 0.85; }
+.board.conduit .nightflower .eye { fill: #FFE27A; opacity: 1; }
+/* the trough fills, then the animal comes up behind it and drinks now and then */
+.plant.farm .trough-water { fill: var(--cd-water); transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); transition: transform 0.4s ease-out; transition-delay: var(--d, 0ms); }
+.plant.farm.wet .trough-water { transform: none; }
+.plant.farm .beast { opacity: 0; transform: translateY(2.6px); transition: transform 0.5s cubic-bezier(.34,1.56,.64,1), opacity 0.25s; transition-delay: calc(var(--d, 0ms) + 220ms); }
+.plant.farm.wet .beast { opacity: 1; transform: none; }
+.plant.farm.wet .sip { animation: cdsip 2.8s ease-in-out calc(var(--d, 0ms) + 900ms + var(--sw, 0s)) infinite; }
+@keyframes cdsip { 0%, 55%, 100% { transform: translateY(0); } 66%, 86% { transform: translateY(0.6px); } }
+/* the pond fills, a koi swims round and a lily opens */
+.plant.japan .pool { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0.3); transition: transform 0.45s ease-out, opacity 0.3s; transition-delay: var(--d, 0ms); }
+.plant.japan.wet .pool { opacity: 1; transform: none; }
+.plant.japan .pool-water { fill: var(--cd-water); }
+.plant.japan .koi-ring, .plant.japan .lily { opacity: 0; transition: opacity 0.4s; transition-delay: calc(var(--d, 0ms) + 300ms); }
+.plant.japan.wet .koi-ring, .plant.japan.wet .lily { opacity: 1; }
+.plant.japan .swim { transform-box: view-box; transform-origin: 0 0; animation: cdswim 8s linear var(--sw, 0s) infinite; }
+@keyframes cdswim { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* the palm: brown fronds hang while dry; with water they lift green and the dates show */
+.plant.oasis .frond { transform-box: view-box; transform-origin: 0 0; transform: rotate(calc(var(--a) + var(--dr))) scaleY(var(--fy)); transition: transform 0.55s cubic-bezier(.34,1.56,.64,1); transition-delay: var(--d, 0ms); }
+.plant.oasis .frond path { fill: #9C7440; transition: fill 0.4s; transition-delay: var(--d, 0ms); }
+.plant.oasis .frond .mid { fill: none; stroke: #74522A; stroke-width: 0.16; }
+.plant.oasis.wet .frond { transform: rotate(var(--a)) scaleY(var(--fy)); }
+.plant.oasis.wet .frond path { fill: #3E9E4C; }
+.plant.oasis.wet .frond:nth-child(even) path { fill: #35904A; }
+.plant.oasis.wet .frond .mid { fill: none; stroke: #86D48F; }
+.plant.oasis .nuts { fill: #7A4A22; opacity: 0; transition: opacity 0.3s; transition-delay: calc(var(--d, 0ms) + 300ms); }
+.plant.oasis.wet .nuts { opacity: 1; }
+.plant.oasis .pool-water { fill: var(--cd-water); opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0.3); transition: transform 0.4s, opacity 0.3s; transition-delay: var(--d, 0ms); }
+.plant.oasis.wet .pool-water { opacity: 0.9; transform: none; }
+/* the fountain: the basin fills, the jets rise and play, and it glows in the dark */
+.plant.palace .glow { fill: var(--cd-water); opacity: 0; transition: opacity 0.5s; transition-delay: var(--d, 0ms); }
+.plant.palace.wet .glow { opacity: 0.12; }
+.plant.palace.wet .glow.g2 { opacity: 0.16; }
+.plant.palace .pool-water { fill: var(--cd-water); opacity: 0; transition: opacity 0.35s; transition-delay: var(--d, 0ms); }
+.plant.palace.wet .pool-water { opacity: 1; }
+.plant.palace .jets { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); opacity: 0; transition: transform 0.5s cubic-bezier(.34,1.56,.64,1), opacity 0.2s; transition-delay: calc(var(--d, 0ms) + 150ms); }
+.plant.palace.wet .jets { transform: none; opacity: 1; }
+.plant.palace .jet { fill: none; stroke: var(--cd-flow); stroke-width: 0.38; stroke-linecap: round; stroke-dasharray: 0.7 0.5; }
+.plant.palace.wet .jet { animation: cdjet 0.6s linear infinite; }
+.plant.palace .drop { fill: var(--cd-flow); }
+@keyframes cdjet { to { stroke-dashoffset: -1.2px; } }
+@media (prefers-reduced-motion: reduce) { .plant.farm.wet .sip, .plant.japan .swim, .plant.palace.wet .jet { animation: none; } }
 
 /* ------------------------------------------------------------ Tumbler */
 .vault {
@@ -549,6 +616,81 @@ button { cursor: pointer; }
 .vbtn.go:active { box-shadow: 0 1px 0 #C98A0B; transform: translateY(3px); }
 .vbtn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
 .vbtn.go[disabled] { background: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.75); opacity: 1; }
+
+/* ------------------------------------------------ Tumbler: the lock is the board */
+/* every piece is drawn by its own lock (bike lock rings, locker magnets, door keys, safe lamps,
+   vault gems); the element only holds it and carries the marks around it */
+.tb-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.gem[data-kit] { background: none; box-shadow: none; border-radius: 10px; }
+.gem[data-kit] > svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.gem[data-kit="magnet"], .gem[data-kit="lamp"], .gem[data-kit="jewel"] { border-radius: 50%; }
+.gem[data-kit="key"] { border-radius: 11px; }
+.gem[data-kit].empty, .row.active .gem[data-kit].empty { background: none; box-shadow: none; }
+.row.active .gem[data-kit].empty.up-next { box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.95); animation: breathe 1.3s ease-in-out infinite; }
+.gem[data-kit].m0 { box-shadow: none; }
+.gem[data-kit="lamp"]:not(.empty) > svg { filter: drop-shadow(0 0 5px var(--c)); }
+.gem[data-kit="lamp"].m0 > svg { filter: none; }
+/* on a clue tile a white outline keeps the piece clear of it, whatever its shape */
+.clue .gem[data-kit].m2, .clue .gem[data-kit].m1 { box-shadow: none; }
+.clue .gem[data-kit].m2 .edge, .clue .gem[data-kit].m1 .edge { stroke: #FFFFFF; stroke-width: 4px; stroke-opacity: 1; stroke-dasharray: none; paint-order: stroke; }
+.palette .gem[data-kit].k1 { box-shadow: 0 0 0 3.5px #FFC83A, 0 0 14px rgba(255, 200, 58, 0.55); }
+.palette .gem[data-kit].k2 { box-shadow: 0 0 0 3.5px #3DDC84, 0 0 12px rgba(61, 220, 132, 0.45); }
+.palette .gem[data-kit].k0 { box-shadow: none; }
+.tb-lock .sock .gem[data-kit].empty { width: 38px; height: 38px; }
+.tb-lock .sock:not(.found) { background: none; box-shadow: none; }
+
+/* L1 the bike lock: black rubber with ribs; the rings sit side by side on a steel barrel */
+.vault[data-kit="ring"] { border-radius: 30px; background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 2px, rgba(0, 0, 0, 0) 2px 7px), linear-gradient(160deg, #3D404C 0%, #282B34 55%, #1C1E25 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.12) inset, 0 -3px 0 rgba(0, 0, 0, 0.4) inset, 0 18px 40px rgba(10, 6, 40, 0.5); }
+.vault[data-kit="ring"]::before, .vault[data-kit="ring"]::after { display: none; }
+.vault[data-kit="ring"] .tb-lock { gap: 3px; padding: 6px 18px; border-radius: 16px; background: linear-gradient(180deg, #474C5B 0%, #9AA1B1 22%, #EEF1F6 46%, #A7AEBD 70%, #474C5B 100%); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5); }
+.vault[data-kit="ring"] .tb-lock .sock { width: 30px; height: 44px; border-radius: 7px; }
+.vault[data-kit="ring"] .tb-lock .gem, .vault[data-kit="ring"] .tb-lock .sock .gem[data-kit].empty { width: 30px; height: 42px; }
+.vault[data-kit="ring"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="ring"] .row { background: rgba(0, 0, 0, 0.32); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5); border-radius: 12px; }
+.vault[data-kit="ring"] .row.active { background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.24); }
+.vault[data-kit="ring"] .vbtn.go:not([disabled]) { background: #FFC83A; color: #1C1E25; }
+
+/* L2 the school locker: painted steel; magnets stick in rows on the door */
+.vault[data-kit="magnet"] { border-radius: 10px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 26%), linear-gradient(160deg, #52A7AD 0%, #45999F 50%, #3A8B91 100%); box-shadow: 0 0 0 3px #1E4A50, 0 2px 0 rgba(255, 255, 255, 0.25) inset, 0 18px 40px rgba(6, 30, 34, 0.45); }
+.vault[data-kit="magnet"]::before, .vault[data-kit="magnet"]::after { display: none; }
+.vault[data-kit="magnet"] .tb-lock { border-radius: 10px; background: rgba(16, 54, 58, 0.5); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.2); }
+.vault[data-kit="magnet"] .tb-lock .sock.found { background: rgba(61, 220, 132, 0.22); }
+.vault[data-kit="magnet"] .row { background: rgba(14, 52, 56, 0.24); box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.14); border-radius: 9px; }
+.vault[data-kit="magnet"] .row.active { background: rgba(255, 255, 255, 0.13); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
+.vault[data-kit="magnet"] .row.later { background: rgba(14, 52, 56, 0.3); }
+.vault[data-kit="magnet"] .vbtn.go:not([disabled]) { background: #FFFFFF; color: #1E4A50; box-shadow: 0 4px 0 #9EC4C6, 0 8px 18px rgba(0, 0, 0, 0.25); }
+.vault[data-kit="magnet"] .vbtn.ghost { background: rgba(14, 52, 56, 0.35); }
+
+/* L3 the front door: painted wood in panels; the keys sit in a brass keypad */
+.vault[data-kit="key"] { border-radius: 12px; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0 2px, rgba(0, 0, 0, 0) 2px 9px, rgba(255, 255, 255, 0.05) 9px 11px, rgba(0, 0, 0, 0) 11px 19px), linear-gradient(160deg, #9C673F 0%, #7E4D2B 55%, #633A1F 100%); box-shadow: 0 0 0 4px #3A1E0E, 0 2px 0 rgba(255, 255, 255, 0.15) inset, 0 18px 40px rgba(40, 16, 4, 0.5); }
+.vault[data-kit="key"] .tb-lock { border-radius: 12px; background: linear-gradient(180deg, #F6D98A 0%, #D6A84A 50%, #A87A22 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.45) inset, 0 3px 8px rgba(0, 0, 0, 0.4); }
+.vault[data-kit="key"] .tb-lock .sock { border-radius: 11px; }
+.vault[data-kit="key"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="key"] .row { border-radius: 8px; background: rgba(48, 22, 8, 0.35); box-shadow: inset 0 0 0 2px rgba(255, 214, 150, 0.12), inset 0 3px 6px rgba(0, 0, 0, 0.45); }
+.vault[data-kit="key"] .row.active { background: rgba(255, 230, 180, 0.1); box-shadow: inset 0 0 0 2px rgba(255, 230, 180, 0.42); }
+.vault[data-kit="key"] .palette { padding: 8px 10px; border-radius: 14px; background: linear-gradient(180deg, #4A2E18, #2E1A0C); box-shadow: inset 0 0 0 2px #C99A3E, 0 3px 8px rgba(0, 0, 0, 0.35); }
+.vault[data-kit="key"] .vbtn.go:not([disabled]) { background: linear-gradient(180deg, #FBE29A, #D9AA4A); color: #3A1E0E; box-shadow: 0 4px 0 #8C5E14, 0 8px 18px rgba(0, 0, 0, 0.3); }
+.vault[data-kit="key"] .vbtn.ghost { background: rgba(255, 230, 180, 0.14); color: #FFF4E0; }
+
+/* L4 the safe: brushed steel in a heavy frame; the lamps light in black strips */
+.vault[data-kit="lamp"] { border-radius: 18px; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, rgba(0, 0, 0, 0) 1px 3px), linear-gradient(160deg, #9098A6 0%, #6F7785 50%, #545B69 100%); box-shadow: 0 0 0 5px #3B414C, 0 0 0 7px #262B33, 0 2px 0 rgba(255, 255, 255, 0.3) inset, 0 18px 40px rgba(0, 0, 0, 0.5); }
+.vault[data-kit="lamp"] .tb-lock { border-radius: 12px; background: #1B1F26; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.28); }
+.vault[data-kit="lamp"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="lamp"] .row { border-radius: 10px; background: #1E222A; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.22); }
+.vault[data-kit="lamp"] .row.active { background: #2A303B; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.32); }
+.vault[data-kit="lamp"] .row.later { background: rgba(0, 0, 0, 0.32); }
+.vault[data-kit="lamp"] .vbtn.go:not([disabled]) { background: linear-gradient(180deg, #F7F9FC, #BCC3CE); color: #262B35; box-shadow: 0 4px 0 #5E6676, 0 8px 18px rgba(0, 0, 0, 0.3); }
+.vault[data-kit="lamp"] .vbtn.ghost { background: rgba(0, 0, 0, 0.22); }
+
+/* L5 the vault: dark velvet in a gold frame; the gems go into gold settings */
+.vault[data-kit="jewel"] { border-radius: 22px; background: radial-gradient(ellipse at 50% 20%, #352A63 0%, #201942 55%, #140F2B 100%); box-shadow: 0 0 0 3px #E9BE55, 0 0 0 6px #8A6014, 0 2px 0 rgba(255, 255, 255, 0.12) inset, 0 18px 40px rgba(0, 0, 0, 0.6); }
+.vault[data-kit="jewel"] .tb-lock { border-radius: 14px; background: linear-gradient(180deg, #FFF3C2 0%, #E9BE55 42%, #B8862A 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.5) inset, 0 3px 8px rgba(0, 0, 0, 0.45); }
+.vault[data-kit="jewel"] .tb-lock .sock.found { background: rgba(20, 15, 43, 0.35); box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="jewel"] .row { border-radius: 14px; background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55); }
+.vault[data-kit="jewel"] .row.active { background: rgba(255, 233, 168, 0.08); box-shadow: inset 0 0 0 2px rgba(255, 233, 168, 0.4); }
+.vault[data-kit="jewel"] .vbtn.go:not([disabled]) { background: linear-gradient(180deg, #FFEDB0, #E2B552); color: #2A1B05; box-shadow: 0 4px 0 #8C5E14, 0 8px 18px rgba(0, 0, 0, 0.35); }
+/* solved: the frame stays and the lock glows */
+.vault[data-kit].open { box-shadow: 0 0 0 3px var(--gold), 0 0 40px rgba(255, 200, 58, 0.6), 0 18px 40px rgba(10, 6, 40, 0.45); }
 
 /* ------------------------------------------------------------ Glimpse */
 @media (min-width: 700px) {
@@ -1230,7 +1372,7 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
 .scene[data-game="outbound"][data-lv="5"] .curb { stroke-dasharray: 1.6 1.2; }
 /* Conduit: the vegetable patch, the greenhouse, the desert oasis, the palace garden at night */
 [data-scene="conduit"][data-lv="2"], .scene[data-game="conduit"][data-lv="2"] { --bg1: #FFF1C4; --bg2: #D9B25E; --ink: #3A2A10; --ink2: rgba(58,42,16,.7); --chip: rgba(255,255,255,.55); --btn: #3A2A10; --btn-ink: #FFF8E6; --halo: rgba(255,248,225,.75); --cd-soil: #4E3220; --cd-bed: #6E4A2C; --cd-t1: #8DB64A; --cd-t2: #6E9A38; }
-[data-scene="conduit"][data-lv="3"], .scene[data-game="conduit"][data-lv="3"] { --bg1: #F2FFF9; --bg2: #9AD8C0; --ink: #12392C; --ink2: rgba(18,57,44,.7); --chip: rgba(255,255,255,.6); --btn: #12392C; --btn-ink: #F2FFF9; --halo: rgba(240,255,250,.75); --cd-soil: #5D6A64; --cd-bed: #7C8A83; --cd-t1: #5DB070; --cd-t2: #449058; }
+[data-scene="conduit"][data-lv="3"], .scene[data-game="conduit"][data-lv="3"] { --bg1: #FFF2F2; --bg2: #B7DABE; --ink: #1F3A2A; --ink2: rgba(31,58,42,.72); --chip: rgba(255,255,255,.6); --btn: #1F3A2A; --btn-ink: #FFF6F6; --halo: rgba(255,244,246,.75); }
 [data-scene="conduit"][data-lv="4"], .scene[data-game="conduit"][data-lv="4"] { --bg1: #FFE2AE; --bg2: #E07A44; --ink: #3E1A08; --ink2: rgba(62,26,8,.7); --chip: rgba(255,255,255,.5); --btn: #3E1A08; --btn-ink: #FFF3E6; --halo: rgba(255,240,225,.7); --cd-soil: #A86F3A; --cd-bed: #CC9658; --cd-t1: #A7A24A; --cd-t2: #8A8A3A; }
 [data-scene="conduit"][data-lv="5"], .scene[data-game="conduit"][data-lv="5"] { --bg1: #2E5A48; --bg2: #0A1C14; --ink: #EFFFF5; --ink2: rgba(239,255,245,.74); --chip: rgba(255,255,255,.14); --btn: #FFD23F; --btn-ink: #0A1C14; --halo: rgba(255,230,160,.35); --cd-soil: #2F2219; --cd-bed: #4A3626; --cd-t1: #4E8F55; --cd-t2: #3A7444; }
 /* Tumbler: the school locker, the front door, the safe, the vault */
@@ -1238,7 +1380,6 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
 [data-scene="tumbler"][data-lv="3"], .scene[data-game="tumbler"][data-lv="3"] { --bg1: #D9A06A; --bg2: #5A2E18; --halo: rgba(255,210,160,.4); --tb-v1: #8E5A36; --tb-v2: #6A3F24; --tb-v3: #4E2C18; --tb-r1: #FFE9A8; --tb-r2: #B8862A; --tb-off: #5A3A24; }
 [data-scene="tumbler"][data-lv="4"], .scene[data-game="tumbler"][data-lv="4"] { --bg1: #9AA3B2; --bg2: #262B35; --halo: rgba(220,230,245,.35); --tb-v1: #79818F; --tb-v2: #535A67; --tb-v3: #3B414C; --tb-r1: #F4F6FA; --tb-r2: #8D95A3; --tb-off: #444B57; }
 [data-scene="tumbler"][data-lv="5"], .scene[data-game="tumbler"][data-lv="5"] { --bg1: #4A3714; --bg2: #0B0803; --halo: rgba(255,214,120,.35); --tb-v1: #2C2414; --tb-v2: #1A150B; --tb-v3: #0E0B06; --tb-r1: #FFE9A8; --tb-r2: #C9962E; --tb-off: #3A2E14; }
-.scene[data-game="tumbler"][data-lv="5"] .vault:not(.open) { box-shadow: 0 0 0 2px #C9962E, 0 2px 0 rgba(255,255,255,.14) inset, 0 18px 40px rgba(0,0,0,.6); }
 /* Keepsake: the park in summer, autumn, winter and at night */
 [data-scene="keepsake"][data-lv="2"], .scene[data-game="keepsake"][data-lv="2"] { --bg1: #FFF6CC; --bg2: #FFB46B; --ink: #4A2A10; --ink2: rgba(74,42,16,.7); --btn: #4A2A10; --btn-ink: #FFF6E6; --halo: rgba(255,248,225,.75); }
 [data-scene="keepsake"][data-lv="3"], .scene[data-game="keepsake"][data-lv="3"] { --bg1: #FFE6CC; --bg2: #D9773E; --ink: #44200C; --ink2: rgba(68,32,12,.7); --btn: #44200C; --btn-ink: #FFF1E6; --halo: rgba(255,238,225,.7); }
@@ -3552,7 +3693,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.30.0';
+  const APP_VERSION = '2.31.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -3861,10 +4002,11 @@ PuzzleEnginesFactory(window);
   // ---------------------------------------------------------------- level looks
   // Every level of a game has a look of its own, so a new level is also a new place (practice
   // keeps the first look). The colors, the board's materials and the scene around it change;
-  // in Stacks the pieces and rules change too.
+  // in Outbound, Conduit and Tumbler the board and its pieces too (from app 2.31), and in Stacks
+  // the pieces and rules.
   const LOOK_NAMES = {
     outbound: ['the town lot', 'the beach', 'the city at night', 'the ski lodge', 'the ferry at sunset'],
-    conduit: ['the herb garden', 'the vegetable patch', 'the greenhouse', 'the desert oasis', 'the palace garden at night'],
+    conduit: ['the herb garden', 'the farmyard', 'the Japanese garden', 'the desert oasis', 'the palace garden at night'],
     tumbler: ['the bike lock', 'the school locker', 'the front door', 'the safe', 'the vault'],
     keepsake: ['the park in spring', 'the park in summer', 'the park in autumn', 'the park in winter', 'the park at night'],
     glimpse: ['the meadow', 'the pond', 'the forest', 'the jungle', 'the night walk'],
@@ -3915,14 +4057,35 @@ PuzzleEnginesFactory(window);
         + '<path d="M326 640l8-112h28l8 112z" fill="#FFFFFF"/><path d="M329 600h38l1.4 18h-40.8zM332 556h32l1.2 16h-34.4z" fill="#E23B36"/><rect x="330" y="512" width="36" height="18" rx="3" fill="#FFE27A"/><path d="M324 512h48l-24-16z" fill="#3A1430"/><path d="M300 652q48-22 96 0z" fill="#3A1430"/>',
     },
     conduit: {
+      // the farmyard: a red barn and round hay bales behind the fence
       2: () => sunSvg(320, 110, 34, '#FFF1A8')
+        + '<path d="M-14 720V636l40-34h44l40 34V720z" fill="#C8443A"/><path d="M-14 636l40-34h44l40 34" fill="none" stroke="#FFF4E6" stroke-width="5" stroke-linejoin="round"/>'
+        + '<path d="M-20 640l46-42h44l46 42" fill="none" stroke="#7A2A24" stroke-width="7" stroke-linejoin="round"/><rect x="22" y="652" width="44" height="68" fill="#9E3029"/><path d="M22 652l44 68M66 652l-44 68" stroke="#FFF4E6" stroke-width="4"/><rect x="22" y="652" width="44" height="68" fill="none" stroke="#FFF4E6" stroke-width="4"/>'
+        + [[318, 676, 30], [366, 690, 26]].map(([x, y, r]) => '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#E3B754"/><circle cx="' + x + '" cy="' + y + '" r="' + r * 0.62 + '" fill="none" stroke="#C99A3A" stroke-width="3"/><circle cx="' + x + '" cy="' + y + '" r="' + r * 0.28 + '" fill="none" stroke="#C99A3A" stroke-width="3"/>').join('')
         + '<path d="M0 742H400" stroke="#9A6A3A" stroke-width="7"/><path d="M0 704H400" stroke="#9A6A3A" stroke-width="7"/>'
         + Array.from({ length: 11 }, (_, i) => '<path d="M' + (i * 40 + 8) + ' 800V690l10-12 10 12V800z" fill="#C08A52"/><path d="M' + (i * 40 + 18) + ' 680V800" stroke="#A57240" stroke-width="2"/>').join('')
         + '<circle cx="54" cy="790" r="26" fill="#6DB33F"/><circle cx="54" cy="790" r="16" fill="#8FCF5A"/><circle cx="352" cy="794" r="24" fill="#6DB33F"/><circle cx="352" cy="794" r="14" fill="#8FCF5A"/>',
-      3: () => '<g stroke="#FFFFFF" stroke-opacity=".5" stroke-width="3" fill="none"><path d="M0 230L200 40 400 230"/>'
-        + Array.from({ length: 9 }, (_, i) => '<path d="M' + (i * 50) + ' ' + (i * 50 <= 200 ? 230 - i * 50 * 0.95 : 40 + (i * 50 - 200) * 0.95) + 'V800"/>').join('')
-        + '<path d="M0 420H400M0 610H400"/></g>'
-        + [[30, 790], [370, 786]].map(([x, y]) => '<path d="M' + (x - 22) + ' ' + (y - 34) + 'h44l-6 34h-32z" fill="#D9734A"/><path d="M' + x + ' ' + (y - 34) + 'c-14-12-20-30-14-46 8 12 12 26 14 46zM' + x + ' ' + (y - 34) + 'c12-16 26-22 40-20-10 12-22 18-40 20zM' + x + ' ' + (y - 34) + 'c-10-14-26-18-38-14 10 10 22 14 38 14z" fill="#3E9A55"/>').join(''),
+      // the Japanese garden: a cherry branch in blossom, bamboo, a red bridge over the stream
+      3: () => {
+        const blossom = (x, y, k) => Array.from({ length: 5 }, (_, j) => { const a = (j * Math.PI * 2) / 5 - Math.PI / 2; return '<circle cx="' + (x + Math.cos(a) * 4.6 * k).toFixed(1) + '" cy="' + (y + Math.sin(a) * 4.6 * k).toFixed(1) + '" r="' + (4.2 * k).toFixed(1) + '" fill="#FFC6D6"/>'; }).join('') + '<circle cx="' + x + '" cy="' + y + '" r="' + (2.4 * k).toFixed(1) + '" fill="#FF86AA"/>';
+        let v = '<path d="M0 744q100-16 200 0t200 0V800H0z" fill="#86CBE0"/><path d="M0 766q60-8 120 0t140 0 140 0" stroke="#C4ECF6" stroke-width="3" fill="none" opacity=".75"/>';
+        // the bridge: an arched deck, its rail and posts
+        let posts = '';
+        for (let k = 0; k <= 8; k++) { const t = k / 8, q = t * (1 - t); posts += '<path d="M' + (50 + 300 * t).toFixed(1) + ' ' + (792 - 368 * q).toFixed(1) + 'V' + (770 - 408 * q).toFixed(1) + '" stroke="#B42C25" stroke-width="5"/>'; }
+        v += '<path d="M50 792Q200 608 350 792" stroke="#C8342C" stroke-width="15" fill="none"/>' + posts
+          + '<path d="M50 770Q200 566 350 770" stroke="#E0483A" stroke-width="6" fill="none" stroke-linecap="round"/>';
+        // bamboo on the right
+        for (const x of [350, 374, 396]) {
+          v += '<rect x="' + (x - 6) + '" y="-10" width="12" height="820" fill="' + (x === 374 ? '#5E9440' : '#6FA34A') + '"/>';
+          for (let y = 40 + (x % 3) * 22; y < 800; y += 86) v += '<path d="M' + (x - 6) + ' ' + y + 'H' + (x + 6) + '" stroke="#3F6E28" stroke-width="3"/>';
+        }
+        v += ['M344 120q-34 -6 -52 14q30 2 52 -14z', 'M344 200q-30 8 -40 32q26 -10 40 -32z', 'M370 64q-30 -14 -54 0q30 8 54 0z'].map((d) => '<path d="' + d + '" fill="#5E9440"/>').join('');
+        // the cherry branch over the top, in blossom, and a few petals in the air
+        v += '<path d="M412 168C350 166 300 196 214 192M330 172C312 150 290 140 262 140M290 186C276 204 250 214 220 214" stroke="#5A3A2A" stroke-width="7" fill="none" stroke-linecap="round"/>';
+        v += [[372, 160, 1.1], [336, 168, 0.9], [300, 186, 1], [262, 138, 0.95], [236, 190, 1.1], [286, 146, 0.8], [222, 214, 0.9], [252, 210, 0.8], [396, 176, 0.85]].map(([x, y, k]) => blossom(x, y, k)).join('');
+        v += scatter(7, 21, 170, 196, 330, 236).map(([x, y, k]) => '<ellipse cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" rx="' + (3 + k * 2).toFixed(1) + '" ry="2" fill="#FFB8CC" opacity=".8" transform="rotate(' + Math.round(k * 120 - 40) + ' ' + x.toFixed(0) + ' ' + y.toFixed(0) + ')"/>').join('');
+        return v;
+      },
       4: () => sunSvg(300, 150, 52, '#FFE9A0')
         + '<path d="M-20 700q120-60 240-20t200-10V800H-20z" fill="#F2B66B"/><path d="M-20 750q140-40 260-6t180-14V800H-20z" fill="#E59A50"/>'
         + [[62, 708, 1], [330, 690, 0.8], [372, 734, 0.6]].map(([x, y, k]) => '<path d="M' + x + ' ' + y + 'v-' + 90 * k + 'a' + 11 * k + ' ' + 11 * k + ' 0 0 1 ' + 22 * k + ' 0v' + 90 * k + 'z" fill="#4E8A4A" transform="translate(' + -11 * k + ' 0)"/>'
@@ -5114,6 +5277,137 @@ PuzzleEnginesFactory(window);
   }
 
   // ------------------------------------------------------------ Outbound
+  // Every level a place with its own kind of car (by the look's level): small cars in the town
+  // lot, jeeps with surfboards and camper vans on the beach, taxis and buses in the city at
+  // night, cars with skis on the roof and snowploughs at the ski lodge, cars and lorries on the
+  // ferry's deck. The rules and the arrows stay the same.
+  const OB_KITS = ['town', 'town', 'beach', 'city', 'ski', 'ferry'];
+  const OB_NAMES = { town: ['Car', 'Truck'], beach: ['Jeep', 'Camper van'], city: ['Taxi', 'Bus'], ski: ['Car', 'Snowplough'], ferry: ['Car', 'Lorry'] };
+  const OB_TAXI = ['#FFC93C', '#FFC93C', '#1F2128', '#FFC93C', '#F4F5F7', '#2FA36B', '#FFC93C', '#FFC93C', '#1F2128', '#FFC93C'];
+  const OB_BUS = ['#E2453C', '#2F6FD8', '#2FA36B', '#F28C28'];
+  const OB_BOX = ['#E2453C', '#2F6FD8', '#2FA36B', '#F2B33D', '#7A5BD8'];
+  const OB_BOARDS = ['#FF6FA7', '#22BFB0', '#FFC93C', '#3D8BFD', '#FF8A3D'];
+  const OB_SKIS = [['#F2564D', '#FFFFFF'], ['#3D8BFD', '#FFC93C'], ['#22BFB0', '#1F2128'], ['#FFFFFF', '#9B6BFF']];
+  const obLight = (hex) => { const n = parseInt(hex.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 165; };
+  const obR = (x, y, w, hh, rx, f, extra) => '<rect x="' + (+x).toFixed(2) + '" y="' + (+y).toFixed(2) + '" width="' + (+w).toFixed(2) + '" height="' + (+hh).toFixed(2) + '" rx="' + rx + '" fill="' + f + '"' + (extra || '') + '/>';
+  // one vehicle, drawn facing up, its middle at 0 0: what it is, its color, and where its arrow goes
+  function obVehicle(kit, c, uid) {
+    const L = c.len * 10, top = -L / 2, bot = L / 2, long = c.len === 3;
+    let col = CAR_COLORS[c.color % CAR_COLORS.length].fill;
+    if (kit === 'city') col = long ? OB_BUS[c.color % OB_BUS.length] : OB_TAXI[c.color % OB_TAXI.length];
+    if (kit === 'ski') col = long ? (c.color % 2 ? '#FF8A1F' : '#FFC23A') : col === '#F4F5F7' ? '#56688F' : col;
+    const glass = '#24334A', tyre = '#1B1E26';
+    const shadow = obR(-4.2, top + 0.8, 8.4, L - 1.6, 3, 'rgba(10,12,20,0.5)', ' filter="url(#' + uid + 'b)" transform="translate(0.7 1.1)"');
+    const wheels = (ww, hh, mid) => obR(-4.8, top + 2.1, ww, hh, 0.7, tyre) + obR(4.8 - ww, top + 2.1, ww, hh, 0.7, tyre)
+      + obR(-4.8, bot - 2.1 - hh, ww, hh, 0.7, tyre) + obR(4.8 - ww, bot - 2.1 - hh, ww, hh, 0.7, tyre)
+      + (mid ? obR(-4.8, bot - 5.6 - hh, ww, hh, 0.7, tyre) + obR(4.8 - ww, bot - 5.6 - hh, ww, hh, 0.7, tyre) : '');
+    const body = (rx, x0, w0) => obR(x0 == null ? -4.2 : x0, top + 0.8, w0 || 8.4, L - 1.6, rx, col) + obR(x0 == null ? -4.2 : x0, top + 0.8, w0 || 8.4, L - 1.6, rx, 'url(#' + uid + 'g)');
+    const lamps = (front) => obR(-3.6, top + 1.0, 1.7, 1.0, 0.5, front || '#FFF4BE') + obR(1.9, top + 1.0, 1.7, 1.0, 0.5, front || '#FFF4BE')
+      + obR(-3.5, bot - 1.9, 1.5, 0.8, 0.4, '#FF4D4D') + obR(2.0, bot - 1.9, 1.5, 0.8, 0.4, '#FF4D4D');
+    // light thrown ahead at night
+    const beams = '<path d="M-3 ' + (top + 1) + 'L-4.4 ' + (top - 4.2) + 'L-0.6 ' + (top - 4.2) + 'L-1.5 ' + (top + 1) + 'ZM3 ' + (top + 1) + 'L4.4 ' + (top - 4.2) + 'L0.6 ' + (top - 4.2) + 'L1.5 ' + (top + 1) + 'Z" fill="#FFF6C8" opacity=".24"/>';
+    // the small car of the town lot (and the ferry and the ski lodge underneath their loads)
+    const car = () => wheels(1.6, 2.7) + body(3)
+      + '<path d="M-3.2 ' + (top + 5.4) + 'L-2.6 ' + (top + 2.9) + 'L2.6 ' + (top + 2.9) + 'L3.2 ' + (top + 5.4) + 'Z" fill="' + glass + '"/>'
+      + obR(-3.2, top + 5.4, 6.4, L - 10.8, 1.4, 'rgba(0,0,0,0.12)')
+      + '<path d="M-3.1 ' + (bot - 5.4) + 'L3.1 ' + (bot - 5.4) + 'L2.6 ' + (bot - 3.4) + 'L-2.6 ' + (bot - 3.4) + 'Z" fill="' + glass + '" opacity="0.85"/>';
+    let v = shadow, arrowY = 0.4, roofy = false, under = null;
+    if (kit === 'town' || (kit === 'ferry' && !long)) {
+      if (long) {
+        v += wheels(1.6, 2.7) + body(3)
+          + '<path d="M-3.2 ' + (top + 4.8) + 'L-2.6 ' + (top + 2.6) + 'L2.6 ' + (top + 2.6) + 'L3.2 ' + (top + 4.8) + 'Z" fill="' + glass + '"/>'
+          + obR(-3.2, top + 4.8, 6.4, 3.4, 1.1, 'rgba(0,0,0,0.14)') + obR(-3.8, top + 9.4, 7.6, L - 11, 1.4, 'rgba(255,255,255,0.3)')
+          + '<path d="M-3 ' + (top + 14) + 'H3M-3 ' + (top + 18) + 'H3M-3 ' + (top + 22) + 'H3" stroke="rgba(0,0,0,0.16)" stroke-width="0.6" fill="none"/>';
+        arrowY = top + 9.4 + (L - 11) / 2;
+      } else v += car();
+      // on the ferry the sun is low: a warm light on the glass
+      if (kit === 'ferry') v += obR(-3.2, top + 5.4, 6.4, L - 10.8, 1.4, 'rgba(255,160,110,0.22)');
+      v += lamps();
+    } else if (kit === 'ferry') {
+      // a lorry: the cab in front, its trailer box behind with ribs
+      const box = OB_BOX[c.color % OB_BOX.length];
+      v += wheels(1.6, 2.7, true) + obR(-4.1, top + 0.9, 8.2, 7.4, 2.2, col) + obR(-4.1, top + 0.9, 8.2, 7.4, 2.2, 'url(#' + uid + 'g)')
+        + '<path d="M-3.2 ' + (top + 4.6) + 'L-2.6 ' + (top + 2.4) + 'L2.6 ' + (top + 2.4) + 'L3.2 ' + (top + 4.6) + 'Z" fill="' + glass + '"/>'
+        + obR(-1.4, top + 8.1, 2.8, 1.2, 0.3, '#2A2E38')
+        + obR(-4.3, top + 9.0, 8.6, L - 10.2, 0.8, box) + obR(-4.3, top + 9.0, 8.6, L - 10.2, 0.8, 'url(#' + uid + 'g)')
+        + '<path d="' + Array.from({ length: 6 }, (_, k) => 'M-4 ' + (top + 11 + k * 3.2).toFixed(1) + 'H4').join('') + '" stroke="rgba(0,0,0,0.18)" stroke-width="0.45"/>'
+        + obR(-3.6, top + 1.0, 1.6, 0.9, 0.45, '#FFF4BE') + obR(2.0, top + 1.0, 1.6, 0.9, 0.45, '#FFF4BE')
+        + obR(-3.8, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D') + obR(2.4, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D');
+      arrowY = top + 9 + (L - 10.2) / 2;
+    } else if (kit === 'beach') {
+      const board = OB_BOARDS[c.color % OB_BOARDS.length];
+      const surf = (x, y, ry) => '<g transform="rotate(-4 ' + x + ' ' + y + ')"><ellipse cx="' + x + '" cy="' + y + '" rx="1.15" ry="' + ry + '" fill="' + board + '"/><ellipse cx="' + x + '" cy="' + y + '" rx="0.24" ry="' + (ry - 0.6) + '" fill="#FFFFFF" opacity=".85"/></g>';
+      if (long) {
+        // a camper van: a cream roof over its color, a roof rack and a board on it
+        v += wheels(1.6, 2.7) + body(3.4)
+          + '<path d="M-3.4 ' + (top + 4.4) + 'Q0 ' + (top + 1.2) + ' 3.4 ' + (top + 4.4) + 'L2.8 ' + (top + 2.0) + 'Q0 ' + (top + 0.9) + ' -2.8 ' + (top + 2.0) + 'Z" fill="' + glass + '"/>'
+          + obR(-3.5, top + 5.0, 7.0, L - 7.4, 2.4, '#FBF5E8')
+          + '<path d="M-3 ' + (top + 9) + 'H3M-3 ' + (top + 15.5) + 'H3M-3 ' + (bot - 6.5) + 'H3" stroke="#9AA0AA" stroke-width="0.55"/>'
+          + obR(-2.9, bot - 4.4, 3.4, 2.0, 0.6, 'rgba(36,51,74,0.55)')
+          + surf(2.35, 1.0, 9.2) + lamps('#FFF4BE');
+        arrowY = 0.6;
+        under = '#FBF5E8';
+      } else {
+        // an open jeep: seats inside, a roll bar, a spare wheel on the back, now and then a board
+        v += wheels(1.9, 3.1) + body(1.8)
+          + obR(-3.6, top + 4.8, 7.2, 0.9, 0.4, '#2A2E38')
+          + obR(-3.3, top + 6.1, 6.6, L - 9.4, 1.0, '#3A3532')
+          + obR(-2.9, top + 6.6, 2.5, 2.4, 0.7, '#D9B48A') + obR(0.4, top + 6.6, 2.5, 2.4, 0.7, '#D9B48A') + obR(-2.9, bot - 5.6, 5.8, 2.0, 0.7, '#D9B48A')
+          + '<path d="M-3.9 ' + (top + 9.8) + 'H3.9" stroke="#D9DCE3" stroke-width="0.7" stroke-linecap="round"/>'
+          + '<circle cx="0" cy="' + (bot - 1.5) + '" r="1.3" fill="' + tyre + '"/><circle cx="0" cy="' + (bot - 1.5) + '" r="0.5" fill="#8E96A3"/>'
+          + '<circle cx="-2.6" cy="' + (top + 1.6) + '" r="0.75" fill="#FFF4BE"/><circle cx="2.6" cy="' + (top + 1.6) + '" r="0.75" fill="#FFF4BE"/>'
+          + (c.color % 2 ? '' : surf(2.75, 0.4, 7.4));
+        arrowY = 0.6;
+        roofy = true;
+      }
+    } else if (kit === 'city') {
+      if (long) {
+        // a city bus: lit windows down both sides, a destination sign, the roof units
+        let win = '';
+        for (let y = top + 5.2; y < bot - 3.2; y += 2.6) win += obR(-4.25, y, 0.9, 1.9, 0.3, '#FFE58A') + obR(3.35, y, 0.9, 1.9, 0.3, '#FFE58A');
+        v += beams + wheels(1.6, 2.7, true) + obR(-4.3, top + 0.8, 8.6, L - 1.6, 1.8, col) + obR(-4.3, top + 0.8, 8.6, L - 1.6, 1.8, 'url(#' + uid + 'g)')
+          + win + obR(-3.6, top + 1.2, 7.2, 1.8, 0.6, glass) + obR(-2.3, top + 3.2, 4.6, 0.85, 0.3, '#FFB02E')
+          + obR(-2.6, top + 9.5, 5.2, 3.0, 0.6, 'rgba(255,255,255,0.28)') + obR(-2.6, bot - 8.5, 5.2, 3.0, 0.6, 'rgba(255,255,255,0.28)')
+          + obR(-3.5, top + 1.0, 1.4, 0.7, 0.35, '#FFF4BE') + obR(2.1, top + 1.0, 1.4, 0.7, 0.35, '#FFF4BE')
+          + obR(-3.6, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D') + obR(2.2, bot - 1.6, 1.4, 0.7, 0.3, '#FF4D4D');
+        arrowY = 0.4;
+      } else {
+        // a taxi: the lit sign on the roof, a checker band on a yellow cab
+        let chk = '';
+        if (col === '#FFC93C') for (let k = 0; k < 6; k++) chk += obR(-4.2, top + 7 + k * 1.0, 0.7, 1.0, 0, k % 2 ? '#1F2128' : '#FFFFFF') + obR(3.5, top + 7 + k * 1.0, 0.7, 1.0, 0, k % 2 ? '#FFFFFF' : '#1F2128');
+        v += beams + car() + chk
+          + obR(-2.1, top + 5.4, 4.2, 1.7, 0.6, '#FFF3A6', ' opacity=".35"') + obR(-1.6, top + 5.7, 3.2, 1.1, 0.45, '#FFF2A6')
+          + lamps();
+        arrowY = 1.4;
+      }
+    } else {
+      // the ski lodge
+      if (long) {
+        // a snowplough: the blade in front, the cab with its amber light, the grit behind
+        v += wheels(1.7, 2.8, true) + obR(-3.9, top + 3.2, 7.8, L - 4.0, 1.4, col) + obR(-3.9, top + 3.2, 7.8, L - 4.0, 1.4, 'url(#' + uid + 'g)')
+          + '<path d="M-4.9 ' + (top + 0.4) + 'L4.9 ' + (top + 1.6) + 'L4.9 ' + (top + 3.0) + 'L-4.9 ' + (top + 1.8) + 'Z" fill="#5E6676"/>'
+          + '<path d="M-4.6 ' + (top + 1.0) + 'L4.6 ' + (top + 2.15) + '" stroke="#FFC23A" stroke-width="0.45" stroke-dasharray="1.2 1"/>'
+          + '<path d="M-3.0 ' + (top + 7.0) + 'L-2.5 ' + (top + 4.6) + 'L2.5 ' + (top + 4.6) + 'L3.0 ' + (top + 7.0) + 'Z" fill="' + glass + '"/>'
+          + '<circle cx="0" cy="' + (top + 8.3) + '" r="2" fill="#FFB02E" opacity=".3"/><circle cx="0" cy="' + (top + 8.3) + '" r="0.85" fill="#FFB02E"/>'
+          + obR(-3.6, top + 11.0, 7.2, L - 12.6, 0.9, '#7C746B')
+          + scatter(14, (c.x * 7 + c.y * 13 + 3) >>> 0, -3.2, top + 11.6, 3.2, bot - 2.2).map(([x, y]) => '<circle cx="' + x.toFixed(2) + '" cy="' + y.toFixed(2) + '" r="0.32" fill="#D9D3CA"/>').join('')
+          + obR(-3.6, bot - 1.5, 1.3, 0.6, 0.3, '#FF4D4D') + obR(2.3, bot - 1.5, 1.3, 0.6, 0.3, '#FF4D4D');
+        arrowY = top + 11 + (L - 12.6) / 2;
+      } else {
+        // a car with skis on the roof rack and snow on the bonnet
+        const sk = OB_SKIS[c.color % OB_SKIS.length];
+        v += car()
+          + '<path d="M-3.6 ' + (top + 7.2) + 'H3.6M-3.6 ' + (bot - 6.2) + 'H3.6" stroke="#2A2E38" stroke-width="0.5"/>'
+          + obR(-3.7, top + 4.6, 1.0, L - 8.6, 0.5, sk[0]) + obR(-2.5, top + 5.0, 1.0, L - 9.2, 0.5, sk[1])
+          + '<path d="M-3.8 -0.6h2.4M-3.8 1.4h2.4" stroke="#1F2128" stroke-width="0.5"/>'
+          + '<ellipse cx="-1" cy="' + (top + 2.3) + '" rx="2.3" ry="0.95" fill="#FFFFFF" opacity=".92"/><ellipse cx="1.8" cy="' + (top + 2.0) + '" rx="1.1" ry="0.6" fill="#FFFFFF" opacity=".85"/>'
+          + lamps();
+        arrowY = 0.4;
+        roofy = true;
+      }
+    }
+    return { v, col: under || col, arrowY, roofy };
+  }
   class OutboundCard extends Card {
     pos(v) { return v === E.EXIT ? 'exit' : v == null ? '' : v; }
     hasHistory() { return this.run.hist.length > 0; }
@@ -5121,7 +5415,8 @@ PuzzleEnginesFactory(window);
       const p = this.p, U = 10, R = 4.4;
       const W = p.w * U, H = p.h * U;
       this.uid = 'ob' + Math.random().toString(36).slice(2, 8);
-      const svgEl = s('svg', { class: 'board', viewBox: [-R - 0.6, -R - 0.6, W + 2 * R + 1.2, H + 2 * R + 1.2].join(' '), role: 'group', 'aria-label': 'Parking lot with ' + p.cars.length + ' cars' });
+      this.kit = OB_KITS[this.lookLv] || 'town';
+      const svgEl = s('svg', { class: 'board', 'data-kit': this.kit, viewBox: [-R - 0.6, -R - 0.6, W + 2 * R + 1.2, H + 2 * R + 1.2].join(' '), role: 'group', 'aria-label': 'Parking lot with ' + p.cars.length + ' cars' });
       svgEl.append(s('defs', null,
         s('filter', { id: this.uid + 'b', x: '-40%', y: '-40%', width: '180%', height: '180%' }, s('feGaussianBlur', { stdDeviation: '0.75' })),
         s('linearGradient', { id: this.uid + 'g', x1: '0', y1: '0', x2: '1', y2: '0' },
@@ -5132,6 +5427,12 @@ PuzzleEnginesFactory(window);
       svgEl.append(s('rect', { class: 'lot', x: 0, y: 0, width: W, height: H, rx: 2.5 }));
       for (let x = 1; x < p.w; x++) svgEl.append(s('line', { class: 'stall', x1: x * U, y1: 1.2, x2: x * U, y2: H - 1.2 }));
       for (let y = 1; y < p.h; y++) svgEl.append(s('line', { class: 'stall', x1: 1.2, y1: y * U, x2: W - 1.2, y2: y * U }));
+      // the ground of the place: shells in the sand, tyre tracks in the snow, the deck's tie-down rings
+      const ground = s('g', { class: 'ground-deco' });
+      if (this.kit === 'beach') ground.innerHTML = scatter(Math.round(p.w * p.h * 0.5), (p.seed >>> 0) % 997 + 3, 1, 1, W - 1, H - 1).map(([x, y, k]) => '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="' + (0.45 + k * 0.4).toFixed(2) + '" ry="0.32" fill="' + (k > 0.5 ? '#FFF6EA' : '#F5C3BA') + '"/>').join('');
+      if (this.kit === 'ski') { let d = ''; for (let x = 0; x < p.w; x++) d += 'M' + (x * U + 3.1) + ' 0.8V' + (H - 0.8) + 'M' + (x * U + 6.9) + ' 0.8V' + (H - 0.8); ground.innerHTML = '<path d="' + d + '" stroke="#B9C9DD" stroke-width="0.55" stroke-dasharray="0.9 0.5" opacity=".7"/>'; }
+      if (this.kit === 'ferry') { let d = ''; for (let x = 1; x < p.w; x++) for (let y = 1; y < p.h; y++) d += '<circle cx="' + x * U + '" cy="' + y * U + '" r="0.55" fill="none" stroke="#8FA3B0" stroke-width="0.3"/>'; ground.innerHTML = d; }
+      svgEl.append(ground);
       svgEl.append(s('rect', { class: 'curb', x: 0, y: 0, width: W, height: H, rx: 2.5 }));
       this.carEls = p.cars.map((c, i) => { const g = this.drawCar(c, i); svgEl.append(g); return g; });
       this.svg = svgEl;
@@ -5144,39 +5445,17 @@ PuzzleEnginesFactory(window);
       return [((rx + fx) / 2 + 0.5) * 10, ((ry + fy) / 2 + 0.5) * 10];
     }
     drawCar(c, i) {
-      const L = c.len * 10, top = -L / 2, bot = L / 2;
-      const col = CAR_COLORS[c.color % CAR_COLORS.length];
-      const glass = '#24334A';
-      const g = s('g', { class: 'car', tabindex: '0', role: 'button', 'aria-label': (c.len === 3 ? 'Truck' : 'Car') + ' facing ' + DIRNAME[c.dir] });
+      const L = c.len * 10, top = -L / 2;
+      const V = obVehicle(this.kit, c, this.uid), dark = obLight(V.col);
+      const g = s('g', { class: 'car', tabindex: '0', role: 'button', 'aria-label': OB_NAMES[this.kit][c.len === 3 ? 1 : 0] + ' facing ' + DIRNAME[c.dir] });
       const rot = s('g', { transform: 'rotate(' + ANGLE[c.dir] + ')' });
       const anim = s('g', { class: 'anim' });
-      anim.append(
-        s('rect', { x: -4.2, y: top + 0.8, width: 8.4, height: L - 1.6, rx: 3, fill: 'rgba(10,12,20,0.5)', filter: 'url(#' + this.uid + 'b)', transform: 'translate(0.7 1.1)' }),
-        s('rect', { x: -4.8, y: top + 2.1, width: 1.6, height: 2.7, rx: 0.7, fill: '#1B1E26' }),
-        s('rect', { x: 3.2, y: top + 2.1, width: 1.6, height: 2.7, rx: 0.7, fill: '#1B1E26' }),
-        s('rect', { x: -4.8, y: bot - 4.8, width: 1.6, height: 2.7, rx: 0.7, fill: '#1B1E26' }),
-        s('rect', { x: 3.2, y: bot - 4.8, width: 1.6, height: 2.7, rx: 0.7, fill: '#1B1E26' }),
-        s('rect', { x: -4.2, y: top + 0.8, width: 8.4, height: L - 1.6, rx: 3, fill: col.fill }),
-        s('rect', { x: -4.2, y: top + 0.8, width: 8.4, height: L - 1.6, rx: 3, fill: 'url(#' + this.uid + 'g)' }));
-      if (c.len === 3) {
-        anim.append(
-          s('path', { d: 'M-3.2 ' + (top + 4.8) + ' L-2.6 ' + (top + 2.6) + ' L2.6 ' + (top + 2.6) + ' L3.2 ' + (top + 4.8) + ' Z', fill: glass }),
-          s('rect', { x: -3.2, y: top + 4.8, width: 6.4, height: 3.4, rx: 1.1, fill: 'rgba(0,0,0,0.14)' }),
-          s('rect', { x: -3.8, y: top + 9.4, width: 7.6, height: L - 11, rx: 1.4, fill: 'rgba(255,255,255,0.3)' }),
-          s('path', { d: 'M-3 ' + (top + 14) + 'H3M-3 ' + (top + 18) + 'H3M-3 ' + (top + 22) + 'H3', stroke: 'rgba(0,0,0,0.16)', 'stroke-width': 0.6, fill: 'none' }));
-      } else {
-        anim.append(
-          s('path', { d: 'M-3.2 ' + (top + 5.4) + ' L-2.6 ' + (top + 2.9) + ' L2.6 ' + (top + 2.9) + ' L3.2 ' + (top + 5.4) + ' Z', fill: glass }),
-          s('rect', { x: -3.2, y: top + 5.4, width: 6.4, height: L - 10.8, rx: 1.4, fill: 'rgba(0,0,0,0.12)' }),
-          s('path', { d: 'M-3.1 ' + (bot - 5.4) + ' L3.1 ' + (bot - 5.4) + ' L2.6 ' + (bot - 3.4) + ' L-2.6 ' + (bot - 3.4) + ' Z', fill: glass, opacity: 0.85 }));
-      }
-      anim.append(
-        s('rect', { x: -3.6, y: top + 1.0, width: 1.7, height: 1.0, rx: 0.5, fill: '#FFF4BE' }),
-        s('rect', { x: 1.9, y: top + 1.0, width: 1.7, height: 1.0, rx: 0.5, fill: '#FFF4BE' }),
-        s('rect', { x: -3.5, y: bot - 1.9, width: 1.5, height: 0.8, rx: 0.4, fill: '#FF4D4D' }),
-        s('rect', { x: 2.0, y: bot - 1.9, width: 1.5, height: 0.8, rx: 0.4, fill: '#FF4D4D' }));
-      const cy = c.len === 3 ? top + 9.4 + (L - 11) / 2 : 0.4;
-      anim.append(s('path', { d: 'M-1.9 ' + (cy + 1.1) + ' L0 ' + (cy - 0.9) + ' L1.9 ' + (cy + 1.1), fill: 'none', stroke: col.dark ? 'rgba(30,30,30,0.72)' : 'rgba(255,255,255,0.95)', 'stroke-width': 1.05, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+      anim.innerHTML = V.v;
+      const cy = V.arrowY;
+      const chevron = 'M-1.9 ' + (cy + 1.1) + ' L0 ' + (cy - 0.9) + ' L1.9 ' + (cy + 1.1);
+      // where the roof carries something, the arrow gets a dark edge so it reads on anything
+      if (V.roofy) anim.append(s('path', { d: chevron, fill: 'none', stroke: 'rgba(20,22,30,0.55)', 'stroke-width': 2.1, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+      anim.append(s('path', { d: chevron, fill: 'none', stroke: dark && !V.roofy ? 'rgba(30,30,30,0.72)' : 'rgba(255,255,255,0.95)', 'stroke-width': 1.05, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
       anim.append(s('rect', { class: 'halo', x: -5.4, y: top - 0.1, width: 10.8, height: L + 0.2, rx: 3.8 }));
       rot.append(anim);
       g.append(rot);
@@ -5362,11 +5641,189 @@ PuzzleEnginesFactory(window);
       s('path', { class: 'bf-feel', d: 'M-0.1 -0.8Q-0.35 -1.65 -0.8 -1.95M0.1 -0.8Q0.35 -1.65 0.8 -1.95' }));
   }
 
+  // Each level is a place of its own, and the board belongs to it (by the look's level): the herb
+  // garden's pots, the farmyard's troughs where animals come to drink, the Japanese garden's koi
+  // ponds fed by bamboo pipes, the oasis's palms by stone channels in the sand, the palace garden's
+  // fountains at night. The pipes, the beds, the source and what the water reaches change; the
+  // rules do not.
+  const CD_KITS = ['garden', 'garden', 'farm', 'japan', 'oasis', 'palace'];
+  const cdG = (cls, transform, inner) => { const g = s('g', { class: cls, transform }); g.innerHTML = inner; return g; };
+  const cdRnd = (seed) => { let r = (Math.imul(seed + 7, 2654435761) >>> 0) || 1; return () => { r = (Math.imul(r, 1664525) + 1013904223) >>> 0; return r / 4294967296; }; };
+  // what lies on a bed besides the pipe: raked gravel, ripples in the sand, a gold edge
+  function cdBedDecor(kit, x, y, i) {
+    const X = x * 10, Y = y * 10;
+    if (kit === 'japan') {
+      // rake lines, across on one bed and down on the next, like a checkerboard
+      let d = '';
+      for (let k = 1; k <= 3; k++) d += (x + y) % 2 ? 'M' + (X + 1.4) + ' ' + (Y + k * 2.4 + 0.3) + 'H' + (X + 8.6) : 'M' + (X + k * 2.4 + 0.3) + ' ' + (Y + 1.4) + 'V' + (Y + 8.6);
+      return s('path', { class: 'rake', d });
+    }
+    if (kit === 'oasis') {
+      const r = cdRnd(i * 13 + 5), y1 = Y + 2.4 + r() * 1.4, y2 = y1 + 3.4 + r() * 1.2;
+      return s('path', { class: 'ripple', d: 'M' + (X + 1.2) + ' ' + y1.toFixed(2) + 'q2.2 -0.9 4.2 0t3.4 -0.2M' + (X + 1.6) + ' ' + y2.toFixed(2) + 'q2.4 -0.9 4.4 0t2.6 -0.3' });
+    }
+    if (kit === 'palace') return s('rect', { class: 'trim', x: X + 1.25, y: Y + 1.25, width: 7.5, height: 7.5, rx: 1.4 });
+    if (kit === 'farm') {
+      const r = cdRnd(i * 17 + 3);
+      let d = '';
+      for (let k = 0; k < 4; k++) { const sx = X + 1.4 + r() * 7.2, sy = Y + 1.4 + r() * 7.2, a = r() * Math.PI; d += 'M' + sx.toFixed(2) + ' ' + sy.toFixed(2) + 'l' + (Math.cos(a) * 1.3).toFixed(2) + ' ' + (Math.sin(a) * 1.3).toFixed(2); }
+      return s('path', { class: 'straw', d });
+    }
+    return null;
+  }
+  // now and then something small in a free corner of a bed: grass, straw, moss, pebbles, night flowers
+  function cdTuftFor(kit, seed, cx, cy) {
+    if (kit === 'garden') return cdTuft(seed, cx, cy);
+    const r = Math.imul(seed + 101, 2654435761) >>> 0;
+    if (r % 3) return null;
+    const c = [[-1, -1], [1, -1], [-1, 1], [1, 1]][(r >>> 5) & 3];
+    const x = cx + c[0] * 3.1, y = cy + c[1] * 3.0 + 0.5;
+    if (kit === 'farm') return cdG('tuft', null, '<path class="b1" d="M' + (x - 0.7) + ' ' + y + 'l0.5 -1.3M' + (x - 0.1) + ' ' + y + 'l-0.1 -1.5M' + (x + 0.5) + ' ' + y + 'l-0.4 -1.2M' + (x + 0.9) + ' ' + y + 'l0.3 -1.0"/>');
+    if (kit === 'japan') return cdG('moss', null, '<circle cx="' + (x - 0.5) + '" cy="' + (y - 0.4) + '" r="0.75"/><circle cx="' + (x + 0.35) + '" cy="' + (y - 0.6) + '" r="0.6"/><circle cx="' + (x + 0.1) + '" cy="' + (y - 0.05) + '" r="0.55"/>');
+    if (kit === 'oasis') return cdG('pebbles', null, '<ellipse cx="' + (x - 0.4) + '" cy="' + (y - 0.3) + '" rx="0.7" ry="0.45"/><ellipse class="p2" cx="' + (x + 0.5) + '" cy="' + (y - 0.1) + '" rx="0.45" ry="0.32"/>');
+    // the palace at night: a small pale flower
+    let d = '';
+    for (let k = 0; k < 5; k++) { const a = (k * Math.PI * 2) / 5; d += '<circle cx="' + (x + Math.cos(a) * 0.42).toFixed(2) + '" cy="' + (y - 0.5 + Math.sin(a) * 0.42).toFixed(2) + '" r="0.3"/>'; }
+    return cdG('nightflower', null, d + '<circle class="eye" cx="' + x + '" cy="' + (y - 0.5) + '" r="0.2"/>');
+  }
+  // the source, always a round pool with the drop over it, in the place's own rim
+  function cdSource(kit, cx, cy) {
+    const w = cdWell(cx, cy);
+    if (kit === 'garden') return w;
+    let rim = '';
+    if (kit === 'farm') {
+      // a wooden barrel, seen from above, with an iron hoop
+      rim = '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="#A36A36"/>';
+      for (let k = 0; k < 14; k++) { const a = (k * Math.PI * 2) / 14; rim += '<path d="M' + (cx + Math.cos(a) * 2.9).toFixed(2) + ' ' + (cy + Math.sin(a) * 2.9).toFixed(2) + 'L' + (cx + Math.cos(a) * 4).toFixed(2) + ' ' + (cy + Math.sin(a) * 4).toFixed(2) + '" stroke="#7A4A22" stroke-width="0.16"/>'; }
+      rim += '<circle cx="' + cx + '" cy="' + cy + '" r="3.75" fill="none" stroke="#4E545C" stroke-width="0.45"/>';
+    } else if (kit === 'japan') {
+      // a stone basin with a bamboo spout
+      rim = '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="#8E918B"/><circle cx="' + (cx - 1.6) + '" cy="' + (cy + 2.4) + '" r="0.35" fill="#6F726C"/><circle cx="' + (cx + 2.6) + '" cy="' + (cy - 1.5) + '" r="0.3" fill="#6F726C"/>'
+        + '<path d="M' + (cx - 4.4) + ' ' + (cy - 3.2) + 'L' + (cx - 1.8) + ' ' + (cy - 1.7) + '" stroke="#A9BC4E" stroke-width="1.1" stroke-linecap="round"/><path d="M' + (cx - 3.4) + ' ' + (cy - 3.1) + 'l0.45 -0.75" stroke="#6E8A2C" stroke-width="0.3"/>';
+    } else if (kit === 'oasis') {
+      // a spring in a ring of sandy rocks
+      const r = cdRnd(cx * 7 + cy);
+      for (let k = 0; k < 10; k++) { const a = (k * Math.PI * 2) / 10 + r() * 0.3; rim += '<ellipse cx="' + (cx + Math.cos(a) * 3.55).toFixed(2) + '" cy="' + (cy + Math.sin(a) * 3.55).toFixed(2) + '" rx="' + (1.0 + r() * 0.4).toFixed(2) + '" ry="0.85" fill="' + (k % 2 ? '#C9A06A' : '#B88E58') + '"/>'; }
+    } else {
+      // a marble basin with a gold rim
+      rim = '<circle cx="' + cx + '" cy="' + cy + '" r="4.1" fill="#E9E6EF"/><circle cx="' + cx + '" cy="' + cy + '" r="3.9" fill="none" stroke="#E2B552" stroke-width="0.4"/>';
+    }
+    const back = s('g', { class: 'well-rim-' + kit });
+    back.innerHTML = rim;
+    w.insertBefore(back, w.firstChild.nextSibling);
+    return w;
+  }
+  // the farmyard: a wooden trough; when it fills, an animal comes up behind it and drinks
+  const CD_BEASTS = {
+    cow: '<path d="M-1.35 -4.3q-0.95 -0.9 -0.45 -1.65q0.3 0.8 1.15 1.05z" fill="#EFE3C8"/><path d="M1.35 -4.3q0.95 -0.9 0.45 -1.65q-0.3 0.8 -1.15 1.05z" fill="#EFE3C8"/>'
+      + '<ellipse cx="-2.25" cy="-3.3" rx="1.05" ry="0.5" transform="rotate(-18 -2.25 -3.3)" fill="#FFFFFF"/><ellipse cx="2.25" cy="-3.3" rx="1.05" ry="0.5" transform="rotate(18 2.25 -3.3)" fill="#FFFFFF"/>'
+      + '<ellipse cx="-2.3" cy="-3.3" rx="0.6" ry="0.24" transform="rotate(-18 -2.3 -3.3)" fill="#F5B8BC"/><ellipse cx="2.3" cy="-3.3" rx="0.6" ry="0.24" transform="rotate(18 2.3 -3.3)" fill="#F5B8BC"/>'
+      + '<rect x="-1.75" y="-4.6" width="3.5" height="4.4" rx="1.6" fill="#FFFFFF"/><path d="M-1.7 -2.9V-3.3a1.5 1.5 0 0 1 1.45 -1.3h0.55q-0.25 1.05 -0.85 1.45q-0.55 0.35 -1.15 0.25z" fill="#2E2A28"/><path d="M1.75 -2.4q-0.75 -0.1 -0.85 -0.7q0.4 -0.35 0.85 -0.2z" fill="#2E2A28"/>'
+      + '<circle cx="-0.75" cy="-2.75" r="0.27" fill="#2E2A28"/><circle cx="0.75" cy="-2.75" r="0.27" fill="#2E2A28"/>'
+      + '<ellipse cx="0" cy="-0.95" rx="1.55" ry="0.95" fill="#F6B3B7"/><ellipse cx="-0.55" cy="-1" rx="0.22" ry="0.3" fill="#C9787E"/><ellipse cx="0.55" cy="-1" rx="0.22" ry="0.3" fill="#C9787E"/>',
+    pig: '<path d="M-1.85 -3.5L-2.7 -5.1L-0.75 -4.3Z" fill="#EE93AA"/><path d="M1.85 -3.5L2.7 -5.1L0.75 -4.3Z" fill="#EE93AA"/>'
+      + '<circle cx="0" cy="-2.3" r="2.15" fill="#F7B2C2"/><circle cx="-0.8" cy="-2.85" r="0.26" fill="#3A2A2E"/><circle cx="0.8" cy="-2.85" r="0.26" fill="#3A2A2E"/>'
+      + '<ellipse cx="0" cy="-1.15" rx="1.05" ry="0.72" fill="#F28FA8"/><ellipse cx="-0.38" cy="-1.15" rx="0.18" ry="0.28" fill="#B95A74"/><ellipse cx="0.38" cy="-1.15" rx="0.18" ry="0.28" fill="#B95A74"/>',
+    sheep: '<ellipse cx="-2.15" cy="-2.9" rx="0.95" ry="0.42" transform="rotate(-15 -2.15 -2.9)" fill="#45434F"/><ellipse cx="2.15" cy="-2.9" rx="0.95" ry="0.42" transform="rotate(15 2.15 -2.9)" fill="#45434F"/>'
+      + '<ellipse cx="0" cy="-2" rx="1.35" ry="2" fill="#45434F"/>'
+      + '<g fill="#FFFFFF"><circle cx="-1.5" cy="-3.9" r="0.85"/><circle cx="-0.75" cy="-4.55" r="0.85"/><circle cx="0.1" cy="-4.75" r="0.9"/><circle cx="0.95" cy="-4.5" r="0.85"/><circle cx="1.6" cy="-3.85" r="0.8"/></g>'
+      + '<circle cx="-0.55" cy="-2.35" r="0.32" fill="#FFFFFF"/><circle cx="-0.5" cy="-2.3" r="0.16" fill="#1E1C24"/><circle cx="0.55" cy="-2.35" r="0.32" fill="#FFFFFF"/><circle cx="0.6" cy="-2.3" r="0.16" fill="#1E1C24"/>'
+      + '<path d="M-0.35 -0.75Q0 -0.5 0.35 -0.75" stroke="#2A2830" stroke-width="0.18" fill="none"/>',
+    horse: '<path d="M-1.3 -4L-1 -5.4L-0.3 -4.4Z" fill="#8A5530"/><path d="M1.3 -4L1 -5.4L0.3 -4.4Z" fill="#8A5530"/>'
+      + '<rect x="-1.35" y="-4.7" width="2.7" height="5" rx="1.3" fill="#9C6338"/><path d="M-0.95 -4.75q0.95 -0.75 1.9 0l-0.25 0.9h-1.4z" fill="#4A2A16"/>'
+      + '<path d="M-0.25 -4.1h0.5l0.25 2.3h-1z" fill="#F4E6D2"/><ellipse cx="0" cy="-0.55" rx="1.3" ry="0.95" fill="#D7A07A"/>'
+      + '<ellipse cx="-0.5" cy="-0.6" rx="0.17" ry="0.26" fill="#7A4A30"/><ellipse cx="0.5" cy="-0.6" rx="0.17" ry="0.26" fill="#7A4A30"/><circle cx="-0.95" cy="-3" r="0.25" fill="#2A1A10"/><circle cx="0.95" cy="-3" r="0.25" fill="#2A1A10"/>',
+  };
+  const CD_BEAST_ORDER = ['cow', 'pig', 'sheep', 'horse'];
+  function cdTrough(cx, cy, i, kind) {
+    const g = s('g', { class: 'plant farm', transform: 'translate(' + cx + ' ' + (cy + 0.9) + ') scale(0.82)' });
+    g.style.setProperty('--hop', ((i % 6) * 70) + 'ms');
+    g.style.setProperty('--sw', (-((i * 0.53) % 3.6)).toFixed(2) + 's');
+    g.innerHTML = '<ellipse class="ground" cx="0.3" cy="3.2" rx="3.9" ry="0.6"/>'
+      + '<rect x="-3.5" y="-0.45" width="7" height="1.1" rx="0.45" fill="#5B3518"/>'
+      + '<rect class="trough-water" x="-3.2" y="-0.32" width="6.4" height="0.85" rx="0.38"/>'
+      + '<g class="beast"><g class="sip">' + CD_BEASTS[kind] + '</g></g>'
+      + '<g class="hopper"><rect x="-3.6" y="0.2" width="7.2" height="2.55" rx="0.45" fill="#A9703C"/>'
+      + '<path d="M-3.6 1.05H3.6M-3.6 1.9H3.6" stroke="#8A5A2E" stroke-width="0.18"/>'
+      + '<rect x="-3.6" y="0.2" width="7.2" height="0.45" rx="0.22" fill="#C48A50"/>'
+      + '<circle cx="-2.9" cy="1.5" r="0.14" fill="#5B3518"/><circle cx="2.9" cy="1.5" r="0.14" fill="#5B3518"/>'
+      + '<rect x="-3.2" y="2.7" width="0.75" height="0.7" fill="#7A4A24"/><rect x="2.45" y="2.7" width="0.75" height="0.7" fill="#7A4A24"/></g>';
+    return g;
+  }
+  // the Japanese garden: a pond in a ring of stones; when it fills a koi swims and a lily opens
+  function cdPond(cx, cy, i) {
+    const g = s('g', { class: 'plant japan', transform: 'translate(' + cx + ' ' + (cy + 0.2) + ') scale(0.9)' });
+    g.style.setProperty('--hop', ((i % 6) * 70) + 'ms');
+    g.style.setProperty('--sw', (-((i * 1.37) % 7)).toFixed(2) + 's');
+    const r = cdRnd(i * 11 + 1);
+    let stones = '';
+    for (let k = 0; k < 11; k++) { const a = (k * Math.PI * 2) / 11 + r() * 0.25; stones += '<ellipse cx="' + (Math.cos(a) * 3.75).toFixed(2) + '" cy="' + (0.2 + Math.sin(a) * 2.75).toFixed(2) + '" rx="' + (0.95 + r() * 0.35).toFixed(2) + '" ry="' + (0.7 + r() * 0.2).toFixed(2) + '" fill="' + ['#8E918B', '#A3A69F', '#7D807A'][k % 3] + '"/>'; }
+    const koi = ['#FF7A2E', '#F04A3A', '#FFB02E'][i % 3];
+    g.innerHTML = '<ellipse class="ground" cx="0.3" cy="0.75" rx="4.4" ry="3.3"/>'
+      + '<ellipse cx="0" cy="0.2" rx="3.6" ry="2.6" fill="#B9AE92"/><ellipse cx="0.4" cy="0.5" rx="2.6" ry="1.6" fill="#A99E82"/>'
+      + '<g class="pool"><ellipse class="pool-water" cx="0" cy="0.2" rx="3.6" ry="2.6"/><ellipse cx="-1.2" cy="-0.9" rx="1.2" ry="0.32" fill="#FFFFFF" opacity=".4"/></g>'
+      + '<g class="koi-ring" transform="translate(0 0.2) scale(1 0.68)"><g class="swim"><g transform="translate(0 -1.9)">'
+      + '<path d="M-1.35 0L-2.1 -0.55L-1.95 0L-2.1 0.55Z" fill="' + koi + '"/><ellipse cx="0" cy="0" rx="1.25" ry="0.5" fill="' + koi + '"/>'
+      + '<ellipse cx="0.2" cy="-0.05" rx="0.5" ry="0.3" fill="#FFF4E8"/><circle cx="0.95" cy="-0.15" r="0.1" fill="#2A1A10"/></g></g></g>'
+      + '<g class="lily"><path d="M1.7 1L2.18 0.43A0.95 0.66 0 1 1 1.54 0.35Z" fill="#4E9A4A"/><circle cx="1.45" cy="1.05" r="0.36" fill="#FF9EC0"/><circle cx="1.45" cy="1.05" r="0.14" fill="#FFE27A"/></g>'
+      + '<g class="hopper">' + stones + '</g>';
+    return g;
+  }
+  // the oasis: a palm on a little dune; dry, its fronds hang brown, and with water they lift green
+  function cdPalm(cx, cy, i) {
+    const g = s('g', { class: 'plant oasis', transform: 'translate(' + cx + ' ' + (cy + 1.4) + ') scale(0.82)' });
+    g.style.setProperty('--hop', ((i % 6) * 70) + 'ms');
+    g.style.setProperty('--sw', (-((i * 0.53) % 3.6)).toFixed(2) + 's');
+    const lean = i % 2 ? 1 : -1;
+    // the fronds arch out to both sides; on the left they are drawn mirrored so they hang down too
+    let fronds = '';
+    for (const a of [-178, -145, -112, -68, -35, -2]) {
+      const left = a < -90;
+      fronds += '<g class="frond" style="--a:' + a + 'deg;--dr:' + (left ? -34 : 34) + 'deg;--fy:' + (left ? -1 : 1) + '"><path d="M0 0C1.3 -0.75 2.7 -0.6 3.8 0.35C2.6 0 1.3 0.05 0 0Z"/><path class="mid" d="M0.2 -0.02C1.4 -0.4 2.6 -0.3 3.6 0.28"/></g>';
+    }
+    g.innerHTML = '<ellipse class="ground" cx="0.3" cy="2.75" rx="3.6" ry="0.65"/>'
+      + '<ellipse cx="0" cy="2.4" rx="3.3" ry="1.05" fill="#E3BF7E"/>'
+      + '<ellipse class="pool-water" cx="-0.2" cy="2.55" rx="2.5" ry="0.6"/>'
+      + '<g class="hopper"><g class="sway">'
+      + '<path d="M-0.4 2.4C-0.3 0.6 ' + (0.1 * lean) + ' -1.4 ' + (0.75 * lean) + ' -3.4L' + (1.35 * lean) + ' -3.25C' + (0.85 * lean) + ' -1.4 ' + (0.6 * lean) + ' 0.6 0.55 2.4Z" fill="#A8743F"/>'
+      + '<path d="M-0.3 1.4h0.85M-0.15 0.3h0.85M' + (0.1 * lean - 0.1) + ' -0.8h0.8M' + (0.4 * lean - 0.1) + ' -1.9h0.75" stroke="#7E5228" stroke-width="0.2" stroke-linecap="round"/>'
+      + '<g transform="translate(' + (1.05 * lean) + ' -3.45)">' + fronds
+      + '<g class="nuts"><circle cx="-0.3" cy="0.45" r="0.42"/><circle cx="0.35" cy="0.5" r="0.42"/><circle cx="0.05" cy="0.85" r="0.4"/></g></g>'
+      + '</g></g>';
+    return g;
+  }
+  // the palace garden: a two-tier marble fountain with gold trim; with water it plays and lights up
+  function cdFountain(cx, cy, i) {
+    const g = s('g', { class: 'plant palace', transform: 'translate(' + cx + ' ' + (cy + 0.6) + ') scale(0.84)' });
+    g.style.setProperty('--hop', ((i % 6) * 70) + 'ms');
+    g.style.setProperty('--sw', (-((i * 0.37) % 1.4)).toFixed(2) + 's');
+    g.innerHTML = '<circle class="glow" cx="0" cy="-0.6" r="4.7"/><circle class="glow g2" cx="0" cy="-0.4" r="3.2"/>'
+      + '<ellipse class="ground" cx="0.3" cy="3.25" rx="3.8" ry="0.6"/>'
+      + '<g class="hopper">'
+      // the lower basin: its rim, the water in it and its front
+      + '<ellipse cx="0" cy="1.7" rx="3.8" ry="1.15" fill="#ECE9F2"/>'
+      + '<ellipse cx="0" cy="1.68" rx="3.2" ry="0.82" fill="#262A38"/><ellipse class="pool-water" cx="0" cy="1.68" rx="3.2" ry="0.82"/>'
+      + '<path d="M-3.8 1.7a3.8 1.15 0 0 0 7.6 0v0.85a3.8 1.3 0 0 1 -7.6 0z" fill="#CFCADB"/>'
+      + '<path d="M-3.8 2.15a3.8 1.2 0 0 0 7.6 0" fill="none" stroke="#E2B552" stroke-width="0.26"/>'
+      // the column and the upper bowl, the finial on top
+      + '<path d="M-0.5 1.7V-1.3h1V1.7z" fill="#D9D5E3"/><path d="M-0.5 -0.2h1" stroke="#E2B552" stroke-width="0.26"/>'
+      + '<path d="M-1.9 -1.45Q0 0.35 1.9 -1.45Z" fill="#E4E0EC"/>'
+      + '<ellipse cx="0" cy="-1.45" rx="1.9" ry="0.5" fill="#F2F0F6"/><ellipse cx="0" cy="-1.45" rx="1.5" ry="0.33" fill="#262A38"/><ellipse class="pool-water" cx="0" cy="-1.45" rx="1.5" ry="0.33"/>'
+      + '<ellipse cx="0" cy="-1.45" rx="1.9" ry="0.5" fill="none" stroke="#E2B552" stroke-width="0.22"/>'
+      + '<path d="M-0.22 -1.5V-2.2h0.44V-1.5z" fill="#E2B552"/><circle cx="0" cy="-2.45" r="0.36" fill="#E2B552"/>'
+      // the water: a jet from the top, falling to the bowl, and curtains from the bowl to the basin
+      + '<g class="jets"><path class="jet" d="M0 -2.6C0 -3.6 0 -4.3 0 -4.6"/><path class="jet" d="M0 -4.3C-0.7 -4.8 -1.4 -3.6 -1.55 -1.7"/><path class="jet" d="M0 -4.3C0.7 -4.8 1.4 -3.6 1.55 -1.7"/>'
+      + '<path class="jet" d="M-1.8 -1.3C-2.2 -0.6 -2.5 0.4 -2.6 1.45"/><path class="jet" d="M1.8 -1.3C2.2 -0.6 2.5 0.4 2.6 1.45"/>'
+      + '<circle class="drop" cx="-2.65" cy="1.4" r="0.2"/><circle class="drop" cx="2.65" cy="1.4" r="0.2"/></g>'
+      + '</g>';
+    return g;
+  }
   class ConduitCard extends Card {
     hasHistory() { return this.run.hist.length > 0; }
     // flies in from the top right and settles on the highest flower
     flyButterfly() {
-      if (this.bfly || reducedMotion()) return;
+      // at night in the palace garden the fountains are the end of it
+      if (this.bfly || reducedMotion() || this.kit === 'palace') return;
       const p = this.p;
       let best = null;
       for (const k in this.plants) {
@@ -5374,7 +5831,9 @@ PuzzleEnginesFactory(window);
         if (!best || y < best[1] || (y === best[1] && x > best[0])) best = [x, y];
       }
       if (!best) return;
-      const tx = best[0] * 10 + 5.3, ty = best[1] * 10 + 5.5 - 3.65 * 0.78 - 0.7;
+      // on the flower, the animal's head, the pond's stones or the palm's crown
+      const lift = { garden: 3.65 * 0.78 + 0.7, farm: 4.6, japan: 2.4, oasis: 4.2 }[this.kit] || 3.5;
+      const tx = best[0] * 10 + 5.3, ty = best[1] * 10 + 5.5 - lift;
       const sx = p.w * 10 + 7, sy = -9;
       const bf = cdButterfly();
       this.svg.append(bf);
@@ -5385,7 +5844,10 @@ PuzzleEnginesFactory(window);
     }
     buildBoard() {
       const p = this.p, U = 10, pad = 1.4;
-      const svgEl = s('svg', { class: 'board conduit', viewBox: [-pad, -pad, p.w * U + pad * 2, p.h * U + pad * 2].join(' '), role: 'group', 'aria-label': 'Garden, ' + p.w + ' by ' + p.h + ' tiles' });
+      // the place: its pipes, beds, source and what the water reaches
+      this.kit = CD_KITS[this.lookLv] || 'garden';
+      const kit = this.kit, endName = { garden: 'Plant', farm: 'Trough', japan: 'Pond', oasis: 'Palm', palace: 'Fountain' }[kit];
+      const svgEl = s('svg', { class: 'board conduit', 'data-kit': kit, viewBox: [-pad, -pad, p.w * U + pad * 2, p.h * U + pad * 2].join(' '), role: 'group', 'aria-label': 'Garden, ' + p.w + ' by ' + p.h + ' tiles' });
       svgEl.append(s('rect', { class: 'soil', x: -pad, y: -pad, width: p.w * U + pad * 2, height: p.h * U + pad * 2, rx: 4.5 }));
       const layer = (cls) => { const g = s('g', { class: cls }); svgEl.append(g); return g; };
       const beds = layer('beds');
@@ -5410,7 +5872,9 @@ PuzzleEnginesFactory(window);
         const isPlant = deg === 1 && i !== p.src;
         beds.append(s('rect', { class: 'bed', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }),
           s('rect', { class: 'bed-shade', x: x * U + 0.45, y: y * U + 8.3, width: U - 0.9, height: 1.25, rx: 0.6 }));
-        if (!isPlant && i !== p.src) { const t = cdTuft(i * 31 + (p.seed >>> 0), cx, cy); if (t) beds.append(t); }
+        const deco = cdBedDecor(kit, x, y, i);
+        if (deco) beds.append(deco);
+        if (!isPlant && i !== p.src) { const t = cdTuftFor(kit, i * 31 + (p.seed >>> 0), cx, cy); if (t) beds.append(t); }
         // a pipe: its shadow on the bed, the cream pipe, the water that fills it,
         // a light line down the middle, and glints that run with the water
         const shade = s('g', { class: 'tshade' }), tile = s('g', { class: 'tile' });
@@ -5435,15 +5899,16 @@ PuzzleEnginesFactory(window);
         }
         shadows.append(shade);
         pipes.append(tile);
-        if (i === p.src) things.append(cdWell(cx, cy));
+        if (i === p.src) things.append(cdSource(kit, cx, cy));
         if (isPlant) {
-          const fl = CD_LEVEL_FLOWERS[this.lookLv] || CD_LEVEL_FLOWERS[1];
-          const plant = this.drawPlant(cx, cy, fl[flower++ % fl.length], i);
+          const fl = CD_LEVEL_FLOWERS[this.lookLv] || CD_LEVEL_FLOWERS[1], k = flower++;
+          const plant = kit === 'farm' ? cdTrough(cx, cy, i, CD_BEAST_ORDER[k % CD_BEAST_ORDER.length]) : kit === 'japan' ? cdPond(cx, cy, i)
+            : kit === 'oasis' ? cdPalm(cx, cy, i) : kit === 'palace' ? cdFountain(cx, cy, i) : this.drawPlant(cx, cy, fl[k % fl.length], i);
           things.append(plant);
           this.plants[i] = plant;
           this.plantCount++;
         }
-        const cell = s('g', { class: 'cell', tabindex: '0', role: 'button', 'aria-label': (i === p.src ? 'Water source' : isPlant ? 'Plant' : 'Pipe') + ', row ' + (y + 1) + ', column ' + (x + 1) });
+        const cell = s('g', { class: 'cell', tabindex: '0', role: 'button', 'aria-label': (i === p.src ? 'Water source' : isPlant ? endName : 'Pipe') + ', row ' + (y + 1) + ', column ' + (x + 1) });
         cell.append(s('rect', { class: 'hit', x: x * U, y: y * U, width: U, height: U }),
           s('rect', { class: 'ring', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }));
         cell.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); this.press(i); });
@@ -5720,11 +6185,101 @@ PuzzleEnginesFactory(window);
   }
 
   // ------------------------------------------------------------- Tumbler
-  function gem(c, tag, attrs) {
-    const el = h(tag || 'span', Object.assign({ class: 'gem' }, attrs || {}));
-    if (c == null) { el.classList.add('empty'); return el; }
-    el.style.setProperty('--c', PEGS[c].fill);
-    el.append(s('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, s('path', { d: PEGS[c].glyph, fill: PEGS[c].ink })));
+  // Each lock is the board, with pieces of its own (by the look's level): the rings of a bike
+  // lock, magnets on a locker door, the keys of a front door's keypad, the lamps of a safe, the
+  // gems of a vault. Every color keeps its shape at every level: printed on a ring, a key or a
+  // lamp, and the magnet and the gem are the shape itself.
+  const TB_KITS = ['ring', 'ring', 'magnet', 'key', 'lamp', 'jewel'];
+  const tbStar = (cx, cy, R, r) => { let d = ''; for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + (k * Math.PI) / 5, q = k % 2 ? r : R; d += (k ? 'L' : 'M') + (cx + Math.cos(a) * q).toFixed(2) + ' ' + (cy + Math.sin(a) * q).toFixed(2); } return d + 'Z'; };
+  // the shapes, big, in a 40 x 40 box, as corner points (the circle is drawn as a circle)
+  const TB_POLY = [
+    null,
+    [[6, 6], [34, 6], [34, 34], [6, 34]],
+    [[20, 4], [36.5, 33.5], [3.5, 33.5]],
+    [[20, 2.5], [37.5, 20], [20, 37.5], [2.5, 20]],
+    [[14.5, 3.5], [25.5, 3.5], [25.5, 14.5], [36.5, 14.5], [36.5, 25.5], [25.5, 25.5], [25.5, 36.5], [14.5, 36.5], [14.5, 25.5], [3.5, 25.5], [3.5, 14.5], [14.5, 14.5]],
+    tbStar(20, 21.2, 18, 7.8).slice(1, -1).split('L').map((p) => p.split(' ').map(Number)),
+    [[3, 13], [37, 13], [37, 27], [3, 27]],
+  ];
+  const tbPath = (pts) => 'M' + pts.map((p) => p[0] + ' ' + p[1]).join('L') + 'Z';
+  const tbShape = (c) => (c === 0 ? 'M20 4.5a15.5 15.5 0 1 1 0 31a15.5 15.5 0 1 1 0-31z' : tbPath(TB_POLY[c]));
+  // the color's mark printed on a piece, centred at (x, y)
+  const tbGlyph = (c, x, y, k, fill, op) => '<path d="' + PEGS[c].glyph + '" transform="translate(' + x + ' ' + y + ') scale(' + k + ') translate(-8 -8)" fill="' + fill + '"' + (op ? ' opacity="' + op + '"' : '') + '/>';
+  const tbAsk = (x, y, fill) => '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-family="Lexend, system-ui, sans-serif" font-size="17" font-weight="700" fill="' + fill + '">?</text>';
+  // gradients for one card's pieces, kept in the card so two cards on screen never share ids
+  function tbDefs(u) {
+    const el = s('svg', { class: 'tb-defs', width: 0, height: 0, 'aria-hidden': 'true', focusable: 'false' });
+    el.innerHTML = '<defs>'
+      + '<linearGradient id="' + u + 'cyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".5"/><stop offset=".2" stop-color="#000" stop-opacity=".08"/><stop offset=".42" stop-color="#fff" stop-opacity=".42"/><stop offset=".56" stop-color="#fff" stop-opacity=".1"/><stop offset=".82" stop-color="#000" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient>'
+      + '<linearGradient id="' + u + 'mag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>'
+      + '<linearGradient id="' + u + 'brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF0B8"/><stop offset=".35" stop-color="#E2B552"/><stop offset=".7" stop-color="#B78424"/><stop offset="1" stop-color="#8C5E14"/></linearGradient>'
+      + '<linearGradient id="' + u + 'glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".38" stop-color="#fff" stop-opacity=".06"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>'
+      + '<linearGradient id="' + u + 'steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".3" stop-color="#C3C9D3"/><stop offset=".55" stop-color="#7D8594"/><stop offset=".8" stop-color="#B9C0CB"/><stop offset="1" stop-color="#5E6676"/></linearGradient>'
+      + '<radialGradient id="' + u + 'lens" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset=".28" stop-color="#fff" stop-opacity=".25"/><stop offset=".62" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient>'
+      + '<linearGradient id="' + u + 'gem" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>'
+      + '<linearGradient id="' + u + 'gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF3C2"/><stop offset=".4" stop-color="#E9BE55"/><stop offset=".75" stop-color="#B8862A"/><stop offset="1" stop-color="#8A6014"/></linearGradient>'
+      + '</defs>';
+    return el;
+  }
+  // one piece (c a color) or an empty place (c null; ask: show a question mark), as an svg
+  function tbPiece(kit, c, u, ask) {
+    const g = (id) => 'url(#' + u + id + ')';
+    let v = '', box = '0 0 40 40';
+    const col = c != null ? PEGS[c].fill : null, ink = c != null ? PEGS[c].ink : null;
+    if (kit === 'ring') {
+      // a ring of a bike lock: a short drum, its edge ridged, the mark printed on it
+      box = '0 0 28 40';
+      let ridges = '';
+      for (let y = 5; y < 36; y += 3.5) ridges += 'M1 ' + y + 'h2.6M24.4 ' + y + 'h2.6';
+      v = '<rect class="edge" x="1" y="1" width="26" height="38" rx="5" fill="' + (col || '#AEB4C2') + '"/>'
+        + '<rect x="1" y="1" width="26" height="38" rx="5" fill="' + g('cyl') + '"/>'
+        + '<path d="' + ridges + '" stroke="#000" stroke-opacity=".32" stroke-width="1.1"/>'
+        + (c != null ? tbGlyph(c, 14, 20, 1.12, ink) : ask ? tbAsk(14, 26, 'rgba(28,32,42,.6)') : '');
+    } else if (kit === 'magnet') {
+      // a magnet on the locker door: the shape itself, a little thick, with its shadow
+      if (c == null) v = '<circle class="edge" cx="20" cy="20" r="14.5" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-opacity=".6" stroke-width="1.6" stroke-dasharray="3.2 3"/>' + (ask ? tbAsk(20, 26, 'rgba(255,255,255,.7)') : '');
+      else {
+        const d = tbShape(c);
+        v = '<path d="' + d + '" transform="translate(1.4 2.4)" fill="#000" fill-opacity=".3" stroke="#000" stroke-opacity=".3" stroke-width="3" stroke-linejoin="round"/>'
+          + '<path class="edge" d="' + d + '" fill="' + col + '" stroke="' + col + '" stroke-width="3" stroke-linejoin="round"/>'
+          + '<path d="' + d + '" fill="' + g('mag') + '"/>';
+      }
+    } else if (kit === 'key') {
+      // a key of the door's keypad: colored glass in a brass rim, the mark lit in it
+      v = '<rect class="edge" x="2" y="2" width="36" height="36" rx="9" fill="' + g('brass') + '"/>'
+        + '<rect x="2.5" y="2.5" width="35" height="35" rx="8.5" fill="none" stroke="#5A3A0A" stroke-opacity=".45"/>'
+        + '<rect x="6" y="6" width="28" height="28" rx="6" fill="' + (col || '#2A1D12') + '"/>'
+        + '<rect x="6" y="6" width="28" height="28" rx="6" fill="' + g('glass') + '"/>'
+        + (c != null ? tbGlyph(c, 20, 20, 1.25, ink) : ask ? tbAsk(20, 26, 'rgba(255,226,170,.55)') : '');
+    } else if (kit === 'lamp') {
+      // a lamp of the safe: a steel bezel round a lit glass dome
+      v = '<circle class="edge" cx="20" cy="20" r="18.5" fill="' + g('steel') + '"/>'
+        + '<circle cx="20" cy="20" r="18" fill="none" stroke="#000" stroke-opacity=".3"/>'
+        + '<circle cx="20" cy="20" r="13.5" fill="' + (col || '#262B33') + '"/>'
+        + '<circle cx="20" cy="20" r="13.5" fill="' + g('lens') + '"' + (c == null ? ' opacity=".45"' : '') + '/>'
+        + (c != null ? tbGlyph(c, 20, 20.5, 1.02, ink, 0.9) : ask ? tbAsk(20, 26, 'rgba(255,255,255,.45)') : '');
+    } else {
+      // a gem of the vault, cut to the color's shape; an empty place is a gold setting
+      if (c == null) {
+        let prongs = '';
+        for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + (k * Math.PI) / 2; prongs += '<circle cx="' + (20 + Math.cos(a) * 13.5).toFixed(2) + '" cy="' + (20 + Math.sin(a) * 13.5).toFixed(2) + '" r="2.7" fill="' + g('gold') + '"/>'; }
+        v = '<circle cx="20" cy="20" r="13.5" fill="#000" fill-opacity=".45"/><circle class="edge" cx="20" cy="20" r="13.5" fill="none" stroke="' + g('gold') + '" stroke-width="3"/>' + prongs + (ask ? tbAsk(20, 26, 'rgba(255,226,150,.65)') : '');
+      } else {
+        const d = tbShape(c);
+        // the table (the flat top) and the lines from it to the outline
+        let pts = TB_POLY[c];
+        if (!pts) pts = Array.from({ length: 8 }, (_, k) => { const a = (k * Math.PI) / 4 - Math.PI / 8; return [20 + Math.cos(a) * 15.5, 20 + Math.sin(a) * 15.5]; });
+        const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+        const inner = pts.map((p) => [cx + (p[0] - cx) * 0.52, cy + (p[1] - cy) * 0.52]);
+        v = '<path class="edge" d="' + d + '" fill="' + col + '"/>'
+          + '<path d="' + d + '" fill="' + g('gem') + '"/>'
+          + '<path d="' + pts.map((p, k) => 'M' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + 'L' + inner[k][0].toFixed(2) + ' ' + inner[k][1].toFixed(2)).join('') + '" stroke="#fff" stroke-opacity=".45" stroke-width=".8"/>'
+          + '<path d="' + tbPath(inner.map((p) => [p[0].toFixed(2), p[1].toFixed(2)])) + '" fill="#fff" fill-opacity=".2" stroke="#fff" stroke-opacity=".6" stroke-width=".8"/>'
+          + '<path d="M13 6.8L14 10.5L17.7 11.5L14 12.5L13 16.2L12 12.5L8.3 11.5L12 10.5Z" fill="#fff" opacity=".9"/>';
+      }
+    }
+    const el = s('svg', { viewBox: box, 'aria-hidden': 'true', focusable: 'false' });
+    el.innerHTML = v;
     return el;
   }
   class TumblerCard extends Card {
@@ -5733,12 +6288,16 @@ PuzzleEnginesFactory(window);
       this.signals = (this.extra && this.extra.signals) || [];
       this.draft = this.extra && Array.isArray(this.extra.draft) ? this.extra.draft.slice() : this.freshDraft();
       this.flipRow = -1;
-      const vault = h('div', { class: 'vault' });
+      // the lock is the board: its own pieces and its own material
+      this.kit = TB_KITS[this.lookLv] || 'ring';
+      this.uid = 'tb' + Math.random().toString(36).slice(2, 8);
+      const vault = h('div', { class: 'vault', 'data-kit': this.kit });
+      vault.append(tbDefs(this.uid));
       this.lightsEl = h('div', { class: 'lights', role: 'img' });
       this.rowsEl = h('div', { class: 'rows', role: 'list', 'aria-label': 'Tries' });
       this.palEl = h('div', { class: 'palette', role: 'group', 'aria-label': 'Colors' });
       for (let c = 0; c < p.C; c++) {
-        const b = gem(c, 'button', { type: 'button', 'aria-label': 'Add ' + PEGS[c].name + ' (key ' + (c + 1) + ')' });
+        const b = this.gem(c, 'button', { type: 'button', 'aria-label': 'Add ' + PEGS[c].name + ' (key ' + (c + 1) + ')' });
         b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); this.put(c); });
         b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.put(c); } });
         this.palEl.append(b);
@@ -5751,6 +6310,14 @@ PuzzleEnginesFactory(window);
       vault.append(this.lightsEl, this.lockEl, this.rowsEl, this.palEl, h('div', { class: 'vault-actions' }, this.clearBtn, this.tryBtn));
       this.vault = vault;
       this.area.append(vault);
+    }
+    // a piece of this lock (c a color), or an empty place (ask: with a question mark)
+    gem(c, tag, attrs, ask) {
+      const el = h(tag || 'span', Object.assign({ class: 'gem', 'data-kit': this.kit }, attrs || {}));
+      if (c == null) el.classList.add('empty');
+      else el.style.setProperty('--c', PEGS[c].fill);
+      el.append(tbPiece(this.kit, c, this.uid, ask));
+      return el;
     }
     // revealed pins are locked in; with per-pin clues, pins already in the right
     // spot carry into the next row too (those can still be changed)
@@ -5846,7 +6413,7 @@ PuzzleEnginesFactory(window);
           const t = tries[r];
           const marks = p.clue === 'pin' ? t.marks : null;
           t.digits.forEach((d, k) => {
-            const g = gem(d);
+            const g = this.gem(d);
             if (marks) {
               // the place behind each pin turns green (right place), gold (in the code, another
               // place: it wiggles to say move me) or stays dark (not in the code), with a big mark
@@ -5877,7 +6444,7 @@ PuzzleEnginesFactory(window);
           const firstEmpty = this.draft.indexOf(null);
           this.draft.forEach((d, k) => {
             const locked = this.run.revealed[k] != null;
-            const b = gem(d, 'button', { type: 'button', 'aria-label': d == null ? 'Empty slot ' + (k + 1) : (locked ? 'Revealed ' : 'Remove ') + PEGS[d].name + ' in slot ' + (k + 1) });
+            const b = this.gem(d, 'button', { type: 'button', 'aria-label': d == null ? 'Empty slot ' + (k + 1) : (locked ? 'Revealed ' : 'Remove ') + PEGS[d].name + ' in slot ' + (k + 1) });
             if (d == null && k === firstEmpty) b.classList.add('up-next');
             if (locked) b.classList.add('locked');
             if (k === this.popAt && d != null) b.classList.add('pop');
@@ -5894,7 +6461,7 @@ PuzzleEnginesFactory(window);
       this.popAt = -1;
       if (this.summary && this.summary.outcome !== 'solved') {
         const row = h('div', { class: 'row code', 'aria-label': 'The hidden colors' });
-        p.secretDigits.forEach((d) => row.append(gem(d)));
+        p.secretDigits.forEach((d) => row.append(this.gem(d)));
         this.rowsEl.append(row);
         focusRow = row;
       }
@@ -5905,10 +6472,10 @@ PuzzleEnginesFactory(window);
         const c = this.summary && this.summary.outcome === 'solved' ? p.secretDigits[k] : K.at[k];
         const sock = h('span', { class: 'sock' + (c != null ? ' found' : '') });
         if (c != null) {
-          const g = gem(c);
+          const g = this.gem(c);
           if (was[k] == null && this.lockKnown) { g.classList.add('landed'); }
           sock.append(g);
-        } else sock.append(h('b', { text: '?' }));
+        } else sock.append(this.gem(null, 'span', null, true));
         this.lockEl.append(sock);
       }
       const nowFound = K.at.filter((c) => c != null).length, before = was.filter((c) => c != null).length;
@@ -11365,7 +11932,7 @@ PuzzleEnginesFactory(window);
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them. Words on the board (what the colors of a try mean, Wrong color, Not here) come in practice and at L1 only, until six codes are cracked (from app 2.29; until then at every level); from L2 the board helps without words.', '',
-        '## Levels', '', '### Outbound', lv('outbound'), 'L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 small cars in the town lot, L2 jeeps and camper vans on the beach, L3 taxis and buses in the city at night, L4 cars with skis and snowploughs at the ski lodge, L5 cars and lorries on the ferry deck), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse trips', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),

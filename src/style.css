@@ -286,6 +286,12 @@ button { cursor: pointer; }
 .car.q-wasted .halo, .car.q-blocked .halo { stroke: var(--meh); }
 .car.q-dead_end .halo, .car.q-in_dead_end .halo, .car.stuck .halo { stroke: var(--bad); }
 .car.stuck .halo { animation: blink 0.9s ease-in-out infinite; }
+/* every level its own ground: a boardwalk round the sand, the city's neon, packed snow, the ferry's deck */
+.board[data-kit="beach"] { --ob-road: #C99A62; --ob-lot: #EED7A4; --ob-stall: #B88E5A; --ob-stall-o: 0.45; --ob-curb: #8E6436; --ob-curb-w: 1; }
+.board[data-kit="beach"] .road-dash { stroke: #A57844; stroke-width: 4.2; stroke-dasharray: 0.35 1.6; opacity: 0.7; }
+.board[data-kit="beach"] .stall { stroke-dasharray: 0.7 0.5; }
+.board[data-kit="ski"] { --ob-road: #CCD8E7; --ob-lot: #E9F0F8; --ob-dash: #FFFFFF; --ob-stall: #A9BCD3; --ob-stall-o: 0.5; --ob-curb: #FFFFFF; --ob-curb-w: 1.8; }
+.board[data-kit="ferry"] { --ob-road: #26323C; --ob-lot: #3A4A56; --ob-dash: #FFC83A; --ob-stall: #FFC83A; --ob-stall-o: 0.32; --ob-curb: #FFC83A; }
 .car:focus, .car:focus-visible { outline: none; }
 .car:focus-visible .halo { stroke: #7FB0FF; }
 
@@ -331,27 +337,27 @@ button { cursor: pointer; }
 /* pipe shadows are one layer, so where two overlap they do not get darker */
 .shadows { opacity: 0.2; }
 .tshade { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tshade line { stroke: #2A1405; stroke-width: 3.5; stroke-linecap: butt; fill: none; }
-.tshade circle, .tshade rect { fill: #2A1405; }
+.tshade line { stroke: var(--cd-shadow, #2A1405); stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+.tshade circle, .tshade rect { fill: var(--cd-shadow, #2A1405); }
 .tile { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tile .case { stroke: #EADCC4; stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+.tile .case { stroke: var(--cd-case, #EADCC4); stroke-width: 3.5; stroke-linecap: butt; fill: none; }
 /* where a pipe stops: a collar just inside the tile's edge */
-.tile .collar { fill: #D6C29F; }
-.tile .hub { fill: #EADCC4; }
-.tile .water { stroke: #2E9CF2; stroke-width: 3.5; stroke-linecap: butt; fill: none; stroke-dasharray: 3.9 5; opacity: 0; transition: opacity 0.2s; }
-.tile .whub { fill: #2E9CF2; opacity: 0; transition: opacity 0.2s; transform-box: fill-box; transform-origin: center; }
+.tile .collar { fill: var(--cd-collar, #D6C29F); }
+.tile .hub { fill: var(--cd-hub, var(--cd-case, #EADCC4)); }
+.tile .water { stroke: var(--cd-water, #2E9CF2); stroke-width: 3.5; stroke-linecap: butt; fill: none; stroke-dasharray: 3.9 5; opacity: 0; transition: opacity 0.2s; }
+.tile .whub { fill: var(--cd-water, #2E9CF2); opacity: 0; transition: opacity 0.2s; transform-box: fill-box; transform-origin: center; }
 .tile.wet .water, .tile.wet .whub { opacity: 1; transition: none; }
-.tile .core { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.1; stroke-linecap: round; fill: none; }
-.tile .flow { stroke: #D8F1FF; stroke-width: 1.05; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; }
+.tile .core { stroke: var(--cd-core, rgba(255, 255, 255, 0.35)); stroke-width: 1.1; stroke-linecap: round; fill: none; }
+.tile .flow { stroke: var(--cd-flow, #D8F1FF); stroke-width: 1.05; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; }
 .tile.wet .flow { opacity: 1; transition-delay: var(--d, 0ms); animation: flow 0.7s linear infinite; }
 .tile.wet .flow.in { animation-direction: reverse; }
-.board.solved .tile.wet .water { stroke: #22A6FF; }
-.board.solved .tile.wet .whub { fill: #22A6FF; }
+.board.solved .tile.wet .water { stroke: var(--cd-water2, #22A6FF); }
+.board.solved .tile.wet .whub { fill: var(--cd-water2, #22A6FF); }
 /* a coupling across the gap where two pipe ends meet; it fills when the water passes */
-.joints .bridge { fill: #EADCC4; transition: fill 0.2s; transform-box: fill-box; transform-origin: center; }
+.joints .bridge { fill: var(--cd-case, #EADCC4); transition: fill 0.2s; transform-box: fill-box; transform-origin: center; }
 .joints .bridge.snap { animation: cdsnap 0.32s cubic-bezier(.3,1.8,.5,1) 0.17s both; }
-.joints .bridge.wet { fill: #2E9CF2; transition: fill 0.12s linear var(--d, 0ms); }
-.board.solved .joints .bridge.wet { fill: #22A6FF; }
+.joints .bridge.wet { fill: var(--cd-water, #2E9CF2); transition: fill 0.12s linear var(--d, 0ms); }
+.board.solved .joints .bridge.wet { fill: var(--cd-water2, #22A6FF); }
 @keyframes cdsnap { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .cell .ring { fill: none; stroke-width: 1; stroke: transparent; transition: stroke 0.2s; }
 .cell.q-optimal .ring { stroke: var(--good); }
@@ -403,7 +409,7 @@ button { cursor: pointer; }
 @keyframes bflap { from { transform: scaleX(1); } to { transform: scaleX(0.22); } }
 @keyframes bperch { 0%, 55%, 100% { transform: scaleX(1); } 70% { transform: scaleX(0.35); } 85% { transform: scaleX(0.9); } }
 /* the spring */
-.well-pool { fill: #2E9CF2; }
+.well-pool { fill: var(--cd-water, #2E9CF2); }
 .well-rim { fill: none; stroke: #CDEBFF; stroke-width: 0.7; }
 .well-ripple { fill: none; stroke: #CDEBFF; stroke-width: 0.5; transform-box: fill-box; transform-origin: center; animation: cdripple 2.6s ease-out infinite; }
 .well-drop { fill: #FFFFFF; }
@@ -412,13 +418,74 @@ button { cursor: pointer; }
 @keyframes cdripple { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.34); opacity: 0; } }
 @keyframes cdbob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.3px); } }
 /* leaks: drops fly from an open end and a puddle spreads where they land */
-.puddle { fill: #55B1F4; transform-box: fill-box; transform-origin: center; animation: cdpuddle 1.4s ease-out var(--ld, 0ms) both; }
+.puddle { fill: var(--cd-puddle, #55B1F4); transform-box: fill-box; transform-origin: center; animation: cdpuddle 1.4s ease-out var(--ld, 0ms) both; }
 .puddle .glint { fill: #A6DBFF; }
-.drip { fill: #6CC2FF; opacity: 0; animation: drip 0.9s ease-in var(--ld, 0ms) infinite; }
+.drip { fill: var(--cd-drip, #6CC2FF); opacity: 0; animation: drip 0.9s ease-in var(--ld, 0ms) infinite; }
 .drip:nth-child(2) { animation-delay: calc(var(--ld, 0ms) + 0.3s); }
 .drip:nth-child(3) { animation-delay: calc(var(--ld, 0ms) + 0.6s); }
 @keyframes cdpuddle { from { transform: scale(0.15); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .plant.wet .sway, .well-ripple, .well-bob, .plant.burst .spark, .board.solved .plant .hopper { animation: none; } .well-ripple { opacity: 0; } }
+/* ---------------------------------------------- Conduit: every level a place of its own */
+/* L2 the farmyard: galvanized pipes over straw; troughs fill and animals come to drink */
+.board.conduit[data-kit="farm"] { --cd-soil: #6A4A2C; --cd-bed: #B58D56; --cd-case: #BCC4CC; --cd-collar: #8C96A1; --cd-core: rgba(255, 255, 255, 0.5); --cd-shadow: #2A1A0A; --cd-water: #3AA0F0; --cd-water2: #28A9FF; --cd-t1: #E8C866; }
+/* L3 the Japanese garden: bamboo pipes, nodes for collars, over raked gravel; ponds with koi */
+.board.conduit[data-kit="japan"] { --cd-soil: #4E524C; --cd-bed: #ECE6D5; --cd-case: #BBCB5E; --cd-collar: #6F8C2A; --cd-core: rgba(255, 255, 235, 0.5); --cd-shadow: #3A3626; --cd-water: #3DB2D8; --cd-water2: #2EBFE8; --cd-flow: #E2F8FF; --cd-puddle: #5CC2E2; --cd-drip: #74CFEA; }
+/* L4 the desert oasis: open stone channels in the sand; palms */
+.board.conduit[data-kit="oasis"] { --cd-soil: #B6874C; --cd-bed: #F4DDAA; --cd-case: #C2935A; --cd-collar: #9C6E3E; --cd-core: rgba(80, 48, 16, 0.45); --cd-shadow: #5A3A14; --cd-water: #22BCD6; --cd-water2: #14C8E2; --cd-puddle: #4FCDE0; --cd-drip: #6ED8E8; }
+.board.conduit[data-kit="oasis"] .tile.wet .core { stroke: rgba(255, 255, 255, 0.4); }
+/* L5 the palace garden at night: marble channels with gold collars on dark marble; fountains */
+.board.conduit[data-kit="palace"] { --cd-soil: #15261D; --cd-bed: #2D3243; --cd-case: #E6E3EE; --cd-collar: #E2B552; --cd-core: rgba(255, 255, 255, 0.6); --cd-shadow: #000000; --cd-water: #45D6FF; --cd-water2: #72E6FF; --cd-flow: #EAFCFF; --cd-puddle: #45D6FF; --cd-drip: #8AE8FF; }
+.board.conduit[data-kit="palace"] .bed-shade { fill: rgba(0, 0, 0, 0.25); }
+.board.conduit .rake { fill: none; stroke: #D2CAB2; stroke-width: 0.28; stroke-linecap: round; }
+.board.conduit .ripple { fill: none; stroke: #E2C38C; stroke-width: 0.3; stroke-linecap: round; }
+.board.conduit .trim { fill: none; stroke: #C9A24A; stroke-opacity: 0.45; stroke-width: 0.25; }
+.board.conduit .straw { fill: none; stroke: #E6C66E; stroke-width: 0.28; stroke-linecap: round; opacity: 0.75; }
+.board.conduit .moss circle { fill: #6E9F57; }
+.board.conduit .moss circle:nth-child(2) { fill: #86B666; }
+.board.conduit .pebbles ellipse { fill: #BE9B6C; }
+.board.conduit .pebbles .p2 { fill: #A88A62; }
+.board.conduit .nightflower circle { fill: #F4F1FF; opacity: 0.85; }
+.board.conduit .nightflower .eye { fill: #FFE27A; opacity: 1; }
+/* the trough fills, then the animal comes up behind it and drinks now and then */
+.plant.farm .trough-water { fill: var(--cd-water); transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); transition: transform 0.4s ease-out; transition-delay: var(--d, 0ms); }
+.plant.farm.wet .trough-water { transform: none; }
+.plant.farm .beast { opacity: 0; transform: translateY(2.6px); transition: transform 0.5s cubic-bezier(.34,1.56,.64,1), opacity 0.25s; transition-delay: calc(var(--d, 0ms) + 220ms); }
+.plant.farm.wet .beast { opacity: 1; transform: none; }
+.plant.farm.wet .sip { animation: cdsip 2.8s ease-in-out calc(var(--d, 0ms) + 900ms + var(--sw, 0s)) infinite; }
+@keyframes cdsip { 0%, 55%, 100% { transform: translateY(0); } 66%, 86% { transform: translateY(0.6px); } }
+/* the pond fills, a koi swims round and a lily opens */
+.plant.japan .pool { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0.3); transition: transform 0.45s ease-out, opacity 0.3s; transition-delay: var(--d, 0ms); }
+.plant.japan.wet .pool { opacity: 1; transform: none; }
+.plant.japan .pool-water { fill: var(--cd-water); }
+.plant.japan .koi-ring, .plant.japan .lily { opacity: 0; transition: opacity 0.4s; transition-delay: calc(var(--d, 0ms) + 300ms); }
+.plant.japan.wet .koi-ring, .plant.japan.wet .lily { opacity: 1; }
+.plant.japan .swim { transform-box: view-box; transform-origin: 0 0; animation: cdswim 8s linear var(--sw, 0s) infinite; }
+@keyframes cdswim { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+/* the palm: brown fronds hang while dry; with water they lift green and the dates show */
+.plant.oasis .frond { transform-box: view-box; transform-origin: 0 0; transform: rotate(calc(var(--a) + var(--dr))) scaleY(var(--fy)); transition: transform 0.55s cubic-bezier(.34,1.56,.64,1); transition-delay: var(--d, 0ms); }
+.plant.oasis .frond path { fill: #9C7440; transition: fill 0.4s; transition-delay: var(--d, 0ms); }
+.plant.oasis .frond .mid { fill: none; stroke: #74522A; stroke-width: 0.16; }
+.plant.oasis.wet .frond { transform: rotate(var(--a)) scaleY(var(--fy)); }
+.plant.oasis.wet .frond path { fill: #3E9E4C; }
+.plant.oasis.wet .frond:nth-child(even) path { fill: #35904A; }
+.plant.oasis.wet .frond .mid { fill: none; stroke: #86D48F; }
+.plant.oasis .nuts { fill: #7A4A22; opacity: 0; transition: opacity 0.3s; transition-delay: calc(var(--d, 0ms) + 300ms); }
+.plant.oasis.wet .nuts { opacity: 1; }
+.plant.oasis .pool-water { fill: var(--cd-water); opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0.3); transition: transform 0.4s, opacity 0.3s; transition-delay: var(--d, 0ms); }
+.plant.oasis.wet .pool-water { opacity: 0.9; transform: none; }
+/* the fountain: the basin fills, the jets rise and play, and it glows in the dark */
+.plant.palace .glow { fill: var(--cd-water); opacity: 0; transition: opacity 0.5s; transition-delay: var(--d, 0ms); }
+.plant.palace.wet .glow { opacity: 0.12; }
+.plant.palace.wet .glow.g2 { opacity: 0.16; }
+.plant.palace .pool-water { fill: var(--cd-water); opacity: 0; transition: opacity 0.35s; transition-delay: var(--d, 0ms); }
+.plant.palace.wet .pool-water { opacity: 1; }
+.plant.palace .jets { transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); opacity: 0; transition: transform 0.5s cubic-bezier(.34,1.56,.64,1), opacity 0.2s; transition-delay: calc(var(--d, 0ms) + 150ms); }
+.plant.palace.wet .jets { transform: none; opacity: 1; }
+.plant.palace .jet { fill: none; stroke: var(--cd-flow); stroke-width: 0.38; stroke-linecap: round; stroke-dasharray: 0.7 0.5; }
+.plant.palace.wet .jet { animation: cdjet 0.6s linear infinite; }
+.plant.palace .drop { fill: var(--cd-flow); }
+@keyframes cdjet { to { stroke-dashoffset: -1.2px; } }
+@media (prefers-reduced-motion: reduce) { .plant.farm.wet .sip, .plant.japan .swim, .plant.palace.wet .jet { animation: none; } }
 
 /* ------------------------------------------------------------ Tumbler */
 .vault {
@@ -538,6 +605,81 @@ button { cursor: pointer; }
 .vbtn.go:active { box-shadow: 0 1px 0 #C98A0B; transform: translateY(3px); }
 .vbtn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
 .vbtn.go[disabled] { background: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.75); opacity: 1; }
+
+/* ------------------------------------------------ Tumbler: the lock is the board */
+/* every piece is drawn by its own lock (bike lock rings, locker magnets, door keys, safe lamps,
+   vault gems); the element only holds it and carries the marks around it */
+.tb-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.gem[data-kit] { background: none; box-shadow: none; border-radius: 10px; }
+.gem[data-kit] > svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.gem[data-kit="magnet"], .gem[data-kit="lamp"], .gem[data-kit="jewel"] { border-radius: 50%; }
+.gem[data-kit="key"] { border-radius: 11px; }
+.gem[data-kit].empty, .row.active .gem[data-kit].empty { background: none; box-shadow: none; }
+.row.active .gem[data-kit].empty.up-next { box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.95); animation: breathe 1.3s ease-in-out infinite; }
+.gem[data-kit].m0 { box-shadow: none; }
+.gem[data-kit="lamp"]:not(.empty) > svg { filter: drop-shadow(0 0 5px var(--c)); }
+.gem[data-kit="lamp"].m0 > svg { filter: none; }
+/* on a clue tile a white outline keeps the piece clear of it, whatever its shape */
+.clue .gem[data-kit].m2, .clue .gem[data-kit].m1 { box-shadow: none; }
+.clue .gem[data-kit].m2 .edge, .clue .gem[data-kit].m1 .edge { stroke: #FFFFFF; stroke-width: 4px; stroke-opacity: 1; stroke-dasharray: none; paint-order: stroke; }
+.palette .gem[data-kit].k1 { box-shadow: 0 0 0 3.5px #FFC83A, 0 0 14px rgba(255, 200, 58, 0.55); }
+.palette .gem[data-kit].k2 { box-shadow: 0 0 0 3.5px #3DDC84, 0 0 12px rgba(61, 220, 132, 0.45); }
+.palette .gem[data-kit].k0 { box-shadow: none; }
+.tb-lock .sock .gem[data-kit].empty { width: 38px; height: 38px; }
+.tb-lock .sock:not(.found) { background: none; box-shadow: none; }
+
+/* L1 the bike lock: black rubber with ribs; the rings sit side by side on a steel barrel */
+.vault[data-kit="ring"] { border-radius: 30px; background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 2px, rgba(0, 0, 0, 0) 2px 7px), linear-gradient(160deg, #3D404C 0%, #282B34 55%, #1C1E25 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.12) inset, 0 -3px 0 rgba(0, 0, 0, 0.4) inset, 0 18px 40px rgba(10, 6, 40, 0.5); }
+.vault[data-kit="ring"]::before, .vault[data-kit="ring"]::after { display: none; }
+.vault[data-kit="ring"] .tb-lock { gap: 3px; padding: 6px 18px; border-radius: 16px; background: linear-gradient(180deg, #474C5B 0%, #9AA1B1 22%, #EEF1F6 46%, #A7AEBD 70%, #474C5B 100%); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5); }
+.vault[data-kit="ring"] .tb-lock .sock { width: 30px; height: 44px; border-radius: 7px; }
+.vault[data-kit="ring"] .tb-lock .gem, .vault[data-kit="ring"] .tb-lock .sock .gem[data-kit].empty { width: 30px; height: 42px; }
+.vault[data-kit="ring"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="ring"] .row { background: rgba(0, 0, 0, 0.32); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5); border-radius: 12px; }
+.vault[data-kit="ring"] .row.active { background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.24); }
+.vault[data-kit="ring"] .vbtn.go:not([disabled]) { background: #FFC83A; color: #1C1E25; }
+
+/* L2 the school locker: painted steel; magnets stick in rows on the door */
+.vault[data-kit="magnet"] { border-radius: 10px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 26%), linear-gradient(160deg, #52A7AD 0%, #45999F 50%, #3A8B91 100%); box-shadow: 0 0 0 3px #1E4A50, 0 2px 0 rgba(255, 255, 255, 0.25) inset, 0 18px 40px rgba(6, 30, 34, 0.45); }
+.vault[data-kit="magnet"]::before, .vault[data-kit="magnet"]::after { display: none; }
+.vault[data-kit="magnet"] .tb-lock { border-radius: 10px; background: rgba(16, 54, 58, 0.5); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.2); }
+.vault[data-kit="magnet"] .tb-lock .sock.found { background: rgba(61, 220, 132, 0.22); }
+.vault[data-kit="magnet"] .row { background: rgba(14, 52, 56, 0.24); box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.14); border-radius: 9px; }
+.vault[data-kit="magnet"] .row.active { background: rgba(255, 255, 255, 0.13); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4); }
+.vault[data-kit="magnet"] .row.later { background: rgba(14, 52, 56, 0.3); }
+.vault[data-kit="magnet"] .vbtn.go:not([disabled]) { background: #FFFFFF; color: #1E4A50; box-shadow: 0 4px 0 #9EC4C6, 0 8px 18px rgba(0, 0, 0, 0.25); }
+.vault[data-kit="magnet"] .vbtn.ghost { background: rgba(14, 52, 56, 0.35); }
+
+/* L3 the front door: painted wood in panels; the keys sit in a brass keypad */
+.vault[data-kit="key"] { border-radius: 12px; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0 2px, rgba(0, 0, 0, 0) 2px 9px, rgba(255, 255, 255, 0.05) 9px 11px, rgba(0, 0, 0, 0) 11px 19px), linear-gradient(160deg, #9C673F 0%, #7E4D2B 55%, #633A1F 100%); box-shadow: 0 0 0 4px #3A1E0E, 0 2px 0 rgba(255, 255, 255, 0.15) inset, 0 18px 40px rgba(40, 16, 4, 0.5); }
+.vault[data-kit="key"] .tb-lock { border-radius: 12px; background: linear-gradient(180deg, #F6D98A 0%, #D6A84A 50%, #A87A22 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.45) inset, 0 3px 8px rgba(0, 0, 0, 0.4); }
+.vault[data-kit="key"] .tb-lock .sock { border-radius: 11px; }
+.vault[data-kit="key"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="key"] .row { border-radius: 8px; background: rgba(48, 22, 8, 0.35); box-shadow: inset 0 0 0 2px rgba(255, 214, 150, 0.12), inset 0 3px 6px rgba(0, 0, 0, 0.45); }
+.vault[data-kit="key"] .row.active { background: rgba(255, 230, 180, 0.1); box-shadow: inset 0 0 0 2px rgba(255, 230, 180, 0.42); }
+.vault[data-kit="key"] .palette { padding: 8px 10px; border-radius: 14px; background: linear-gradient(180deg, #4A2E18, #2E1A0C); box-shadow: inset 0 0 0 2px #C99A3E, 0 3px 8px rgba(0, 0, 0, 0.35); }
+.vault[data-kit="key"] .vbtn.go:not([disabled]) { background: linear-gradient(180deg, #FBE29A, #D9AA4A); color: #3A1E0E; box-shadow: 0 4px 0 #8C5E14, 0 8px 18px rgba(0, 0, 0, 0.3); }
+.vault[data-kit="key"] .vbtn.ghost { background: rgba(255, 230, 180, 0.14); color: #FFF4E0; }
+
+/* L4 the safe: brushed steel in a heavy frame; the lamps light in black strips */
+.vault[data-kit="lamp"] { border-radius: 18px; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, rgba(0, 0, 0, 0) 1px 3px), linear-gradient(160deg, #9098A6 0%, #6F7785 50%, #545B69 100%); box-shadow: 0 0 0 5px #3B414C, 0 0 0 7px #262B33, 0 2px 0 rgba(255, 255, 255, 0.3) inset, 0 18px 40px rgba(0, 0, 0, 0.5); }
+.vault[data-kit="lamp"] .tb-lock { border-radius: 12px; background: #1B1F26; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.28); }
+.vault[data-kit="lamp"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="lamp"] .row { border-radius: 10px; background: #1E222A; box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 255, 255, 0.22); }
+.vault[data-kit="lamp"] .row.active { background: #2A303B; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.32); }
+.vault[data-kit="lamp"] .row.later { background: rgba(0, 0, 0, 0.32); }
+.vault[data-kit="lamp"] .vbtn.go:not([disabled]) { background: linear-gradient(180deg, #F7F9FC, #BCC3CE); color: #262B35; box-shadow: 0 4px 0 #5E6676, 0 8px 18px rgba(0, 0, 0, 0.3); }
+.vault[data-kit="lamp"] .vbtn.ghost { background: rgba(0, 0, 0, 0.22); }
+
+/* L5 the vault: dark velvet in a gold frame; the gems go into gold settings */
+.vault[data-kit="jewel"] { border-radius: 22px; background: radial-gradient(ellipse at 50% 20%, #352A63 0%, #201942 55%, #140F2B 100%); box-shadow: 0 0 0 3px #E9BE55, 0 0 0 6px #8A6014, 0 2px 0 rgba(255, 255, 255, 0.12) inset, 0 18px 40px rgba(0, 0, 0, 0.6); }
+.vault[data-kit="jewel"] .tb-lock { border-radius: 14px; background: linear-gradient(180deg, #FFF3C2 0%, #E9BE55 42%, #B8862A 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.5) inset, 0 3px 8px rgba(0, 0, 0, 0.45); }
+.vault[data-kit="jewel"] .tb-lock .sock.found { background: rgba(20, 15, 43, 0.35); box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
+.vault[data-kit="jewel"] .row { border-radius: 14px; background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55); }
+.vault[data-kit="jewel"] .row.active { background: rgba(255, 233, 168, 0.08); box-shadow: inset 0 0 0 2px rgba(255, 233, 168, 0.4); }
+.vault[data-kit="jewel"] .vbtn.go:not([disabled]) { background: linear-gradient(180deg, #FFEDB0, #E2B552); color: #2A1B05; box-shadow: 0 4px 0 #8C5E14, 0 8px 18px rgba(0, 0, 0, 0.35); }
+/* solved: the frame stays and the lock glows */
+.vault[data-kit].open { box-shadow: 0 0 0 3px var(--gold), 0 0 40px rgba(255, 200, 58, 0.6), 0 18px 40px rgba(10, 6, 40, 0.45); }
 
 /* ------------------------------------------------------------ Glimpse */
 @media (min-width: 700px) {
@@ -1219,7 +1361,7 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
 .scene[data-game="outbound"][data-lv="5"] .curb { stroke-dasharray: 1.6 1.2; }
 /* Conduit: the vegetable patch, the greenhouse, the desert oasis, the palace garden at night */
 [data-scene="conduit"][data-lv="2"], .scene[data-game="conduit"][data-lv="2"] { --bg1: #FFF1C4; --bg2: #D9B25E; --ink: #3A2A10; --ink2: rgba(58,42,16,.7); --chip: rgba(255,255,255,.55); --btn: #3A2A10; --btn-ink: #FFF8E6; --halo: rgba(255,248,225,.75); --cd-soil: #4E3220; --cd-bed: #6E4A2C; --cd-t1: #8DB64A; --cd-t2: #6E9A38; }
-[data-scene="conduit"][data-lv="3"], .scene[data-game="conduit"][data-lv="3"] { --bg1: #F2FFF9; --bg2: #9AD8C0; --ink: #12392C; --ink2: rgba(18,57,44,.7); --chip: rgba(255,255,255,.6); --btn: #12392C; --btn-ink: #F2FFF9; --halo: rgba(240,255,250,.75); --cd-soil: #5D6A64; --cd-bed: #7C8A83; --cd-t1: #5DB070; --cd-t2: #449058; }
+[data-scene="conduit"][data-lv="3"], .scene[data-game="conduit"][data-lv="3"] { --bg1: #FFF2F2; --bg2: #B7DABE; --ink: #1F3A2A; --ink2: rgba(31,58,42,.72); --chip: rgba(255,255,255,.6); --btn: #1F3A2A; --btn-ink: #FFF6F6; --halo: rgba(255,244,246,.75); }
 [data-scene="conduit"][data-lv="4"], .scene[data-game="conduit"][data-lv="4"] { --bg1: #FFE2AE; --bg2: #E07A44; --ink: #3E1A08; --ink2: rgba(62,26,8,.7); --chip: rgba(255,255,255,.5); --btn: #3E1A08; --btn-ink: #FFF3E6; --halo: rgba(255,240,225,.7); --cd-soil: #A86F3A; --cd-bed: #CC9658; --cd-t1: #A7A24A; --cd-t2: #8A8A3A; }
 [data-scene="conduit"][data-lv="5"], .scene[data-game="conduit"][data-lv="5"] { --bg1: #2E5A48; --bg2: #0A1C14; --ink: #EFFFF5; --ink2: rgba(239,255,245,.74); --chip: rgba(255,255,255,.14); --btn: #FFD23F; --btn-ink: #0A1C14; --halo: rgba(255,230,160,.35); --cd-soil: #2F2219; --cd-bed: #4A3626; --cd-t1: #4E8F55; --cd-t2: #3A7444; }
 /* Tumbler: the school locker, the front door, the safe, the vault */
@@ -1227,7 +1369,6 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
 [data-scene="tumbler"][data-lv="3"], .scene[data-game="tumbler"][data-lv="3"] { --bg1: #D9A06A; --bg2: #5A2E18; --halo: rgba(255,210,160,.4); --tb-v1: #8E5A36; --tb-v2: #6A3F24; --tb-v3: #4E2C18; --tb-r1: #FFE9A8; --tb-r2: #B8862A; --tb-off: #5A3A24; }
 [data-scene="tumbler"][data-lv="4"], .scene[data-game="tumbler"][data-lv="4"] { --bg1: #9AA3B2; --bg2: #262B35; --halo: rgba(220,230,245,.35); --tb-v1: #79818F; --tb-v2: #535A67; --tb-v3: #3B414C; --tb-r1: #F4F6FA; --tb-r2: #8D95A3; --tb-off: #444B57; }
 [data-scene="tumbler"][data-lv="5"], .scene[data-game="tumbler"][data-lv="5"] { --bg1: #4A3714; --bg2: #0B0803; --halo: rgba(255,214,120,.35); --tb-v1: #2C2414; --tb-v2: #1A150B; --tb-v3: #0E0B06; --tb-r1: #FFE9A8; --tb-r2: #C9962E; --tb-off: #3A2E14; }
-.scene[data-game="tumbler"][data-lv="5"] .vault:not(.open) { box-shadow: 0 0 0 2px #C9962E, 0 2px 0 rgba(255,255,255,.14) inset, 0 18px 40px rgba(0,0,0,.6); }
 /* Keepsake: the park in summer, autumn, winter and at night */
 [data-scene="keepsake"][data-lv="2"], .scene[data-game="keepsake"][data-lv="2"] { --bg1: #FFF6CC; --bg2: #FFB46B; --ink: #4A2A10; --ink2: rgba(74,42,16,.7); --btn: #4A2A10; --btn-ink: #FFF6E6; --halo: rgba(255,248,225,.75); }
 [data-scene="keepsake"][data-lv="3"], .scene[data-game="keepsake"][data-lv="3"] { --bg1: #FFE6CC; --bg2: #D9773E; --ink: #44200C; --ink2: rgba(68,32,12,.7); --btn: #44200C; --btn-ink: #FFF1E6; --halo: rgba(255,238,225,.7); }
