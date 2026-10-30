@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.34.0';
+  const APP_VERSION = '2.34.1';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -414,18 +414,24 @@
         + lamp(150, 236) + lamp(250, 236) + lamp(176, 660) + lamp(232, 660);
       return v;
     },
-    // the ski lodge: pines in the snow, ski tracks, a chalet roof and a snowman
+    // the ski lodge: pines in the snow, ski tracks, a chalet roof and a skier at the end of the tracks
     4: () => {
       const track = (d) => '<path d="' + d + '" stroke="#C3D3E6" stroke-width="2" fill="none" opacity=".9"/><path d="' + d + '" stroke="#C3D3E6" stroke-width="2" fill="none" opacity=".9" transform="translate(7 2)"/>';
+      // a skier from above: two skis, the poles, a blue jacket and a red bobble hat
+      const skier = (x, y, a) => '<g transform="translate(' + x + ' ' + y + ') rotate(' + a + ')">'
+        + '<ellipse cx="5" cy="6" rx="14" ry="26" fill="#4A6A8A" opacity=".16"/>'
+        + '<rect x="-7" y="-26" width="4.5" height="48" rx="2.2" fill="#E5484D"/><rect x="2.5" y="-26" width="4.5" height="48" rx="2.2" fill="#E5484D"/>'
+        + '<path d="M-11 -2L-17 16M11 -2L17 16" stroke="#3A3F4A" stroke-width="1.6" stroke-linecap="round"/>'
+        + '<circle cx="-17" cy="16" r="2.4" fill="none" stroke="#3A3F4A" stroke-width="1.4"/><circle cx="17" cy="16" r="2.4" fill="none" stroke="#3A3F4A" stroke-width="1.4"/>'
+        + '<ellipse cx="0" cy="0" rx="11" ry="8" fill="#3D8BFD"/><circle cx="0" cy="-2" r="5.5" fill="#E5484D"/><circle cx="0" cy="-2" r="2.2" fill="#FFFFFF"/></g>';
       let v = flakesSvg(26, 5, 0.6)
         + track('M-10 230C60 200 110 220 160 170S260 130 330 150')
-        + track('M60 800C90 760 150 740 190 700S300 660 410 690')
+        + track('M60 800C90 760 150 740 190 700')
         + topRoof(272, 118, 108, 76, '#8A5A3A', '#74482C') + '<path d="M272 118H380V128H272ZM272 184H380V194H272Z" fill="#FFFFFF" opacity=".92"/>'
         + '<circle cx="372" cy="104" r="9" fill="#FFFFFF" opacity=".6"/><circle cx="384" cy="92" r="6" fill="#FFFFFF" opacity=".45"/>'
         + topPine(28, 168, 30) + topPine(84, 214, 20) + topPine(228, 216, 18)
         + topPine(30, 690, 32) + topPine(370, 742, 34) + topPine(330, 676, 18)
-        + '<circle cx="118" cy="706" r="17" fill="#FFFFFF" stroke="#C9D6E6" stroke-width="2"/><circle cx="118" cy="706" r="11" fill="#FFFFFF" stroke="#C9D6E6" stroke-width="1.5"/>'
-        + '<circle cx="118" cy="706" r="7" fill="#1F2128"/><circle cx="118" cy="706" r="4.5" fill="#33363F"/><path d="M118 712L114 724L122 712Z" fill="#FF8A1F"/>';
+        + skier(209, 685, 45);
       return v;
     },
     // the ferry at sunset: its bow and its stern on the sea, the wake behind it, gulls and the sun on the water
@@ -435,11 +441,23 @@
       // the car deck round the lot, and the hull along both sides of it
       v += '<rect x="-4" y="226" width="408" height="440" fill="#B9C2CC"/><rect x="-4" y="226" width="30" height="440" fill="#F4F0F2"/><rect x="374" y="226" width="30" height="440" fill="#F4F0F2"/>'
         + '<rect x="-4" y="226" width="8" height="440" fill="#D84A4A"/><rect x="396" y="226" width="8" height="440" fill="#D84A4A"/>';
-      // the bow: the deck narrowing to a point, the winches, the bridge with its radar
-      v += '<path d="M-4 238L-4 226C40 190 140 140 200 120C260 140 360 190 404 226L404 238Z" fill="#F4F0F2"/>'
-        + '<path d="M-4 226C40 190 140 140 200 120C260 140 360 190 404 226" stroke="#D84A4A" stroke-width="7" fill="none"/>'
-        + '<circle cx="168" cy="164" r="8" fill="#9AA3B0"/><circle cx="232" cy="164" r="8" fill="#9AA3B0"/><path d="M168 164Q200 150 232 164" stroke="#5E6676" stroke-width="2" fill="none"/>'
-        + '<rect x="128" y="190" width="144" height="40" rx="6" fill="#FFFFFF"/><rect x="128" y="190" width="144" height="8" rx="3" fill="#2A3A55"/><circle cx="246" cy="212" r="9" fill="#C9D4E0"/><path d="M238 212H254" stroke="#5E6676" stroke-width="3"/>';
+      // the bow, rounded like a ship's: the bow wave on the water ahead of it, a green deck inside the rail,
+      // the bridge across the ship with its wings (red light to the left, green to the right),
+      // the radar, the mast, the funnel and an orange lifeboat on each side
+      v += '<path d="M-16 216C-16 176 82 120 200 112C318 120 416 176 416 216" stroke="#FFFFFF" stroke-width="5" fill="none" opacity=".75" stroke-linecap="round" stroke-dasharray="30 10"/>'
+        + '<path d="M-18 184C6 142 92 104 200 96C308 104 394 142 418 184" stroke="#FFFFFF" stroke-width="2.5" fill="none" opacity=".4" stroke-linecap="round" stroke-dasharray="12 14"/>'
+        + [[20, 166, 2.5], [34, 152, 2], [52, 142, 1.6], [380, 166, 2.5], [366, 152, 2], [348, 142, 1.6]].map(([x, y, r]) => '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#FFFFFF" opacity=".6"/>').join('')
+        + '<path d="M-4 240V226C-4 186 90 134 200 126C310 134 404 186 404 226V240Z" fill="#5A8F7B"/>'
+        + '<path d="M-4 226C-4 186 90 134 200 126C310 134 404 186 404 226" stroke="#D84A4A" stroke-width="8" fill="none"/>'
+        + '<path d="M10 226C10 194 96 148 200 141C304 148 390 194 390 226" stroke="#FFFFFF" stroke-width="2.5" fill="none" opacity=".85"/>'
+        + [[64, 176], [72, 171], [336, 176], [328, 171]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="3.5" fill="#3A3F4A"/>').join('')
+        + '<rect x="80" y="188" width="252" height="42" rx="8" fill="#000" opacity=".14"/>'
+        + [[40, 196], [342, 196]].map(([x, y]) => '<rect x="' + (x + 4) + '" y="' + (y + 4) + '" width="18" height="38" rx="9" fill="#000" opacity=".14"/><rect x="' + x + '" y="' + y + '" width="18" height="38" rx="9" fill="#FF7A2E"/><rect x="' + (x + 4) + '" y="' + (y + 7) + '" width="10" height="24" rx="5" fill="#FFA466"/>').join('')
+        + '<rect x="30" y="184" width="340" height="11" rx="5" fill="#FFFFFF"/><circle cx="35" cy="189.5" r="3.5" fill="#FF3B3B"/><circle cx="365" cy="189.5" r="3.5" fill="#2EDB6A"/>'
+        + '<rect x="74" y="182" width="252" height="42" rx="8" fill="#FFFFFF"/><rect x="81" y="189" width="238" height="28" rx="5" fill="none" stroke="#DDE2EA" stroke-width="2"/>'
+        + '<g transform="rotate(-24 128 203)"><rect x="114" y="200" width="28" height="6" rx="3" fill="#5E6676"/></g><circle cx="128" cy="203" r="3.5" fill="#9AA3B0"/>'
+        + '<circle cx="174" cy="197" r="4.5" fill="#C9D4E0"/><circle cx="174" cy="197" r="2" fill="#FFF4C2"/>'
+        + '<ellipse cx="270" cy="204" rx="18" ry="12" fill="#D84A4A"/><ellipse cx="271" cy="203" rx="11" ry="7" fill="#2A2A33"/>';
       // the stern: the deck with its lifebuoys and the car ramp, and the wake on the water
       v += '<rect x="-4" y="660" width="408" height="58" fill="#F4F0F2"/><path d="M-4 718H404" stroke="#D84A4A" stroke-width="7"/>'
         + [[40, 690], [360, 690]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r="11" fill="none" stroke="#FF7A2E" stroke-width="6"/><path d="M' + (x - 11) + ' ' + y + 'h4M' + (x + 7) + ' ' + y + 'h4M' + x + ' ' + (y - 11) + 'v4M' + x + ' ' + (y + 7) + 'v4" stroke="#FFFFFF" stroke-width="6"/>').join('')
@@ -447,7 +465,7 @@
         + '<path d="M130 722C110 760 60 790 0 800M270 722C290 760 340 790 400 800" stroke="#FFFFFF" stroke-width="6" fill="none" opacity=".8" stroke-linecap="round"/>'
         + '<path d="M160 724C150 760 130 790 110 800M240 724C250 760 270 790 290 800" stroke="#FFFFFF" stroke-width="3" fill="none" opacity=".5" stroke-linecap="round"/>'
         + scatter(18, 31, 120, 726, 280, 800).map(([x, y, k]) => '<circle cx="' + x.toFixed(0) + '" cy="' + y.toFixed(0) + '" r="' + (1.5 + k * 2.5).toFixed(1) + '" fill="#FFFFFF" opacity=".55"/>').join('')
-        + topGull(60, 160, 1.6) + topGull(340, 150, 1.3) + topGull(96, 196, 1.1);
+        + topGull(118, 162, 1.3) + topGull(300, 156, 1.1);
       return v;
     },
   };
