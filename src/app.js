@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.17.0';
+  const APP_VERSION = '2.18.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -1208,6 +1208,11 @@
   // spring and the plants, dripping water, and on top the cells you tap.
   // The flowers it grows: petals (how many, how big, how far out), their colour, a
   // deeper throat, and the centre with its seeds. The pink one was the first.
+  // A pipe runs from the tile's middle to a collar just inside the tile's edge, so
+  // every pipe end shows where it stops. Where two collars face each other across the
+  // gap between tiles, a coupling joins them: connected pipes look joined, and an end
+  // that meets nothing stays visibly open.
+  const CD_ARM = 3.9, CD_COL_AT = 4.2, CD_COL_L = 1.0, CD_COL_W = 4.6, CD_BRIDGE = 2.0;
   const CD_FLOWERS = [
     { n: 5, r: 1.0, at: 1.15, petal: '#FF6FA7', deep: '#EE4F8C', eye: '#FFD23F', seed: '#EE9F00' },
     { n: 6, r: 0.86, at: 1.24, petal: '#FFC53D', deep: '#F59F1B', eye: '#A65A2B', seed: '#6E3414' },
@@ -1279,7 +1284,10 @@
       const layer = (cls) => { const g = s('g', { class: cls }); svgEl.append(g); return g; };
       const beds = layer('beds');
       this.puddles = layer('puddles');
-      const shadows = layer('shadows'), pipes = layer('pipes'), things = layer('things');
+      const shadows = layer('shadows');
+      this.joints = layer('joints');
+      const pipes = layer('pipes'), things = layer('things');
+      this.bridges = new Map();
       this.leaks = layer('leaks');
       const hits = layer('hits');
       this.angle = this.run.rot.map((r) => r * 90);
@@ -1302,13 +1310,17 @@
         const shade = s('g', { class: 'tshade' }), tile = s('g', { class: 'tile' });
         shade.style.transformOrigin = tile.style.transformOrigin = cx + 'px ' + cy + 'px';
         const line = (cls, sd, b) => s('line', { class: cls, x1: cx, y1: cy, x2: cx + SIDEV[sd][0] * b, y2: cy + SIDEV[sd][1] * b });
+        const collar = (cls, sd) => {
+          const [vx, vy] = SIDEV[sd], w = vx ? CD_COL_L : CD_COL_W, hh = vx ? CD_COL_W : CD_COL_L;
+          return s('rect', { class: cls, x: cx + vx * CD_COL_AT - w / 2, y: cy + vy * CD_COL_AT - hh / 2, width: w, height: hh, rx: 0.42 });
+        };
         const arms = [];
         for (const sd of [1, 2, 4, 8]) {
           if (!(m & sd)) continue;
-          shade.append(line(null, sd, 5));
-          arms.push({ side: sd, pipe: line('case', sd, 5), water: line('water', sd, 5), core: line('core', sd, 4.45), flow: line('flow', sd, 5) });
+          shade.append(line(null, sd, CD_ARM), collar(null, sd));
+          arms.push({ side: sd, pipe: line('case', sd, CD_ARM), water: line('water', sd, CD_ARM), core: line('core', sd, CD_ARM - 0.5), flow: line('flow', sd, CD_ARM), collar: collar('collar', sd) });
         }
-        for (const k of ['pipe', 'water', 'core', 'flow']) arms.forEach((a) => tile.append(a[k]));
+        for (const k of ['pipe', 'water', 'core', 'flow', 'collar']) arms.forEach((a) => tile.append(a[k]));
         let hub = null;
         if (deg >= 2) {
           shade.append(s('circle', { cx, cy, r: 1.95 }));
@@ -1439,7 +1451,7 @@
           arm.flow.classList.toggle('in', isIn);
           if (fresh && T) {
             arm.water.getAnimations().forEach((a) => a.cancel());
-            arm.water.animate([{ strokeDashoffset: (isIn ? -5.6 : 5.6) + 'px' }, { strokeDashoffset: '0px' }], { duration: T, delay: at + (isIn ? 0 : T), easing: 'linear', fill: 'backwards' });
+            arm.water.animate([{ strokeDashoffset: (isIn ? -4.4 : 4.4) + 'px' }, { strokeDashoffset: '0px' }], { duration: T, delay: at + (isIn ? 0 : T), easing: 'linear', fill: 'backwards' });
           }
         }
         const hub = this.hubs[i];
@@ -1467,6 +1479,32 @@
         if (wet) this.wetSet.add(i); else this.wetSet.delete(i);
       }
       this.flowEnd = now() + last;
+      // couplings: where two pipe ends meet across the gap between tiles. A new one snaps
+      // in as the turned tile settles; one that no longer meets goes at once
+      const live = new Set();
+      for (let i = 0; i < n; i++) {
+        const m = mask(i), x = i % p.w, y = (i / p.w) | 0;
+        for (const sd of [2, 4]) {
+          const nx = x + SIDEV[sd][0], ny = y + SIDEV[sd][1];
+          if (!(m & sd) || nx >= p.w || ny >= p.h) continue;
+          const j = ny * p.w + nx;
+          if (!(mask(j) & OPP[sd])) continue;
+          const key = i * 4 + (sd === 2 ? 0 : 1);
+          live.add(key);
+          let b = this.bridges.get(key);
+          if (!b) {
+            const vx = SIDEV[sd][0], ex = x * 10 + 5 + vx * 5, ey = y * 10 + 5 + SIDEV[sd][1] * 5;
+            const w = vx ? CD_BRIDGE : 3.5, hh = vx ? 3.5 : CD_BRIDGE;
+            b = s('rect', { class: 'bridge' + (still ? '' : ' snap'), x: ex - w / 2, y: ey - hh / 2, width: w, height: hh });
+            this.joints.append(b);
+            this.bridges.set(key, b);
+          }
+          const wet = depth[i] >= 0 && depth[j] >= 0;
+          b.style.setProperty('--d', (wet && !b.classList.contains('wet') ? Math.max(0, Math.min(reach[i], reach[j]) - T) : 0) + 'ms');
+          b.classList.toggle('wet', wet);
+        }
+      }
+      for (const [key, b] of this.bridges) if (!live.has(key)) { b.remove(); this.bridges.delete(key); }
       // leaks: a wet pipe end that opens onto nothing drips, and a puddle spreads
       const keep = new Set();
       for (let i = 0; i < n; i++) {

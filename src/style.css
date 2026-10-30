@@ -293,12 +293,14 @@ button { cursor: pointer; }
 /* pipe shadows are one layer, so where two overlap they do not get darker */
 .shadows { opacity: 0.2; }
 .tshade { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tshade line { stroke: #2A1405; stroke-width: 3.5; stroke-linecap: round; fill: none; }
-.tshade circle { fill: #2A1405; }
+.tshade line { stroke: #2A1405; stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+.tshade circle, .tshade rect { fill: #2A1405; }
 .tile { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tile .case { stroke: #EADCC4; stroke-width: 3.5; stroke-linecap: round; fill: none; }
+.tile .case { stroke: #EADCC4; stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+/* where a pipe stops: a collar just inside the tile's edge */
+.tile .collar { fill: #D6C29F; }
 .tile .hub { fill: #EADCC4; }
-.tile .water { stroke: #2E9CF2; stroke-width: 3.5; stroke-linecap: round; fill: none; stroke-dasharray: 5 6.2; opacity: 0; transition: opacity 0.2s; }
+.tile .water { stroke: #2E9CF2; stroke-width: 3.5; stroke-linecap: butt; fill: none; stroke-dasharray: 3.9 5; opacity: 0; transition: opacity 0.2s; }
 .tile .whub { fill: #2E9CF2; opacity: 0; transition: opacity 0.2s; transform-box: fill-box; transform-origin: center; }
 .tile.wet .water, .tile.wet .whub { opacity: 1; transition: none; }
 .tile .core { stroke: rgba(255, 255, 255, 0.35); stroke-width: 1.1; stroke-linecap: round; fill: none; }
@@ -307,6 +309,12 @@ button { cursor: pointer; }
 .tile.wet .flow.in { animation-direction: reverse; }
 .board.solved .tile.wet .water { stroke: #22A6FF; }
 .board.solved .tile.wet .whub { fill: #22A6FF; }
+/* a coupling across the gap where two pipe ends meet; it fills when the water passes */
+.joints .bridge { fill: #EADCC4; transition: fill 0.2s; transform-box: fill-box; transform-origin: center; }
+.joints .bridge.snap { animation: cdsnap 0.32s cubic-bezier(.3,1.8,.5,1) 0.17s both; }
+.joints .bridge.wet { fill: #2E9CF2; transition: fill 0.12s linear var(--d, 0ms); }
+.board.solved .joints .bridge.wet { fill: #22A6FF; }
+@keyframes cdsnap { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .cell .ring { fill: none; stroke-width: 1; stroke: transparent; transition: stroke 0.2s; }
 .cell.q-optimal .ring { stroke: var(--good); }
 .cell.q-wasted .ring { stroke: var(--meh); }
