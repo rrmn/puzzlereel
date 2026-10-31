@@ -3798,7 +3798,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.42.0';
+  const APP_VERSION = '2.43.0';
   const ORDER = E.order;
   // each game's color, as in the logo's seven bars
   const GAME_COLOR = { outbound: '#FFB627', conduit: '#3BB273', tumbler: '#7C5CFF', glimpse: '#3A86EE', stacks: '#5FB8B3', switchback: '#EF7A5A', keepsake: '#E9789D' };
@@ -4968,6 +4968,7 @@ PuzzleEnginesFactory(window);
     usesClock() { return true; }
     // records and the way to the next level show on counted cards where levels move, in free play and research sessions alike
     progressOn() { return !!(this.app.session && this.spec.adaptive && !this.practice && this.o.counter); }
+    get free() { return !!(this.app.session && this.app.session.kind === 'free'); }
     // while playing: does this card still count toward the next level?
     canCount() { return this.potentialStars() >= 2; }
     // the record chip: '' (to beat), 'gone' (out of reach this time) or 'live' (on its way to a new one)
@@ -5850,6 +5851,151 @@ PuzzleEnginesFactory(window);
     if (kit === 'ferry' && c.len === 2 && !/^(jeep|estate|pickup)$/.test(model)) v += R(-3.0, top + 5.6, 6.0, L - 11.2, 1.4, 'rgba(255,160,110,0.16)');
     return { v, col: under || col, arrowY, roofy, small, h: OB_HEIGHT[model] || 1 };
   }
+  // free play (from app 2.43): plain vehicles, after Hermann's test (the drawings drew the eye away
+  // from the puzzle). Each is one solid shape over all its spaces with a dark edge, a windscreen at
+  // the front, one big mark of its kind and a big arrow, so what it covers and where it goes read at
+  // a glance. No people, lamps or small things; the kinds and places stay.
+  const OB_INK = '#1B1E26';
+  function obPlain(kit, c, uid, model) {
+    const L = c.len * 10, top = -L / 2, bot = L / 2;
+    let col = CAR_COLORS[c.color % CAR_COLORS.length].fill;
+    if (model === 'taxi') col = '#FFC93C';
+    if (model === 'bus') col = OB_BUS[c.color % OB_BUS.length];
+    if (model === 'fire') col = '#E2372E';
+    if (model === 'police') col = '#F4F5F7';
+    if (model === 'limo') col = ['#F4F5F7', '#C9CED8', '#B04A6A'][c.color % 3];
+    if (model === 'plough' || model === 'snowcat') col = c.color % 2 ? '#FF8A1F' : '#FFC23A';
+    if (kit === 'ski' && col === '#F4F5F7') col = '#56688F';
+    // on the dark lots the slate car is lifted so it does not sink into the ground
+    if (kit !== 'ski' && kit !== 'beach' && col === '#56688F') col = '#8494BE';
+    const R = obR, glass = '#2A3448', shade = 'rgba(0,0,0,0.16)';
+    const edge = (w) => ' stroke="' + OB_INK + '" stroke-width="' + (w || 0.8) + '" stroke-linejoin="round"';
+    const C = (x, y, r, f, extra) => '<circle cx="' + (+x).toFixed(2) + '" cy="' + (+y).toFixed(2) + '" r="' + r + '" fill="' + f + '"' + (extra || '') + '/>';
+    const El = (x, y, rx, ry, f, extra) => '<ellipse cx="' + (+x).toFixed(2) + '" cy="' + (+y).toFixed(2) + '" rx="' + rx + '" ry="' + ry + '" fill="' + f + '"' + (extra || '') + '/>';
+    const P = (d, f, extra) => '<path d="' + d + '" fill="' + f + '"' + (extra || '') + '/>';
+    const line = (d, stroke, w, extra) => '<path d="' + d + '" fill="none" stroke="' + stroke + '" stroke-width="' + w + '" stroke-linecap="round"' + (extra || '') + '/>';
+    const shine = (x, y, w, hh, rx) => R(x, y, w, hh, rx, 'url(#' + uid + 'g)');
+    let v = '', arrowY = 0.8, under = null;
+    if (c.len === 1) {
+      // a capsule in its space; two-wheelers get handlebars across the front
+      const w = 5.8, y0 = top + 1.0, hh = L - 2.0;
+      if (model === 'quad') v += R(-3.9, top + 1.6, 1.5, 2.6, 0.6, OB_INK) + R(2.4, top + 1.6, 1.5, 2.6, 0.6, OB_INK) + R(-3.9, bot - 4.2, 1.5, 2.6, 0.6, OB_INK) + R(2.4, bot - 4.2, 1.5, 2.6, 0.6, OB_INK);
+      if (model === 'snowmobile') v += R(-3.6, top + 0.5, 1.1, 4.6, 0.55, OB_INK) + R(2.5, top + 0.5, 1.1, 4.6, 0.55, OB_INK);
+      v += R(-w / 2, y0, w, hh, 2.9, col, edge()) + shine(-w / 2, y0, w, hh, 2.9);
+      if (/^(bicycle|scooter|motorbike|pizza)$/.test(model)) v += line('M-3.7 ' + (top + 2.9) + 'H3.7', OB_INK, 0.8);
+      if (model === 'pizza') { v += R(-2.2, bot - 4.3, 4.4, 3.0, 0.6, '#E2453C', edge(0.5)) + C(0, bot - 2.8, 0.95, '#FFD23F'); arrowY = -0.6; }
+      return { v, col, arrowY, small: true, h: OB_HEIGHT[model] || 1 };
+    }
+    const long = c.len >= 3;
+    const bx = -4.1, by = top + 0.8, bw = 8.2, bh = L - 1.6;
+    const rx = model === 'beetle' ? 3.9 : model === 'sports' ? 3.4 : long ? 1.8 : 2.7;
+    let body = col;
+    if (model === 'icecream') body = '#FBF7F2';
+    if (model === 'motorhome') body = '#F2EFE6';
+    // tracks under a snowcat, the blade before a snowplough
+    if (model === 'snowcat') v += R(-4.8, top + 0.6, 2.0, L - 1.2, 0.9, OB_INK) + R(2.8, top + 0.6, 2.0, L - 1.2, 0.9, OB_INK);
+    v += R(bx, by, bw, bh, rx, body, edge()) + shine(bx, by, bw, bh, rx);
+    // only the long ones show a cab window: on a car a dark band beside the arrow read as a bar
+    const screen = (y, w) => (long ? R(-(w || 3.1), y, 2 * (w || 3.1), 1.9, 0.9, glass) : '');
+    switch (model) {
+      case 'hatch': case 'sedan': case 'estate':
+        v += screen(top + 3.0) + R(-3.2, top + 5.4, 6.4, L - (model === 'estate' ? 7.4 : 10.4), 1.4, shade);
+        if (model === 'estate') v += line('M-2.6 ' + (top + 6.2) + 'V' + (bot - 2.8) + 'M2.6 ' + (top + 6.2) + 'V' + (bot - 2.8), OB_INK, 0.5, ' opacity=".55"');
+        break;
+      case 'beetle':
+        v += El(0, 1.6, 3.0, 4.6, shade);
+        break;
+      case 'sports':
+        v += R(-1.6, by + 0.5, 1.0, bh - 1.0, 0.45, '#FFFFFF', ' opacity=".9"') + R(0.6, by + 0.5, 1.0, bh - 1.0, 0.45, '#FFFFFF', ' opacity=".9"') + screen(top + 6.4, 2.8);
+        arrowY = 2.2;
+        break;
+      case 'convertible': case 'buggy':
+        // open: the seats show
+        v += screen(top + 3.0) + R(-3.1, top + 5.4, 6.2, L - 9.0, 1.4, '#3A3532');
+        if (model === 'buggy') v += R(-2.6, top + 5.9, 5.2, L - 10.0, 0.9, 'none', ' stroke="#E9ECEF" stroke-width="0.6"');
+        break;
+      case 'mini': {
+        const rc = obLight(col) ? '#1F2128' : '#F4F5F7';
+        v += screen(top + 3.0) + R(-3.2, top + 5.4, 6.4, L - 9.4, 1.8, rc);
+        under = rc;
+        break;
+      }
+      case 'jeep':
+        v += R(-3.2, top + 4.4, 6.4, L - 10.4, 0.8, shade) + C(0, bot - 2.9, 1.6, OB_INK) + C(0, bot - 2.9, 0.6, '#8E96A3');
+        arrowY = -0.4;
+        break;
+      case 'pickup':
+        v += screen(top + 3.0) + R(-3.3, top + 9.8, 6.6, L - 11.6, 0.6, 'rgba(0,0,0,0.3)') + line('M-4.1 ' + (top + 9.2) + 'H4.1', OB_INK, 0.6);
+        arrowY = top + 7.2;
+        break;
+      case 'taxi':
+        // the lit sign on the roof, the arrow on it
+        v += R(-2.9, -1.8, 5.8, 5.0, 1.2, '#FFF3B0', edge(0.5));
+        arrowY = 0.8; under = '#FFF3B0';
+        break;
+      case 'police':
+        // white with blue ends and the light bar behind the front
+        v += R(bx, by, bw, 4.2, rx, '#2F5BB7') + R(bx, bot - 5.0, bw, 4.2, rx, '#2F5BB7') + R(bx, by, bw, bh, rx, 'none', edge())
+          + R(-3.0, top + 5.4, 3.0, 1.5, 0.5, '#FF3B3B') + R(0, top + 5.4, 3.0, 1.5, 0.5, '#2F7BFF');
+        arrowY = 2.2; under = '#F4F5F7';
+        break;
+      case 'limo':
+        v += screen(top + 5.6, 2.9) + R(-3.0, top + 7.8, 6.0, L - 13.6, 1.2, shade);
+        break;
+      case 'mixer': {
+        // the cab, then a white drum with one red band
+        const dcy = top + 9.4 + (L - 11.2) / 2, dry = (L - 11.2) / 2;
+        v += screen(top + 2.6) + El(0, dcy, 3.5, dry, '#EEF0F3', edge(0.6)) + line('M-2.9 ' + (dcy + 3.2) + 'L2.9 ' + (dcy - 3.2), '#E2453C', 1.3);
+        arrowY = dcy;
+        break;
+      }
+      case 'delivery': case 'lorry': {
+        // the cab, then the box
+        const bxc = model === 'lorry' ? OB_BOX[c.color % OB_BOX.length] : '#F4F5F7';
+        v += screen(top + 2.6) + R(-4.1, top + 8.8, 8.2, L - 9.6, 1.0, bxc, edge());
+        arrowY = top + 8.8 + (L - 9.6) / 2; under = bxc;
+        break;
+      }
+      case 'fire': {
+        let rungs = '';
+        for (let y = top + 11; y < bot - 2.4; y += 2.4) rungs += 'M-1.8 ' + y.toFixed(1) + 'H1.8';
+        v += screen(top + 2.6) + '<path d="M-1.8 ' + (top + 9.6) + 'V' + (bot - 1.8) + 'M1.8 ' + (top + 9.6) + 'V' + (bot - 1.8) + rungs + '" stroke="#F4F5F7" stroke-width="0.7" fill="none" stroke-linecap="round"/>';
+        arrowY = top + 6.6;
+        break;
+      }
+      case 'camper':
+        v += screen(top + 2.6) + R(-3.3, top + 5.6, 6.6, L - 8.0, 1.6, '#FBF5E8');
+        for (let k = 0; k < 3; k++) v += R(-3.3 + k * 2.4, top + 7.6, 1.2, L - 12.0, 0.4, '#F2564D');
+        arrowY = 1.0; under = '#FBF5E8';
+        break;
+      case 'icecream':
+        v += screen(top + 2.6) + R(bx, top + 5.4, bw, 1.4, 0.4, '#FF9EC0')
+          + P('M-2.2 ' + (bot - 10.8) + 'L2.2 ' + (bot - 10.8) + 'L0 ' + (bot - 2.4) + 'Z', '#E8B66A', edge(0.5)) + C(0, bot - 11.6, 2.6, '#FF9EC0', edge(0.5));
+        arrowY = top + 9.6; under = '#FBF7F2';
+        break;
+      case 'bus': {
+        let win = '';
+        for (let y = top + 5.0; y < bot - 3.0; y += 3.2) win += R(-3.3, y, 6.6, 2.0, 0.6, 'rgba(255,255,255,0.32)');
+        v += R(-3.4, top + 1.6, 6.8, 2.0, 0.8, glass) + win;
+        arrowY = 0;
+        break;
+      }
+      case 'motorhome':
+        v += screen(top + 1.8, 3.2) + R(bx, top + 4.4, 1.1, L - 6.6, 0.5, col) + R(2.99, top + 4.4, 1.1, L - 6.6, 0.5, col) + R(-2.4, top + 8.6, 4.8, 4.6, 0.4, '#2B3A66');
+        arrowY = 4.0; under = '#F2EFE6';
+        break;
+      case 'plough':
+        v += P('M-4.9 ' + (top + 0.2) + 'L4.9 ' + (top + 1.2) + 'L4.9 ' + (top + 3.0) + 'L-4.9 ' + (top + 2.0) + 'Z', '#7B8494', edge(0.6)) + screen(top + 4.4, 2.9);
+        arrowY = 1.0;
+        break;
+      case 'snowcat':
+        v += screen(top + 2.8, 2.6) + R(-2.6, top + 6.0, 5.2, L - 9.0, 1.0, shade);
+        break;
+      default:
+        v += screen(top + 3.0);
+    }
+    return { v, col: under || body, arrowY, small: false, h: OB_HEIGHT[model] || 1 };
+  }
   class OutboundCard extends Card {
     pos(v) { return v === E.EXIT ? 'exit' : v == null ? '' : v; }
     hasHistory() { return this.run.hist.length > 0; }
@@ -5888,7 +6034,8 @@ PuzzleEnginesFactory(window);
     }
     drawCar(c, i) {
       const L = c.len * 10, top = -L / 2;
-      const model = obModel(this.kit, c, i, this.p.seed), V = obVehicle(this.kit, c, this.uid, model), dark = obLight(V.col);
+      const plain = this.free;
+      const model = obModel(this.kit, c, i, this.p.seed), V = plain ? obPlain(this.kit, c, this.uid, model) : obVehicle(this.kit, c, this.uid, model), dark = obLight(V.col);
       const g = s('g', { class: 'car', tabindex: '0', role: 'button', 'aria-label': OB_MODEL_NAMES[model] + ' facing ' + DIRNAME[c.dir] });
       // the shadow falls the same way whichever way the vehicle faces, longer for tall ones
       const sw = c.len === 1 ? 3.6 : 8.2, sh = s('g', { transform: 'translate(' + (0.35 + V.h * 0.35).toFixed(2) + ' ' + (0.5 + V.h * 0.55).toFixed(2) + ')' });
@@ -5901,12 +6048,21 @@ PuzzleEnginesFactory(window);
       art.innerHTML = V.v;
       anim.append(art);
       const cy = V.arrowY;
-      const chevron = 'M-1.9 ' + (cy + 1.1) + ' L0 ' + (cy - 0.9) + ' L1.9 ' + (cy + 1.1);
-      const arrow = s('g', V.small ? { transform: 'translate(0 ' + cy + ') scale(0.72) translate(0 ' + -cy + ')' } : null);
-      // where the top is busy, the arrow gets a dark edge so it reads on anything
-      if (V.roofy) arrow.append(s('path', { d: chevron, fill: 'none', stroke: 'rgba(20,22,30,0.6)', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-      arrow.append(s('path', { d: chevron, fill: 'none', stroke: dark && !V.roofy ? 'rgba(30,30,30,0.72)' : 'rgba(255,255,255,0.95)', 'stroke-width': 1.05, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-      anim.append(arrow);
+      if (plain) {
+        // a big white arrow with a dark edge, the same on every vehicle
+        const chev = 'M-2.5 ' + (cy + 1.4) + ' L0 ' + (cy - 1.1) + ' L2.5 ' + (cy + 1.4);
+        const arrow = s('g', V.small ? { transform: 'translate(0 ' + cy + ') scale(0.78) translate(0 ' + -cy + ')' } : null);
+        arrow.append(s('path', { d: chev, fill: 'none', stroke: OB_INK, 'stroke-opacity': 0.8, 'stroke-width': 3.0, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+        arrow.append(s('path', { d: chev, fill: 'none', stroke: '#FFFFFF', 'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+        anim.append(arrow);
+      } else {
+        const chevron = 'M-1.9 ' + (cy + 1.1) + ' L0 ' + (cy - 0.9) + ' L1.9 ' + (cy + 1.1);
+        const arrow = s('g', V.small ? { transform: 'translate(0 ' + cy + ') scale(0.72) translate(0 ' + -cy + ')' } : null);
+        // where the top is busy, the arrow gets a dark edge so it reads on anything
+        if (V.roofy) arrow.append(s('path', { d: chevron, fill: 'none', stroke: 'rgba(20,22,30,0.6)', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+        arrow.append(s('path', { d: chevron, fill: 'none', stroke: dark && !V.roofy ? 'rgba(30,30,30,0.72)' : 'rgba(255,255,255,0.95)', 'stroke-width': 1.05, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+        anim.append(arrow);
+      }
       anim.append(s('rect', { class: 'halo', x: -5.4, y: top - 0.1, width: 10.8, height: L + 0.2, rx: c.len === 1 ? 3 : 3.8 }));
       rot.append(anim);
       g.append(rot);
@@ -7414,7 +7570,6 @@ PuzzleEnginesFactory(window);
   const GL_FREE_PRACTICE = [3000, 2200, 1600], GL_FREE_TOP = 3000;
   class GlimpseCard extends Card {
     // free play (from app 2.42): bigger photos, a slower start, and each photo taken with a tap
-    get free() { return !!(this.app.session && this.app.session.kind === 'free'); }
     freshRun(p) { this.slowPractice(); return this.G.newRun(this.p, this.app.glimpseStart(this.spec)); }
     slowPractice() {
       const p = this.p;
@@ -12534,7 +12689,7 @@ PuzzleEnginesFactory(window);
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them. Words on the board (what the colors of a try mean, Wrong color, Not here) come in practice and at L1 only, until six codes are cracked (from app 2.29; until then at every level); from L2 the board helps without words.', '',
-        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. From app 2.34 the scenes round the Outbound lot are seen from straight above, like the lot (roofs and tree tops, umbrellas on the sand, rooftops at night, pines in the snow, the ferry\'s bow and stern on the sea); until then they were side views. From app 2.35 Outbound\'s scenes show only between the title and the buttons, Conduit has no scene round the board (the palace garden keeps fireflies; until then a barn, a cherry branch, bamboo and a bridge, cacti, lanterns), and the Japanese garden\'s board was redrawn (moss between the beds, green bamboo pipes, lighter ponds, petals on the gravel). From app 2.36 its pipes are round bamboo canes, with a cut bamboo post where three or four meet, on gravel raked in waves, in a dark wooden frame. From app 2.37 the bamboo is split open along the top, so the cane stays green and the water shows running in it (until then a full cane turned blue), and from L3 on Conduit\'s ground is one piece (no bed for each tile; the palace\'s gold edges went), so only the pipes show where the tiles are. From app 2.39 Conduit\'s pipes are thinner and have no collars (two bars stood wherever two pipes met), and Tumbler\'s pieces are round dots in every lock (2.31 to 2.38: rings, magnets, keys, lamps, gems). Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. From app 2.34 the scenes round the Outbound lot are seen from straight above, like the lot (roofs and tree tops, umbrellas on the sand, rooftops at night, pines in the snow, the ferry\'s bow and stern on the sea); until then they were side views. From app 2.35 Outbound\'s scenes show only between the title and the buttons, Conduit has no scene round the board (the palace garden keeps fireflies; until then a barn, a cherry branch, bamboo and a bridge, cacti, lanterns), and the Japanese garden\'s board was redrawn (moss between the beds, green bamboo pipes, lighter ponds, petals on the gravel). From app 2.36 its pipes are round bamboo canes, with a cut bamboo post where three or four meet, on gravel raked in waves, in a dark wooden frame. From app 2.37 the bamboo is split open along the top, so the cane stays green and the water shows running in it (until then a full cane turned blue), and from L3 on Conduit\'s ground is one piece (no bed for each tile; the palace\'s gold edges went), so only the pipes show where the tiles are. From app 2.39 Conduit\'s pipes are thinner and have no collars (two bars stood wherever two pipes met), and Tumbler\'s pieces are round dots in every lock (2.31 to 2.38: rings, magnets, keys, lamps, gems). From app 2.43 free play draws Outbound\'s vehicles plain: one solid shape over all its spaces with a dark edge, a big arrow in its middle and one mark of its kind; the kinds (named in each vehicle\'s label as before) and the places stay. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse trips', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),
