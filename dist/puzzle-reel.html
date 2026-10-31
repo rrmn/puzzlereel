@@ -348,18 +348,18 @@ button { cursor: pointer; }
 /* pipe shadows are one layer, so where two overlap they do not get darker */
 .shadows { opacity: 0.2; }
 .tshade { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tshade line { stroke: var(--cd-shadow, #2A1405); stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+.tshade line { stroke: var(--cd-shadow, #2A1405); stroke-width: 2.3; stroke-linecap: butt; fill: none; }
 .tshade circle, .tshade rect { fill: var(--cd-shadow, #2A1405); }
 .tile { transition: transform 0.26s cubic-bezier(.34,1.56,.64,1); }
-.tile .case { stroke: var(--cd-case, #EADCC4); stroke-width: 3.5; stroke-linecap: butt; fill: none; }
+.tile .case { stroke: var(--cd-case, #EADCC4); stroke-width: 2.3; stroke-linecap: butt; fill: none; }
 /* where a pipe stops: a collar just inside the tile's edge */
 .tile .collar { fill: var(--cd-collar, #D6C29F); }
 .tile .hub { fill: var(--cd-hub, var(--cd-case, #EADCC4)); }
-.tile .water { stroke: var(--cd-water, #2E9CF2); stroke-width: 3.5; stroke-linecap: butt; fill: none; stroke-dasharray: 3.9 5; opacity: 0; transition: opacity 0.2s; }
+.tile .water { stroke: var(--cd-water, #2E9CF2); stroke-width: 2.3; stroke-linecap: butt; fill: none; stroke-dasharray: 3.9 5; opacity: 0; transition: opacity 0.2s; }
 .tile .whub { fill: var(--cd-water, #2E9CF2); opacity: 0; transition: opacity 0.2s; transform-box: fill-box; transform-origin: center; }
 .tile.wet .water, .tile.wet .whub { opacity: 1; transition: none; }
-.tile .core { stroke: var(--cd-core, rgba(255, 255, 255, 0.35)); stroke-width: 1.1; stroke-linecap: round; fill: none; }
-.tile .flow { stroke: var(--cd-flow, #D8F1FF); stroke-width: 1.05; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; }
+.tile .core { stroke: var(--cd-core, rgba(255, 255, 255, 0.35)); stroke-width: 0.7; stroke-linecap: round; fill: none; }
+.tile .flow { stroke: var(--cd-flow, #D8F1FF); stroke-width: 0.7; stroke-linecap: round; stroke-dasharray: 0.9 2.1; fill: none; opacity: 0; transition: opacity 0.25s; }
 .tile.wet .flow { opacity: 1; transition-delay: var(--d, 0ms); animation: flow 0.7s linear infinite; }
 .tile.wet .flow.in { animation-direction: reverse; }
 .board.solved .tile.wet .water { stroke: var(--cd-water2, #22A6FF); }
@@ -445,11 +445,12 @@ button { cursor: pointer; }
    channel) with nodes; the channel is pale while dry and the water runs in it, so the cane stays
    green. Where three or four canes meet, a cut post: skin, pale cut face and the hollow inside */
 .tile .inner, .tile .ihub, .tile .pface, .tile .phole, .tile .pglint, .joints .bridge .bi { display: none; }
-.board.conduit[data-kit="japan"] .tile .inner { display: inline; stroke: var(--cd-in); stroke-width: 2.95; stroke-linecap: butt; fill: none; }
-.board.conduit[data-kit="japan"] .tile .shine { stroke: var(--cd-shine); stroke-width: 2.3; stroke-linecap: butt; fill: none; }
-.board.conduit[data-kit="japan"] .tile .chan { stroke: var(--cd-chan); stroke-width: 1.45; stroke-linecap: butt; fill: none; }
-.board.conduit[data-kit="japan"] .tile .water { stroke-width: 1.45; }
-.board.conduit[data-kit="japan"] .tile .flow { stroke-width: 0.5; }
+.board.conduit[data-kit="japan"] .tile .case, .board.conduit[data-kit="japan"] .tshade line { stroke-width: 2.7; }
+.board.conduit[data-kit="japan"] .tile .inner { display: inline; stroke: var(--cd-in); stroke-width: 2.25; stroke-linecap: butt; fill: none; }
+.board.conduit[data-kit="japan"] .tile .shine { stroke: var(--cd-shine); stroke-width: 1.75; stroke-linecap: butt; fill: none; }
+.board.conduit[data-kit="japan"] .tile .chan { stroke: var(--cd-chan); stroke-width: 1.1; stroke-linecap: butt; fill: none; }
+.board.conduit[data-kit="japan"] .tile .water { stroke-width: 1.1; }
+.board.conduit[data-kit="japan"] .tile .flow { stroke-width: 0.42; }
 .board.conduit[data-kit="japan"] .tile .node { fill: var(--cd-node); }
 .board.conduit[data-kit="japan"] .tile .ihub { display: inline; fill: var(--cd-in); }
 .board.conduit[data-kit="japan"] .tile .shub { fill: var(--cd-shine); }
@@ -599,6 +600,10 @@ button { cursor: pointer; }
 .tb-lock .sock { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
 .tb-lock .sock b { font-family: var(--display); font-weight: 700; font-size: 24px; color: rgba(255, 255, 255, 0.55); }
 .tb-lock .sock.found { background: rgba(61, 220, 132, 0.25); box-shadow: inset 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.45); }
+/* on the bright plates (the bike lock's steel, the front door's and the vault's brass) the empty
+   places are dark, so the question marks and the dots stand out */
+.vault[data-kit="ring"] .tb-lock .sock:not(.found), .vault[data-kit="key"] .tb-lock .sock:not(.found), .vault[data-kit="jewel"] .tb-lock .sock:not(.found) { background: rgba(28, 20, 8, 0.55); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.35); }
+.vault[data-kit="ring"] .tb-lock .sock b, .vault[data-kit="key"] .tb-lock .sock b, .vault[data-kit="jewel"] .tb-lock .sock b { color: rgba(255, 255, 255, 0.85); }
 .tb-lock .gem { width: 38px; height: 38px; }
 .tb-lock .gem.landed { animation: landed 0.7s cubic-bezier(.3,1.7,.5,1) both; }
 @keyframes landed { 0% { transform: translateY(60px) scale(0.4); opacity: 0; } 60% { transform: translateY(-6px) scale(1.15); opacity: 1; } 100% { transform: none; } }
@@ -657,30 +662,12 @@ button { cursor: pointer; }
 /* every piece is drawn by its own lock (bike lock rings, locker magnets, door keys, safe lamps,
    vault gems); the element only holds it and carries the marks around it */
 .tb-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
-.gem[data-kit] { background: none; box-shadow: none; border-radius: 10px; }
-.gem[data-kit] > svg { width: 100%; height: 100%; overflow: visible; display: block; }
-.gem[data-kit="magnet"], .gem[data-kit="lamp"], .gem[data-kit="jewel"] { border-radius: 50%; }
-.gem[data-kit="key"] { border-radius: 11px; }
-.gem[data-kit].empty, .row.active .gem[data-kit].empty { background: none; box-shadow: none; }
-.row.active .gem[data-kit].empty.up-next { box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.95); animation: breathe 1.3s ease-in-out infinite; }
-.gem[data-kit].m0 { box-shadow: none; }
-.gem[data-kit="lamp"]:not(.empty) > svg { filter: drop-shadow(0 0 5px var(--c)); }
-.gem[data-kit="lamp"].m0 > svg { filter: none; }
 /* on a clue tile a white outline keeps the piece clear of it, whatever its shape */
-.clue .gem[data-kit].m2, .clue .gem[data-kit].m1 { box-shadow: none; }
-.clue .gem[data-kit].m2 .edge, .clue .gem[data-kit].m1 .edge { stroke: #FFFFFF; stroke-width: 4px; stroke-opacity: 1; stroke-dasharray: none; paint-order: stroke; }
-.palette .gem[data-kit].k1 { box-shadow: 0 0 0 3.5px #FFC83A, 0 0 14px rgba(255, 200, 58, 0.55); }
-.palette .gem[data-kit].k2 { box-shadow: 0 0 0 3.5px #3DDC84, 0 0 12px rgba(61, 220, 132, 0.45); }
-.palette .gem[data-kit].k0 { box-shadow: none; }
-.tb-lock .sock .gem[data-kit].empty { width: 38px; height: 38px; }
-.tb-lock .sock:not(.found) { background: none; box-shadow: none; }
 
 /* L1 the bike lock: black rubber with ribs; the rings sit side by side on a steel barrel */
 .vault[data-kit="ring"] { border-radius: 30px; background: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0 2px, rgba(0, 0, 0, 0) 2px 7px), linear-gradient(160deg, #3D404C 0%, #282B34 55%, #1C1E25 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.12) inset, 0 -3px 0 rgba(0, 0, 0, 0.4) inset, 0 18px 40px rgba(10, 6, 40, 0.5); }
 .vault[data-kit="ring"]::before, .vault[data-kit="ring"]::after { display: none; }
 .vault[data-kit="ring"] .tb-lock { gap: 3px; padding: 6px 18px; border-radius: 16px; background: linear-gradient(180deg, #474C5B 0%, #9AA1B1 22%, #EEF1F6 46%, #A7AEBD 70%, #474C5B 100%); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5); }
-.vault[data-kit="ring"] .tb-lock .sock { width: 30px; height: 44px; border-radius: 7px; }
-.vault[data-kit="ring"] .tb-lock .gem, .vault[data-kit="ring"] .tb-lock .sock .gem[data-kit].empty { width: 30px; height: 42px; }
 .vault[data-kit="ring"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
 .vault[data-kit="ring"] .row { background: rgba(0, 0, 0, 0.32); box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5); border-radius: 12px; }
 .vault[data-kit="ring"] .row.active { background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.24); }
@@ -700,7 +687,6 @@ button { cursor: pointer; }
 /* L3 the front door: painted wood in panels; the keys sit in a brass keypad */
 .vault[data-kit="key"] { border-radius: 12px; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0 2px, rgba(0, 0, 0, 0) 2px 9px, rgba(255, 255, 255, 0.05) 9px 11px, rgba(0, 0, 0, 0) 11px 19px), linear-gradient(160deg, #9C673F 0%, #7E4D2B 55%, #633A1F 100%); box-shadow: 0 0 0 4px #3A1E0E, 0 2px 0 rgba(255, 255, 255, 0.15) inset, 0 18px 40px rgba(40, 16, 4, 0.5); }
 .vault[data-kit="key"] .tb-lock { border-radius: 12px; background: linear-gradient(180deg, #F6D98A 0%, #D6A84A 50%, #A87A22 100%); box-shadow: 0 2px 0 rgba(255, 255, 255, 0.45) inset, 0 3px 8px rgba(0, 0, 0, 0.4); }
-.vault[data-kit="key"] .tb-lock .sock { border-radius: 11px; }
 .vault[data-kit="key"] .tb-lock .sock.found { background: none; box-shadow: 0 0 0 2.5px #3DDC84, 0 0 14px rgba(61, 220, 132, 0.6); }
 .vault[data-kit="key"] .row { border-radius: 8px; background: rgba(48, 22, 8, 0.35); box-shadow: inset 0 0 0 2px rgba(255, 214, 150, 0.12), inset 0 3px 6px rgba(0, 0, 0, 0.45); }
 .vault[data-kit="key"] .row.active { background: rgba(255, 230, 180, 0.1); box-shadow: inset 0 0 0 2px rgba(255, 230, 180, 0.42); }
@@ -873,7 +859,11 @@ button { cursor: pointer; }
 .sb-go:active { transform: scale(0.93); }
 .sb-go.away { transform: scale(0.06); opacity: 0; pointer-events: none; transition: transform 0.16s ease-in, opacity 0.16s ease-in; }
 .sb-go.away::before { animation: none; }
-.sb-wheel { position: absolute; left: 14px; bottom: 14px; width: 80px; height: 80px; pointer-events: none; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25)); z-index: 1; }
+.sb-wheel { position: absolute; left: 10px; bottom: 10px; width: 124px; height: 124px; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25)); z-index: 1; touch-action: none; cursor: grab; -webkit-tap-highlight-color: transparent; }
+/* the wheel in hand: a light ring round it */
+.sb-wheel::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.85); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.sb-wheel.held::before { opacity: 1; }
+.sb-wheel.held { cursor: grabbing; }
 .sb-wheel svg { width: 100%; height: 100%; display: block; }
 .sb-btn {
   position: absolute; right: 14px; bottom: 14px; width: 86px; height: 86px; border-radius: 50%; border: 0; padding: 0; z-index: 1;
@@ -915,7 +905,7 @@ button { cursor: pointer; }
 .hand.drag svg { animation: dragx 1.3s ease-in-out infinite; transform-origin: 36% 8%; }
 .hand.drag .ripple { display: none; }
 @media (max-height: 640px) {
-  .sb-wheel { width: 66px; height: 66px; left: 10px; bottom: 10px; }
+  .sb-wheel { width: 104px; height: 104px; left: 8px; bottom: 8px; }
   .sb-btn { width: 74px; height: 74px; right: 10px; bottom: 10px; }
 }
 
@@ -3737,7 +3727,7 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.38.0';
+  const APP_VERSION = '2.39.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -5947,6 +5937,9 @@ PuzzleEnginesFactory(window);
   // gap between tiles, a coupling joins them: connected pipes look joined, and an end
   // that meets nothing stays visibly open.
   const CD_ARM = 3.9, CD_COL_AT = 4.2, CD_COL_L = 1.0, CD_COL_W = 4.6, CD_BRIDGE = 2.0;
+  // pipes are thin, so the way the water takes reads at a glance: straight, a bend, a T (until app 2.38 they were 3.5
+  // wide, with a collar where each pipe stopped, so two bars stood wherever two pipes met)
+  const CD_PW = 2.3, CD_CANE = 2.7;
   const CD_FLOWERS = [
     { n: 5, r: 1.0, at: 1.15, petal: '#FF6FA7', deep: '#EE4F8C', eye: '#FFD23F', seed: '#EE9F00' },
     { n: 6, r: 0.86, at: 1.24, petal: '#FFC53D', deep: '#F59F1B', eye: '#A65A2B', seed: '#6E3414' },
@@ -6305,7 +6298,7 @@ PuzzleEnginesFactory(window);
         const nodes = (sd) => {
           const [vx, vy] = SIDEV[sd], nx = cx + vx * 2.55, ny = cy + vy * 2.55;
           return [-1, 1].map((k) => {
-            const off = k * 1.29, len = 1.12, w = vx ? 0.55 : len, hh = vx ? len : 0.55;
+            const off = k * 0.985, len = 0.87, w = vx ? 0.48 : len, hh = vx ? len : 0.48;
             return s('rect', { class: 'node', x: nx + (vx ? 0 : off) - w / 2, y: ny + (vx ? off : 0) - hh / 2, width: w, height: hh, rx: 0.2 });
           });
         };
@@ -6317,8 +6310,8 @@ PuzzleEnginesFactory(window);
             arms.push({ side: sd, pipe: line('case', sd, CD_ARM), inner: line('inner', sd, CD_ARM), shine: line('shine', sd, CD_ARM), nodes: nodes(sd),
               chan: line('chan', sd, CD_ARM), water: line('water', sd, CD_ARM), flow: line('flow', sd, CD_ARM) });
           } else {
-            shade.append(line(null, sd, CD_ARM), collar(null, sd));
-            arms.push({ side: sd, pipe: line('case', sd, CD_ARM), water: line('water', sd, CD_ARM), core: line('core', sd, CD_ARM - 0.5), flow: line('flow', sd, CD_ARM), collar: collar('collar', sd) });
+            shade.append(line(null, sd, CD_ARM));
+            arms.push({ side: sd, pipe: line('case', sd, CD_ARM), water: line('water', sd, CD_ARM), core: line('core', sd, CD_ARM - 0.5), flow: line('flow', sd, CD_ARM) });
           }
         }
         let hub = null;
@@ -6328,27 +6321,27 @@ PuzzleEnginesFactory(window);
           // under each layer fills the corner); where three or four canes meet, a cut bamboo post seen
           // from above, its skin, the pale cut face and the hollow inside, where the water shows
           const bend = deg === 2 && m !== 5 && m !== 10;
-          const piece = bend ? { pipe: s('circle', { class: 'hub', cx, cy, r: 1.75 }), inner: s('circle', { class: 'ihub', cx, cy, r: 1.475 }),
-            shine: s('circle', { class: 'shub', cx, cy, r: 1.15 }), chan: s('circle', { class: 'chub', cx, cy, r: 0.725 }), water: (hub = s('circle', { class: 'whub', cx, cy, r: 0.725 })) } : {};
-          if (bend) shade.append(s('circle', { cx, cy, r: 1.75 }));
+          const piece = bend ? { pipe: s('circle', { class: 'hub', cx, cy, r: 1.35 }), inner: s('circle', { class: 'ihub', cx, cy, r: 1.125 }),
+            shine: s('circle', { class: 'shub', cx, cy, r: 0.875 }), chan: s('circle', { class: 'chub', cx, cy, r: 0.55 }), water: (hub = s('circle', { class: 'whub', cx, cy, r: 0.55 })) } : {};
+          if (bend) shade.append(s('circle', { cx, cy, r: 1.35 }));
           for (const k of ['pipe', 'inner', 'shine', 'nodes', 'chan', 'water', 'flow']) {
             arms.forEach((a) => (k === 'nodes' ? a.nodes.forEach((n) => tile.append(n)) : tile.append(a[k])));
             if (piece[k]) tile.append(piece[k]);
           }
           if (deg >= 3) {
-            shade.append(s('circle', { cx, cy, r: 2.25 }));
-            hub = s('circle', { class: 'whub', cx, cy, r: 0.95 });
-            tile.append(s('circle', { class: 'hub', cx, cy, r: 2.25 }), s('circle', { class: 'ihub', cx, cy, r: 2.0 }),
-              s('circle', { class: 'pface', cx, cy, r: 1.45 }), s('circle', { class: 'phole', cx, cy, r: 0.95 }), hub,
-              s('ellipse', { class: 'pglint', cx: cx - 0.3, cy: cy - 0.35, rx: 0.42, ry: 0.22 }));
+            shade.append(s('circle', { cx, cy, r: 1.8 }));
+            hub = s('circle', { class: 'whub', cx, cy, r: 0.72 });
+            tile.append(s('circle', { class: 'hub', cx, cy, r: 1.8 }), s('circle', { class: 'ihub', cx, cy, r: 1.58 }),
+              s('circle', { class: 'pface', cx, cy, r: 1.15 }), s('circle', { class: 'phole', cx, cy, r: 0.72 }), hub,
+              s('ellipse', { class: 'pglint', cx: cx - 0.24, cy: cy - 0.27, rx: 0.32, ry: 0.17 }));
           }
         } else {
           if (deg >= 2) {
-            shade.append(s('circle', { cx, cy, r: 1.95 }));
-            hub = s('circle', { class: 'whub', cx, cy, r: 1.95 });
+            shade.append(s('circle', { cx, cy, r: CD_PW / 2 + 0.1 }));
+            hub = s('circle', { class: 'whub', cx, cy, r: CD_PW / 2 + 0.1 });
           }
-          for (const k of ['pipe', 'water', 'core', 'flow', 'collar']) arms.forEach((a) => tile.append(a[k]));
-          if (hub) tile.append(s('circle', { class: 'hub', cx, cy, r: 1.95 }), hub);
+          for (const k of ['pipe', 'water', 'core', 'flow']) arms.forEach((a) => tile.append(a[k]));
+          if (hub) tile.append(s('circle', { class: 'hub', cx, cy, r: CD_PW / 2 + 0.1 }), hub);
         }
         shadows.append(shade);
         pipes.append(tile);
@@ -6519,12 +6512,12 @@ PuzzleEnginesFactory(window);
           let b = this.bridges.get(key);
           if (!b) {
             const vx = SIDEV[sd][0], ex = x * 10 + 5 + vx * 5, ey = y * 10 + 5 + SIDEV[sd][1] * 5;
-            const w = vx ? CD_BRIDGE : 3.5, hh = vx ? 3.5 : CD_BRIDGE;
+            const w = vx ? CD_BRIDGE + 0.3 : CD_PW, hh = vx ? CD_PW : CD_BRIDGE + 0.3;
             b = s('g', { class: 'bridge' + (still ? '' : ' snap') });
             if (this.kit === 'japan') {
               // a short piece of cane with its channel, a little longer so it meets the canes
               const L = CD_BRIDGE + 0.3, piece = (cls, a) => s('rect', { class: cls, x: ex - (vx ? L : a) / 2, y: ey - (vx ? a : L) / 2, width: vx ? L : a, height: vx ? a : L });
-              b.append(piece('bo', 3.5), piece('bb', 2.95), piece('bs', 2.3), piece('bi', 1.45));
+              b.append(piece('bo', CD_CANE), piece('bb', 2.25), piece('bs', 1.75), piece('bi', 1.1));
             } else b.append(s('rect', { x: ex - w / 2, y: ey - hh / 2, width: w, height: hh }));
             this.joints.append(b);
             this.bridges.set(key, b);
@@ -6643,103 +6636,11 @@ PuzzleEnginesFactory(window);
   }
 
   // ------------------------------------------------------------- Tumbler
-  // Each lock is the board, with pieces of its own (by the look's level): the rings of a bike
-  // lock, magnets on a locker door, the keys of a front door's keypad, the lamps of a safe, the
-  // gems of a vault. Every color keeps its shape at every level: printed on a ring, a key or a
-  // lamp, and the magnet and the gem are the shape itself.
+  // Each lock is the board (by the look's level): a bike lock, a school locker, a front door's
+  // keypad, a safe, a vault, each with its own material and colors. The pieces are round dots in
+  // every lock, each color with a small mark of its own (from app 2.39; 2.31 to 2.38 gave each lock
+  // pieces of its own, rings, magnets, keys, lamps and gems, which were harder to tell apart)
   const TB_KITS = ['ring', 'ring', 'magnet', 'key', 'lamp', 'jewel'];
-  const tbStar = (cx, cy, R, r) => { let d = ''; for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + (k * Math.PI) / 5, q = k % 2 ? r : R; d += (k ? 'L' : 'M') + (cx + Math.cos(a) * q).toFixed(2) + ' ' + (cy + Math.sin(a) * q).toFixed(2); } return d + 'Z'; };
-  // the shapes, big, in a 40 x 40 box, as corner points (the circle is drawn as a circle)
-  const TB_POLY = [
-    null,
-    [[6, 6], [34, 6], [34, 34], [6, 34]],
-    [[20, 4], [36.5, 33.5], [3.5, 33.5]],
-    [[20, 2.5], [37.5, 20], [20, 37.5], [2.5, 20]],
-    [[14.5, 3.5], [25.5, 3.5], [25.5, 14.5], [36.5, 14.5], [36.5, 25.5], [25.5, 25.5], [25.5, 36.5], [14.5, 36.5], [14.5, 25.5], [3.5, 25.5], [3.5, 14.5], [14.5, 14.5]],
-    tbStar(20, 21.2, 18, 7.8).slice(1, -1).split('L').map((p) => p.split(' ').map(Number)),
-    [[3, 13], [37, 13], [37, 27], [3, 27]],
-  ];
-  const tbPath = (pts) => 'M' + pts.map((p) => p[0] + ' ' + p[1]).join('L') + 'Z';
-  const tbShape = (c) => (c === 0 ? 'M20 4.5a15.5 15.5 0 1 1 0 31a15.5 15.5 0 1 1 0-31z' : tbPath(TB_POLY[c]));
-  // the color's mark printed on a piece, centred at (x, y)
-  const tbGlyph = (c, x, y, k, fill, op) => '<path d="' + PEGS[c].glyph + '" transform="translate(' + x + ' ' + y + ') scale(' + k + ') translate(-8 -8)" fill="' + fill + '"' + (op ? ' opacity="' + op + '"' : '') + '/>';
-  const tbAsk = (x, y, fill) => '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-family="Lexend, system-ui, sans-serif" font-size="17" font-weight="700" fill="' + fill + '">?</text>';
-  // gradients for one card's pieces, kept in the card so two cards on screen never share ids
-  function tbDefs(u) {
-    const el = s('svg', { class: 'tb-defs', width: 0, height: 0, 'aria-hidden': 'true', focusable: 'false' });
-    el.innerHTML = '<defs>'
-      + '<linearGradient id="' + u + 'cyl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".5"/><stop offset=".2" stop-color="#000" stop-opacity=".08"/><stop offset=".42" stop-color="#fff" stop-opacity=".42"/><stop offset=".56" stop-color="#fff" stop-opacity=".1"/><stop offset=".82" stop-color="#000" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient>'
-      + '<linearGradient id="' + u + 'mag" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>'
-      + '<linearGradient id="' + u + 'brass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF0B8"/><stop offset=".35" stop-color="#E2B552"/><stop offset=".7" stop-color="#B78424"/><stop offset="1" stop-color="#8C5E14"/></linearGradient>'
-      + '<linearGradient id="' + u + 'glass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".38" stop-color="#fff" stop-opacity=".06"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>'
-      + '<linearGradient id="' + u + 'steel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".3" stop-color="#C3C9D3"/><stop offset=".55" stop-color="#7D8594"/><stop offset=".8" stop-color="#B9C0CB"/><stop offset="1" stop-color="#5E6676"/></linearGradient>'
-      + '<radialGradient id="' + u + 'lens" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset=".28" stop-color="#fff" stop-opacity=".25"/><stop offset=".62" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient>'
-      + '<linearGradient id="' + u + 'gem" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>'
-      + '<linearGradient id="' + u + 'gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF3C2"/><stop offset=".4" stop-color="#E9BE55"/><stop offset=".75" stop-color="#B8862A"/><stop offset="1" stop-color="#8A6014"/></linearGradient>'
-      + '</defs>';
-    return el;
-  }
-  // one piece (c a color) or an empty place (c null; ask: show a question mark), as an svg
-  function tbPiece(kit, c, u, ask) {
-    const g = (id) => 'url(#' + u + id + ')';
-    let v = '', box = '0 0 40 40';
-    const col = c != null ? PEGS[c].fill : null, ink = c != null ? PEGS[c].ink : null;
-    if (kit === 'ring') {
-      // a ring of a bike lock: a short drum, its edge ridged, the mark printed on it
-      box = '0 0 28 40';
-      let ridges = '';
-      for (let y = 5; y < 36; y += 3.5) ridges += 'M1 ' + y + 'h2.6M24.4 ' + y + 'h2.6';
-      v = '<rect class="edge" x="1" y="1" width="26" height="38" rx="5" fill="' + (col || '#AEB4C2') + '"/>'
-        + '<rect x="1" y="1" width="26" height="38" rx="5" fill="' + g('cyl') + '"/>'
-        + '<path d="' + ridges + '" stroke="#000" stroke-opacity=".32" stroke-width="1.1"/>'
-        + (c != null ? tbGlyph(c, 14, 20, 1.12, ink) : ask ? tbAsk(14, 26, 'rgba(28,32,42,.6)') : '');
-    } else if (kit === 'magnet') {
-      // a magnet on the locker door: the shape itself, a little thick, with its shadow
-      if (c == null) v = '<circle class="edge" cx="20" cy="20" r="14.5" fill="#fff" fill-opacity=".1" stroke="#fff" stroke-opacity=".6" stroke-width="1.6" stroke-dasharray="3.2 3"/>' + (ask ? tbAsk(20, 26, 'rgba(255,255,255,.7)') : '');
-      else {
-        const d = tbShape(c);
-        v = '<path d="' + d + '" transform="translate(1.4 2.4)" fill="#000" fill-opacity=".3" stroke="#000" stroke-opacity=".3" stroke-width="3" stroke-linejoin="round"/>'
-          + '<path class="edge" d="' + d + '" fill="' + col + '" stroke="' + col + '" stroke-width="3" stroke-linejoin="round"/>'
-          + '<path d="' + d + '" fill="' + g('mag') + '"/>';
-      }
-    } else if (kit === 'key') {
-      // a key of the door's keypad: colored glass in a brass rim, the mark lit in it
-      v = '<rect class="edge" x="2" y="2" width="36" height="36" rx="9" fill="' + g('brass') + '"/>'
-        + '<rect x="2.5" y="2.5" width="35" height="35" rx="8.5" fill="none" stroke="#5A3A0A" stroke-opacity=".45"/>'
-        + '<rect x="6" y="6" width="28" height="28" rx="6" fill="' + (col || '#2A1D12') + '"/>'
-        + '<rect x="6" y="6" width="28" height="28" rx="6" fill="' + g('glass') + '"/>'
-        + (c != null ? tbGlyph(c, 20, 20, 1.25, ink) : ask ? tbAsk(20, 26, 'rgba(255,226,170,.55)') : '');
-    } else if (kit === 'lamp') {
-      // a lamp of the safe: a steel bezel round a lit glass dome
-      v = '<circle class="edge" cx="20" cy="20" r="18.5" fill="' + g('steel') + '"/>'
-        + '<circle cx="20" cy="20" r="18" fill="none" stroke="#000" stroke-opacity=".3"/>'
-        + '<circle cx="20" cy="20" r="13.5" fill="' + (col || '#262B33') + '"/>'
-        + '<circle cx="20" cy="20" r="13.5" fill="' + g('lens') + '"' + (c == null ? ' opacity=".45"' : '') + '/>'
-        + (c != null ? tbGlyph(c, 20, 20.5, 1.02, ink, 0.9) : ask ? tbAsk(20, 26, 'rgba(255,255,255,.45)') : '');
-    } else {
-      // a gem of the vault, cut to the color's shape; an empty place is a gold setting
-      if (c == null) {
-        let prongs = '';
-        for (let k = 0; k < 4; k++) { const a = Math.PI / 4 + (k * Math.PI) / 2; prongs += '<circle cx="' + (20 + Math.cos(a) * 13.5).toFixed(2) + '" cy="' + (20 + Math.sin(a) * 13.5).toFixed(2) + '" r="2.7" fill="' + g('gold') + '"/>'; }
-        v = '<circle cx="20" cy="20" r="13.5" fill="#000" fill-opacity=".45"/><circle class="edge" cx="20" cy="20" r="13.5" fill="none" stroke="' + g('gold') + '" stroke-width="3"/>' + prongs + (ask ? tbAsk(20, 26, 'rgba(255,226,150,.65)') : '');
-      } else {
-        const d = tbShape(c);
-        // the table (the flat top) and the lines from it to the outline
-        let pts = TB_POLY[c];
-        if (!pts) pts = Array.from({ length: 8 }, (_, k) => { const a = (k * Math.PI) / 4 - Math.PI / 8; return [20 + Math.cos(a) * 15.5, 20 + Math.sin(a) * 15.5]; });
-        const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
-        const inner = pts.map((p) => [cx + (p[0] - cx) * 0.52, cy + (p[1] - cy) * 0.52]);
-        v = '<path class="edge" d="' + d + '" fill="' + col + '"/>'
-          + '<path d="' + d + '" fill="' + g('gem') + '"/>'
-          + '<path d="' + pts.map((p, k) => 'M' + p[0].toFixed(2) + ' ' + p[1].toFixed(2) + 'L' + inner[k][0].toFixed(2) + ' ' + inner[k][1].toFixed(2)).join('') + '" stroke="#fff" stroke-opacity=".45" stroke-width=".8"/>'
-          + '<path d="' + tbPath(inner.map((p) => [p[0].toFixed(2), p[1].toFixed(2)])) + '" fill="#fff" fill-opacity=".2" stroke="#fff" stroke-opacity=".6" stroke-width=".8"/>'
-          + '<path d="M13 6.8L14 10.5L17.7 11.5L14 12.5L13 16.2L12 12.5L8.3 11.5L12 10.5Z" fill="#fff" opacity=".9"/>';
-      }
-    }
-    const el = s('svg', { viewBox: box, 'aria-hidden': 'true', focusable: 'false' });
-    el.innerHTML = v;
-    return el;
-  }
   class TumblerCard extends Card {
     buildBoard() {
       const p = this.p;
@@ -6748,9 +6649,7 @@ PuzzleEnginesFactory(window);
       this.flipRow = -1;
       // the lock is the board: its own pieces and its own material
       this.kit = TB_KITS[this.lookLv] || 'ring';
-      this.uid = 'tb' + Math.random().toString(36).slice(2, 8);
       const vault = h('div', { class: 'vault', 'data-kit': this.kit });
-      vault.append(tbDefs(this.uid));
       this.lightsEl = h('div', { class: 'lights', role: 'img' });
       this.rowsEl = h('div', { class: 'rows', role: 'list', 'aria-label': 'Tries' });
       this.palEl = h('div', { class: 'palette', role: 'group', 'aria-label': 'Colors' });
@@ -6769,12 +6668,12 @@ PuzzleEnginesFactory(window);
       this.vault = vault;
       this.area.append(vault);
     }
-    // a piece of this lock (c a color), or an empty place (ask: with a question mark)
-    gem(c, tag, attrs, ask) {
-      const el = h(tag || 'span', Object.assign({ class: 'gem', 'data-kit': this.kit }, attrs || {}));
-      if (c == null) el.classList.add('empty');
-      else el.style.setProperty('--c', PEGS[c].fill);
-      el.append(tbPiece(this.kit, c, this.uid, ask));
+    // a piece: a round dot of its color with the color's mark, or an empty place
+    gem(c, tag, attrs) {
+      const el = h(tag || 'span', Object.assign({ class: 'gem' }, attrs || {}));
+      if (c == null) { el.classList.add('empty'); return el; }
+      el.style.setProperty('--c', PEGS[c].fill);
+      el.append(s('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' }, s('path', { d: PEGS[c].glyph, fill: PEGS[c].ink })));
       return el;
     }
     // revealed pins are locked in; with per-pin clues, pins already in the right
@@ -6944,7 +6843,7 @@ PuzzleEnginesFactory(window);
           const g = this.gem(c);
           if (was[k] == null && this.lockKnown) { g.classList.add('landed'); }
           sock.append(g);
-        } else sock.append(this.gem(null, 'span', null, true));
+        } else sock.append(h('b', { text: '?' }));
         this.lockEl.append(sock);
       }
       const nowFound = K.at.filter((c) => c != null).length, before = was.filter((c) => c != null).length;
@@ -10571,7 +10470,11 @@ PuzzleEnginesFactory(window);
       this.wrap.append(this.canvas, this.anchor, this.wheelEl, this.signBtn, this.goBtn);
       this.wrap.addEventListener('pointerdown', (e) => this.steerDown(e));
       this.wrap.addEventListener('pointermove', (e) => this.steerMove(e));
-      const up = (e) => { if (e.pointerId === this.ptr) { this.ptr = null; this.ptrSteer = 0; } };
+      // the wheel is a control of its own: grab it anywhere and turn it, as a real wheel
+      // (a finger near its middle steers by moving sideways); let go and it comes back straight
+      this.wheelEl.addEventListener('pointerdown', (e) => this.wheelDown(e));
+      this.wheelEl.addEventListener('pointermove', (e) => this.wheelMove(e));
+      const up = (e) => { if (e.pointerId === this.ptr) { this.ptr = null; this.ptrSteer = 0; this.ptrWheel = false; this.wheelEl.classList.remove('held'); } };
       this.wrap.addEventListener('pointerup', up);
       this.wrap.addEventListener('pointercancel', up);
       this.onKeyUp = (e) => {
@@ -10704,8 +10607,37 @@ PuzzleEnginesFactory(window);
       this.ptrSteer = 0;
       try { this.wrap.setPointerCapture(e.pointerId); } catch (x) { /* optional */ }
     }
+    wheelDown(e) {
+      if (e.button > 0 || this.summary) return;
+      e.preventDefault();
+      e.stopPropagation();
+      Sound.unlock();
+      if (this.ptr != null) return;
+      const r = this.wheelEl.getBoundingClientRect();
+      this.wc = [r.left + r.width / 2, r.top + r.height / 2, r.width / 2];
+      this.ptr = e.pointerId;
+      this.ptrWheel = true;
+      this.ptrX = e.clientX;
+      this.wa0 = Math.atan2(e.clientY - this.wc[1], e.clientX - this.wc[0]);
+      this.wRim = Math.hypot(e.clientX - this.wc[0], e.clientY - this.wc[1]) > this.wc[2] * 0.35;
+      this.ptrSteer = 0;
+      this.wheelEl.classList.add('held');
+      try { this.wheelEl.setPointerCapture(e.pointerId); } catch (x) { /* optional */ }
+    }
+    wheelMove(e) {
+      if (e.pointerId !== this.ptr || !this.ptrWheel) return;
+      let v;
+      if (this.wRim) {
+        let d = Math.atan2(e.clientY - this.wc[1], e.clientX - this.wc[0]) - this.wa0;
+        while (d > Math.PI) d -= 2 * Math.PI;
+        while (d < -Math.PI) d += 2 * Math.PI;
+        v = d / (Math.PI * 0.55);
+      } else v = (e.clientX - this.ptrX) / this.steerRange;
+      this.ptrSteer = Math.max(-1, Math.min(1, v));
+      if (!this.steered && Math.abs(this.ptrSteer) > 0.2 && this.phase === 'drive') { this.steered = true; this.guide(); }
+    }
     steerMove(e) {
-      if (e.pointerId !== this.ptr) return;
+      if (e.pointerId !== this.ptr || this.ptrWheel) return;
       this.ptrSteer = Math.max(-1, Math.min(1, (e.clientX - this.ptrX) / this.steerRange));
       if (!this.steered && Math.abs(this.ptrSteer) > 0.2 && this.phase === 'drive') { this.steered = true; this.guide(); }
     }
@@ -12402,7 +12334,7 @@ PuzzleEnginesFactory(window);
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them. Words on the board (what the colors of a try mean, Wrong color, Not here) come in practice and at L1 only, until six codes are cracked (from app 2.29; until then at every level); from L2 the board helps without words.', '',
-        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. From app 2.34 the scenes round the Outbound lot are seen from straight above, like the lot (roofs and tree tops, umbrellas on the sand, rooftops at night, pines in the snow, the ferry\'s bow and stern on the sea); until then they were side views. From app 2.35 Outbound\'s scenes show only between the title and the buttons, Conduit has no scene round the board (the palace garden keeps fireflies; until then a barn, a cherry branch, bamboo and a bridge, cacti, lanterns), and the Japanese garden\'s board was redrawn (moss between the beds, green bamboo pipes, lighter ponds, petals on the gravel). From app 2.36 its pipes are round bamboo canes, with a cut bamboo post where three or four meet, on gravel raked in waves, in a dark wooden frame. From app 2.37 the bamboo is split open along the top, so the cane stays green and the water shows running in it (until then a full cane turned blue), and from L3 on Conduit\'s ground is one piece (no bed for each tile; the palace\'s gold edges went), so only the pipes show where the tiles are. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. From app 2.34 the scenes round the Outbound lot are seen from straight above, like the lot (roofs and tree tops, umbrellas on the sand, rooftops at night, pines in the snow, the ferry\'s bow and stern on the sea); until then they were side views. From app 2.35 Outbound\'s scenes show only between the title and the buttons, Conduit has no scene round the board (the palace garden keeps fireflies; until then a barn, a cherry branch, bamboo and a bridge, cacti, lanterns), and the Japanese garden\'s board was redrawn (moss between the beds, green bamboo pipes, lighter ponds, petals on the gravel). From app 2.36 its pipes are round bamboo canes, with a cut bamboo post where three or four meet, on gravel raked in waves, in a dark wooden frame. From app 2.37 the bamboo is split open along the top, so the cane stays green and the water shows running in it (until then a full cane turned blue), and from L3 on Conduit\'s ground is one piece (no bed for each tile; the palace\'s gold edges went), so only the pipes show where the tiles are. From app 2.39 Conduit\'s pipes are thinner and have no collars (two bars stood wherever two pipes met), and Tumbler\'s pieces are round dots in every lock (2.31 to 2.38: rings, magnets, keys, lamps, gems). Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse trips', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),
