@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.41.0';
+  const APP_VERSION = '2.42.0';
   const ORDER = E.order;
   // each game's color, as in the logo's seven bars
   const GAME_COLOR = { outbound: '#FFB627', conduit: '#3BB273', tumbler: '#7C5CFF', glimpse: '#3A86EE', stacks: '#5FB8B3', switchback: '#EF7A5A', keepsake: '#E9789D' };
@@ -3340,6 +3340,16 @@
     bat: [['#4B3E5E', 'M46 44Q30 30 6 33Q12 44 10 55Q18 50 24 58Q30 52 36 62Q40 54 46 58ZM54 44Q70 30 94 33Q88 44 90 55Q82 50 76 58Q70 52 64 62Q60 54 54 58ZM40 53A10 16 0 1 1 60 53A10 16 0 1 1 40 53ZM41 35A9 9 0 1 1 59 35A9 9 0 1 1 41 35ZM42 31L43 17L48 28ZM52 28L57 17L58 31Z'], ['#6A5B80', 'M44 56A6 10 0 1 1 56 56A6 10 0 1 1 44 56Z'], ['#FFE9A8', 'M44.7 35A1.8 1.8 0 1 1 48.3 35A1.8 1.8 0 1 1 44.7 35ZM51.7 35A1.8 1.8 0 1 1 55.3 35A1.8 1.8 0 1 1 51.7 35Z']],
     moth: [['#E3D5B2', 'M10.6 49.24A22 13 -22 1 1 51.4 32.76A22 13 -22 1 1 10.6 49.24ZM48.6 32.76A22 13 22 1 1 89.4 49.24A22 13 22 1 1 48.6 32.76ZM23.02 56.76A14 10 22 1 1 48.98 67.24A14 10 22 1 1 23.02 56.76ZM51.02 67.24A14 10 -22 1 1 76.98 56.76A14 10 -22 1 1 51.02 67.24ZM45 51A5 19 0 1 1 55 51A5 19 0 1 1 45 51ZM48 34Q42 22 34 17L35 15.5Q44 20 50.5 33ZM52 34Q58 22 66 17L65 15.5Q56 20 49.5 33Z'], ['#C9B48A', 'M23 42A5 5 0 1 1 33 42A5 5 0 1 1 23 42ZM67 42A5 5 0 1 1 77 42A5 5 0 1 1 67 42ZM34.5 63A3.5 3.5 0 1 1 41.5 63A3.5 3.5 0 1 1 34.5 63ZM58.5 63A3.5 3.5 0 1 1 65.5 63A3.5 3.5 0 1 1 58.5 63Z'], ['#8C6F45', 'M45 51A5 19 0 1 1 55 51A5 19 0 1 1 45 51ZM48 34Q42 22 34 17L35 15.5Q44 20 50.5 33ZM52 34Q58 22 66 17L65 15.5Q56 20 49.5 33Z']],
   };
+  // free play (from app 2.42): the two things hardest to see on their ground get bolder colors: a red
+  // dragonfly with white wings and a thicker body on the pond, a lighter bat on the night sky
+  const GL_ART_FREE = {
+    dragonfly: [['#FFFFFF', 'M7.22 34.2A23 7 -8 1 1 52.78 27.8A23 7 -8 1 1 7.22 34.2ZM47.22 27.8A23 7 8 1 1 92.78 34.2A23 7 8 1 1 47.22 27.8ZM10.32 40.35A21 6.5 10 1 1 51.68 47.65A21 6.5 10 1 1 10.32 40.35ZM48.32 47.65A21 6.5 -10 1 1 89.68 40.35A21 6.5 -10 1 1 48.32 47.65ZM42 15A8 8 0 1 1 58 15A8 8 0 1 1 42 15ZM42.5 31A7.5 10 0 1 1 57.5 31A7.5 10 0 1 1 42.5 31ZM44.5 64A5.5 30 0 1 1 55.5 64A5.5 30 0 1 1 44.5 64Z'],
+      ['#9FD0E2', 'M13.14 32.95A14 2.4 -8 1 1 40.86 29.05A14 2.4 -8 1 1 13.14 32.95ZM59.14 29.05A14 2.4 8 1 1 86.86 32.95A14 2.4 8 1 1 59.14 29.05ZM16.18 41.92A12 2.2 10 1 1 39.82 46.08A12 2.2 10 1 1 16.18 41.92ZM60.18 46.08A12 2.2 -10 1 1 83.82 41.92A12 2.2 -10 1 1 60.18 46.08Z'],
+      ['#E0412F', 'M42.5 31A7.5 10 0 1 1 57.5 31A7.5 10 0 1 1 42.5 31ZM44.5 64A5.5 30 0 1 1 55.5 64A5.5 30 0 1 1 44.5 64Z'],
+      ['#9E2418', 'M42 15A8 8 0 1 1 58 15A8 8 0 1 1 42 15Z'],
+      ['#FFC9BF', 'M43.6 13.5A2.8 2.8 0 1 1 49.2 13.5A2.8 2.8 0 1 1 43.6 13.5ZM50.8 13.5A2.8 2.8 0 1 1 56.4 13.5A2.8 2.8 0 1 1 50.8 13.5Z']],
+    bat: [['#8A76AA', GL_ART.bat[0][1]], ['#BCAAD9', GL_ART.bat[1][1]], ['#FFF2C2', GL_ART.bat[2][1]]],
+  };
   const glShape = (name) => (GL_ART[name] ? GL_ART[name][0][1] : GL_PATHS[name]);
   // each trip: the card's colors around the photo
   const GL_TRIP = {
@@ -3356,9 +3366,11 @@
     if (!(name in GL_P2D)) { try { GL_P2D[name] = new Path2D(glShape(name)); } catch (e) { GL_P2D[name] = null; } }
     return GL_P2D[name];
   }
-  function glArt(name) {
-    if (!(name in GL_A2D)) { try { GL_A2D[name] = (GL_ART[name] || [['#2A2E37', GL_PATHS[name]]]).map(([c, d]) => [c, new Path2D(d)]); } catch (e) { GL_A2D[name] = null; } }
-    return GL_A2D[name];
+  const glArtOf = (name, free) => (free && GL_ART_FREE[name]) || GL_ART[name] || [['#2A2E37', GL_PATHS[name]]];
+  function glArt(name, free) {
+    const key = free && GL_ART_FREE[name] ? name + '*' : name;
+    if (!(key in GL_A2D)) { try { GL_A2D[key] = glArtOf(name, free).map(([c, d]) => [c, new Path2D(d)]); } catch (e) { GL_A2D[key] = null; } }
+    return GL_A2D[key];
   }
   // one silhouette in the current fill (Switchback's signs)
   function glDraw(ctx, name, x, y, size, rot, flip) {
@@ -3374,8 +3386,8 @@
     ctx.restore();
   }
   // an animal in color, with a thin light rim so it stands out on any ground
-  function glDrawArt(ctx, name, x, y, size, rot, flip, rim) {
-    const L = glArt(name);
+  function glDrawArt(ctx, name, x, y, size, rot, flip, rim, free) {
+    const L = glArt(name, free);
     if (!L) return;
     const k = size / 100;
     ctx.save();
@@ -3390,8 +3402,8 @@
   function glSvg(name) {
     return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, s('path', { d: glShape(name) }));
   }
-  function glArtSvg(name) {
-    return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, (GL_ART[name] || [['currentColor', GL_PATHS[name]]]).map(([c, d]) => s('path', { d, fill: c })));
+  function glArtSvg(name, free) {
+    return s('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, ((free && GL_ART_FREE[name]) || GL_ART[name] || [['currentColor', GL_PATHS[name]]]).map(([c, d]) => s('path', { d, fill: c })));
   }
   function glXY(G, R, slot) {
     const sl = G.slots[slot], a = (sl.a * Math.PI) / 180;
@@ -3474,14 +3486,24 @@
   }
   // the middle animal at 0.34 R, the thing to find and what is in its way at 0.2 R
   const GL_CENTER = 0.34, GL_ITEM = 0.2, GL_RIM = 'rgba(255,255,255,.92)';
+  // free play's photos (from app 2.42): the animal in the middle and the things around it a good
+  // deal bigger, the rings a little further out to make room (the same 48 places, in the same order)
+  const GL_FREE = (() => {
+    const ringR = [0.42, 0.66, 0.88], ringN = [8, 16, 24], slots = [];
+    ringR.forEach((r, i) => { for (let k = 0; k < ringN[i]; k++) slots.push({ ring: i + 1, a: (360 * k) / ringN[i], r }); });
+    return { slots, ringR, center: 0.46, item: 0.28, calm: true, free: true };
+  })();
+  function glGeo(G, free) {
+    return free ? Object.assign({ slotOf: G.slotOf }, GL_FREE) : { slots: G.slots, slotOf: G.slotOf, ringR: G.ringR, center: GL_CENTER, item: GL_ITEM, calm: false };
+  }
   function glStim(ctx, R, p, t, G) {
     glScene(ctx, R, p.theme);
-    glDrawArt(ctx, p.pair[t.c], R, R, GL_CENTER * R, 0, false, GL_RIM);
+    glDrawArt(ctx, p.pair[t.c], R, R, (G.center || GL_CENTER) * R, 0, false, GL_RIM, G.free);
     if (!p.periph) return;
-    const size = GL_ITEM * R;
-    for (const d of t.d) { const q = glXY(G, R, d[0]); glDrawArt(ctx, p.distractor || 'leaf', q[0], q[1], size, d[1], false, GL_RIM); }
+    const size = (G.item || GL_ITEM) * R;
+    for (const d of t.d) { const q = glXY(G, R, d[0]); glDrawArt(ctx, p.distractor || 'leaf', q[0], q[1], size, d[1], false, GL_RIM, G.free); }
     const b = glXY(G, R, G.slotOf(t.ring, t.dir));
-    glDrawArt(ctx, t.tg || p.target || 'bird', b[0], b[1], size, 0, !!t.flip, GL_RIM);
+    glDrawArt(ctx, t.tg || p.target || 'bird', b[0], b[1], size, 0, !!t.flip, GL_RIM, G.free);
   }
   // pattern mask: outlines of the trip's own shapes on every position an item can take
   // (the 48 ring spots and the middle), then a scatter of outlines and short strokes,
@@ -3489,7 +3511,7 @@
   function glMask(ctx, R, seed, names, ink, G) {
     const rng = E.makeRng(seed);
     const pt = (maxR) => { const a = rng() * Math.PI * 2, r = Math.sqrt(rng()) * maxR; return [R + Math.cos(a) * r, R + Math.sin(a) * r]; };
-    const outline = (x, y, size) => {
+    const outline = (x, y, size, lw) => {
       const path = glPath(names[rng.int(names.length)]);
       if (!path) return;
       const k = size / 100;
@@ -3498,7 +3520,7 @@
       ctx.rotate(rng() * Math.PI * 2);
       ctx.scale(k, k);
       ctx.translate(-50, -50);
-      ctx.lineWidth = (0.014 * R) / k;
+      ctx.lineWidth = ((lw || 0.014) * R) / k;
       ctx.stroke(path);
       ctx.restore();
     };
@@ -3508,8 +3530,15 @@
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     const jit = () => (rng() - 0.5) * 0.08 * R;
-    for (let k = 0; k < G.slots.length; k++) { const q = glXY(G, R, k); outline(q[0] + jit(), q[1] + jit(), (0.18 + rng() * 0.1) * R); }
-    for (let k = 0; k < 3; k++) outline(R + jit(), R + jit(), (0.26 + rng() * 0.14) * R);
+    if (G.calm) {
+      for (let k = 0; k < G.slots.length; k++) { const q = glXY(G, R, k); outline(q[0] + jit(), q[1] + jit(), (0.2 + rng() * 0.08) * R, 0.011); }
+      for (let k = 0; k < 3; k++) outline(R + jit(), R + jit(), (0.32 + rng() * 0.12) * R, 0.011);
+    } else {
+      for (let k = 0; k < G.slots.length; k++) { const q = glXY(G, R, k); outline(q[0] + jit(), q[1] + jit(), (0.18 + rng() * 0.1) * R); }
+      for (let k = 0; k < 3; k++) outline(R + jit(), R + jit(), (0.26 + rng() * 0.14) * R);
+    }
+    // free play: calmer, the outlines where things can be and nothing more
+    if (G.calm) { ctx.restore(); return; }
     for (let i = 0; i < 26; i++) { const q = pt(1.3 * R); outline(q[0], q[1], (0.14 + rng() * 0.18) * R); }
     for (let i = 0; i < 150; i++) {
       const q = pt(1.35 * R);
@@ -3584,19 +3613,30 @@
     return Math.max(4, Math.min(70, m));
   }
 
+  // free play's practice photos: slower, as free play's own photos start slow (from app 2.42)
+  const GL_FREE_PRACTICE = [3000, 2200, 1600], GL_FREE_TOP = 3000;
   class GlimpseCard extends Card {
-    freshRun(p) { return this.G.newRun(p, this.app.glimpseStart(this.spec)); }
+    // free play (from app 2.42): bigger photos, a slower start, and each photo taken with a tap
+    get free() { return !!(this.app.session && this.app.session.kind === 'free'); }
+    freshRun(p) { this.slowPractice(); return this.G.newRun(this.p, this.app.glimpseStart(this.spec)); }
+    slowPractice() {
+      const p = this.p;
+      if (this.free && p.fixedMs && p.fixedMs[0] !== GL_FREE_PRACTICE[0]) this.p = Object.assign({}, p, { fixedMs: GL_FREE_PRACTICE.slice(0, p.fixedMs.length) });
+    }
     usesClock() { return false; }
     potentialStars() { return 3; }
     refresh() {}
     buildBoard() {
+      this.slowPractice();
       const p = this.p;
+      this.geo = glGeo(this.G, this.free);
       this.phase = this.summary ? 'done' : 'ready';
       this.D = 0; this.R = 0; this.dpr = 1;
       const trip = GL_TRIP[p.theme] || GL_TRIP.meadow;
       this.tg = p.target || (p.targetSet && p.targetSet[0]) || 'bird';
       this.maskShapes = p.pair.concat([this.tg], [p.distractor || 'leaf']);
       this.el.dataset.theme = p.theme || 'meadow';
+      this.el.classList.toggle('gl-free', this.free);
       this.el.style.setProperty('--bg1', trip.bg1);
       this.el.style.setProperty('--bg2', trip.bg2);
       this.album = [];
@@ -3611,7 +3651,7 @@
       this.goBtn.addEventListener('click', () => this.begin());
       this.choiceEl = h('div', { class: 'gl-choices', role: 'group', 'aria-label': 'Who was in the middle', hidden: true });
       this.choiceBtns = p.pair.map((name, k) => {
-        const b = h('button', { class: 'gl-choice', type: 'button', 'aria-label': name }, glArtSvg(name));
+        const b = h('button', { class: 'gl-choice', type: 'button', 'aria-label': name }, glArtSvg(name, this.free));
         b.addEventListener('pointerdown', (e) => { if (e.button > 0) return; e.preventDefault(); e.stopPropagation(); this.pick(k); });
         b.addEventListener('click', () => this.pick(k));
         this.choiceEl.append(b);
@@ -3658,7 +3698,7 @@
       const q = this.qEl, tg = this.tg;
       q.textContent = '';
       q.className = 'gl-q ' + kind;
-      if (kind === 'find') q.append(h('span', { class: 'gl-q-art' }, glArtSvg(tg)), 'Find the ' + tg);
+      if (kind === 'find') q.append(h('span', { class: 'gl-q-art' }, glArtSvg(tg, this.free)), 'Find the ' + tg);
       else if (kind === 'what') q.append('Who was in the middle?');
       else if (kind === 'where') q.append('Where was the ' + tg + '?');
       else if (kind === 'ok') q.append('Got it!');
@@ -3697,8 +3737,8 @@
     placeSpots() {
       if (!this.R) return;
       const t = this.p.trials[Math.min(this.run.i, this.p.n - 1)];
-      const rr = this.G.ringR[((t && t.ring) || 2) - 1] * this.R;
-      const size = Math.round(Math.max(30, Math.min(48, 0.24 * this.R)));
+      const rr = this.geo.ringR[((t && t.ring) || 2) - 1] * this.R;
+      const size = this.free ? Math.round(Math.max(36, Math.min(56, 0.3 * this.R))) : Math.round(Math.max(30, Math.min(48, 0.24 * this.R)));
       this.spotBtns.forEach((b, d) => {
         const a = (d * Math.PI) / 4;
         b.style.left = this.R + Math.sin(a) * rr + 'px';
@@ -3720,7 +3760,8 @@
     // after the shutter closes, its pattern fades but stays faintly behind the questions
     fadeMask() {
       caf(this.fadeId);
-      const t0 = now(), ms = 280, floor = 0.18;
+      // free play clears the pattern away, so the questions stand on the plain shutter
+      const t0 = now(), ms = 280, floor = this.free ? 0 : 0.18;
       const step = () => {
         if (this.phase !== 'what' && this.phase !== 'where') return;
         const k = Math.min(1, (now() - t0) / ms);
@@ -3741,12 +3782,12 @@
       sc.setTransform(1, 0, 0, 1, 0, 0);
       sc.clearRect(0, 0, W, W);
       sc.setTransform(k, 0, 0, k, 0, 0);
-      glStim(sc, this.R, this.p, t, this.G);
+      glStim(sc, this.R, this.p, t, this.geo);
       const mc = this.maskC.getContext('2d');
       mc.setTransform(1, 0, 0, 1, 0, 0);
       mc.clearRect(0, 0, W, W);
       mc.setTransform(k, 0, 0, k, 0, 0);
-      glMask(mc, this.R, t.mask, this.maskShapes, 'rgba(214,222,236,.62)', this.G);
+      glMask(mc, this.R, t.mask, this.maskShapes, this.free ? 'rgba(214,222,236,.5)' : 'rgba(214,222,236,.62)', this.geo);
     }
     // ---- one photo: focusing, the photo, the shutter closing, then the two answers
     begin() {
@@ -3754,6 +3795,13 @@
       Sound.unlock();
       Sound.play('look');
       this.hideHand();
+      // free play: the last photo with its answers stays until this tap
+      clearTimeout(this.offerT);
+      this.clearReveal();
+      this.goBtn.classList.remove('over');
+      this.choiceEl.hidden = true;
+      this.spotsEl.hidden = true;
+      this.placeSpots();
       this.startLook();
     }
     startLook() {
@@ -3862,8 +3910,9 @@
     // (a hand would say "tap", and this is the moment to look)
     showMarks(t) {
       this.hideMarks();
-      const at = [[this.R, this.R, 0.52]];
-      if (this.p.periph) { const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir)); at.push([q[0], q[1], 0.36]); }
+      const [dc, dt] = this.free ? [0.56, 0.38] : [0.52, 0.36];
+      const at = [[this.R, this.R, dc]];
+      if (this.p.periph) { const q = glXY(this.geo, this.R, this.geo.slotOf(t.ring, t.dir)); at.push([q[0], q[1], dt]); }
       this.marks = at.map(([x, y, d]) => {
         const m = h('i', { class: 'gl-mark', 'aria-hidden': 'true' });
         const size = Math.round(d * this.R);
@@ -3937,7 +3986,19 @@
       this.renderDots();
       this.updateStatus();
       this.app.touch();
-      this.later(() => this.nextLook(), show ? 1500 : 300);
+      // free play: the photo stays with its answers, and the camera comes back for the next one
+      if (this.free && this.run.i < this.p.n) this.offerT = this.later(() => this.offerNext(), show ? 900 : 300);
+      else this.later(() => this.nextLook(), show ? 1500 : 300);
+    }
+    offerNext() {
+      if (this.summary || this.phase !== 'fb') return;
+      this.phase = 'ready';
+      this.goBtn.hidden = false;
+      this.goBtn.disabled = false;
+      this.goBtn.classList.add('over');
+      this.goBtn.classList.remove('away');
+      this.goBtn.setAttribute('aria-label', 'Take the next photo');
+      this.later(() => this.guide(), 260);
     }
     // the shutter opens on the photo: green rings round what was right, red where a tap went wrong;
     // then the photo goes into the album
@@ -3954,14 +4015,16 @@
         this.lens.append(m);
         this.rings.push(m);
       };
-      ring(this.R, this.R, 0.48, cOk ? 'ok' : 'show');
+      // ring sizes (share of R): the middle, the thing, a wrong tap; free play's hug its bigger things
+      const [dc, dt, db] = this.free ? [0.52, 0.34, 0.3] : [0.48, 0.32, 0.24];
+      ring(this.R, this.R, dc, cOk ? 'ok' : 'show');
       let spark = null;
       if (this.p.periph) {
-        const q = glXY(this.G, this.R, this.G.slotOf(t.ring, t.dir));
-        ring(q[0], q[1], 0.32, a.d == null ? 'show' : dOk ? 'ok' : 'show');
+        const q = glXY(this.geo, this.R, this.geo.slotOf(t.ring, t.dir));
+        ring(q[0], q[1], dt, a.d == null ? 'show' : dOk ? 'ok' : 'show');
         if (a.d != null && !dOk) {
-          const rr = this.G.ringR[t.ring - 1] * this.R, an = (a.d * Math.PI) / 4;
-          ring(this.R + Math.sin(an) * rr, this.R - Math.cos(an) * rr, 0.24, 'bad');
+          const rr = this.geo.ringR[t.ring - 1] * this.R, an = (a.d * Math.PI) / 4;
+          ring(this.R + Math.sin(an) * rr, this.R - Math.cos(an) * rr, db, 'bad');
         }
         spark = q;
       }
@@ -8683,7 +8746,8 @@
         'A round is 4 looks at levels 1 and 2, 5 at level 3 and 6 at levels 4 and 5, so rounds grow with the level like the puzzles do. The first look starts when the player taps the camera; the rest follow on their own after the feedback. Each look: a fixation mark for 1200 to 1499 ms (400 to 699 ms, seeded, plus an 800 ms lead-in) with four focus marks closing in slowly over the first 1060 ms, so every flash is announced, then the flash, a 300 ms pattern mask, then the two answers (unspeeded). Everything shown during a look is drawn on one canvas in requestAnimationFrame callbacks, so the flash and the mask start on screen frames. The frame period is measured during each fixation.',
         'Display times come from a ladder that starts at 2000 ms and shrinks by x0.9 per step, rounded to whole frames (at 60 Hz: 120, 108, 97, 87, 79, 71, 64, 57, 52, 46, 42, 38, 34, 31, 27, 25, 22, 20, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 frames; until app 2.13 the ladder started at 800 ms, until app 2.6 at 500 ms). After a correct look the next is one step shorter, after a miss six steps longer (weighted up/down, settles at about 86% correct). Display times never go below 50 ms: a player who gets there moves up a level, where the task asks more, instead of chasing ever shorter flashes. A fresh staircase in a research block starts at 1500 ms, a slow and easy look for older players and non-gamers (app 2.20: 1200 ms; until app 2.13: 500 ms; until app 2.6: 300 ms), so a strong player needs about 25 correct looks to reach their own level; use carried values, or enough rounds that the first ones can be left out. In free play each level opens three steps slower than its target the first time it is played, and again after stepping back from it (1317 ms at levels 1 to 3 and 1617 ms at levels 4 and 5 at 60 Hz), so three right answers in a row reach the target (from app 2.21). A free-play round with fewer than half the looks right steps back a level (from app 2.21); research blocks never step down. Levels 4 and 5 put 8 and 16 things in the way (until app 2.21: 23, and 47 with the harder pair at level 5). A look is correct only when the animal and the place are both right. Every level asks for both, as practice does; level 1 has the thing on the inner ring, close to the middle (until app 2.20 level 1 was the middle only). A round is a success once a correct answer brings the flash to the level\'s target or under (`reach_ms`), so a good round counts even when a slip comes after (until app 2.20: `threshold_ms` at or under the target, which a fresh round could miss with every answer right).',
         'The staircase carries over between rounds of the same level for the same player: through the whole of a research session, and between visits in free play. A level without a value opens at its own starting point, three steps above its target (the free-play values are kept under a new key from app 2.21, so earlier ones start over; until app 2.25 research sessions started each block fresh and opened a new level three steps slower than the level below it ended). A carried-over round starts two steps slower than where the last one ended, so it opens with a likely hit. Practice is 3 looks at fixed times of 2000, 1200 and 700 ms; during the first flash, rings mark the animal and the bird, and a hand then shows both answers. Each question is drawn where it is asked: a "?" where the animal was, above the two choices, then the thing to find with a "?" in the middle while a light runs round the spots (from app 2.15). After an answer with feedback on, the next look follows 1.1 s later.',
-        'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.', '',
+        'Browsers report frame timestamps, not the moment light leaves the screen; `flash_measured_ms` checks the frame count, not photometric onset. Phones in power saving and some embedded views run at 30 frames per second, which shows up in `refresh_ms`.',
+        'Free play from app 2.42: the ladder starts at 3000 ms (at 60 Hz: 180, 162, 146, 131, 118, 106, 96, ... frames), so `start_ms` can be up to 3000. A new player\'s first look is 3000 ms; a level without a carried value opens three steps slower than the nearest lower level that has one (or at 3000 ms). Practice looks are 3000, 2200 and 1600 ms. Each look after the first starts on a tap of the camera (the time between looks is the player\'s; `fix_ms` still counts from that tap), and the pattern mask draws outlines only on the 49 places things can be, thinner and fainter, clearing away fully before the questions. The middle animal is drawn at 0.46 of the field radius and the other things at 0.28, on rings at 0.42, 0.66 and 0.88 of it (`field_px` is still the radius); the dragonfly is red with white wings and the bat lighter. The staircase rule (one step quicker after a right look, six slower after a miss) is unchanged.', '',
         '## Stacks', '', 'The tower-of-London task: pieces on three posts; a move takes the top piece of one post to another post where it is allowed. Each level asks for the arrangement on the card in a fixed fewest number of moves, which the card shows; start and goal are drawn from all arrangements with that distance. Every level is a place of its own, the same in free play and research sessions (practice: stones). L1 river stones (3 moves) and L2 suitcases at the station (5 moves): three pieces on posts that hold 3, 2 and 1 (36 arrangements). L3 containers at the harbor (6 moves): four on posts that hold 4, 3 and 2 (264 arrangements). L4 the bakery (7 moves): four layers of different sizes on three stands that hold 4, and a layer only goes on a bigger one (81 arrangements). L5 ice cream (8 moves): four scoops on three cones that hold 4 each, and nothing goes on the scoop with the cherry (181 arrangements). From L2 each board is chosen among those with that many moves by how often a goal-directed player finishes it within 1.5 times the fewest moves (one who puts pieces where they belong looking two moves ahead and never takes back its last move; 12 tries; feature `sensible_solve`): at most 75% at L2, 50% at L3, 25% at L4 and 12% at L5, so the way there needs moves that look wrong, such as taking a piece away from its place first (from app 2.29; until then 3, 4, 5, 7 and 7 moves of any board, three pieces except the cake). `features` gives the place (`theme`), `pieces`, `caps` and `twist` (`size`, `cherry` or empty); a refused move is `blocked` with `detail` saying why. Until app 2.24 research sessions kept the three-piece task at every level (6 moves at L4). `first_move_ms` is the planning time before the first move.',
         'Levels:', lv('stacks'), '',
         '## Switchback', '', 'The dual-task format of the Focus core (adaptive multitasking training, Anguera et al. 2013, ages 60 to 85). Steer a car along a winding road and tap the target sign whenever it comes up; let every other sign pass. A target can be answered on the sign itself, on the sign button (bottom right, which shows the target) or with Space; `source` says which. The car keeps moving sideways while the wheel is turned, and a bend pushes it outward, more the faster it goes (with the square of speed), so holding a bend takes steady steering. Steering: drag anywhere on the road (left or right of where the finger came down; about a fifth of the road view is full lock), or the arrow keys.',
@@ -8699,7 +8763,7 @@
         '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs about one higher from L2, with its animals: 6, 10, 12, 14, 16). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
         '## Practice', '', 'Each game opens with a practice card (puzzle id P-{game}, fixed content, level 0). It has to be played right before the game goes on: a puzzle solved; Glimpse with at most one look wrong; Switchback with every target caught and no other sign tapped; Keepsake with every thing on its own stone. Otherwise the result says Once more and the same practice comes round again, up to three tries; after the third the game goes on regardless. Practice rows log `success` as that pass (1 or 0) and never change a level. A new player\'s first card after practice is level 1. Rounds of the trial games (Glimpse, Switchback, Keepsake) get confetti only at three stars or a passed practice; two stars get the win chime without confetti, and fewer a soft note.', '',
         '## Adaptive blocks', '', 'Per game within a block, the same in research sessions and (until app 2.40) free play: one level up per success until the first miss in that game (in the session; in free play, ever on the device), then two successes in a row move up one level; one miss moves down one level (levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Switchback never moves down a level, and Glimpse only after a round with fewer than half the looks right: their display time, sign time and speed already adapt as you play. Until app 2.25 research sessions always needed two in a row and Glimpse never moved down there. Until app 2.40 the run of successes toward the next level carried over to the next free play visit, so the first card of a new free session could move a level up; from app 2.41 free play moves by stars (below). A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel, on one tap. Research sessions start with the same options as free play (stars, hints, feedback, skip and sound on; until app 2.26 they were off) and show the same records, level-up screen and way to the next level in adaptive blocks; records and the levels reached are kept on the device, shared with free play.', '',
-        '## Free play progress', '', 'From app 2.41. A free play round solved or played to the end gives 1 to 3 stars (the `stars` column; Keepsake adds up to 2 for a quick look with everything right, see Keepsake); a skip or a round not solved gives none. Each game is at a place (its level), and its stars fill a bar of 9: a full bar moves the game up one level (`level_change`), and stars beyond it carry over. Free play never moves a game down: after two rounds of a game in a row with at most one star each, its next puzzle is played one level below the place, in the place\'s look (`level` is the level played; the puzzle id ends in e), until a round brings two or more stars. Rounds come in reels of 7 (a skip counts as a round with no stars; a round left by switching games does not count); the end of a reel shows its stars by the five areas next to the last reels. These are game stars, not area measures.', '']);
+        '## Free play progress', '', 'From app 2.41. A free play round solved or played to the end gives 1 to 3 stars (the `stars` column; Keepsake adds up to 2 for a quick look with everything right, see Keepsake); a skip or a round not solved gives none. Each game is at a place (its level), and its stars fill a bar of 9: a full bar moves the game up one level (`level_change`), and stars beyond it carry over. Free play never moves a game down: after two rounds of a game in a row with at most one star each, its next puzzle is played one level below the place, in the place\'s look (`level` is the level played; the puzzle id ends in e), until a round brings two or more stars. Rounds come in reels of 7 (a skip counts as a round with no stars; a round left by switching games does not count); the end of a reel shows its rounds, their stars and the levels reached (app 2.41 also set each area\'s stars against the last reels; from 2.42 it does not, as stars are earned against an adapting level).', '']);
     return lines.join('\n');
   }
 
@@ -9205,7 +9269,16 @@
     },
     glimpseStart(spec) {
       if (spec.practice) return null;
-      const { book } = this.glimpseBook(spec);
+      const { book, free } = this.glimpseBook(spec);
+      if (free) {
+        // free play (from app 2.42): the camera can be as slow as 3 s; a new player's first photo
+        // shows that long, and each right answer makes the next one a step quicker. A level not
+        // played yet opens three steps slower than the nearest level below it that was.
+        const top = GL_FREE_TOP;
+        if (book[spec.level] > 0) return { ms: book[spec.level], top };
+        for (let lv = spec.level - 1; lv >= 1; lv--) if (book[lv] > 0) return { at: Math.min(top, book[lv] / Math.pow(0.9, 3)), top };
+        return { at: top, top };
+      }
       if (book[spec.level] > 0) return { ms: book[spec.level] };
       // a level played for the first time (or again after stepping back) opens slow
       return { at: E.games.glimpse.levelStart(spec.level) };
@@ -9679,33 +9752,18 @@
       }
       return el;
     },
-    // the end of a reel: the seven rounds, the stars, the places reached, and the five areas
-    // next to your earlier reels; then another reel, or a rest
+    // the end of a reel: the seven rounds with their stars, the total and the levels reached;
+    // then another reel, or a rest. (Stars are earned against an adapting level, so comparing
+    // them between reels would say nothing; progress shows in the levels.)
     showReel() {
-      const r = Reel.get(), past = store.get('pr1.reels', []).slice(-10);
+      const r = Reel.get();
       if (this.card) { this.card.destroy(); this.card = null; }
       $('#app').dataset.scene = 'panel';
       const total = r.rounds.reduce((a, x) => a + (x.stars || 0), 0);
       const frames = h('div', { class: 'reel-rounds' }, r.rounds.map((x) => h('div', { class: 'rr' + (x.stars ? '' : ' none'), style: '--c:' + (GAME_COLOR[x.game] || '#FFC83A') },
         badge(x.game, null, Prog.level(x.game)), h('span', null, icon('star'), h('b', { text: String(x.stars || 0) })),
-        x.up ? h('small', { class: 'rr-up', text: LEVEL_NAMES[x.up - 1] }) : null)));
+)));
       const ups = r.rounds.filter((x) => x.up);
-      // per area: this reel's stars a round, against your reels before (when there are some)
-      const per = (rounds, games) => { const xs = rounds.filter((x) => games.indexOf(x.game) >= 0); return xs.length ? xs.reduce((a, x) => a + Math.min(3, x.stars || 0), 0) / xs.length : null; };
-      const areas = h('div', { class: 'reel-areas' });
-      for (const A of AREAS) {
-        const now = per(r.rounds, A.games);
-        if (now == null) continue;
-        const was = past.map((p) => per(p.rounds, A.games)).filter((v) => v != null);
-        const avg = was.length ? was.reduce((a, v) => a + v, 0) / was.length : null;
-        const d = avg == null ? null : now - avg;
-        const say = avg == null ? 'first time' : d > 0.4 ? 'better' : d < -0.4 ? 'less' : 'the same';
-        const row = h('div', { class: 'ra' + (d != null && d > 0.4 ? ' up' : d != null && d < -0.4 ? ' down' : '') },
-          h('b', { text: A.name }),
-          h('span', { class: 'ra-stars', 'aria-label': (Math.round(now * 10) / 10) + ' stars a round' }, [1, 2, 3].map((k) => { const st = icon('star'); st.classList.add(now >= k - 0.25 ? 'on' : 'off'); return st; })),
-          h('small', { text: say }));
-        areas.append(row);
-      }
       const again = () => { Reel.close(); this.advance(false); };
       const rest = () => { Reel.close(); this.showRest(); };
       const panel = this.panel([
@@ -9713,8 +9771,6 @@
         frames,
         h('p', { class: 'reel-total' }, icon('star'), h('b', { text: String(total) }), h('span', { text: total === 1 ? ' star' : ' stars' })),
         ups.length ? h('div', { class: 'reel-ups' }, ups.map((x) => h('span', null, badge(x.game, null, x.up), h('b', { text: LABEL[x.game] + ': ' + LEVEL_NAMES[x.up - 1] })))) : null,
-        h('h3', { class: 'reel-h', text: past.length > 1 ? 'Your five areas, next to your last reels' : past.length ? 'Your five areas, next to your last reel' : 'Your five areas' }),
-        areas,
         h('div', { class: 'stack' },
           h('button', { class: 'wide solid', type: 'button', onclick: again }, icon('play'), 'Another reel'),
           h('button', { class: 'wide soft', type: 'button', onclick: rest }, 'Done for now')),
@@ -9730,7 +9786,7 @@
       const panel = this.panel([
         h('div', { class: 'big-badge' }, icon('check')),
         h('h2', { text: 'Well played' }),
-        h('p', { text: 'Your places and stars are kept. A reel a day is plenty.' }),
+        h('p', { text: 'Your levels and stars are kept. A reel a day is plenty.' }),
         h('div', { class: 'stack' },
           h('button', { class: 'wide solid', type: 'button', onclick: () => this.advance(false) }, icon('play'), 'Play a reel'),
           h('button', { class: 'wide soft', type: 'button', onclick: () => this.openProfile() }, icon('person'), 'Your progress')),

@@ -519,6 +519,29 @@ test('glimpse: things in the way come in small steps, and each level opens three
   }
 });
 
+test('glimpse: a run can have its own slowest look (free play: 3 s); without one nothing changes', () => {
+  const T = 1000 / 60;
+  const p = G.generate(1, 77);
+  const run = G.newRun(p, { at: 3000, top: 3000 });
+  assert.equal(run.top, 3000);
+  assert.ok(Math.abs(G.plan(p, run, T).ms - 3000) < T, 'the first look shows for 3 s');
+  G.record(p, run, { correct: true, plan: G.plan(p, run, T) });
+  assert.ok(Math.abs(G.plan(p, run, T).ms - 2700) < T, 'a right answer makes the next look a step quicker');
+  G.record(p, run, { correct: false, plan: G.plan(p, run, T) });
+  assert.ok(G.plan(p, run, T).ms <= 3000 + 1e-6, 'a miss slows it, never past the top');
+  // carried over: two steps slower, never past the top
+  const c = G.newRun(p, { ms: 2900, top: 3000 });
+  assert.ok(c.ms <= 3000 + 1e-6 && !c.fresh);
+  // the same calls without a top: the ladder still starts at 2 s, as before
+  const r2 = G.newRun(p, { at: 3000 });
+  assert.equal(r2.top, undefined);
+  assert.ok(G.plan(p, r2, T).ms <= 2000 + 1e-6);
+  assert.deepEqual(glLadder(T, G.minMs), glLadder(T, G.minMs, 0));
+  const lt = glLadder(T, 0, 3000);
+  assert.equal(lt[0], 180, '3 s is 180 frames at 60 Hz');
+  assert.equal(lt[lt.length - 1], 1);
+});
+
 test('glimpse: a round counts once a right answer brings the flash to the target, as the counter shows it', () => {
   const T = 1000 / 60;
   const play = (lv, answers, start) => {

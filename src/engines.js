@@ -1439,10 +1439,11 @@
   // Display times from 2 s down in steps of x0.9, as whole frames of the
   // measured frame period T; repeats are dropped, the last step is one frame.
   const GL_STEP = 0.9, GL_TOP = 2000;
-  // floorMs: the shortest display time allowed (the ladder stops at the last step at or above it)
-  function glLadder(T, floorMs) {
+  // floorMs: the shortest display time allowed (the ladder stops at the last step at or above it);
+  // topMs: a run's own top instead of 2 s (free play's camera starts at 3 s, from app 2.42; without it nothing changes)
+  function glLadder(T, floorMs, topMs) {
     const out = [];
-    for (let ms = GL_TOP; ; ms *= GL_STEP) {
+    for (let ms = topMs > 0 ? topMs : GL_TOP; ; ms *= GL_STEP) {
       const f = Math.max(1, Math.round(ms / T));
       if (floorMs && f * T < floorMs - 1e-6 && out.length) return out;
       if (!out.length || f < out[out.length - 1]) out.push(f);
@@ -1584,12 +1585,16 @@
       return this.build(0, 0, L, trials, [2000, 1200, 700], 'meadow');
     },
     // start: { ms } carries a staircase on (warmUp steps slower); { at } starts a fresh one exactly
-    // there (free play, a level's first round); without either it starts fresh at startMs
+    // there (free play, a level's first round); without either it starts fresh at startMs.
+    // start.top: the slowest look this run can show, instead of maxMs (free play: 3 s)
     newRun(p, start) {
-      const at = !p.fixedMs && start && start.at > 0 ? Math.min(this.maxMs, start.at) : null;
+      const top = start && start.top > 0 ? start.top : this.maxMs;
+      const at = !p.fixedMs && start && start.at > 0 ? Math.min(top, start.at) : null;
       const carried = !at && start && start.ms > 0;
-      const ms = p.fixedMs ? null : at || (carried ? Math.min(this.maxMs, start.ms / Math.pow(GL_STEP, this.warmUp)) : this.startMs);
-      return { i: 0, ms, start: ms, fresh: !p.fixedMs && !carried, last: 0, rev: [], res: [] };
+      const ms = p.fixedMs ? null : at || (carried ? Math.min(top, start.ms / Math.pow(GL_STEP, this.warmUp)) : this.startMs);
+      const run = { i: 0, ms, start: ms, fresh: !p.fixedMs && !carried, last: 0, rev: [], res: [] };
+      if (top !== this.maxMs) run.top = top;
+      return run;
     },
     // the display time for the next look, given the frame period T in ms
     plan(p, run, T) {
@@ -1599,7 +1604,7 @@
         const f = Math.max(1, Math.round(want / T));
         return { idx: -1, frames: f, ms: f * T, T };
       }
-      const lad = glLadder(T, this.minMs);
+      const lad = glLadder(T, this.minMs, run.top);
       const idx = glNearest(lad, T, run.ms);
       return { idx, frames: lad[idx], ms: lad[idx] * T, T, steps: lad.length };
     },
@@ -1607,7 +1612,7 @@
     record(p, run, r) {
       const out = { i: run.i + 1, ok: r.correct ? 1 : 0, ms: round(r.plan.ms, 2), f: r.plan.frames, T: round(r.plan.T, 3), drop: r.drop ? 1 : 0, rev: 0, next: null };
       if (!p.fixedMs) {
-        const lad = glLadder(r.plan.T, this.minMs);
+        const lad = glLadder(r.plan.T, this.minMs, run.top);
         const dir = r.correct ? 1 : -1;
         let idx = r.plan.idx;
         if (r.correct) idx += this.down;
