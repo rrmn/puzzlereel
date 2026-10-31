@@ -1437,6 +1437,65 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
 [data-scene="stacks"][data-lv="3"] { --bg1: #CFE6F7; --bg2: #6E9CC4; --ink: #14283D; --ink2: rgba(20,40,61,.7); --btn: #14283D; --btn-ink: #F1F7FD; --halo: rgba(235,245,255,.7); }
 [data-scene="stacks"][data-lv="5"], .scene[data-game="stacks"][data-look="icecream"] { --bg1: #E4F7EF; --bg2: #F2A6BE; --ink: #3E1F2C; --ink2: rgba(62,31,44,.7); --chip: rgba(255,255,255,.6); --btn: #3E1F2C; --btn-ink: #FFF4F7; --halo: rgba(255,244,248,.75); }
 [data-scene="stacks"][data-lv="4"], .scene[data-game="stacks"][data-look="cake"] { --bg1: #FFF0E6; --bg2: #F2B8C2; --ink: #4A2230; --ink2: rgba(74,34,48,.7); --btn: #4A2230; --btn-ink: #FFF4F6; --halo: rgba(255,240,244,.75); }
+
+/* ------------------------------------------- free play progress (app 2.41) */
+/* the head: the place's level by name */
+.lv-chip { margin-left: 4px; padding: 4px 10px; border-radius: 999px; background: var(--chip); color: var(--ink); font: 600 14px/1 var(--display); letter-spacing: 0.01em; }
+/* the reel: seven frames, one per round, in the game's color once played */
+.reel { display: inline-flex; gap: 4px; align-items: center; padding: 8px 10px; border-radius: 999px; background: var(--chip); }
+.reel i { width: 8px; height: 18px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 18%, transparent); transition: background 0.3s; }
+.reel i.done { background: var(--c); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15); }
+.reel i.done.none { background: color-mix(in srgb, var(--c) 35%, transparent); }
+.reel i.now { background: transparent; box-shadow: inset 0 0 0 2px var(--ink); animation: breathe 1.4s ease-in-out infinite; }
+/* the result: this round's stars land in the place's bar of nine */
+.res-bar { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--sheet-ink, #23263A) 6%, transparent); }
+.rb-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; }
+.rb-top b { font: 600 17px/1.1 var(--display); }
+.rb-top span { color: var(--muted, #6A6E82); font-size: 14px; }
+.rb-slots { display: flex; justify-content: space-between; gap: 2px; }
+.rb-slots svg { width: 26px; height: 26px; transition: transform 0.2s; }
+.rb-slots svg.off { color: rgba(35, 38, 58, 0.16); fill: currentColor; stroke: none; }
+.rb-slots svg.on { color: #FFB800; fill: currentColor; stroke: #E8A000; stroke-width: 1; }
+.rb-slots svg.pop { animation: starin 0.35s cubic-bezier(.3, 1.7, .5, 1); }
+.rb-next { font-size: 13px; color: var(--muted, #6A6E82); }
+.rb-up { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: #FFF3C4; box-shadow: inset 0 0 0 2px #FFC83A; opacity: 0; transform: translateY(6px) scale(0.96); transition: opacity 0.3s, transform 0.35s cubic-bezier(.3, 1.6, .5, 1); }
+.res-bar.opened .rb-up { opacity: 1; transform: none; }
+.rb-up b { font: 700 19px/1.1 var(--display); color: #6A4500; }
+.rb-up small { color: #8A6200; font-size: 13px; }
+/* the end of a reel, on the panel's dark ground; centred when it fits, from the top when it does not */
+.reel-end .panel-body { justify-content: flex-start; gap: 12px; padding-top: 14px; }
+.reel-end .panel-body > :first-child { margin-top: auto; }
+.reel-end .panel-body > :last-child { margin-bottom: auto; }
+.reel-title { font: 700 30px/1.1 var(--display); margin: 0; }
+.reel-rounds { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; width: 100%; max-width: 380px; }
+.rr { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 2px 7px; border-radius: 12px; background: var(--chip); box-shadow: inset 0 -3px 0 var(--c); color: var(--ink); }
+.rr .badge { width: 30px; height: 30px; }
+.rr span { display: inline-flex; align-items: center; gap: 2px; font-size: 14px; }
+.rr span svg { width: 14px; height: 14px; color: #FFC83A; fill: currentColor; stroke: none; }
+.rr.none span svg { color: var(--ink2); opacity: 0.5; }
+.rr-up { font: 600 10px/1 var(--display); color: #3A2600; background: #FFC83A; padding: 2px 5px; border-radius: 6px; }
+.reel-total { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 18px; color: var(--ink); }
+.reel-total svg { width: 24px; height: 24px; color: #FFC83A; fill: currentColor; stroke: none; }
+.reel-total b { font: 700 26px/1 var(--display); }
+.reel-ups { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.reel-ups span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 5px; border-radius: 999px; background: rgba(255, 200, 58, 0.18); box-shadow: inset 0 0 0 1.5px #FFC83A; color: var(--ink); font-size: 14px; }
+.reel-ups .badge { width: 26px; height: 26px; }
+.reel-h { margin: 4px 0 0; font: 600 16px/1.2 var(--display); color: var(--ink); }
+.reel-areas { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 6px; }
+.ra { display: grid; grid-template-columns: 1fr auto 76px; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--chip); color: var(--ink); text-align: left; }
+.ra b { font-weight: 600; font-size: 15px; }
+.ra small { text-align: right; color: var(--ink2); font-size: 13px; }
+.ra.up small { color: #7CE3B0; font-weight: 600; }
+.ra-stars { display: inline-flex; gap: 1px; }
+.ra-stars svg { width: 18px; height: 18px; fill: currentColor; stroke: none; }
+.ra-stars svg.on { color: #FFC83A; }
+.ra-stars svg.off { color: var(--ink2); opacity: 0.35; }
+/* the profile: the bar toward the next place */
+.pf-starbar { display: flex; gap: 2px; }
+.pf-starbar svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.pf-starbar svg.on { color: #FFB800; }
+.pf-starbar svg.off { color: rgba(35, 38, 58, 0.16); }
+.pf-next-left { color: var(--muted, #6A6E82); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -3739,8 +3798,10 @@ PuzzleEnginesFactory(window);
 <script>(function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.40.0';
+  const APP_VERSION = '2.41.0';
   const ORDER = E.order;
+  // each game's color, as in the logo's seven bars
+  const GAME_COLOR = { outbound: '#FFB627', conduit: '#3BB273', tumbler: '#7C5CFF', glimpse: '#3A86EE', stacks: '#5FB8B3', switchback: '#EF7A5A', keepsake: '#E9789D' };
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
   const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -4895,7 +4956,7 @@ PuzzleEnginesFactory(window);
       this.busy = false;
       this.timers = new Set();
       // each level's own look, in free play and research sessions alike; practice has the first
-      this.lookLv = spec.practice ? 1 : spec.level;
+      this.lookLv = spec.practice ? 1 : spec.look || spec.level;
       this.el = h('article', { class: 'scene', 'data-game': spec.game, 'data-lv': this.lookLv, 'aria-label': this.G.name + (this.practice ? ', practice' : ', level ' + spec.level) });
       this.build();
       this.buildBoard();
@@ -4919,7 +4980,8 @@ PuzzleEnginesFactory(window);
     updateRecord() {
       const el = this.recEl;
       if (!el) return;
-      const rec = this.progressOn() ? Records.get(this.spec.game, this.spec.level) : null;
+      // free play shows your best in the result only, not while you play
+      const rec = this.progressOn() && this.app.session.kind !== 'free' ? Records.get(this.spec.game, this.spec.level) : null;
       el.hidden = rec == null || !!this.summary;
       if (el.hidden) { clearInterval(this.recTick); return; }
       const R = RECORD[this.spec.game];
@@ -4975,10 +5037,12 @@ PuzzleEnginesFactory(window);
     }
     build() {
       const sp = this.spec;
-      const lp = this.practice ? null : pips(sp.level, null, this.halfway());
+      const freePlay = this.app.session && this.app.session.kind === 'free';
+      const place = sp.look || sp.level;
+      const lp = this.practice ? null : freePlay ? h('span', { class: 'lv-chip', 'aria-label': 'Level ' + place + ', ' + LEVEL_NAMES[place - 1], text: LEVEL_NAMES[place - 1] }) : pips(sp.level, null, this.halfway());
       // the next level's pip: tap the level for what it takes; it glows while this card can count
-      this.nextPip = lp && this.progressOn() && sp.level < 5 ? lp.children[sp.level] : null;
-      if (lp && this.progressOn()) {
+      this.nextPip = lp && !freePlay && this.progressOn() && sp.level < 5 ? lp.children[sp.level] : null;
+      if (lp && !freePlay && this.progressOn()) {
         lp.classList.add('tap');
         lp.setAttribute('role', 'button');
         lp.setAttribute('tabindex', '0');
@@ -4987,7 +5051,7 @@ PuzzleEnginesFactory(window);
         lp.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.showToward(true); } });
       }
       const title = h('div', { class: 'title' },
-        h('span', { class: 'game-ico' }, badge(sp.game, null, this.practice ? 1 : sp.level)),
+        h('span', { class: 'game-ico' }, badge(sp.game, null, this.practice ? 1 : place)),
         h('span', { class: 'game-name', text: this.G.name }),
         this.practice ? h('span', { class: 'tag', text: 'Practice' }) : lp);
       this.goalEl = h('span', { class: 'goal', role: 'status' });
@@ -5049,7 +5113,7 @@ PuzzleEnginesFactory(window);
         clearInterval(this.recTick);
         this.recTick = setInterval(() => this.updateRecord(), 400);
       }
-      if (this.progressOn()) this.later(() => this.showToward(false), 450);
+      if (this.progressOn() && this.app.session.kind !== 'free') this.later(() => this.showToward(false), 450);
       this.log('puzzle_start', {
         detail: JSON.stringify({ params: this.G.describe(this.p), reference: this.p.reference, par: this.par, practice: this.practice ? 1 : 0, features: this.p.features }),
       });
@@ -5233,6 +5297,7 @@ PuzzleEnginesFactory(window);
       sm.level_change = res.change && res.change.changed ? res.change : null;
       sm.toward = res.toward || null;
       sm.goal = res.goal || null;
+      sm.bar = res.bar || null;
       this.updateStatus();
       if (this.onResolved) this.onResolved(outcome);
       if (quiet) return;
@@ -5303,6 +5368,36 @@ PuzzleEnginesFactory(window);
       if (sm.outcome === 'skipped') return 'Skipped';
       return 'Stopped';
     }
+    // free play: this round's stars land in the place's bar of nine; when it fills, the next place opens
+    barView(B, instant) {
+      const g = this.spec.game, up = B.changed, lv = B.from;
+      const top = lv >= 5 && !up;
+      const el = h('div', { class: 'res-bar' + (up ? ' up' : ''), role: 'status',
+        'aria-label': up ? 'Up to ' + LEVEL_NAMES[B.to - 1] : top ? LEVEL_NAMES[4] + ', ' + B.have + ' stars' : LEVEL_NAMES[lv - 1] + ': ' + B.have + ' of ' + BAR_NEED + ' stars for ' + LEVEL_NAMES[lv] });
+      const head = h('div', { class: 'rb-top' }, h('b', { text: LEVEL_NAMES[lv - 1] }), h('span', { text: top ? '' : B.stars ? '+' + B.stars + (B.stars === 1 ? ' star' : ' stars') : 'no stars this time' }));
+      const slots = h('div', { class: 'rb-slots', 'aria-hidden': 'true' });
+      const pre = Math.min(BAR_NEED, B.before), post = up ? BAR_NEED : Math.min(BAR_NEED, B.have);
+      for (let i = 0; i < BAR_NEED; i++) {
+        const st = icon('star');
+        st.classList.add(i < pre ? 'on' : 'off');
+        slots.append(st);
+        if (i >= pre && i < post) {
+          const fill = () => { st.classList.remove('off'); st.classList.add('on', 'pop'); if (!instant) Sound.play('star', Math.min(2, i - pre)); };
+          if (instant) fill(); else this.later(fill, 1100 + (i - pre) * 160);
+        }
+      }
+      el.append(head, slots, h('div', { class: 'rb-next' }, top ? h('span', { text: 'Master: the top' }) : h('span', { text: BAR_NEED + ' stars open ' + LEVEL_NAMES[lv] })));
+      if (up) {
+        // the bar is full: the next place, what it is and what it brings, in the result itself
+        const news = h('div', { class: 'rb-up' }, h('b', { text: 'Up to ' + LEVEL_NAMES[B.to - 1] }),
+          h('small', { text: levelAdds(g, B.to) || lookName(g, B.to) }));
+        el.append(news);
+        const at = 1100 + (post - pre) * 160 + 250;
+        const show = () => { el.classList.add('opened'); Sound.play('levelup'); buzz([30, 70, 30, 70, 30]); const r = relPos(this, news); sparks(this, r.x, r.y, ['#FFC83A', '#FFFFFF', '#7CE3B0'], 16); };
+        if (instant) el.classList.add('opened'); else this.later(show, at);
+      }
+      return el;
+    }
     showResult(sm, instant) {
       if (this.resultEl) this.resultEl.remove();
       const panel = h('section', { class: 'result', 'aria-label': 'Result' });
@@ -5343,7 +5438,9 @@ PuzzleEnginesFactory(window);
         panel.append(h('div', { class: 'res-level beat', role: 'status' }, icon('key'), 'Fewer tries than the computer'));
         if (!instant) this.later(() => Sound.play('hint'), 500);
       }
-      if (sm.level_change && this.o.counter) {
+      if (sm.bar && this.o.counter) {
+        panel.append(this.barView(sm.bar, instant));
+      } else if (sm.level_change && this.o.counter) {
         const up = sm.level_change.to > sm.level_change.from;
         const pp = pips(sm.level_change.to);
         if (up) pp.children[sm.level_change.to - 1].classList.add('new');
@@ -5369,7 +5466,8 @@ PuzzleEnginesFactory(window);
       }
       const last = this.app.isLast(this.spec);
       const again = this.practice && sm.passed === false && !this.app.practiceDone(this.spec.game);
-      const next = h('button', { class: 'next', type: 'button', onclick: () => this.app.next() }, last ? 'Finish' : again ? 'Try again' : 'Next', icon(again ? 'restart' : 'next'));
+      const reelEnd = !this.practice && this.app.session.kind === 'free' && Reel.done();
+      const next = h('button', { class: 'next', type: 'button', onclick: () => this.app.next() }, last ? 'Finish' : again ? 'Try again' : reelEnd ? 'See your reel' : 'Next', icon(again ? 'restart' : 'next'));
       panel.append(next);
       if (!last) panel.append(h('div', { class: 'swipe', 'aria-hidden': 'true' }, icon('up')));
       this.el.append(panel);
@@ -12340,7 +12438,7 @@ PuzzleEnginesFactory(window);
       ['brake_s', 'Switchback: seconds from each animal stepping out until the car was back to 90% of its speed (the car eases off while it is there and brakes if it gets close); left out of speed_mean_kmh'],
       ['n_items / n_collected', 'Switchback: things to collect the car went past, and the ones it picked up by driving through them (not tapped; no task measure uses them)'],
       ['study_ms / mean_error', 'Keepsake: how long the look lasted, and the mean error_dist over the things put back'],
-      ['level_next', 'adaptive blocks: this game\'s level for its next puzzle'],
+      ['level_next', 'adaptive blocks: this game\'s level for its next puzzle (free play from app 2.41: its place; the next puzzle can be one level easier, see Free play progress)'],
       ['features', 'solver-derived puzzle features (JSON), such as p_random_solve, dead_end_states, search_nodes, solver_path'],
     ],
     classes: {
@@ -12397,7 +12495,8 @@ PuzzleEnginesFactory(window);
         'Other signs by level: L1 blue round and square signs (nothing in common with the target), L2 red-and-white round signs, L3 warning triangles with symbols (!, bend, bumps), L4 triangles with other animals (bird, snail, turtle), L5 triangles with look-alikes of the place\'s animal (village: goose, swan, hen; north: reindeer, deer, bear). Until app 2.10 the target was a rabbit, fox or cat drawn from the seed in every place; from 2.10 it is the place\'s animal.', '',
         '## Taps per card', '', 'Levels follow one ladder of effort across the games. The fewest taps that finish a card (Outbound: solver moves; Conduit: needed turns; Tumbler: taps along the most informative tries, with right-spot pins carried over; Glimpse: one tap to start and one per answer; Stacks: two per move, lift and set down; Switchback: one tap to start, one per target sign and one per animal on the road, steering and collecting not counted; Keepsake: one tap to look, then two per thing, pick up and put down) average about 5 to 7 at L1, 7 to 9 at L2, 9 to 11 at L3, 11 to 13 at L4 and 13 to 15 at L5 (Switchback runs about one higher from L2, with its animals: 6, 10, 12, 14, 16). Count clues take one or two taps more than per-pin clues at the same level. Thinking time is not in these numbers: compare `duration_ms` by game and level in pilot data.', '',
         '## Practice', '', 'Each game opens with a practice card (puzzle id P-{game}, fixed content, level 0). It has to be played right before the game goes on: a puzzle solved; Glimpse with at most one look wrong; Switchback with every target caught and no other sign tapped; Keepsake with every thing on its own stone. Otherwise the result says Once more and the same practice comes round again, up to three tries; after the third the game goes on regardless. Practice rows log `success` as that pass (1 or 0) and never change a level. A new player\'s first card after practice is level 1. Rounds of the trial games (Glimpse, Switchback, Keepsake) get confetti only at three stars or a passed practice; two stars get the win chime without confetti, and fewer a soft note.', '',
-        '## Adaptive blocks', '', 'Per game within a block, the same in research sessions and free play: one level up per success until the first miss in that game (in the session; in free play, ever on the device), then two successes in a row move up one level; one miss moves down one level (levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Switchback never moves down a level, and Glimpse only after a round with fewer than half the looks right: their display time, sign time and speed already adapt as you play. Until app 2.25 research sessions always needed two in a row and Glimpse never moved down there. In free play the run of successes toward the next level carries over to the next visit, so the first card of a new free session can move a level up. A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel, on one tap. Research sessions start with the same options as free play (stars, hints, feedback, skip and sound on; until app 2.26 they were off) and show the same records, level-up screen and way to the next level in adaptive blocks; records and the levels reached are kept on the device, shared with free play.', '']);
+        '## Adaptive blocks', '', 'Per game within a block, the same in research sessions and (until app 2.40) free play: one level up per success until the first miss in that game (in the session; in free play, ever on the device), then two successes in a row move up one level; one miss moves down one level (levels 1 to 5). A success is a solve with `moves <= par`, where par = ceil(reference x par multiplier). Switchback never moves down a level, and Glimpse only after a round with fewer than half the looks right: their display time, sign time and speed already adapt as you play. Until app 2.25 research sessions always needed two in a row and Glimpse never moved down there. Until app 2.40 the run of successes toward the next level carried over to the next free play visit, so the first card of a new free session could move a level up; from app 2.41 free play moves by stars (below). A skipped card is never a miss: the level stays where it was, and in a research block the skipped card still uses up its place in the block. Skip goes straight to the next card with no result panel, on one tap. Research sessions start with the same options as free play (stars, hints, feedback, skip and sound on; until app 2.26 they were off) and show the same records, level-up screen and way to the next level in adaptive blocks; records and the levels reached are kept on the device, shared with free play.', '',
+        '## Free play progress', '', 'From app 2.41. A free play round solved or played to the end gives 1 to 3 stars (the `stars` column; Keepsake adds up to 2 for a quick look with everything right, see Keepsake); a skip or a round not solved gives none. Each game is at a place (its level), and its stars fill a bar of 9: a full bar moves the game up one level (`level_change`), and stars beyond it carry over. Free play never moves a game down: after two rounds of a game in a row with at most one star each, its next puzzle is played one level below the place, in the place\'s look (`level` is the level played; the puzzle id ends in e), until a round brings two or more stars. Rounds come in reels of 7 (a skip counts as a round with no stars; a round left by switching games does not count); the end of a reel shows its stars by the five areas next to the last reels. These are game stars, not area measures.', '']);
     return lines.join('\n');
   }
 
@@ -12457,6 +12556,61 @@ PuzzleEnginesFactory(window);
     { name: 'Focus', games: ['switchback'] },
   ];
   const LEVEL_NAMES = ['Beginner', 'Advanced', 'Pro', 'Expert', 'Master'];
+  // Free play from app 2.41. What a player needs to know: in a round, what to do and how it goes;
+  // after it, how it went and that it counted; in a sitting, how far along and when it is done;
+  // over weeks, whether they get better. So: every round gives its stars (1 to 3) to a bar for the
+  // game's place, and a full bar opens the next place, which is never lost; a sitting is a reel
+  // of 7 rounds with a summary at its end. Difficulty is the measuring job and is kept apart: when
+  // the last two rounds of a game went badly (at most one star each), the next is one level easier
+  // in the same place. (Until 2.40: one level up per good round until the first miss, then two
+  // good rounds in a row, and one level down per miss; a pop-up at each new level.)
+  const BAR_NEED = 9, REEL_N = 7;
+  const Prog = {
+    level(g) { return Math.max(1, Math.min(5, store.get('pr1.levels', {})[g] || 1)); },
+    bar(g) { return Math.max(0, Number(store.get('pr1.bar', {})[g]) || 0); },
+    // a round's stars into the bar; a full bar opens the next place (the rest carries over)
+    add(g, stars) {
+      const from = this.level(g), bars = store.get('pr1.bar', {}), before = this.bar(g);
+      let to = from, have = before + Math.max(0, stars);
+      if (to >= 5) have = Math.min(have, BAR_NEED);
+      while (to < 5 && have >= BAR_NEED) { have -= BAR_NEED; to++; }
+      bars[g] = to >= 5 ? Math.min(have, BAR_NEED) : have;
+      store.set('pr1.bar', bars);
+      if (to !== from) {
+        const lv = store.get('pr1.levels', {});
+        lv[g] = to;
+        store.set('pr1.levels', lv);
+        const rc = store.get('pr1.recent', {});
+        delete rc[g];
+        store.set('pr1.recent', rc);
+      }
+      return { from, to, changed: to !== from, before, have: bars[g], stars: Math.max(0, stars) };
+    },
+    // how the last rounds of a game went at its place (stars, 0 for a skip), for the quiet easing
+    note(g, stars) {
+      const rc = store.get('pr1.recent', {});
+      rc[g] = (rc[g] || []).concat([stars]).slice(-2);
+      store.set('pr1.recent', rc);
+    },
+    easy(g) { const r = store.get('pr1.recent', {})[g] || []; return r.length >= 2 && r.every((x) => x <= 1); },
+  };
+  const Reel = {
+    get() { const r = store.get('pr1.reel', null); return r && Array.isArray(r.rounds) ? r : { rounds: [], at: new Date().toISOString() }; },
+    add(round) { const r = this.get(); if (r.rounds.length >= REEL_N) return r; r.rounds.push(Object.assign({ t: Date.now() }, round)); store.set('pr1.reel', r); return r; },
+    // a reel is one sitting: one finished, or left more than six hours ago, makes way for a new one
+    fresh() { const r = this.get(), last = r.rounds.length ? r.rounds[r.rounds.length - 1].t || 0 : 0; if (this.done() || (last && Date.now() - last > 6 * 3600 * 1000)) this.close(); },
+    done() { return this.get().rounds.length >= REEL_N; },
+    // the reel just played into the history (kept for the summary's comparison), and a fresh one
+    close() {
+      const r = this.get();
+      if (r.rounds.length) {
+        const past = store.get('pr1.reels', []);
+        past.push({ at: r.at, end: new Date().toISOString(), rounds: r.rounds.map((x) => ({ game: x.game, stars: x.stars })) });
+        store.set('pr1.reels', past.slice(-30));
+      }
+      store.set('pr1.reel', { rounds: [], at: new Date().toISOString() });
+    },
+  };
   // per-game stats from free play on this device, the last rounds of each game
   // in its own terms (for the curve in the profile), and the days played
   const HIST_N = 24;
@@ -12622,14 +12776,10 @@ PuzzleEnginesFactory(window);
     if (g === 'glimpse') return at(['', 'the bird, close by', 'the dragonfly, further out', 'the owl, near or far', 'the parrot among leaves', 'the bat among moths'][lv] || '');
     return '';
   }
-  // Free play: how far a game is toward its next level. Two good cards in a row
-  // move it up (one, until the first miss in that game); the run so far is kept
-  // between visits.
+  // Free play: how far a game is toward its next place: the stars in its bar of nine.
   function levelProgress(g) {
-    const lv = Math.max(1, Math.min(5, store.get('pr1.levels', {})[g] || 1));
-    const need = store.get('pr1.settled', {})[g] ? 2 : 1;
-    const have = lv >= 5 ? 0 : Math.max(0, Math.min(need - 1, Number(store.get('pr1.lvrun', {})[g]) || 0));
-    return { lv, need, have };
+    const lv = Prog.level(g);
+    return { lv, need: BAR_NEED, have: lv >= 5 ? 0 : Prog.bar(g) };
   }
   const pfNoun = (g, n) => (g === 'glimpse' ? ['round', 'rounds'] : g === 'switchback' ? ['drive', 'drives'] : ['card', 'cards'])[n === 1 ? 0 : 1];
   const secs = (ms) => String(Math.round(ms / 10) / 100);
@@ -12662,18 +12812,15 @@ PuzzleEnginesFactory(window);
   function pfNext(g, P, play) {
     const go = h('button', { class: 'pf-play', type: 'button', onclick: play }, icon('play'), 'Play');
     if (P.lv >= 5) return h('div', { class: 'pf-next top' }, h('div', { class: 'pf-next-top' }, icon('star', 'pf-crown'), h('b', { text: 'Master' }), go));
-    const goal = pfGoal(g, P.lv);
-    const slots = h('span', { class: 'pf-slots', 'aria-hidden': 'true' });
-    for (let i = 0; i < P.need; i++) slots.append(h('i', { class: i < P.have ? 'on' : '' }, i < P.have ? icon('check') : null));
-    const chips = h('span', { class: 'pf-chips' });
-    if (goal.stars) chips.append(h('span', { class: 'pf-chip stars', 'aria-hidden': 'true' }, icon('star'), icon('star')));
-    else goal.chips.forEach(([ico, t]) => chips.append(h('span', { class: 'pf-chip' }, icon(ico), t)));
+    // the place's bar: the stars so far of the nine that open the next place
+    const row = h('div', { class: 'pf-next-row pf-starbar', role: 'img', 'aria-label': P.have + ' of ' + P.need + ' stars for ' + LEVEL_NAMES[P.lv] });
+    for (let i = 0; i < P.need; i++) { const st = icon('star'); st.classList.add(i < P.have ? 'on' : 'off'); row.append(st); }
     const left = P.need - P.have;
-    const say = (left === 1 ? (P.have ? 'One more ' : 'One ') + pfNoun(g, 1) : 'Two ' + pfNoun(g, 2) + ' in a row') + ' with ' + goal.text;
     return h('div', { class: 'pf-next' },
       h('div', { class: 'pf-next-top' }, h('span', { class: 'pf-next-k', text: 'Next' }), h('b', { text: LEVEL_NAMES[P.lv] }), go),
       h('p', { class: 'pf-next-adds', text: levelAdds(g, P.lv + 1) }),
-      h('div', { class: 'pf-next-row', role: 'img', 'aria-label': say }, slots, chips));
+      row,
+      h('small', { class: 'pf-next-left', text: left + (left === 1 ? ' more star' : ' more stars') + ' \u00b7 a round gives 1 to 3' }));
   }
   // all five levels and what each brings: done, here, and what lies ahead
   function pfLevels(g, P, best) {
@@ -12934,10 +13081,10 @@ PuzzleEnginesFactory(window);
       let game = focus || 'mixed';
       if (game !== 'mixed' && ORDER.indexOf(game) < 0) game = 'mixed';
       const levels = store.get('pr1.levels', {});
+      Reel.fresh();
       const S = newSession('free', { seed: randomSeed(), participant: '', condition: '', options: OPTIONS, blocks: [{ game, count: FREE_COUNT, level: 1, adaptive: true }] });
-      // the good cards toward each game's next level carry over from the last visit
-      const runs = store.get('pr1.lvrun', {});
-      ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 1)), streak: Math.max(0, Number(runs[g]) || 0) }; });
+      // each game starts at its place; the stars toward the next one are in its bar (Prog)
+      ORDER.forEach((g) => { S.seq.adapt['0:' + g] = { level: Math.min(5, Math.max(1, levels[g] || 1)), streak: 0 }; });
       S.practiced = Object.assign({}, store.get('pr1.practiced', {}));
       // the mixed feed opens with a game this player has not tried yet
       if (game === 'mixed') { const k = ORDER.findIndex((g) => !S.practiced[g]); if (k > 0) S.seq.k = k; }
@@ -13001,6 +13148,8 @@ PuzzleEnginesFactory(window);
     next(fromDy) {
       if (this.busy) return;
       if (this.card && !this.card.summary) return;
+      const S = this.session;
+      if (S && S.kind === 'free' && this.card && !this.card.spec.practice && Reel.done()) { this.showReel(); return; }
       this.advance(false, fromDy);
     },
     async advance(first, fromDy) {
@@ -13009,6 +13158,14 @@ PuzzleEnginesFactory(window);
       const spec = S.pending || seqNext(S.seq);
       S.pending = null;
       if (!spec) { this.finish('complete'); return; }
+      // free play: after two rounds of a game that went badly, its next puzzle is a level easier,
+      // in the same place (the place shown is unchanged)
+      if (S.kind === 'free' && !spec.look && spec.level > 1 && Prog.easy(spec.game)) {
+        spec.look = spec.level;
+        spec.level--;
+        spec.seed = E.puzzleSeed(S.seq.seed, spec.block - 1, spec.game, spec.level, spec.j);
+        spec.id = 'B' + spec.block + '-' + spec.game + '-L' + spec.level + '-' + (spec.j + 1) + 'e';
+      }
       // free play: a Master drive that is left before it is driven comes round again next time
       if (S.kind === 'free' && spec.tour != null) store.set('pr1.sbtour', spec.tour);
       if (this.needsPractice(spec.game)) {
@@ -13088,7 +13245,20 @@ PuzzleEnginesFactory(window);
       // cannot get slower than its top and the level is too much for now
       const gl0 = sm.gl;
       const down = sp.game === 'glimpse' && sm.outcome === 'complete' && !sm.success && gl0 && gl0.n > 0 && gl0.correct < gl0.n / 2;
-      const change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game), down);
+      const free = S.kind === 'free';
+      // free play: the round's stars go into the game's bar for its place (a skip gives none);
+      // elsewhere the level moves by the staircase
+      let change = null, bar = null;
+      if (free && sp.adaptive && !sp.practice && sm.outcome !== 'abandoned') {
+        const got = sm.outcome === 'skipped' ? 0 : (sm.stars || 0) + (sm.bonus || 0);
+        const P = Prog.add(sp.game, got);
+        if (!P.changed) Prog.note(sp.game, sm.outcome === 'skipped' ? 0 : sm.stars || 0);
+        const a = S.seq.adapt['0:' + sp.game];
+        if (a) { a.level = P.to; a.streak = 0; }
+        change = { from: P.from, to: P.to, changed: P.changed };
+        bar = Object.assign({ place: sp.look || sp.level, need: BAR_NEED }, P);
+        Reel.add({ game: sp.game, stars: got, outcome: sm.outcome, up: P.changed ? P.to : 0 });
+      } else if (!free) change = sp.practice || neutral ? null : seqRecord(S.seq, sp, sm.success, this.upAfter(sp.game), down);
       // free play: the Master tour moves on once a drive is driven or skipped
       if (S.kind === 'free' && sp.tour != null && sm.outcome !== 'abandoned') store.set('pr1.sbtour', sp.tour + 1);
       // the first miss in a game ends its quick start (free play keeps this on the device, below)
@@ -13103,7 +13273,7 @@ PuzzleEnginesFactory(window);
       if (d && !sp.practice && d.n && sm.outcome === 'complete') this.switchbackKeep(sp, card.run.ms, card.run.kmh);
       if (g && !sp.practice && g.n) {
         this.glimpseKeep(sp, card.run.ms);
-        if (change && change.changed && change.to < change.from) this.glimpseForget(sp, change.from);
+        if (!free && change && change.changed && change.to < change.from) this.glimpseForget(sp, change.from);
       }
       if (sp.adaptive && !sp.practice && !neutral) {
         // your record at this level, in the game's own measure
@@ -13161,24 +13331,12 @@ PuzzleEnginesFactory(window);
           const settled = store.get('pr1.settled', {});
           if (!settled[sp.game]) { settled[sp.game] = true; store.set('pr1.settled', settled); }
         }
-        // free play keeps stars, a streak and per-game levels between visits
-        if (sm.outcome !== 'abandoned') {
-          const won = sm.outcome === 'solved' || (sm.outcome === 'complete' && sm.stars > 0);
-          store.set('pr1.stars', store.get('pr1.stars', 0) + sm.stars + (sm.bonus || 0));
-          store.set('pr1.streak', won ? store.get('pr1.streak', 0) + 1 : 0);
-        }
-        if (change) {
-          const lv = store.get('pr1.levels', {});
-          lv[sp.game] = change.to;
-          store.set('pr1.levels', lv);
-          const a = S.seq.adapt['0:' + sp.game], runs = store.get('pr1.lvrun', {});
-          runs[sp.game] = a ? a.streak : 0;
-          store.set('pr1.lvrun', runs);
-        }
+        // free play keeps its stars between visits (the levels and bars are kept by Prog)
+        if (sm.outcome !== 'abandoned') store.set('pr1.stars', store.get('pr1.stars', 0) + sm.stars + (sm.bonus || 0));
         if (sm.outcome !== 'abandoned') Stats.record(this, S.puzzles[S.puzzles.length - 1]);
         this.hudBump = sm.stars > 0;
       }
-      if (change && !sp.practice) {
+      if (!free && change && !sp.practice) {
         const a = S.seq.adapt[(sp.block - 1) + ':' + sp.game];
         // a good card that does not move the level yet: say how close the next one is
         if (sm.success && !change.changed && change.to < 5 && a && a.streak > 0) toward = { to: change.to + 1, have: a.streak, need: this.upAfter(sp.game) };
@@ -13192,7 +13350,7 @@ PuzzleEnginesFactory(window);
       }
       this.renderHud();
       this.touch(true);
-      return { level_next, change, toward, goal };
+      return { level_next, change, toward, goal, bar };
     },
 
     // ---------- logging & persistence
@@ -13303,14 +13461,79 @@ PuzzleEnginesFactory(window);
         } else {
           M.append(h('div', { class: 'wordmark' }, h('span', { class: 'logo', 'aria-hidden': 'true' }, h('i'), h('i'), h('i'), h('i'), h('i'), h('i'), h('i')), 'Puzzle Reel'));
         }
-        if (!S || S.kind === 'free') {
-          const stars = h('span', { class: 'pill', 'aria-label': store.get('pr1.stars', 0) + ' stars' }, icon('star', 'star'), String(store.get('pr1.stars', 0)));
-          R.append(stars);
-          const streak = store.get('pr1.streak', 0);
-          if (streak >= 2) R.append(h('span', { class: 'pill', 'aria-label': streak + ' solved in a row' }, icon('flame', 'flame'), String(streak)));
-          if (this.hudBump) { this.hudBump = false; setTimeout(() => stars.classList.add('bump'), 900); }
-        }
+        // free play: where you are in the reel of 7 rounds, a frame per round in the game's color
+        if (!S || S.kind === 'free') R.append(this.reelStrip());
       }
+    },
+    reelStrip() {
+      const r = Reel.get(), n = r.rounds.length;
+      const el = h('div', { class: 'reel', role: 'img', 'aria-label': n >= REEL_N ? 'Reel done' : 'Round ' + (n + 1) + ' of ' + REEL_N + ' in this reel' });
+      for (let i = 0; i < REEL_N; i++) {
+        const x = r.rounds[i];
+        const f = h('i', { class: x ? 'done' + (x.stars ? '' : ' none') : i === n ? 'now' : '' });
+        if (x) f.style.setProperty('--c', GAME_COLOR[x.game] || '#FFC83A');
+        el.append(f);
+      }
+      return el;
+    },
+    // the end of a reel: the seven rounds, the stars, the places reached, and the five areas
+    // next to your earlier reels; then another reel, or a rest
+    showReel() {
+      const r = Reel.get(), past = store.get('pr1.reels', []).slice(-10);
+      if (this.card) { this.card.destroy(); this.card = null; }
+      $('#app').dataset.scene = 'panel';
+      const total = r.rounds.reduce((a, x) => a + (x.stars || 0), 0);
+      const frames = h('div', { class: 'reel-rounds' }, r.rounds.map((x) => h('div', { class: 'rr' + (x.stars ? '' : ' none'), style: '--c:' + (GAME_COLOR[x.game] || '#FFC83A') },
+        badge(x.game, null, Prog.level(x.game)), h('span', null, icon('star'), h('b', { text: String(x.stars || 0) })),
+        x.up ? h('small', { class: 'rr-up', text: LEVEL_NAMES[x.up - 1] }) : null)));
+      const ups = r.rounds.filter((x) => x.up);
+      // per area: this reel's stars a round, against your reels before (when there are some)
+      const per = (rounds, games) => { const xs = rounds.filter((x) => games.indexOf(x.game) >= 0); return xs.length ? xs.reduce((a, x) => a + Math.min(3, x.stars || 0), 0) / xs.length : null; };
+      const areas = h('div', { class: 'reel-areas' });
+      for (const A of AREAS) {
+        const now = per(r.rounds, A.games);
+        if (now == null) continue;
+        const was = past.map((p) => per(p.rounds, A.games)).filter((v) => v != null);
+        const avg = was.length ? was.reduce((a, v) => a + v, 0) / was.length : null;
+        const d = avg == null ? null : now - avg;
+        const say = avg == null ? 'first time' : d > 0.4 ? 'better' : d < -0.4 ? 'less' : 'the same';
+        const row = h('div', { class: 'ra' + (d != null && d > 0.4 ? ' up' : d != null && d < -0.4 ? ' down' : '') },
+          h('b', { text: A.name }),
+          h('span', { class: 'ra-stars', 'aria-label': (Math.round(now * 10) / 10) + ' stars a round' }, [1, 2, 3].map((k) => { const st = icon('star'); st.classList.add(now >= k - 0.25 ? 'on' : 'off'); return st; })),
+          h('small', { text: say }));
+        areas.append(row);
+      }
+      const again = () => { Reel.close(); this.advance(false); };
+      const rest = () => { Reel.close(); this.showRest(); };
+      const panel = this.panel([
+        h('h2', { class: 'reel-title', text: 'Your reel' }),
+        frames,
+        h('p', { class: 'reel-total' }, icon('star'), h('b', { text: String(total) }), h('span', { text: total === 1 ? ' star' : ' stars' })),
+        ups.length ? h('div', { class: 'reel-ups' }, ups.map((x) => h('span', null, badge(x.game, null, x.up), h('b', { text: LABEL[x.game] + ': ' + LEVEL_NAMES[x.up - 1] })))) : null,
+        h('h3', { class: 'reel-h', text: past.length > 1 ? 'Your five areas, next to your last reels' : past.length ? 'Your five areas, next to your last reel' : 'Your five areas' }),
+        areas,
+        h('div', { class: 'stack' },
+          h('button', { class: 'wide solid', type: 'button', onclick: again }, icon('play'), 'Another reel'),
+          h('button', { class: 'wide soft', type: 'button', onclick: rest }, 'Done for now')),
+      ]);
+      panel.classList.add('reel-end');
+      this.swap(panel);
+      this.renderHud();
+      Sound.play('level');
+    },
+    // after a reel: nothing to do until you come back
+    showRest() {
+      $('#app').dataset.scene = 'panel';
+      const panel = this.panel([
+        h('div', { class: 'big-badge' }, icon('check')),
+        h('h2', { text: 'Well played' }),
+        h('p', { text: 'Your places and stars are kept. A reel a day is plenty.' }),
+        h('div', { class: 'stack' },
+          h('button', { class: 'wide solid', type: 'button', onclick: () => this.advance(false) }, icon('play'), 'Play a reel'),
+          h('button', { class: 'wide soft', type: 'button', onclick: () => this.openProfile() }, icon('person'), 'Your progress')),
+      ]);
+      this.swap(panel);
+      this.renderHud();
     },
     showEnd() {
       const S = this.session;
@@ -13394,7 +13617,7 @@ PuzzleEnginesFactory(window);
         const list = h('div', { class: 'pf-list' });
         for (const g of A.games) {
           const t = all[g], on = played(g), P = levelProgress(g), best = Math.max(t ? t.top : 0, P.lv);
-          const say = LABEL[g] + ', ' + (on ? LEVEL_NAMES[P.lv - 1] + (P.have ? ', halfway to ' + LEVEL_NAMES[P.lv] : '') + ', ' + t.stars + ' stars' : 'not played yet');
+          const say = LABEL[g] + ', ' + (on ? LEVEL_NAMES[P.lv - 1] + (P.have && P.lv < 5 ? ', ' + P.have + ' of ' + P.need + ' stars to ' + LEVEL_NAMES[P.lv] : '') + ', ' + t.stars + ' stars' : 'not played yet');
           const row = h('button', { class: 'pf-row' + (on ? '' : ' fresh'), type: 'button', 'data-game': g, 'aria-label': say },
             h('span', { class: 'pf-ico', 'aria-hidden': 'true' }, badge(g, null, P.lv)),
             h('span', { class: 'pf-name' }, h('b', { text: LABEL[g] }),
