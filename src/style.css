@@ -517,7 +517,10 @@ button { cursor: pointer; }
 
 /* ------------------------------------------------------------ Tumbler */
 .vault {
-  width: 100%; max-width: 380px; max-height: 100%; display: flex; flex-direction: column; gap: 12px;
+  /* the lock keeps its size from the first try to the last: the rows share the space inside it,
+     so opening a row moves nothing else (the lock, the colors and Check stay where they are) */
+  --row-h: 60px;
+  width: 100%; max-width: 380px; height: 100%; max-height: min(100%, 720px); display: flex; flex-direction: column; gap: 12px;
   padding: 14px 14px 16px; border-radius: 26px;
   background: linear-gradient(160deg, var(--tb-v1, #474D86) 0%, var(--tb-v2, #2C2F63) 55%, var(--tb-v3, #22244F) 100%);
   box-shadow: 0 2px 0 rgba(255,255,255,.18) inset, 0 -2px 0 rgba(0,0,0,.25) inset, 0 18px 40px rgba(10, 6, 40, 0.45);
@@ -533,9 +536,14 @@ button { cursor: pointer; }
 .lights i.out { background: var(--tb-off, #3B3F73); box-shadow: none; }
 .rows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 2px; scrollbar-width: none; }
 .rows::-webkit-scrollbar { display: none; }
-.row { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 8px; border-radius: 16px; background: rgba(10, 8, 40, 0.38); box-shadow: inset 0 2px 4px rgba(0,0,0,.35); min-height: 52px; position: relative; }
+.row { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 8px; border-radius: 16px; background: rgba(10, 8, 40, 0.38); box-shadow: inset 0 2px 4px rgba(0,0,0,.35); height: var(--row-h); flex: none; position: relative; }
 .row.active { background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 2px rgba(255,255,255,.28); }
-.row.later { min-height: 0; height: 9px; padding: 0; border-radius: 5px; background: rgba(0, 0, 0, 0.22); box-shadow: none; flex: none; }
+.row.later { flex: 1 1 0; height: auto; min-height: 9px; max-height: var(--row-h); padding: 0; border-radius: 14px; background: rgba(0, 0, 0, 0.22); box-shadow: none; }
+/* a row still to come takes what room there is (a full row on a tall screen, a bar on a short one);
+   the next one opens from that height once the last try's colors have turned */
+.row.opening { overflow: hidden; animation: rowopen 0.32s cubic-bezier(.2, .8, .3, 1) both; }
+.row.opening > * { animation: fadein 0.24s 0.1s both; }
+@keyframes rowopen { from { height: var(--from); } to { height: var(--row-h); } }
 .row.code { background: rgba(255, 200, 58, 0.16); box-shadow: inset 0 0 0 2px rgba(255, 200, 58, 0.55); }
 .gem {
   width: 40px; height: 40px; border-radius: 50%; border: 0; padding: 0; flex: none; position: relative;
@@ -1141,7 +1149,9 @@ code { font-family: var(--mono); font-size: 12px; }
   .game-name { font-size: 21px; }
   .tool .disc { width: 46px; height: 46px; }
   .tools { gap: 14px; padding-bottom: 10px; }
-  .row { min-height: 46px; padding: 4px 8px; }
+  .vault { --row-h: 54px; }
+  .row { padding: 4px 8px; }
+  .clue { width: 46px; height: 46px; }
   .gem { width: 34px; height: 34px; }
   .palette .gem { width: 38px; height: 38px; }
   .vbtn { height: 44px; }

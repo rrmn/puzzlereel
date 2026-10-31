@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.37.0';
+  const APP_VERSION = '2.38.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -1267,9 +1267,9 @@
       const dec = decor(sp.game, this.lookLv);
       if (dec) {
         this.el.prepend(dec);
-        // Outbound's and Conduit's scenes show only between the title and the buttons, fading out
-        // toward them, so nothing in a scene sits behind the words or the buttons on any screen
-        if (sp.game === 'outbound' || sp.game === 'conduit') {
+        // Outbound's, Conduit's and Tumbler's scenes show only between the title and the buttons,
+        // fading out toward them, so nothing in a scene sits behind the words or the buttons on any screen
+        if (sp.game === 'outbound' || sp.game === 'conduit' || sp.game === 'tumbler') {
           dec.classList.add('fit');
           const fit = () => {
             const a = this.area;
@@ -3127,8 +3127,13 @@
       this.lightsEl.textContent = '';
       for (let i = 0; i < p.max; i++) this.lightsEl.append(h('i', { class: i < p.max - tries.length ? '' : 'out' }));
       this.lightsEl.setAttribute('aria-label', (p.max - tries.length) + ' tries left');
+      // the next row opens only once the last try's colors have all turned, and not at all when the
+      // try opened the lock or was the last one; it opens from the height it had as a row still to come
+      const opens = !this.summary && !this.busy ? tries.length : -1;
+      const prevRow = this.rowsEl.children[opens];
+      const fromH = prevRow && !prevRow.classList.contains('active') ? prevRow.getBoundingClientRect().height : null;
       this.rowsEl.textContent = '';
-      let focusRow = null;
+      let focusRow = null, opening = false;
       for (let r = 0; r < p.max; r++) {
         const row = h('div', { class: 'row', role: 'listitem' });
         if (r < tries.length) {
@@ -3161,8 +3166,14 @@
           }
           row.setAttribute('aria-label', 'Try ' + (r + 1) + ': ' + t.digits.map((d) => PEGS[d].name).join(', ') + '. ' + t.exact + ' right spot, ' + t.partial + ' right color elsewhere.');
           if (r === tries.length - 1) focusRow = row;
-        } else if (r === tries.length && !this.summary) {
+        } else if (r === opens) {
           row.classList.add('active');
+          if (fromH != null && !reducedMotion()) {
+            opening = true;
+            row.classList.add('opening');
+            row.style.setProperty('--from', fromH.toFixed(1) + 'px');
+            row.addEventListener('animationend', (e) => { if (e.target === row) row.classList.remove('opening'); });
+          }
           const firstEmpty = this.draft.indexOf(null);
           this.draft.forEach((d, k) => {
             const locked = this.run.revealed[k] != null;
@@ -3217,7 +3228,7 @@
       this.tryBtn.disabled = !full || !!this.summary || this.busy;
       this.clearBtn.disabled = !!this.summary || this.draft.every((d, k) => d == null || this.run.revealed[k] != null);
       this.palEl.querySelectorAll('button').forEach((b) => { b.disabled = !!this.summary || full; });
-      if (focusRow) this.later(() => { try { focusRow.scrollIntoView({ block: 'nearest' }); } catch (e) { /* optional */ } }, 0);
+      if (focusRow) this.later(() => { try { focusRow.scrollIntoView({ block: 'nearest', behavior: opening ? 'smooth' : 'auto' }); } catch (e) { /* optional */ } }, opening ? 320 : 0);
     }
     submit() {
       if (this.summary || this.busy) return;
