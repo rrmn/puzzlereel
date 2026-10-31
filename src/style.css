@@ -429,19 +429,22 @@ button { cursor: pointer; }
 /* L2 the farmyard: galvanized pipes over straw; troughs fill and animals come to drink */
 .board.conduit[data-kit="farm"] { --cd-soil: #6A4A2C; --cd-bed: #B58D56; --cd-case: #BCC4CC; --cd-collar: #8C96A1; --cd-core: rgba(255, 255, 255, 0.5); --cd-shadow: #2A1A0A; --cd-water: #3AA0F0; --cd-water2: #28A9FF; --cd-t1: #E8C866; }
 /* L3 the Japanese garden: bamboo pipes, nodes for collars, over raked gravel; ponds with koi */
-.board.conduit[data-kit="japan"] { --cd-soil: #4E524C; --cd-bed: #ECE6D5; --cd-case: #BBCB5E; --cd-collar: #6F8C2A; --cd-core: rgba(255, 255, 235, 0.5); --cd-shadow: #3A3626; --cd-water: #3DB2D8; --cd-water2: #2EBFE8; --cd-flow: #E2F8FF; --cd-puddle: #5CC2E2; --cd-drip: #74CFEA; }
+.board.conduit[data-kit="japan"] { --cd-soil: #64844F; --cd-bed: #F3EEE3; --cd-case: #84B05A; --cd-collar: #5B8A36; --cd-core: rgba(246, 255, 225, 0.55); --cd-shadow: #3A3A22; --cd-water: #2FA9D8; --cd-water2: #22B6EC; --cd-flow: #E2F8FF; --cd-puddle: #5CC2E2; --cd-drip: #74CFEA; }
+/* bamboo: the nodes are rings just wider than the cane */
+.board.conduit[data-kit="japan"] .tile .collar { transform-box: fill-box; transform-origin: center; transform: scale(0.82); }
+.board.conduit[data-kit="japan"] .bed-shade { fill: rgba(70, 45, 20, 0.1); }
 /* L4 the desert oasis: open stone channels in the sand; palms */
 .board.conduit[data-kit="oasis"] { --cd-soil: #B6874C; --cd-bed: #F4DDAA; --cd-case: #C2935A; --cd-collar: #9C6E3E; --cd-core: rgba(80, 48, 16, 0.45); --cd-shadow: #5A3A14; --cd-water: #22BCD6; --cd-water2: #14C8E2; --cd-puddle: #4FCDE0; --cd-drip: #6ED8E8; }
 .board.conduit[data-kit="oasis"] .tile.wet .core { stroke: rgba(255, 255, 255, 0.4); }
 /* L5 the palace garden at night: marble channels with gold collars on dark marble; fountains */
 .board.conduit[data-kit="palace"] { --cd-soil: #15261D; --cd-bed: #2D3243; --cd-case: #E6E3EE; --cd-collar: #E2B552; --cd-core: rgba(255, 255, 255, 0.6); --cd-shadow: #000000; --cd-water: #45D6FF; --cd-water2: #72E6FF; --cd-flow: #EAFCFF; --cd-puddle: #45D6FF; --cd-drip: #8AE8FF; }
 .board.conduit[data-kit="palace"] .bed-shade { fill: rgba(0, 0, 0, 0.25); }
-.board.conduit .rake { fill: none; stroke: #D2CAB2; stroke-width: 0.28; stroke-linecap: round; }
+.board.conduit .rake { fill: none; stroke: #DFD8C7; stroke-width: 0.2; stroke-linecap: round; }
 .board.conduit .ripple { fill: none; stroke: #E2C38C; stroke-width: 0.3; stroke-linecap: round; }
 .board.conduit .trim { fill: none; stroke: #C9A24A; stroke-opacity: 0.45; stroke-width: 0.25; }
 .board.conduit .straw { fill: none; stroke: #E6C66E; stroke-width: 0.28; stroke-linecap: round; opacity: 0.75; }
-.board.conduit .moss circle { fill: #6E9F57; }
-.board.conduit .moss circle:nth-child(2) { fill: #86B666; }
+.board.conduit .petals ellipse { fill: #F7B9CA; }
+.board.conduit .petals .p2 { fill: #F2A2B8; }
 .board.conduit .pebbles ellipse { fill: #BE9B6C; }
 .board.conduit .pebbles .p2 { fill: #A88A62; }
 .board.conduit .nightflower circle { fill: #F4F1FF; opacity: 0.85; }
@@ -1352,6 +1355,11 @@ svg .df { fill: currentColor; stroke: none; opacity: 0.2; }
    app carries the level too (data-lv), so the bar on top reads on dark scenes. */
 .scene { isolation: isolate; }
 .decor { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+.decor.fit {
+  --fade: 26px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--mt, 0px), #000 calc(var(--mt, 0px) + var(--fade)), #000 calc(100% - var(--mb, 0px) - var(--fade)), transparent calc(100% - var(--mb, 0px)));
+  mask-image: linear-gradient(to bottom, transparent var(--mt, 0px), #000 calc(var(--mt, 0px) + var(--fade)), #000 calc(100% - var(--mb, 0px) - var(--fade)), transparent calc(100% - var(--mb, 0px)));
+}
 /* Outbound: the beach, the city at night, the ski lodge, the ferry at sunset */
 [data-scene="outbound"][data-lv="2"], .scene[data-game="outbound"][data-lv="2"] { --bg1: #FFF3D2; --bg2: #F0D49A; --ink: #2E2A1C; --ink2: rgba(46,42,28,.7); --chip: rgba(255,255,255,.62); --btn: #0D3A48; --btn-ink: #EFFFFF; --halo: rgba(255,250,235,.7); }
 [data-scene="outbound"][data-lv="3"], .scene[data-game="outbound"][data-lv="3"] { --bg1: #262A48; --bg2: #0E1126; --ink: #F1F2FF; --ink2: rgba(241,242,255,.74); --chip: rgba(255,255,255,.14); --btn: #FFD23F; --btn-ink: #0B0E2E; --halo: rgba(110,130,255,.25); --ob-lot: #1F2338; --ob-road: #2B3050; --ob-dash: #4FE3FF; --ob-stall: #4FE3FF; --ob-stall-o: .3; --ob-curb: #4FE3FF; }
