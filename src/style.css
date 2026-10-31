@@ -429,22 +429,31 @@ button { cursor: pointer; }
 /* L2 the farmyard: galvanized pipes over straw; troughs fill and animals come to drink */
 .board.conduit[data-kit="farm"] { --cd-soil: #6A4A2C; --cd-bed: #B58D56; --cd-case: #BCC4CC; --cd-collar: #8C96A1; --cd-core: rgba(255, 255, 255, 0.5); --cd-shadow: #2A1A0A; --cd-water: #3AA0F0; --cd-water2: #28A9FF; --cd-t1: #E8C866; }
 /* L3 the Japanese garden: bamboo pipes, nodes for collars, over raked gravel; ponds with koi */
-.board.conduit[data-kit="japan"] { --cd-soil: #5A3E2B; --cd-bed: #ECE7DD; --cd-case: #2C5E1E; --cd-in: #5C9C38; --cd-collar: #23511A; --cd-core: #A8D57A; --cd-shadow: #2E2A18; --cd-water: #1F8CC6; --cd-water2: #1AA0E0; --cd-flow: #D9F5FF; --cd-puddle: #5CC2E2; --cd-drip: #74CFEA; }
-/* bamboo: round canes (a dark edge, the green body, light down the middle) with thin nodes; full
-   of water they turn blue; where canes bend or meet, a cut post: skin, pale cut face, hollow */
+.board.conduit[data-kit="japan"] { --cd-soil: #5A3E2B; --cd-bed: #ECE7DD; --cd-case: #2C5E1E; --cd-in: #5C9C38; --cd-shine: #80BB52; --cd-chan: #D9D09C; --cd-node: #23511A; --cd-shadow: #2E2A18; --cd-water: #1F8CC6; --cd-water2: #1AA0E0; --cd-flow: #E6FAFF; --cd-puddle: #5CC2E2; --cd-drip: #74CFEA; }
+/* bamboo split open along the top: a round green cane (dark edge, body, light either side of the
+   channel) with nodes; the channel is pale while dry and the water runs in it, so the cane stays
+   green. Where three or four canes meet, a cut post: skin, pale cut face and the hollow inside */
 .tile .inner, .tile .ihub, .tile .pface, .tile .phole, .tile .pglint, .joints .bridge .bi { display: none; }
-.board.conduit[data-kit="japan"] .tile .inner { display: inline; stroke: var(--cd-in); stroke-width: 2.85; stroke-linecap: butt; fill: none; }
-.board.conduit[data-kit="japan"] .tile .core { stroke-width: 0.75; }
-.board.conduit[data-kit="japan"] .tile.wet .core { stroke: #5CC6F2; stroke-width: 1.5; }
-.board.conduit[data-kit="japan"] .tile .collar { stroke: #8CC45E; stroke-width: 0.16; }
+.board.conduit[data-kit="japan"] .tile .inner { display: inline; stroke: var(--cd-in); stroke-width: 2.95; stroke-linecap: butt; fill: none; }
+.board.conduit[data-kit="japan"] .tile .shine { stroke: var(--cd-shine); stroke-width: 2.3; stroke-linecap: butt; fill: none; }
+.board.conduit[data-kit="japan"] .tile .chan { stroke: var(--cd-chan); stroke-width: 1.45; stroke-linecap: butt; fill: none; }
+.board.conduit[data-kit="japan"] .tile .water { stroke-width: 1.45; }
+.board.conduit[data-kit="japan"] .tile .flow { stroke-width: 0.5; }
+.board.conduit[data-kit="japan"] .tile .node { fill: var(--cd-node); }
 .board.conduit[data-kit="japan"] .tile .ihub { display: inline; fill: var(--cd-in); }
+.board.conduit[data-kit="japan"] .tile .shub { fill: var(--cd-shine); }
+.board.conduit[data-kit="japan"] .tile .chub { fill: var(--cd-chan); }
 .board.conduit[data-kit="japan"] .tile .pface { display: inline; fill: #E9DDAE; }
 .board.conduit[data-kit="japan"] .tile .phole { display: inline; fill: #3A3524; }
 .board.conduit[data-kit="japan"] .tile .pglint { display: inline; fill: #FFFFFF; opacity: 0; transition: opacity 0.2s; }
 .board.conduit[data-kit="japan"] .tile.wet .pglint { opacity: 0.8; }
-.board.conduit[data-kit="japan"] .joints .bridge .bi { display: inline; fill: var(--cd-in); transition: fill 0.12s linear var(--d, 0ms); }
+.board.conduit[data-kit="japan"] .joints .bridge, .board.conduit[data-kit="japan"] .joints .bridge.wet { fill: var(--cd-case); }
+.board.conduit[data-kit="japan"] .joints .bridge .bb { fill: var(--cd-in); }
+.board.conduit[data-kit="japan"] .joints .bridge .bs { fill: var(--cd-shine); }
+.board.conduit[data-kit="japan"] .joints .bridge .bi { display: inline; fill: var(--cd-chan); transition: fill 0.12s linear var(--d, 0ms); }
 .board.conduit[data-kit="japan"] .joints .bridge.wet .bi { fill: var(--cd-water); }
 .board.conduit[data-kit="japan"].solved .joints .bridge.wet .bi { fill: var(--cd-water2); }
+.board.conduit .gravel .clear { fill: var(--cd-bed); }
 .board.conduit[data-kit="japan"] .bed-shade { fill: rgba(70, 50, 25, 0.13); }
 .board.conduit .gravel .rk { fill: none; stroke: #D6CDBA; stroke-width: 0.38; stroke-linecap: round; }
 .board.conduit .gravel .hl { fill: none; stroke: #FFFFFF; stroke-opacity: 0.9; stroke-width: 0.24; stroke-linecap: round; }

@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.36.0';
+  const APP_VERSION = '2.37.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -2303,6 +2303,24 @@
     }
     return null;
   }
+  // the Japanese garden's ground in one piece: gravel raked in gentle waves across the whole garden,
+  // giving way round each pond and the spring to rings raked round them, and the grain of the gravel
+  function cdRakedGround(Wd, Hd, rounds, seed) {
+    const r = cdRnd(seed % 9973 + 3), n = Math.floor((Wd - 1.4) / 1.9);
+    let sh = '', hl = '', v = '';
+    for (let y = 1.25; y < Hd - 0.9; y += 1.55) {
+      const wave = (yy) => 'M0.7 ' + yy.toFixed(2) + 'q0.95 0.42 1.9 0' + 't1.9 0'.repeat(n - 1);
+      sh += wave(y); hl += wave(y + 0.3);
+    }
+    v += '<path class="rk" d="' + sh + '"/><path class="hl" d="' + hl + '"/>';
+    for (const [cx, cy] of rounds) {
+      v += '<ellipse class="clear" cx="' + cx + '" cy="' + (cy + 0.2) + '" rx="4.55" ry="4.3"/>';
+      for (const [a, b] of [[4.2, 3.95], [3.55, 3.3]]) v += '<ellipse class="rk" cx="' + cx + '" cy="' + (cy + 0.2) + '" rx="' + a + '" ry="' + b + '"/><ellipse class="hl" cx="' + cx + '" cy="' + (cy + 0.5) + '" rx="' + a + '" ry="' + b + '"/>';
+    }
+    const k = Math.round((Wd * Hd) / 6);
+    for (let j = 0; j < k; j++) v += '<circle cx="' + (0.6 + r() * (Wd - 1.2)).toFixed(2) + '" cy="' + (0.6 + r() * (Hd - 1.2)).toFixed(2) + '" r="' + (0.07 + r() * 0.11).toFixed(2) + '"/>';
+    return cdG('gravel', null, v);
+  }
   // now and then something small in a free corner of a bed: grass, straw, moss, pebbles, night flowers
   function cdTuftFor(kit, seed, cx, cy) {
     if (kit === 'garden') return cdTuft(seed, cx, cy);
@@ -2508,6 +2526,21 @@
       this.plantCount = 0;
       this.leakEls = new Map();
       let flower = (p.seed >>> 0) % CD_FLOWERS.length;
+      // the first levels show each tile as a bed of its own; from the Japanese garden on the ground
+      // is one piece, as a real garden is, and only the pipes show where the tiles are
+      const seamless = this.lookLv >= 3;
+      if (seamless) {
+        beds.append(s('rect', { class: 'bed', x: 0, y: 0, width: p.w * U, height: p.h * U, rx: 3.1 }));
+        if (kit === 'japan') {
+          const rounds = [];
+          for (let i = 0; i < p.w * p.h; i++) {
+            let dg = 0;
+            for (const sd of [1, 2, 4, 8]) if (p.sol[i] & sd) dg++;
+            if (dg === 1 || i === p.src) rounds.push([(i % p.w) * U + U / 2, ((i / p.w) | 0) * U + U / 2]);
+          }
+          beds.append(cdRakedGround(p.w * U, p.h * U, rounds, p.seed >>> 0));
+        }
+      }
       for (let i = 0; i < p.w * p.h; i++) {
         const x = i % p.w, y = (i / p.w) | 0;
         const cx = x * U + U / 2, cy = y * U + U / 2;
@@ -2515,9 +2548,12 @@
         let deg = 0;
         for (const sd of [1, 2, 4, 8]) if (m & sd) deg++;
         const isPlant = deg === 1 && i !== p.src;
-        beds.append(s('rect', { class: 'bed', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }),
-          s('rect', { class: 'bed-shade', x: x * U + 0.45, y: y * U + 8.3, width: U - 0.9, height: 1.25, rx: 0.6 }));
-        const deco = cdBedDecor(kit, x, y, i, isPlant || i === p.src);
+        if (!seamless) {
+          beds.append(s('rect', { class: 'bed', x: x * U + 0.45, y: y * U + 0.45, width: U - 0.9, height: U - 0.9, rx: 2.2 }),
+            s('rect', { class: 'bed-shade', x: x * U + 0.45, y: y * U + 8.3, width: U - 0.9, height: 1.25, rx: 0.6 }));
+        }
+        // on one-piece ground the Japanese garden is raked as a whole, and the palace's beds lose their gold edges
+        const deco = seamless && (kit === 'japan' || kit === 'palace') ? null : cdBedDecor(kit, x, y, i, isPlant || i === p.src);
         if (deco) beds.append(deco);
         if (!isPlant && i !== p.src) { const t = cdTuftFor(kit, i * 31 + (p.seed >>> 0), cx, cy); if (t) beds.append(t); }
         // a pipe: its shadow on the bed, the cream pipe, the water that fills it,
@@ -2526,25 +2562,43 @@
         shade.style.transformOrigin = tile.style.transformOrigin = cx + 'px ' + cy + 'px';
         const line = (cls, sd, b) => s('line', { class: cls, x1: cx, y1: cy, x2: cx + SIDEV[sd][0] * b, y2: cy + SIDEV[sd][1] * b });
         const collar = (cls, sd) => {
-          const cl = kit === 'japan' ? 0.62 : CD_COL_L, cw = kit === 'japan' ? 4.05 : CD_COL_W;
-          const [vx, vy] = SIDEV[sd], w = vx ? cl : cw, hh = vx ? cw : cl;
+          const [vx, vy] = SIDEV[sd], w = vx ? CD_COL_L : CD_COL_W, hh = vx ? CD_COL_W : CD_COL_L;
           return s('rect', { class: cls, x: cx + vx * CD_COL_AT - w / 2, y: cy + vy * CD_COL_AT - hh / 2, width: w, height: hh, rx: 0.42 });
+        };
+        // a bamboo node: a ring round the cane, seen on either side of the open channel
+        const nodes = (sd) => {
+          const [vx, vy] = SIDEV[sd], nx = cx + vx * 2.55, ny = cy + vy * 2.55;
+          return [-1, 1].map((k) => {
+            const off = k * 1.29, len = 1.12, w = vx ? 0.55 : len, hh = vx ? len : 0.55;
+            return s('rect', { class: 'node', x: nx + (vx ? 0 : off) - w / 2, y: ny + (vx ? off : 0) - hh / 2, width: w, height: hh, rx: 0.2 });
+          });
         };
         const arms = [];
         for (const sd of [1, 2, 4, 8]) {
           if (!(m & sd)) continue;
-          shade.append(line(null, sd, CD_ARM), collar(null, sd));
-          arms.push({ side: sd, pipe: line('case', sd, CD_ARM), inner: line('inner', sd, CD_ARM), water: line('water', sd, CD_ARM), core: line('core', sd, CD_ARM - 0.5), flow: line('flow', sd, CD_ARM), collar: collar('collar', sd) });
+          if (kit === 'japan') {
+            shade.append(line(null, sd, CD_ARM));
+            arms.push({ side: sd, pipe: line('case', sd, CD_ARM), inner: line('inner', sd, CD_ARM), shine: line('shine', sd, CD_ARM), nodes: nodes(sd),
+              chan: line('chan', sd, CD_ARM), water: line('water', sd, CD_ARM), flow: line('flow', sd, CD_ARM) });
+          } else {
+            shade.append(line(null, sd, CD_ARM), collar(null, sd));
+            arms.push({ side: sd, pipe: line('case', sd, CD_ARM), water: line('water', sd, CD_ARM), core: line('core', sd, CD_ARM - 0.5), flow: line('flow', sd, CD_ARM), collar: collar('collar', sd) });
+          }
         }
         let hub = null;
         if (kit === 'japan') {
-          // bamboo: round canes, and where three or four meet, a cut bamboo post seen from above, its
-          // skin, the pale cut face and the hollow inside, where the water shows when it comes
-          // a bend is a smooth elbow: a round piece under each layer fills the corner
+          // bamboo split open along the top, as bamboo water pipes are in a Japanese garden: the cane
+          // stays green and the water is seen running in it. A bend is a smooth elbow (a round piece
+          // under each layer fills the corner); where three or four canes meet, a cut bamboo post seen
+          // from above, its skin, the pale cut face and the hollow inside, where the water shows
           const bend = deg === 2 && m !== 5 && m !== 10;
-          const piece = bend ? { pipe: s('circle', { class: 'hub', cx, cy, r: 1.75 }), inner: s('circle', { class: 'ihub', cx, cy, r: 1.43 }), water: (hub = s('circle', { class: 'whub', cx, cy, r: 1.75 })) } : {};
+          const piece = bend ? { pipe: s('circle', { class: 'hub', cx, cy, r: 1.75 }), inner: s('circle', { class: 'ihub', cx, cy, r: 1.475 }),
+            shine: s('circle', { class: 'shub', cx, cy, r: 1.15 }), chan: s('circle', { class: 'chub', cx, cy, r: 0.725 }), water: (hub = s('circle', { class: 'whub', cx, cy, r: 0.725 })) } : {};
           if (bend) shade.append(s('circle', { cx, cy, r: 1.75 }));
-          for (const k of ['pipe', 'inner', 'water', 'core', 'flow', 'collar']) { arms.forEach((a) => tile.append(a[k])); if (piece[k]) tile.append(piece[k]); }
+          for (const k of ['pipe', 'inner', 'shine', 'nodes', 'chan', 'water', 'flow']) {
+            arms.forEach((a) => (k === 'nodes' ? a.nodes.forEach((n) => tile.append(n)) : tile.append(a[k])));
+            if (piece[k]) tile.append(piece[k]);
+          }
           if (deg >= 3) {
             shade.append(s('circle', { cx, cy, r: 2.25 }));
             hub = s('circle', { class: 'whub', cx, cy, r: 0.95 });
@@ -2730,10 +2784,12 @@
           if (!b) {
             const vx = SIDEV[sd][0], ex = x * 10 + 5 + vx * 5, ey = y * 10 + 5 + SIDEV[sd][1] * 5;
             const w = vx ? CD_BRIDGE : 3.5, hh = vx ? 3.5 : CD_BRIDGE;
-            const wi = vx ? CD_BRIDGE + 0.3 : 2.9, hi = vx ? 2.9 : CD_BRIDGE + 0.3;
-            b = s('g', { class: 'bridge' + (still ? '' : ' snap') },
-              s('rect', { x: ex - w / 2, y: ey - hh / 2, width: w, height: hh }),
-              s('rect', { class: 'bi', x: ex - wi / 2, y: ey - hi / 2, width: wi, height: hi }));
+            b = s('g', { class: 'bridge' + (still ? '' : ' snap') });
+            if (this.kit === 'japan') {
+              // a short piece of cane with its channel, a little longer so it meets the canes
+              const L = CD_BRIDGE + 0.3, piece = (cls, a) => s('rect', { class: cls, x: ex - (vx ? L : a) / 2, y: ey - (vx ? a : L) / 2, width: vx ? L : a, height: vx ? a : L });
+              b.append(piece('bo', 3.5), piece('bb', 2.95), piece('bs', 2.3), piece('bi', 1.45));
+            } else b.append(s('rect', { x: ex - w / 2, y: ey - hh / 2, width: w, height: hh }));
             this.joints.append(b);
             this.bridges.set(key, b);
           }
@@ -8599,7 +8655,7 @@
     ].concat(CODEBOOK.events.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Puzzle columns', ''], CODEBOOK.puzzles.map((r) => '- `' + r[0] + '`: ' + r[1]), ['', '## Move labels (`cls`)', ''],
       Object.keys(CODEBOOK.classes).map((g) => '- ' + E.games[g].name + ': ' + CODEBOOK.classes[g]),
       ['', '## Tumbler', '', CODEBOOK.colors, 'Per-pin clues mark every pin (repeated colors are matched left to right, as in Wordle). Count clues only give the two totals. A hint reveals the leftmost pin the clues have not settled. With feedback on (free play and its practice, from app 2.22) the board helps: a color known not to be in the code cannot be picked, a color put where it is known not to be moves on to the next place where it can go, and a try identical to an earlier one is not taken, so free-play tries are assisted; with feedback off nothing changes. With per-pin clues, pins already in the right spot are filled into the next row; the player can change them. Words on the board (what the colors of a try mean, Wrong color, Not here) come in practice and at L1 only, until six codes are cracked (from app 2.29; until then at every level); from L2 the board helps without words.', '',
-        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. From app 2.34 the scenes round the Outbound lot are seen from straight above, like the lot (roofs and tree tops, umbrellas on the sand, rooftops at night, pines in the snow, the ferry\'s bow and stern on the sea); until then they were side views. From app 2.35 Outbound\'s scenes show only between the title and the buttons, Conduit has no scene round the board (the palace garden keeps fireflies; until then a barn, a cherry branch, bamboo and a bridge, cacti, lanterns), and the Japanese garden\'s board was redrawn (moss between the beds, green bamboo pipes, lighter ponds, petals on the gravel). From app 2.36 its pipes are round bamboo canes, with a cut bamboo post where three or four meet, on gravel raked in waves, in a dark wooden frame. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
+        '## Levels', '', 'Each level is a place with a look of its own, the same in free play and research sessions (practice keeps the first). From app 2.31 the board and its pieces belong to the place in Outbound (L1 bicycles, small cars, a cement mixer and fire engines in the town lot, L2 quad bikes, jeeps, buggies, camper vans and ice cream vans on the beach, L3 motorbikes, taxis, police cars, buses and limousines in the city at night, L4 snowmobiles, cars with skis, snowploughs and snowcats at the ski lodge, L5 bikes, cars, lorries and motorhomes on the ferry deck; from app 2.32 several kinds in each place, taken in turn so neighbours differ, and from app 2.33 each kind with an outline of its own; the kind is named in the vehicle\'s label), Conduit (L1 pots in the herb garden, L2 troughs and animals in the farmyard, L3 koi ponds and bamboo pipes in the Japanese garden, L4 palms and stone channels in the desert oasis, L5 fountains in the palace garden at night) and Tumbler (L1 rings of a bike lock, L2 magnets on a school locker, L3 the keypad of a front door, L4 the lamps of a safe, L5 gems in a vault; each color keeps its shape). Until then only the colors and the scene around the board changed in these games. From app 2.34 the scenes round the Outbound lot are seen from straight above, like the lot (roofs and tree tops, umbrellas on the sand, rooftops at night, pines in the snow, the ferry\'s bow and stern on the sea); until then they were side views. From app 2.35 Outbound\'s scenes show only between the title and the buttons, Conduit has no scene round the board (the palace garden keeps fireflies; until then a barn, a cherry branch, bamboo and a bridge, cacti, lanterns), and the Japanese garden\'s board was redrawn (moss between the beds, green bamboo pipes, lighter ponds, petals on the gravel). From app 2.36 its pipes are round bamboo canes, with a cut bamboo post where three or four meet, on gravel raked in waves, in a dark wooden frame. From app 2.37 the bamboo is split open along the top, so the cane stays green and the water shows running in it (until then a full cane turned blue), and from L3 on Conduit\'s ground is one piece (no bed for each tile; the palace\'s gold edges went), so only the pipes show where the tiles are. Rules, puzzles and every measure are unchanged; the look goes with the level, so it cannot be told apart from it.', '', '### Outbound', lv('outbound'), 'From engines 1.26 a vehicle is a bike taking one space (len 1, feature `bikes`) with chance `bike` (0.25) whenever it is not a truck, at every level; bikes drive like cars. L1 can be cleared by tapping only cars with a clear way out. From L2 there are pinwheels, four cars that each block the next, so one car must first slide part of the way (one at L2 and L3, two at L4 and L5). From L3 the lots are dense: the other cars stand anywhere, not only where their way out is clear, so cars hold each other up and a slide can end where it blocks for good, and each lot is chosen by how often a sensible player clears it (one who drives out any car that can leave, and only when none can, slides one at random, without undo; feature `p_sensible_solve`): 30 to 65% at L3, 15 to 42% at L4, at most 30% at L5, against 100% at L1 and L2 (from app 2.29; until then L3 to L5 were chosen by random tapping alone, `p_random_solve`, and a sensible player cleared L1 to L4 almost every time). With feedback on, L1 to L3 mark every move as it is made (optimal, wasted, dead end); L4 and L5 mark no moves and show a dead end only once no car can move, so a wrong move is found out late. `cls` is logged the same way at every level.', '', '### Conduit', lv('conduit'), 'Each level keeps, out of a number of one-solution boards (1, 3, 40, 100, 200), the one whose tiles local rules settle least (a pipe\'s turn read from the border and its neighbours; feature `forced_by_local_rules`), then the one that needs the most search: about all of the tiles at L1, 94% at L2, about half at L3, a third at L4 and L5 (from app 2.29; until then L4 and L5 compared 8 boards by search alone, and most boards at every level could be read tile by tile). Tiles start turned so that no pipe points off the board; every board needs between 0.42 and 0.5 turns per tile. At L1 and L2 a quarter of the tiles start in their solved turn and the others anywhere; from L3 the tiles that start turned wrong are almost all ones local rules do not settle, and those rules\' tiles start right, so the turns to make are the ones that need thinking. From L3 about one board in three (drawn from the seed) has more than one solution: two, now and then three or four (feature `solutions`; from app 2.30, until then every board had one). Such a board is the first one found that local rules settle at most 55%, 45% or 36% of (L3, L4, L5), about as much as the one-solution boards there, and it starts so that the solution that looks nearest is not the one with the fewest turns: one solution takes the fewest turns, at least two fewer than any other, while another looks nearer (fewer quarter turns from place counting either way, since a pipe one step past its place looks one off but takes three taps, and no more tiles out of place). Only the tiles where the solutions differ are set for this, with at most half of the board\'s turns; `decoy_extra_turns` is how many more turns the nearest-looking solution takes. On these boards `reference` is the fewest turns to any solution, `d_before` and `d_after` count turns to the nearest one at that moment, and the move that solves the board has `detail` solution k of n, where solution 1 is the one with the fewest turns from the start. If no such board turns up within its tries (rare), the card has one solution. L1 and L2 always have one: a 3x4 board practically never has two, and a 4x4 board has too few turns for the trick. Every pipe is needed: a board is rejected when all plants could get water without a leak while some pipe stays dry, so a garden in full bloom always means a solved board.', '', '### Tumbler', lv('tumbler'), '', '### Glimpse', lv('glimpse'),
         'Rings sit at 0.34, 0.62 and 0.88 of the field radius with 8, 16 and 24 positions (48 in all: the bird plus up to 47 leaves). The bird is always on one of the 8 directions. The animal is drawn 0.34 field radii wide, the bird and leaves 0.2. The level targets are game settings, not values from a study.', '',
         '## Glimpse trips', '',
         Object.keys(E.games.glimpse.themes).map((k) => { const t = E.games.glimpse.themes[k]; return '- ' + k + ': ' + t.pair.join(' or ') + ' in the middle, find the ' + t.target + ', in the way: ' + t.distractor + 's'; }).join('\n'),
