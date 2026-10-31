@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const E = window.Engines;
-  const APP_VERSION = '2.39.0';
+  const APP_VERSION = '2.40.0';
   const ORDER = E.order;
   const SVGNS = 'http://www.w3.org/2000/svg';
   const FREE_COUNT = 1000000;
@@ -7970,6 +7970,8 @@
   // pond, big tree, well, flower bed, bench). Things ride on round white
   // tokens so they read on grass, sand and water alike.
   const KS_TRAY_Y = 134, KS_LIFT = 2.4;   // the basket row; how far a thing rides above its stone's middle
+  // a look ended within these parts of its time, with everything put back right, brings 2 or 1 more stars
+  const KS_QUICK = [1 / 3, 2 / 3];
   const KS_ART = {
     apple: '<path d="M0 -5.2C3.6 -7.8 8 -5.2 8 -0.3C8 5 4.2 8.4 0 7.4C-4.2 8.4 -8 5 -8 -0.3C-8 -5.2 -3.6 -7.8 0 -5.2Z" fill="#E8463D"/><path d="M-4.8 -2.2C-4.4 -4.2 -2.8 -5 -1.6 -4.8" stroke="#FFFFFF" stroke-opacity=".5" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="M0 -5.2Q0.4 -8 1.8 -9.2" stroke="#6B4423" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M1.6 -7.6Q5.4 -9.8 7.2 -7.2Q4 -5.6 1.6 -7.6Z" fill="#3FA34D"/>',
     key: '<circle cx="-4.4" cy="0" r="4.4" fill="#F2B632"/><circle cx="-4.4" cy="0" r="1.8" fill="#FFFFFF"/><rect x="-1.2" y="-1.4" width="10.2" height="2.8" rx="1.4" fill="#F2B632"/><rect x="5.8" y="0.4" width="2" height="3.8" rx=".7" fill="#F2B632"/><rect x="2.6" y="0.4" width="2" height="2.8" rx=".7" fill="#F2B632"/><path d="M-7 -1.6Q-6.4 -3.2 -4.6 -3.4" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="1.1" fill="none" stroke-linecap="round"/>',
@@ -8042,9 +8044,12 @@
   }
   function ksStone(x, y) {
     const g = s('g', { class: 'ks-stone', transform: 'translate(' + x + ' ' + y + ')' });
+    // a stone with a dark edge, so it stands out on grass, leaves, snow and at night; while things go
+    // back, a ring round every free stone shows where they can go, and turns gold under a held thing
     g.innerHTML = '<ellipse class="ks-glow" cx="0" cy="0.5" rx="9.6" ry="6.6"/>' +
-      '<ellipse cx="0" cy="1.2" rx="7.6" ry="4.8" fill="#A79F8E"/><ellipse cx="0" cy="0" rx="7.6" ry="4.6" fill="#EEE9DE"/>' +
-      '<ellipse cx="-2" cy="-1.3" rx="3.3" ry="1.4" fill="#FFFFFF" fill-opacity=".55"/>';
+      '<ellipse class="ks-place" cx="0" cy="0.5" rx="9.6" ry="6.6"/>' +
+      '<ellipse cx="0" cy="1.2" rx="7.6" ry="4.8" fill="#8F8676" stroke="#4E4638" stroke-opacity=".55" stroke-width=".7"/><ellipse cx="0" cy="0" rx="7.6" ry="4.6" fill="#F2EEE5" stroke="#4E4638" stroke-opacity=".4" stroke-width=".5"/>' +
+      '<ellipse cx="-2" cy="-1.3" rx="3.3" ry="1.4" fill="#FFFFFF" fill-opacity=".6"/>';
     return g;
   }
   function ksToken(name) {
@@ -8105,7 +8110,13 @@
       this.svg = svgEl;
       this.goBtn = h('button', { class: 'gl-go ks-go', type: 'button', 'aria-label': 'Look' }, icon('eye'));
       this.goBtn.addEventListener('click', () => this.begin());
-      this.wrap = h('div', { class: 'ks-wrap' }, svgEl, this.goBtn);
+      // while looking: Ready ends the look; the sooner, the more stars it can bring (if all go back right)
+      this.bonusEl = h('span', { class: 'ks-bonus' });
+      this.barEl = h('i', { class: 'ks-ready-bar', 'aria-hidden': 'true' });
+      this.readyBtn = h('button', { class: 'ks-ready', type: 'button', hidden: true, 'aria-label': 'Ready: I have them' }, icon('check'), h('span', { text: 'Ready' }), this.bonusEl, this.barEl);
+      this.readyBtn.addEventListener('click', () => this.endLook('ready'));
+      this.wrap = h('div', { class: 'ks-wrap' }, svgEl, this.goBtn, this.readyBtn);
+      for (const k in this.run.at) if (this.run.at[k] != null && this.stoneEls[this.run.at[k]]) this.stoneEls[this.run.at[k]].classList.add('taken');
       this.area.append(this.wrap);
       this.picked = null;
       this.lay(true);
@@ -8128,6 +8139,7 @@
         this.setPos(k, x, y, instant);
       });
       this.timerEl.classList.toggle('on', this.phase === 'study');
+      this.svg.classList.toggle('recall', this.phase === 'recall');
     }
     // a thing's place, and its body's size and shake, all as SVG attributes
     drawTok(k) {
@@ -8178,6 +8190,14 @@
       void pie.getBoundingClientRect();
       pie.style.animation = 'kspie ' + ms + 'ms linear forwards';
       this.studyTimer = this.later(() => this.endLook('timer'), ms + this.p.things.length * 90);
+      this.readyBtn.hidden = false;
+      this.barEl.style.animation = 'none';
+      void this.barEl.offsetWidth;
+      this.barEl.style.animation = 'ksbar ' + ms + 'ms linear forwards';
+      const bonus = (n) => { if (this.phase !== 'study') return; this.bonusEl.textContent = n ? '+' + n + ' \u2605' : ''; this.bonusEl.hidden = !n; };
+      bonus(2);
+      this.later(() => bonus(1), Math.round(ms * KS_QUICK[0]));
+      this.later(() => bonus(0), Math.round(ms * KS_QUICK[1]));
       this.log('look', { detail: 'start' });
       this.app.session.hasMoves = true;
       if (this.firstMove == null) this.firstMove = Math.round(this.elapsed());
@@ -8191,6 +8211,7 @@
       this.log('look', { detail: how, rt_ms: ms });
       this.phase = 'hide';
       this.timerEl.classList.remove('on');
+      this.readyBtn.hidden = true;
       // into the basket, one after another, with a little hop
       const order = this.p.tray, n = order.length, ST = this.G.stones;
       order.forEach((k, i) => {
@@ -8227,6 +8248,7 @@
       this.timers.delete(this.studyTimer);
       this.log('interrupted', { detail: 'look, page hidden' });
       this.phase = 'ready';
+      this.readyBtn.hidden = true;
       this.goBtn.hidden = false;
       this.goBtn.disabled = false;
       this.goBtn.classList.remove('away');
@@ -8343,6 +8365,7 @@
       for (const x of this.p.out) this.stoneEls[x].classList.remove('free', 'over');
       const ST = this.G.stones;
       this.setPos(k, ST[s2][0], ST[s2][1] - KS_LIFT, false);
+      this.stoneEls[s2].classList.add('taken');
       this.c.moves++;
       if (this.firstPut == null) this.firstPut = Math.round(t - this.recallAt);
       this.log('place', {
@@ -8416,12 +8439,15 @@
       const complete = outcome === 'complete';
       const miss = d.n - d.correct;
       const stars = complete && !this.practice ? (miss === 0 ? 3 : miss === 1 ? 2 : 1) : 0;
+      // everything right after a short look: one more star within two thirds of the time, two within a third
+      const f = d.study_ms != null && this.p.studyMs ? d.study_ms / this.p.studyMs : 1;
+      const bonus = stars === 3 ? (f <= KS_QUICK[0] ? 2 : f <= KS_QUICK[1] ? 1 : 0) : 0;
       return {
         outcome,
         success: complete && !this.practice && this.G.success(this.p, d),
         duration_ms: dur, first_move_ms: this.firstPut == null ? null : this.firstPut, hidden_ms: Math.round(this.hiddenMs),
         moves: d.placed, reference: d.n, par: null, efficiency: '',
-        stars, ks: d,
+        stars, bonus, ks: d,
       };
     }
     // passed: every thing back on its own stone
@@ -8438,7 +8464,8 @@
       if (!d || !d.n) return null;
       return h('div', { class: 'res-stats' },
         h('span', { 'aria-label': 'Put back in the right place' }, icon('check'), h('b', { text: d.correct + '/' + d.n })),
-        d.study_ms != null ? h('span', { 'aria-label': 'Looked for ' + secs(d.study_ms) + ' seconds' }, icon('eye'), h('b', { text: secs(d.study_ms) + ' s' })) : null);
+        d.study_ms != null ? h('span', { 'aria-label': 'Looked for ' + secs(d.study_ms) + ' seconds' }, icon('eye'), h('b', { text: secs(d.study_ms) + ' s' })) : null,
+        sm.bonus ? h('span', { class: 'ks-quick', 'aria-label': 'Quick look: ' + sm.bonus + ' more ' + (sm.bonus === 1 ? 'star' : 'stars') }, icon('star'), h('b', { text: '+' + sm.bonus + ' quick look' })) : null);
     }
     extraSnapshot() { return null; }
     onKey(e) {
@@ -8511,7 +8538,7 @@
       ['session_kind', 'study, or free for free play'],
       ['session_seed', 'with the plan, this fixes every puzzle'],
       ['event_index', 'order of the event within the session'],
-      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look or Switchback sign stopped before it was scored), drive (Switchback: the car starts or drives on after a pause), sign (one Switchback sign, scored when it is tapped or when its time runs out), stray (a tap on the Switchback sign button with no sign up), speed (Switchback speed change), off_road (the Switchback car left the road), beast (Switchback: the animal on the road, tapped away or braked for), fork_sign (Switchback: the arrow board of a fork comes up; detail has the arrow), fork (Switchback: the nose of the car passes the split; cls right_lane or wrong_lane, detail has the arrow and the lane taken), turn (Switchback L4 and L5: the sign of a new animal takes over halfway; target is the new animal), look (Keepsake: the look starts, then ends by timer or early with a tap on the basket), place (Keepsake: one thing put on a stone), repeat_blocked (Tumbler with feedback on: a try identical to an earlier one is not taken; detail has which; from app 2.22), hidden, visible, puzzle_end, level_change, resume, session_end'],
+      ['event', 'session_start, puzzle_start, move, blocked, undo, restart, hint, trial (one Glimpse look), interrupted (a Glimpse look or Switchback sign stopped before it was scored), drive (Switchback: the car starts or drives on after a pause), sign (one Switchback sign, scored when it is tapped or when its time runs out), stray (a tap on the Switchback sign button with no sign up), speed (Switchback speed change), off_road (the Switchback car left the road), beast (Switchback: the animal on the road, tapped away or braked for), fork_sign (Switchback: the arrow board of a fork comes up; detail has the arrow), fork (Switchback: the nose of the car passes the split; cls right_lane or wrong_lane, detail has the arrow and the lane taken), turn (Switchback L4 and L5: the sign of a new animal takes over halfway; target is the new animal), look (Keepsake: the look starts, then ends by timer, early with a tap on the basket, or ready with the Ready button, from app 2.40), place (Keepsake: one thing put on a stone), repeat_blocked (Tumbler with feedback on: a try identical to an earlier one is not taken; detail has which; from app 2.22), hidden, visible, puzzle_end, level_change, resume, session_end'],
       ['wall_time / t_session_ms', 'clock time, and ms since the session started'],
       ['seq / block', 'puzzle number in the plan and its block; practice boards have block 0 and seq 0'],
       ['puzzle_id', 'B{block}-{game}-L{level}-{occurrence}, or P-{game} for a practice board'],
@@ -9399,7 +9426,7 @@
         // free play keeps stars, a streak and per-game levels between visits
         if (sm.outcome !== 'abandoned') {
           const won = sm.outcome === 'solved' || (sm.outcome === 'complete' && sm.stars > 0);
-          store.set('pr1.stars', store.get('pr1.stars', 0) + sm.stars);
+          store.set('pr1.stars', store.get('pr1.stars', 0) + sm.stars + (sm.bonus || 0));
           store.set('pr1.streak', won ? store.get('pr1.streak', 0) + 1 : 0);
         }
         if (change) {

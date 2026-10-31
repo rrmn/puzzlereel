@@ -78,9 +78,9 @@ Until app 2.20, level 1 showed the middle item only (processing speed). Practice
 ## Keepsake
 
 - **The map.** One park, always the same, drawn by hand: a house, a pond, a big tree, a well, a flower bed and a bench along a winding path, with twelve stones placed beside them. The landmarks stay put so they can be learned; each card brings out 4 to 8 stones and puts 2 to 6 things on them, from the seed. Stones and things are drawn large enough to read and tap at arm's length.
-- **A card.** Tap the eye to look: the things appear and a timer runs on the basket (5 to 11 s by level; a tap on the basket ends the look early and is logged). The things hop into the basket, then you drag or tap each back onto a stone. One try per thing.
+- **A card.** Tap the eye to look: the things appear, and a Ready button sits on the basket with the time left as a bar under it (5 to 11 s by level). Ready ends the look whenever you have them (from app 2.40; a tap on the basket does too, and until then that was the only way, unmarked); either way is logged. The things hop into the basket, then you drag or tap each back onto a stone; while you do, every free stone has a ring, gold while you hold a thing, and stones have a dark edge so they stand out in every season (from app 2.40). One try per thing.
 - **Feedback.** With feedback on (free play), a thing on its own stone turns green; one on a wrong stone turns red and moves to its own stone. With feedback off, things stay where they are put.
-- **Scoring.** Each placement logs the right and the chosen stone, the distance between them and the time it took. A card succeeds with at most one thing on a wrong stone. Evidence level: near (object-location memory is an established measurement paradigm).
+- **Scoring.** Each placement logs the right and the chosen stone, the distance between them and the time it took. A card succeeds with at most one thing on a wrong stone. Stars: 3 for everything right, 2 for one wrong, 1 for more; with everything right, a look ended within two thirds of its time brings one more star and within a third two more (from app 2.40; Ready shows what it can bring as the time runs, and the result says "+2 quick look"). The bonus goes into the stars only; the `stars` column stays 0 to 3. Evidence level: near (object-location memory is an established measurement paradigm).
 
 ## Profile
 

@@ -820,11 +820,23 @@ button { cursor: pointer; }
 .ks-token.ok .ks-ring { stroke: var(--good); }
 .ks-token.bad .ks-ring { stroke: var(--bad); }
 .ks-stone .ks-glow { fill: #FFFFFF; opacity: 0; transition: opacity 0.2s; }
+/* putting things back: every free stone has a ring, gold under a held thing */
+.ks-stone .ks-place { fill: none; stroke: #FFFFFF; stroke-width: 1.1; stroke-dasharray: 2.2 1.6; opacity: 0; transition: opacity 0.2s, stroke 0.2s; paint-order: stroke; }
+.board.keepsake.recall .ks-stone:not(.taken) .ks-place { opacity: 0.95; filter: drop-shadow(0 0 0.6px rgba(40, 30, 20, 0.9)); }
+.board.keepsake.recall .ks-stone.free .ks-place { stroke: #FFD23F; stroke-width: 1.5; stroke-dasharray: none; }
+/* while looking: Ready, with the stars a quick look can bring and the time left as a bar */
+.ks-ready { position: absolute; left: 0; right: 0; margin: 0 auto; width: max-content; bottom: 3.5%; display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 20px 0 16px; border: 0; border-radius: 25px; background: #FFFDF7; color: #3A2410; font: 600 18px/1 var(--display); box-shadow: 0 6px 18px rgba(60, 20, 30, 0.28), 0 2px 0 rgba(255, 255, 255, 0.6) inset; overflow: hidden; cursor: pointer; z-index: 2; animation: rise 0.25s; }
+.ks-ready svg { width: 22px; height: 22px; stroke-width: 3; }
+.ks-ready:active { transform: scale(0.95); }
+.ks-bonus { padding: 3px 9px; border-radius: 12px; background: #FFC83A; color: #3A2600; font-size: 15px; }
+.ks-ready-bar { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: #E9789D; transform-origin: left; }
+@keyframes ksbar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.ks-quick { color: #B07A00; }
 .ks-stone.free .ks-glow { opacity: 0.35; animation: breathe 1.4s ease-in-out infinite; }
 .ks-stone.over .ks-glow { opacity: 0.85; animation: none; }
 .ks-stone.truth .ks-glow { fill: var(--bad); opacity: 0.45; animation: none; }
 .ks-stone.nope { animation: rattle 0.4s; }
-.ks-timer { opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.ks-timer { display: none; }
 .ks-timer.on { opacity: 1; }
 .ks-pie { fill: none; stroke: #E9789D; stroke-width: 5.2; stroke-dasharray: 16.34 16.34; stroke-dashoffset: 0; }
 @keyframes kspie { to { stroke-dashoffset: 16.34; } }
